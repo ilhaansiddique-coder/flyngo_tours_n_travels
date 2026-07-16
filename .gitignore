@@ -9,6 +9,11 @@ build/
 .next/
 out/
 
+# Compiled JS (NestJS)
+backend/src/**/*.js
+backend/test/**/*.js
+!backend/prisma/seed.js
+
 # Environment
 .env
 .env.local

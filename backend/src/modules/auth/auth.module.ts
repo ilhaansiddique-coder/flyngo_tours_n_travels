@@ -18,7 +18,7 @@ import { FacebookStrategy } from './strategies/facebook.strategy';
       useFactory: (config: ConfigService) => ({
         secret: config.get('JWT_ACCESS_SECRET'),
         signOptions: {
-          expiresIn: config.get('JWT_ACCESS_EXPIRY') || '15m',
+          expiresIn: '15m' as const,
         },
       }),
     }),

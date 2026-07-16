@@ -113,7 +113,7 @@ export class AuthService {
       this.jwtService.signAsync(payload),
       this.jwtService.signAsync(payload, {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get('JWT_REFRESH_EXPIRY') || '7d',
+        expiresIn: '7d' as const,
       }),
     ]);
 

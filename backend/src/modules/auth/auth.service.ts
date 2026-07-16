@@ -73,7 +73,7 @@ export class AuthService {
         where: { id: payload.sub, tenantId },
       });
 
-      if (!user || user.deletedAt) {
+    if (!user || user.deletedAt || !user.passwordHash) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 

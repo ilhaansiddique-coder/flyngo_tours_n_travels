@@ -6,8 +6,6 @@ import { ConfigService } from '../../config/config.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { GoogleStrategy } from './strategies/google.strategy';
-import { FacebookStrategy } from './strategies/facebook.strategy';
 
 @Module({
   imports: [
@@ -24,7 +22,23 @@ import { FacebookStrategy } from './strategies/facebook.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy, FacebookStrategy],
+  providers: [AuthService, JwtStrategy, ...buildOAuthProviders()],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}
+
+function buildOAuthProviders(): any[] {
+  const providers: any[] = [];
+
+  if (process.env.GOOGLE_CLIENT_ID) {
+    const { GoogleStrategy } = require('./strategies/google.strategy');
+    providers.push(GoogleStrategy);
+  }
+
+  if (process.env.FACEBOOK_APP_ID) {
+    const { FacebookStrategy } = require('./strategies/facebook.strategy');
+    providers.push(FacebookStrategy);
+  }
+
+  return providers;
+}

@@ -6,9 +6,12 @@ import { ConfigService } from '../../../config/config.service';
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(config: ConfigService) {
+    const clientID = config.getOrNull('GOOGLE_CLIENT_ID');
+    const clientSecret = config.getOrNull('GOOGLE_CLIENT_SECRET');
+
     super({
-      clientID: config.getOrNull('GOOGLE_CLIENT_ID') || '',
-      clientSecret: config.getOrNull('GOOGLE_CLIENT_SECRET') || '',
+      clientID: clientID || 'placeholder-client-id',
+      clientSecret: clientSecret || 'placeholder-client-secret',
       callbackURL: `${config.get('FRONTEND_URL')}/auth/google/callback`,
       scope: ['email', 'profile'],
     });

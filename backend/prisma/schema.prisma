@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch"]
+  previewFeatures = ["fullTextSearchPostgres"]
 }
 
 datasource db {
@@ -699,7 +699,9 @@ model Media {
   mimeType String? @map("mime_type")
 
   tourId  String? @map("tour_id")
+  tour    Tour?   @relation(fields: [tourId], references: [id], onDelete: Cascade)
   hotelId String? @map("hotel_id")
+  hotel   Hotel?  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
 

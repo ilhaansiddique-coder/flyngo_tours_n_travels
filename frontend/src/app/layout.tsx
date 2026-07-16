@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { Providers } from '@/components/providers';
 import { Header } from '@/components/layout/header/header';
+import { MainContent } from '@/components/layout/main-content';
 import { Footer } from '@/components/layout/footer/footer';
 import { cn } from '@/lib/utils';
 import '@/styles/globals.css';
@@ -19,10 +20,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn(inter.variable, display.variable, 'font-sans antialiased bg-white dark:bg-gray-950')}>
+      <body className={cn(inter.variable, display.variable, 'font-sans antialiased bg-surface-50 dark:bg-surface-950')} suppressHydrationWarning>
         <Providers>
           <Header />
-          <main>{children}</main>
+          <MainContent>{children}</MainContent>
           <Footer />
         </Providers>
       </body>

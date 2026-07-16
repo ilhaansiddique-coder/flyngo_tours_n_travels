@@ -22,11 +22,11 @@ export class AuthService {
       where: { email: dto.email, tenantId },
     });
 
-    if (!user || user.deletedAt) {
+    if (!user || user.deletedAt || !user.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await bcryptjs.compare(dto.password, user.passwordHash);
+    const isPasswordValid = await bcryptjs.compare(dto.password, user.passwordHash!);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }

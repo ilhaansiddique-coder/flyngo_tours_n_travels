@@ -5,8 +5,10 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, BookOpen, Users, Map, Building2, Plane, Globe,
-  Ticket, DollarSign, Percent, UserPlus, BarChart3, Settings,
-  Shield, FileText, LogOut, ChevronLeft, Menu
+  Ticket, Percent, UserPlus, BarChart3, Settings,
+  Shield, FileText, LogOut, ChevronLeft,
+  FileText as FileIcon, Image, Search as SearchIcon, Star, HelpCircle,
+  Megaphone
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -25,6 +27,15 @@ const navigation = [
   { label: 'Settings', href: '/admin/settings', icon: Settings },
   { label: 'Users & Roles', href: '/admin/users', icon: Shield },
   { label: 'Audit Logs', href: '/admin/audit-logs', icon: FileText },
+  // CMS
+  { label: 'CMS Pages', href: '/admin/cms/pages', icon: FileIcon },
+  { label: 'CMS Blogs', href: '/admin/cms/blogs', icon: FileIcon },
+  { label: 'Media Library', href: '/admin/cms/media', icon: Image },
+  { label: 'SEO Manager', href: '/admin/cms/seo', icon: SearchIcon },
+  { label: 'Testimonials', href: '/admin/cms/testimonials', icon: Star },
+  { label: 'FAQs', href: '/admin/cms/faqs', icon: HelpCircle },
+  // Marketing
+  { label: 'Marketing', href: '/admin/marketing', icon: Megaphone },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

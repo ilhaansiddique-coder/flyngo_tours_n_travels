@@ -12,9 +12,9 @@ interface TourCardProps {
   description: string;
   price: number;
   duration: number;
-  maxGuests: number;
-  destination: { name: string; country: string };
-  difficulty: string;
+  maxGuests?: number;
+  destination?: { name: string; country: string };
+  difficulty?: string;
   imageUrl?: string;
 }
 
@@ -28,7 +28,11 @@ export function TourCard({ slug, title, description, price, duration, maxGuests,
           <Badge variant="default">{(difficulty || 'easy').charAt(0).toUpperCase() + (difficulty || 'easy').slice(1)}</Badge>
         </div>
         <div className="absolute bottom-4 left-4 right-4 z-20">
-          <p className="text-sm text-white/80">{destination.name}, {destination.country}</p>
+          <p className="text-sm text-white/80">
+            {destination?.name && destination?.country
+              ? `${destination.name}, ${destination.country}`
+              : 'Explore destination'}
+          </p>
           <h3 className="text-xl font-bold text-white mt-1">{title}</h3>
         </div>
       </div>
@@ -36,7 +40,7 @@ export function TourCard({ slug, title, description, price, duration, maxGuests,
         <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4 flex-1">{description}</p>
         <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
           <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {duration} Days</span>
-          <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {maxGuests} Guests</span>
+          <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {maxGuests ?? '—'} Guests</span>
         </div>
         <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
           <div>

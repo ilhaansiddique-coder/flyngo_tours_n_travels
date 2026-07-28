@@ -8,23 +8,23 @@ export class TenantService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getSettings(tenantId: string) {
-    return this.prisma.tenantSettings.findUnique({
-      where: { tenantId },
-    });
+    return this.prisma.tenantSettings.findUnique({ where: { tenantId } });
+  }
+
+  async updateSettings(tenantId: string, data: any) {
+    const existing = await this.prisma.tenantSettings.findUnique({ where: { tenantId } });
+    if (!existing) {
+      return this.prisma.tenantSettings.create({ data: { tenantId, ...data } });
+    }
+    return this.prisma.tenantSettings.update({ where: { tenantId }, data });
   }
 
   async getTenantById(id: string) {
-    return this.prisma.tenant.findUnique({
-      where: { id },
-      include: { settings: true },
-    });
+    return this.prisma.tenant.findUnique({ where: { id }, include: { settings: true } });
   }
 
   async getTenantByDomain(domain: string) {
-    return this.prisma.tenant.findFirst({
-      where: { domain },
-      include: { settings: true },
-    });
+    return this.prisma.tenant.findFirst({ where: { domain }, include: { settings: true } });
   }
 
   async getAllPublicSettings() {
@@ -32,14 +32,9 @@ export class TenantService {
       where: { deletedAt: null, isActive: true },
       include: { settings: true },
     });
-
-    return tenants.map((tenant) => ({
-      id: tenant.id,
-      name: tenant.name,
-      domain: tenant.domain,
-      logo: tenant.settings?.logoUrl,
-      favicon: tenant.settings?.faviconUrl,
-      primaryColor: tenant.settings?.primaryColor,
+    return tenants.map((t) => ({
+      id: t.id, name: t.name, domain: t.domain,
+      logo: t.settings?.logoUrl, favicon: t.settings?.faviconUrl, primaryColor: t.settings?.primaryColor,
     }));
   }
 }

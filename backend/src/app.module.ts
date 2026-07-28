@@ -9,6 +9,7 @@ import { ToursModule } from './modules/tours/tours.module';
 import { HotelsModule } from './modules/hotels/hotels.module';
 import { FlightsModule } from './modules/flights/flights.module';
 import { VisaModule } from './modules/visa/visa.module';
+import { DestinationsModule } from './modules/destinations/destinations.module';
 import { BookingModule } from './modules/booking/booking.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { CmsModule } from './modules/cms/cms.module';
@@ -16,6 +17,7 @@ import { MarketingModule } from './modules/marketing/marketing.module';
 import { AiModule } from './modules/ai/ai.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { AdminModule } from './modules/admin/admin.module';
     HotelsModule,
     FlightsModule,
     VisaModule,
+    DestinationsModule,
     BookingModule,
     PaymentsModule,
     CmsModule,
@@ -36,6 +39,7 @@ import { AdminModule } from './modules/admin/admin.module';
     AiModule,
     NotificationsModule,
     AdminModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

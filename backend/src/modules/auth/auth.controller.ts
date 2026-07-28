@@ -19,7 +19,7 @@ export class AuthController {
   @ApiBody({ type: LoginDto })
   @ApiResponse({ status: 200, type: TokenResponseDto })
   async login(@Body() dto: LoginDto, @Req() req: Request) {
-    const tenantId = (req as any).tenantId;
+    const tenantId = this.getTenantId(req);
     return this.authService.login(dto, tenantId);
   }
 
@@ -30,7 +30,7 @@ export class AuthController {
   @ApiBody({ type: RegisterDto })
   @ApiResponse({ status: 201, type: TokenResponseDto })
   async register(@Body() dto: RegisterDto, @Req() req: Request) {
-    const tenantId = (req as any).tenantId;
+    const tenantId = this.getTenantId(req);
     return this.authService.register(dto, tenantId);
   }
 
@@ -39,7 +39,13 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })
   async refresh(@Body('refreshToken') refreshToken: string, @Req() req: Request) {
-    const tenantId = (req as any).tenantId;
+    const tenantId = this.getTenantId(req);
     return this.authService.refreshToken(refreshToken, tenantId);
+  }
+
+  private getTenantId(req: Request): string {
+    return (req as any).tenantId ||
+      (req.headers['x-tenant-id'] as string) ||
+      '00000000-0000-0000-0000-000000000001';
   }
 }

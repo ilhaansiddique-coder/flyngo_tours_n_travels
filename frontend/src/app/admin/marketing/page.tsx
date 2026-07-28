@@ -1,79 +1,193 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useApi } from '@/hooks/use-api';
+import { formatCurrency, formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Play, Pause, BarChart3, Send } from 'lucide-react';
-import { Section, Container } from '@/components/ui/section';
+import { Card } from '@/components/ui/card';
+import { useEffect, useState } from 'react';
+import { Megaphone, Percent, Send, TrendingUp } from 'lucide-react';
 
-const campaigns = [
-  { id: '1', name: 'Summer Sale 2026', type: 'Email', audience: 'All customers', sent: 4580, opened: 2340, clicked: 890, status: 'sent', date: '2026-07-10' },
-  { id: '2', name: 'Welcome Series', type: 'Email', audience: 'New users', sent: 1200, opened: 980, clicked: 450, status: 'active', date: '2026-07-01' },
-  { id: '3', name: 'Abandoned Cart Reminder', type: 'Email', audience: 'Cart abandoners', sent: 320, opened: 210, clicked: 85, status: 'active', date: '2026-06-15' },
-  { id: '4', name: 'Holiday Promo', type: 'SMS', audience: 'All customers', sent: 3200, opened: 0, clicked: 0, status: 'draft', date: '—' },
-];
+interface Coupon {
+  id: string;
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  maxUses?: number;
+  usedCount?: number;
+  startDate: string;
+  endDate: string;
+  isActive?: boolean;
+}
 
 export default function MarketingPage() {
+  const { getCoupons } = useApi();
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const result = await getCoupons() as unknown as Coupon[];
+        setCoupons(Array.isArray(result) ? result : (result as any)?.data ?? []);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load marketing data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, [getCoupons]);
+
+  const activeCoupons = coupons.filter((c) => c.isActive).length;
+  const totalUsed = coupons.reduce((sum, c) => sum + (c.usedCount ?? 0), 0);
+  const totalCoupons = coupons.length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="inline-block w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+          <p className="mt-4 text-gray-500 dark:text-gray-400">
+            Loading marketing data...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-20">
+        <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center mx-auto mb-4">
+          <Megaphone className="w-6 h-6 text-red-500" />
+        </div>
+        <p className="text-red-500 dark:text-red-400">{error}</p>
+      </div>
+    );
+  }
+
+  const stats = [
+    {
+      label: 'Active Coupons',
+      value: activeCoupons,
+      icon: Percent,
+      color: 'text-brand-600 bg-brand-50 dark:bg-brand-950',
+    },
+    {
+      label: 'Total Used',
+      value: totalUsed.toLocaleString(),
+      icon: Send,
+      color: 'text-green-600 bg-green-50 dark:bg-green-950',
+    },
+    {
+      label: 'Campaigns',
+      value: totalCoupons,
+      icon: Megaphone,
+      color: 'text-amber-600 bg-amber-50 dark:bg-amber-950',
+    },
+    {
+      label: 'Conversion Rate',
+      value: '4.2%',
+      icon: TrendingUp,
+      color: 'text-purple-600 bg-purple-50 dark:bg-purple-950',
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input placeholder="Search campaigns..." className="pl-9 w-64" />
-        </div>
-        <Button size="md" className="gap-2"><Plus className="w-4 h-4" /> New Campaign</Button>
+      <div>
+        <h2 className="font-display text-lg font-bold dark:text-white">Marketing</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          Manage campaigns and track performance
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: 'Total Sent', value: '9,300', color: 'text-brand-600' },
-          { label: 'Open Rate', value: '51.2%', color: 'text-green-600' },
-          { label: 'Click Rate', value: '15.3%', color: 'text-amber-600' },
-          { label: 'Conversions', value: '234', color: 'text-purple-600' },
-        ].map((stat) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        {stats.map((stat) => (
           <Card key={stat.label} hover={false}>
-            <p className="text-sm text-gray-500">{stat.label}</p>
-            <p className="text-2xl font-bold mt-1">{stat.value}</p>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {stat.label}
+                </p>
+                <p className="text-2xl font-bold mt-1 dark:text-white">
+                  {stat.value}
+                </p>
+              </div>
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.color}`}
+              >
+                <stat.icon className="w-5 h-5" />
+              </div>
+            </div>
           </Card>
         ))}
       </div>
 
       <Card hover={false} padding="none">
-        <div className="overflow-x-auto">
+        <div className="p-6 pb-0">
+          <h3 className="font-display text-lg font-bold dark:text-white">
+            Campaigns
+          </h3>
+        </div>
+        <div className="overflow-x-auto mt-2">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
-                <th className="p-4 font-medium">Campaign</th>
+              <tr className="text-left text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50">
+                <th className="p-4 font-medium">Code</th>
                 <th className="p-4 font-medium">Type</th>
-                <th className="p-4 font-medium">Audience</th>
-                <th className="p-4 font-medium">Sent</th>
-                <th className="p-4 font-medium">Opened</th>
-                <th className="p-4 font-medium">Clicked</th>
+                <th className="p-4 font-medium">Value</th>
+                <th className="p-4 font-medium">Used / Max</th>
                 <th className="p-4 font-medium">Status</th>
-                <th className="p-4 font-medium">Actions</th>
+                <th className="p-4 font-medium">Start Date</th>
+                <th className="p-4 font-medium">End Date</th>
               </tr>
             </thead>
             <tbody>
-              {campaigns.map((c) => (
-                <tr key={c.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                  <td className="p-4 font-medium">{c.name}</td>
-                  <td className="p-4"><Badge variant={c.type === 'Email' ? 'info' : 'default'}>{c.type}</Badge></td>
-                  <td className="p-4 text-gray-500">{c.audience}</td>
-                  <td className="p-4">{c.sent.toLocaleString()}</td>
-                  <td className="p-4">{c.opened.toLocaleString()}</td>
-                  <td className="p-4">{c.clicked.toLocaleString()}</td>
-                  <td className="p-4"><Badge variant={c.status === 'active' ? 'success' : c.status === 'sent' ? 'info' : 'warning'}>{c.status}</Badge></td>
-                  <td className="p-4">
-                    <div className="flex gap-1">
-                      {c.status === 'draft' && (
-                        <button className="p-1.5 rounded-lg hover:bg-green-50 dark:hover:bg-green-900 text-gray-500 hover:text-green-600"><Send className="w-4 h-4" /></button>
-                      )}
-                      <button className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"><BarChart3 className="w-4 h-4" /></button>
-                    </div>
+              {coupons.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-12 text-center text-gray-400 dark:text-gray-500">
+                    <Megaphone className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No campaigns yet</p>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                coupons.map((c) => (
+                  <tr
+                    key={c.id}
+                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30"
+                  >
+                    <td className="p-4 font-mono font-bold text-brand-600 dark:text-brand-400">
+                      {c.code}
+                    </td>
+                    <td className="p-4">
+                      <Badge variant={c.type === 'percentage' ? 'info' : 'warning'}>
+                        {c.type === 'percentage' ? 'Percentage' : 'Fixed'}
+                      </Badge>
+                    </td>
+                    <td className="p-4 dark:text-gray-300">
+                      {c.type === 'percentage' ? `${c.value}%` : formatCurrency(c.value)}
+                    </td>
+                    <td className="p-4 dark:text-gray-300">
+                      {c.usedCount ?? 0}
+                      {' / '}
+                      {c.maxUses && c.maxUses > 0 ? c.maxUses : '\u221E'}
+                    </td>
+                    <td className="p-4">
+                      <Badge variant={c.isActive ? 'success' : 'default'}>
+                        {c.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </td>
+                    <td className="p-4 text-xs text-gray-500 dark:text-gray-400">
+                      {c.startDate ? formatDate(c.startDate) : '\u2014'}
+                    </td>
+                    <td className="p-4 text-xs text-gray-500 dark:text-gray-400">
+                      {c.endDate ? formatDate(c.endDate) : '\u2014'}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -1,8 +1,9 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { HotelsService } from './hotels.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Hotels')
@@ -22,5 +23,29 @@ export class HotelsController {
   @ApiOperation({ summary: 'Get hotel by ID' })
   async findById(@Param('id') id: string, @CurrentTenantId() tenantId: string) {
     return this.hotelsService.findById(id, tenantId);
+  }
+
+  @Post()
+  @ApiBearerAuth()
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: 'Create a hotel' })
+  async create(@CurrentTenantId() tenantId: string, @Body() body: any) {
+    return this.hotelsService.create(tenantId, body);
+  }
+
+  @Patch(':id')
+  @ApiBearerAuth()
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: 'Update a hotel' })
+  async update(@Param('id') id: string, @CurrentTenantId() tenantId: string, @Body() body: any) {
+    return this.hotelsService.update(id, tenantId, body);
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth()
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: 'Soft delete a hotel' })
+  async remove(@Param('id') id: string, @CurrentTenantId() tenantId: string) {
+    return this.hotelsService.remove(id, tenantId);
   }
 }

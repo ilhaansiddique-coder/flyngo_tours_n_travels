@@ -20,10 +20,19 @@ export class AdminController {
 
   @Get('audit-logs')
   @ApiOperation({ summary: 'Get audit logs' })
-  async getAuditLogs(
-    @CurrentTenantId() tenantId: string,
-    @Query() pagination: PaginationDto,
-  ) {
+  async getAuditLogs(@CurrentTenantId() tenantId: string, @Query() pagination: PaginationDto) {
     return this.adminService.getAuditLogs(tenantId, pagination.page, pagination.limit);
+  }
+
+  @Get('roles')
+  @ApiOperation({ summary: 'Get all roles with permissions' })
+  async getRoles(@CurrentTenantId() tenantId: string) {
+    return this.adminService.getRoles(tenantId);
+  }
+
+  @Get('permissions')
+  @ApiOperation({ summary: 'Get all permissions' })
+  async getPermissions() {
+    return this.adminService.getPermissions();
   }
 }

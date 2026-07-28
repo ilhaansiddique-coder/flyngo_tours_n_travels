@@ -9,17 +9,37 @@ interface FlightCardProps {
   airline: string;
   flightNumber: string;
   originCode: string;
-  originCity: string;
+  originCity?: string;
   destinationCode: string;
-  destinationCity: string;
+  destinationCity?: string;
   departureTime: string;
   arrivalTime: string;
-  duration: number;
+  duration?: number;
   price: number;
   availableSeats: number;
 }
 
-export function FlightCard({ airline, flightNumber, originCode, originCity, destinationCode, destinationCity, departureTime, arrivalTime, duration, price, availableSeats }: FlightCardProps) {
+export function FlightCard({
+  airline,
+  flightNumber,
+  originCode,
+  originCity,
+  destinationCode,
+  destinationCity,
+  departureTime,
+  arrivalTime,
+  duration: durationProp,
+  price,
+  availableSeats,
+}: FlightCardProps) {
+  const duration = durationProp ?? (() => {
+    if (departureTime && arrivalTime) {
+      const ms = new Date(arrivalTime).getTime() - new Date(departureTime).getTime();
+      return Math.round(ms / (1000 * 60));
+    }
+    return 0;
+  })();
+
   const hours = Math.floor((duration || 0) / 60);
   const mins = (duration || 0) % 60;
 
@@ -38,8 +58,10 @@ export function FlightCard({ airline, flightNumber, originCode, originCity, dest
 
         <div className="flex items-center gap-6">
           <div className="text-center">
-            <p className="text-lg font-bold text-gray-900 dark:text-white">{new Date(departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-            <p className="text-sm text-gray-500">{originCode}</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">
+              {new Date(departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+            <p className="text-sm text-gray-500">{originCity || originCode}</p>
           </div>
 
           <div className="flex flex-col items-center">
@@ -53,8 +75,10 @@ export function FlightCard({ airline, flightNumber, originCode, originCity, dest
           </div>
 
           <div className="text-center">
-            <p className="text-lg font-bold text-gray-900 dark:text-white">{new Date(arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-            <p className="text-sm text-gray-500">{destinationCode}</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">
+              {new Date(arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+            <p className="text-sm text-gray-500">{destinationCity || destinationCode}</p>
           </div>
         </div>
 

@@ -28,7 +28,7 @@ class ApiClient {
     }
 
     const json = await response.json();
-    return json.data;
+    return json.data ?? json;
   }
 
   get<T>(endpoint: string, options?: FetchOptions): Promise<T> {

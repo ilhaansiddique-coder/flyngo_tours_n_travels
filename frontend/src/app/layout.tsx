@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
+import { Playfair_Display, Hanken_Grotesk } from 'next/font/google';
 import { Providers } from '@/components/providers';
 import { Header } from '@/components/layout/header/header';
 import { MainContent } from '@/components/layout/main-content';
@@ -7,20 +7,42 @@ import { Footer } from '@/components/layout/footer/footer';
 import { cn } from '@/lib/utils';
 import '@/styles/globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const display = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-display' });
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['600', '700'],
+  variable: '--font-playfair',
+});
+
+const hanken = Hanken_Grotesk({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-hanken',
+});
 
 export const metadata: Metadata = {
-  title: { default: 'Flyngo — Tours & Travels', template: '%s | Flyngo' },
-  description: 'Discover extraordinary journeys with Flyngo. Book tours, hotels, flights, and visa services worldwide.',
-  keywords: ['travel', 'tours', 'hotels', 'flights', 'visa', 'holiday packages'],
-  openGraph: { type: 'website', locale: 'en_US', siteName: 'Flyngo' },
+  title: { default: 'Fly&Go — Luxury Travel', template: '%s | Fly&Go' },
+  description: 'Your escape, purely refined. Discover the world with Fly&Go signature white-glove service.',
+  keywords: ['travel', 'luxury', 'flights', 'hotels', 'tours', 'private jets'],
+  openGraph: { type: 'website', locale: 'en_US', siteName: 'Fly&Go' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={cn(inter.variable, display.variable, 'font-sans antialiased bg-surface-50 dark:bg-surface-950')} suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
+        />
+      </head>
+      <body
+        className={cn(
+          playfair.variable,
+          hanken.variable,
+          'font-sans antialiased bg-surface text-on-surface'
+        )}
+        suppressHydrationWarning
+      >
         <Providers>
           <Header />
           <MainContent>{children}</MainContent>

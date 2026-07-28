@@ -1,28 +1,146 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useEffect, useState } from 'react';
+import { Plus, Pencil, Trash2, HelpCircle } from 'lucide-react';
+import { useApi } from '@/hooks/use-api';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Modal, FormField, FormInput, ConfirmDialog } from '@/components/admin/ui';
 
-const faqs = [
-  { id: '1', question: 'How do I book a tour?', category: 'Booking', order: 1, status: 'published' },
-  { id: '2', question: 'What payment methods do you accept?', category: 'Payments', order: 2, status: 'published' },
-  { id: '3', question: 'Can I cancel my booking?', category: 'Booking', order: 3, status: 'published' },
-  { id: '4', question: 'Do you provide visa assistance?', category: 'Services', order: 4, status: 'published' },
-  { id: '5', question: 'Is travel insurance included?', category: 'Services', order: 5, status: 'draft' },
-];
+interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+  category?: string;
+  order: number;
+  isPublished: boolean;
+}
+
+const emptyForm = {
+  question: '',
+  answer: '',
+  category: '',
+  order: 0,
+  isPublished: false,
+};
 
 export default function FaqsPage() {
+  const { listFaqs, createFaq, updateFaq, deleteFaq } = useApi();
+
+  const [faqs, setFaqs] = useState<FaqItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ ...emptyForm });
+  const [saving, setSaving] = useState(false);
+
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const fetchFaqs = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await listFaqs() as unknown as { items?: FaqItem[]; data?: FaqItem[] };
+      setFaqs((res.items ?? res.data ?? []) as FaqItem[]);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load FAQs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFaqs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const openAddModal = () => {
+    setEditingId(null);
+    setForm({ ...emptyForm });
+    setModalOpen(true);
+  };
+
+  const openEditModal = (f: FaqItem) => {
+    setEditingId(f.id);
+    setForm({
+      question: f.question,
+      answer: f.answer,
+      category: f.category ?? '',
+      order: f.order,
+      isPublished: f.isPublished,
+    });
+    setModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.question.trim() || !form.answer.trim()) return;
+    setSaving(true);
+    try {
+      const body = {
+        question: form.question.trim(),
+        answer: form.answer.trim(),
+        category: form.category.trim() || undefined,
+        order: form.order,
+        isPublished: form.isPublished,
+      };
+      if (editingId) {
+        await updateFaq(editingId, body);
+      } else {
+        await createFaq(body);
+      }
+      setModalOpen(false);
+      fetchFaqs();
+    } catch {
+      // keep modal open on error
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteFaq(deleteId);
+      setDeleteId(null);
+      fetchFaqs();
+    } catch {
+      // ignore
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="inline-block w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+          <p className="mt-4 text-gray-500 dark:text-gray-400">Loading FAQs...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input placeholder="Search FAQs..." className="pl-9 w-64" />
-        </div>
-        <Button size="md" className="gap-2"><Plus className="w-4 h-4" /> Add FAQ</Button>
+        <h1 className="text-xl font-bold flex items-center gap-2">
+          <HelpCircle className="w-5 h-5 text-brand-600" /> FAQs
+        </h1>
+        <button
+          onClick={openAddModal}
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition-all duration-200"
+        >
+          <Plus className="w-4 h-4" /> Add FAQ
+        </button>
       </div>
 
       <Card hover={false} padding="none">
@@ -30,7 +148,6 @@ export default function FaqsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
-                <th className="p-4 font-medium w-8" />
                 <th className="p-4 font-medium">Question</th>
                 <th className="p-4 font-medium">Category</th>
                 <th className="p-4 font-medium">Order</th>
@@ -39,25 +156,132 @@ export default function FaqsPage() {
               </tr>
             </thead>
             <tbody>
-              {faqs.map((f) => (
-                <tr key={f.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                  <td className="p-4"><GripVertical className="w-4 h-4 text-gray-400 cursor-grab" /></td>
-                  <td className="p-4 font-medium">{f.question}</td>
-                  <td className="p-4"><Badge variant="info">{f.category}</Badge></td>
-                  <td className="p-4">{f.order}</td>
-                  <td className="p-4"><Badge variant={f.status === 'published' ? 'success' : 'warning'}>{f.status}</Badge></td>
-                  <td className="p-4">
-                    <div className="flex gap-1">
-                      <button className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"><Pencil className="w-4 h-4" /></button>
-                      <button className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
-                    </div>
+              {faqs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-gray-400">
+                    No FAQs found
                   </td>
                 </tr>
-              ))}
+              ) : (
+                faqs.map((f) => (
+                  <tr key={f.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                    <td className="p-4 font-medium">{f.question}</td>
+                    <td className="p-4">
+                      {f.category ? (
+                        <Badge variant="info">{f.category}</Badge>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="p-4">{f.order}</td>
+                    <td className="p-4">
+                      <Badge variant={f.isPublished ? 'success' : 'warning'}>
+                        {f.isPublished ? 'Published' : 'Draft'}
+                      </Badge>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex gap-1">
+                        <button
+                          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"
+                          title="Edit"
+                          onClick={() => openEditModal(f)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
+                          title="Delete"
+                          onClick={() => setDeleteId(f.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </Card>
+
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editingId ? 'Edit FAQ' : 'Add FAQ'}
+      >
+        <FormField label="Question" required>
+          <FormInput
+            value={form.question}
+            onChange={(v) => setForm((f) => ({ ...f, question: v }))}
+            placeholder="e.g. How do I book a tour?"
+            required
+          />
+        </FormField>
+
+        <FormField label="Answer" required>
+          <textarea
+            value={form.answer}
+            onChange={(e) => setForm((f) => ({ ...f, answer: e.target.value }))}
+            placeholder="FAQ answer..."
+            rows={4}
+            className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none resize-none"
+            required
+          />
+        </FormField>
+
+        <FormField label="Category">
+          <FormInput
+            value={form.category}
+            onChange={(v) => setForm((f) => ({ ...f, category: v }))}
+            placeholder="e.g. Booking, Payments"
+          />
+        </FormField>
+
+        <FormField label="Order">
+          <input
+            type="number"
+            min={0}
+            value={form.order}
+            onChange={(e) => setForm((f) => ({ ...f, order: Math.max(0, Number(e.target.value) || 0) }))}
+            className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+          />
+        </FormField>
+
+        <label className="flex items-center gap-2 mb-6 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.isPublished}
+            onChange={(e) => setForm((f) => ({ ...f, isPublished: e.target.checked }))}
+            className="w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
+          />
+          <span className="text-sm font-medium">Published</span>
+        </label>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setModalOpen(false)}
+            className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !form.question.trim() || !form.answer.trim()}
+            className="px-4 py-2 text-sm rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
+          </button>
+        </div>
+      </Modal>
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        title="Delete FAQ"
+        message="Are you sure you want to delete this FAQ? This action cannot be undone."
+      />
     </div>
   );
 }

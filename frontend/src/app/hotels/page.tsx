@@ -1,15 +1,31 @@
+'use client';
+
 import { Section, Container } from '@/components/ui/section';
 import { HotelCard } from '@/components/features/hotels/hotel-card';
-
-const hotels = [
-  { id: '1', slug: 'bali-beach-resort', name: 'Bali Beach Resort & Spa', starRating: 5, pricePerNight: 299, destination: { name: 'Bali', country: 'Indonesia' }, amenities: ['Pool', 'Spa', 'Beachfront'] },
-  { id: '2', slug: 'dubai-marina-luxury', name: 'Dubai Marina Luxury Hotel', starRating: 5, pricePerNight: 499, destination: { name: 'Dubai', country: 'UAE' }, amenities: ['Spa', 'Infinity Pool', 'Fine Dining'] },
-  { id: '3', slug: 'paris-boutique-marais', name: 'Paris Boutique Hotel Le Marais', starRating: 4, pricePerNight: 249, destination: { name: 'Paris', country: 'France' }, amenities: ['WiFi', 'Breakfast', 'Terrace'] },
-  { id: '4', slug: 'maldives-overwater-villa', name: 'Maldives Overwater Villa Resort', starRating: 5, pricePerNight: 899, destination: { name: 'Maldives', country: 'Maldives' }, amenities: ['Overwater', 'Butler', 'Private Pool'] },
-  { id: '5', slug: 'tokyo-shinjuku-hotel', name: 'Tokyo Shinjuku Business Hotel', starRating: 3, pricePerNight: 149, destination: { name: 'Tokyo', country: 'Japan' }, amenities: ['WiFi', 'Metro Access', 'Co-Work'] },
-];
+import { useApi } from '@/hooks/use-api';
+import { useEffect, useState } from 'react';
+import type { Hotel } from '@/types';
 
 export default function HotelsPage() {
+  const { getHotels } = useApi();
+  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchHotels = async () => {
+      try {
+        const data: any = await getHotels();
+        setHotels(data.items ?? data ?? []);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load hotels');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHotels();
+  }, [getHotels]);
+
   return (
     <>
       <Section background="brand" className="pt-32 pb-24">
@@ -22,11 +38,26 @@ export default function HotelsPage() {
       </Section>
       <Section background="white">
         <Container>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {hotels.map((hotel) => (
-              <HotelCard key={hotel.id} {...hotel} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="text-center py-20">
+              <div className="inline-block w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+              <p className="mt-4 text-gray-500">Loading hotels...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-20">
+              <p className="text-red-500">{error}</p>
+            </div>
+          ) : hotels.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-gray-500 text-lg">No hotels available yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {hotels.map((hotel) => (
+                <HotelCard key={hotel.id} {...hotel} starRating={5} amenities={[]} />
+              ))}
+            </div>
+          )}
         </Container>
       </Section>
     </>

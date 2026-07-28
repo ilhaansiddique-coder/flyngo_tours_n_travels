@@ -1,70 +1,460 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
+import { formatCurrency } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '@/lib/utils';
-import { Search, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
+import { useEffect, useState } from 'react';
+import { Map, Search, Plus, Pencil, Trash2 } from 'lucide-react';
 
-const tours = [
-  { id: '1', title: 'Bali Paradise Explorer', destination: 'Bali, Indonesia', price: 1299, duration: 7, bookings: 42, status: 'active' },
-  { id: '2', title: 'Dubai Luxury Experience', destination: 'Dubai, UAE', price: 2499, duration: 5, bookings: 28, status: 'active' },
-  { id: '3', title: 'Paris Romantic Getaway', destination: 'Paris, France', price: 1899, duration: 5, bookings: 35, status: 'active' },
-  { id: '4', title: 'Bangkok Street Food & Culture', destination: 'Bangkok, Thailand', price: 899, duration: 5, bookings: 18, status: 'draft' },
-  { id: '5', title: 'Tokyo Tech & Tradition', destination: 'Tokyo, Japan', price: 2199, duration: 8, bookings: 22, status: 'active' },
-];
+interface Tour {
+  id: string;
+  title: string;
+  description?: string;
+  price: number;
+  duration: number;
+  maxGuests?: number;
+  difficulty?: string;
+  tourType?: string;
+  isFeatured?: boolean;
+  isActive?: boolean;
+  destinationId?: string;
+  destination?: { id: string; name: string };
+}
+
+interface Destination {
+  id: string;
+  name: string;
+}
+
+interface FormData {
+  title: string;
+  destinationId: string;
+  description: string;
+  price: string;
+  duration: string;
+  maxGuests: string;
+  difficulty: string;
+  tourType: string;
+  isFeatured: boolean;
+  isActive: boolean;
+}
+
+const initialForm: FormData = {
+  title: '',
+  destinationId: '',
+  description: '',
+  price: '',
+  duration: '',
+  maxGuests: '',
+  difficulty: 'moderate',
+  tourType: 'group',
+  isFeatured: false,
+  isActive: true,
+};
 
 export default function AdminToursPage() {
+  const { getTours, createTour, updateTour, deleteTour, getDestinations } = useApi();
+
+  const [tours, setTours] = useState<Tour[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [meta, setMeta] = useState<{ page: number; total: number; totalPages: number }>({
+    page: 1,
+    total: 0,
+    totalPages: 1,
+  });
+  const [search, setSearch] = useState('');
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingTour, setEditingTour] = useState<Tour | null>(null);
+  const [form, setForm] = useState<FormData>(initialForm);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string | null }>({
+    open: false,
+    id: null,
+  });
+
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+
+  const fetchTours = async (page?: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: Record<string, string> = { page: String(page ?? meta.page) };
+      if (search) params.search = search;
+      const res = await getTours(params);
+      const data = res as any;
+      setTours(Array.isArray(data) ? data : data?.data ?? []);
+      setMeta(data?.meta ?? { page: 1, total: 0, totalPages: 1 });
+    } catch (err: any) {
+      setError(err.message || 'Failed to load tours');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDestinations = async () => {
+    try {
+      const res = await getDestinations({ limit: '100' });
+      const data = res as any;
+      setDestinations(Array.isArray(data) ? data : data?.data ?? []);
+    } catch {
+      // silently fail
+    }
+  };
+
+  useEffect(() => {
+    fetchTours();
+    fetchDestinations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const openCreateModal = () => {
+    setEditingTour(null);
+    setForm(initialForm);
+    setModalOpen(true);
+  };
+
+  const openEditModal = (tour: Tour) => {
+    setEditingTour(tour);
+    setForm({
+      title: tour.title || '',
+      destinationId: tour.destinationId || tour.destination?.id || '',
+      description: tour.description || '',
+      price: String(tour.price ?? ''),
+      duration: String(tour.duration ?? ''),
+      maxGuests: String(tour.maxGuests ?? ''),
+      difficulty: tour.difficulty || 'moderate',
+      tourType: tour.tourType || 'group',
+      isFeatured: tour.isFeatured ?? false,
+      isActive: tour.isActive ?? true,
+    });
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const body = {
+        title: form.title,
+        destinationId: form.destinationId,
+        description: form.description,
+        price: Number(form.price),
+        duration: Number(form.duration),
+        maxGuests: form.maxGuests ? Number(form.maxGuests) : undefined,
+        difficulty: form.difficulty,
+        tourType: form.tourType,
+        isFeatured: form.isFeatured,
+        isActive: form.isActive,
+      };
+      if (editingTour) {
+        await updateTour(editingTour.id, body);
+      } else {
+        await createTour(body);
+      }
+      setModalOpen(false);
+      fetchTours(1);
+    } catch {
+      // error handled silently
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete.id) return;
+    try {
+      await deleteTour(confirmDelete.id);
+      setConfirmDelete({ open: false, id: null });
+      fetchTours();
+    } catch {
+      // error handled silently
+    }
+  };
+
+  const handleSearch = () => {
+    fetchTours(1);
+  };
+
+  const goToPage = (page: number) => {
+    const params: Record<string, string> = { page: String(page) };
+    if (search) params.search = search;
+    setLoading(true);
+    setError(null);
+    getTours(params)
+      .then((res: any) => {
+        setTours(Array.isArray(res) ? res : res?.data ?? []);
+        setMeta((res?.meta as typeof meta) ?? { page: 1, total: 0, totalPages: 1 });
+      })
+      .catch((err: any) => {
+        setError(err.message || 'Failed to load tours');
+      })
+      .finally(() => setLoading(false));
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input placeholder="Search tours..." className="pl-9 w-64" />
+          <Input
+            placeholder="Search tours..."
+            className="pl-9 w-64"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSearch();
+            }}
+          />
         </div>
-        <Button size="md" className="gap-2"><Plus className="w-4 h-4" /> Add Tour</Button>
+        <Button size="md" className="gap-2" onClick={openCreateModal}>
+          <Plus className="w-4 h-4" /> Add Tour
+        </Button>
       </div>
 
-      <Card hover={false} padding="none">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
-                <th className="p-4 font-medium">Tour</th>
-                <th className="p-4 font-medium">Destination</th>
-                <th className="p-4 font-medium">Price</th>
-                <th className="p-4 font-medium">Duration</th>
-                <th className="p-4 font-medium">Bookings</th>
-                <th className="p-4 font-medium">Status</th>
-                <th className="p-4 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tours.map((t) => (
-                <tr key={t.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                  <td className="p-4 font-medium">{t.title}</td>
-                  <td className="p-4 text-gray-500">{t.destination}</td>
-                  <td className="p-4 font-medium">{formatCurrency(t.price)}</td>
-                  <td className="p-4">{t.duration} days</td>
-                  <td className="p-4">{t.bookings}</td>
-                  <td className="p-4"><Badge variant={t.status === 'active' ? 'success' : 'warning'}>{t.status}</Badge></td>
-                  <td className="p-4">
-                    <div className="flex gap-1">
-                      <button className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600" title="Edit">
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600" title="Delete">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin h-8 w-8 border-4 border-brand-600 border-t-transparent rounded-full" />
         </div>
-      </Card>
+      )}
+
+      {error && !loading && (
+        <Card hover={false}>
+          <div className="text-center py-12">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button variant="outline" onClick={() => fetchTours()}>
+              Retry
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {!loading && !error && (
+        <>
+          <Card hover={false} padding="none">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
+                    <th className="p-4 font-medium">Title</th>
+                    <th className="p-4 font-medium">Destination</th>
+                    <th className="p-4 font-medium">Price</th>
+                    <th className="p-4 font-medium">Duration</th>
+                    <th className="p-4 font-medium">Status</th>
+                    <th className="p-4 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tours.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-12 text-center text-gray-500">
+                        <Map className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                        <p>No tours found</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    tours.map((t) => (
+                      <tr
+                        key={t.id}
+                        className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30"
+                      >
+                        <td className="p-4 font-medium">{t.title}</td>
+                        <td className="p-4 text-gray-500">{t.destination?.name || '\u2014'}</td>
+                        <td className="p-4 font-medium">{formatCurrency(t.price)}</td>
+                        <td className="p-4">{t.duration} days</td>
+                        <td className="p-4">
+                          <Badge variant={t.isActive ? 'success' : 'default'}>
+                            {t.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex gap-1">
+                            <button
+                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"
+                              title="Edit"
+                              onClick={() => openEditModal(t)}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
+                              title="Delete"
+                              onClick={() => setConfirmDelete({ open: true, id: t.id })}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {meta.totalPages > 1 && (
+            <div className="flex items-center justify-between text-sm text-gray-500">
+              <span>
+                Showing {tours.length} of {meta.total} tours
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={meta.page <= 1}
+                  onClick={() => goToPage(meta.page - 1)}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={meta.page >= meta.totalPages}
+                  onClick={() => goToPage(meta.page + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editingTour ? 'Edit Tour' : 'Add Tour'}
+      >
+        <form onSubmit={handleSubmit}>
+          <FormField label="Title" required>
+            <FormInput
+              value={form.title}
+              onChange={(v) => setForm({ ...form, title: v })}
+              placeholder="Tour title"
+              required
+            />
+          </FormField>
+
+          <FormField label="Destination" required>
+            <FormSelect
+              value={form.destinationId}
+              onChange={(v) => setForm({ ...form, destinationId: v })}
+              placeholder="Select destination"
+              options={destinations.map((d) => ({ label: d.name, value: d.id }))}
+            />
+          </FormField>
+
+          <FormField label="Description">
+            <FormTextarea
+              value={form.description}
+              onChange={(v) => setForm({ ...form, description: v })}
+              placeholder="Tour description"
+              rows={3}
+            />
+          </FormField>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Price" required>
+              <FormInput
+                type="number"
+                value={form.price}
+                onChange={(v) => setForm({ ...form, price: v })}
+                placeholder="0"
+                required
+              />
+            </FormField>
+            <FormField label="Duration (days)" required>
+              <FormInput
+                type="number"
+                value={form.duration}
+                onChange={(v) => setForm({ ...form, duration: v })}
+                placeholder="0"
+                required
+              />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Max Guests">
+              <FormInput
+                type="number"
+                value={form.maxGuests}
+                onChange={(v) => setForm({ ...form, maxGuests: v })}
+                placeholder="Optional"
+              />
+            </FormField>
+            <FormField label="Difficulty">
+              <FormSelect
+                value={form.difficulty}
+                onChange={(v) => setForm({ ...form, difficulty: v })}
+                options={[
+                  { label: 'Easy', value: 'easy' },
+                  { label: 'Moderate', value: 'moderate' },
+                  { label: 'Challenging', value: 'challenging' },
+                ]}
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Tour Type">
+            <FormSelect
+              value={form.tourType}
+              onChange={(v) => setForm({ ...form, tourType: v })}
+              options={[
+                { label: 'Group', value: 'group' },
+                { label: 'Private', value: 'private' },
+                { label: 'Adventure', value: 'adventure' },
+                { label: 'Luxury', value: 'luxury' },
+              ]}
+            />
+          </FormField>
+
+          <div className="flex items-center gap-6 mb-4">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.isFeatured}
+                onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })}
+                className="rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
+              />
+              Featured
+            </label>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                className="rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
+              />
+              Active
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <Button variant="outline" type="button" onClick={() => setModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={submitting}>
+              {editingTour ? 'Update' : 'Create'} Tour
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        onClose={() => setConfirmDelete({ open: false, id: null })}
+        onConfirm={handleDelete}
+        title="Delete Tour"
+        message="Are you sure you want to delete this tour? This action cannot be undone."
+      />
     </div>
   );
 }

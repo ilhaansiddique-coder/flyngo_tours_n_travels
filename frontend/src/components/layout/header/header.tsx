@@ -46,7 +46,8 @@ export function Header() {
               alt="Fly&Go"
               width={120}
               height={48}
-              className="rounded-xl object-cover"
+              priority
+              className="rounded-xl object-cover w-auto h-auto"
             />
           </Link>
           <nav className="hidden md:flex gap-8">

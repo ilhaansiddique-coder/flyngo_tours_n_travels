@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { CommonModule } from './common/common.module';
@@ -18,6 +18,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
+import { TenantMiddleware } from './common/middleware/tenant.middleware';
 
 @Module({
   imports: [
@@ -42,4 +43,8 @@ import { HealthModule } from './modules/health/health.module';
     HealthModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TenantMiddleware).forRoutes('*');
+  }
+}

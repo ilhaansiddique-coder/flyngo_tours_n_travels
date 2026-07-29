@@ -1,30 +1,11 @@
-# Coolify Docker Compose override
-# - Drops bundled nginx (Coolify/Traefik handles TLS)
-# - Drops bundled postgres/redis/meilisearch (use Coolify Services instead)
-# - Removes backend depends_on for the dropped services
-# - Traefik labels are intentionally OMITTED: Coolify adds them automatically
-#   when you set FQDNs in the Resource UI (one per service).
-# - Set FQDNs in Coolify UI after deploy:
-#     backend  → http(s)://backend.<your-coolify-domain>
-#     frontend → http(s)://<your-coolify-domain>
-
 services:
-  nginx:
-    deploy:
-      remove: true
-  postgres:
-    deploy:
-      remove: true
-  redis:
-    deploy:
-      remove: true
-  meilisearch:
-    deploy:
-      remove: true
-
   backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: flyngo/backend:latest
+    container_name: flyngo-backend
     restart: always
-    depends_on: []
     environment:
       NODE_ENV: production
       BACKEND_HOST: 0.0.0.0
@@ -76,7 +57,15 @@ services:
       start_period: 30s
 
   frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: flyngo/frontend:latest
+    container_name: flyngo-frontend
     restart: always
+    depends_on:
+      backend:
+        condition: service_started
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"

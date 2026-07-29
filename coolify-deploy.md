@@ -42,11 +42,12 @@ Coolify → **Projects** → `+ New` → `flyngo` → **+ New Resource** → **D
 - **Git Repo:** `ilhaansiddique-coder/flyngo_tours_n_travels`
 - **Branch:** `main`
 - **Base Directory:** *(leave empty)*
-- **Docker Compose Location:** `docker-compose.yml`
-- **Docker Compose Additional Locations:** `docker-compose.coolify.yml`
+- **Docker Compose Location:** `docker-compose.coolify.yml`  (this file defines only `backend` + `frontend`; Postgres/Redis/Meili are separate Coolify Services)
 - **Build Pack:** Docker Compose (NOT Dockerfile)
 
 Each service already has its own `Dockerfile` inside its folder, so Coolify's default build context works without any custom paths.
+
+> Note: the older `docker-compose.yml` (with bundled nginx + db + redis + meili) is for local dev only. On Coolify we use the standalone `docker-compose.coolify.yml` because `deploy.remove` overrides are ignored by Compose and cause silent deploy failures.
 
 ### 4. Set FQDNs on services
 After the resource is created, click each service:
@@ -82,6 +83,7 @@ Coolify → Resource → **Webhooks** → copy the URL → GitHub repo → Setti
 | Symptom | Fix |
 |---|---|
 | `failed to read dockerfile: open Dockerfile: no such file or directory` | Build Pack must be **Docker Compose**, not Dockerfile. |
+| Stack never builds, no `flyngo-*` containers appear | `Docker Compose Location` is set to `docker-compose.yml` (which has the override pattern). Switch it to `docker-compose.coolify.yml` only — that file is standalone with just `backend` + `frontend`. |
 | Frontend build fails: `Cannot find module '.next/standalone/server.js'` | `next.config.ts` missing `output: 'standalone'`. Already added in this repo. |
 | Backend can't reach `flyngo-db` / `flyngo-redis` / `flyngo-meili` | Use the Coolify service hostnames exactly. Internal DNS only works inside Coolify's network. |
 | TLS not issuing | Domain DNS not yet propagated, or FQDN in resource doesn't match. Wait 5-10 min after DNS. |

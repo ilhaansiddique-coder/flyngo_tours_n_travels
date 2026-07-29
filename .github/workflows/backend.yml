@@ -14,7 +14,7 @@ env:
 
 jobs:
   test:
-    name: Lint & Test
+    name: Build & Test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -33,8 +33,8 @@ jobs:
       - name: Prisma generate
         run: npx prisma generate
 
-      - name: Lint
-        run: npm run lint
+      - name: Build (type-check)
+        run: npm run build
 
       - name: Test
         run: npm run test

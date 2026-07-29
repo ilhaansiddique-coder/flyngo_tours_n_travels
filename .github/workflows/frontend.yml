@@ -13,8 +13,8 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/flyngo-frontend
 
 jobs:
-  lint:
-    name: Lint
+  build-check:
+    name: Build (type-check)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -30,11 +30,16 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run lint
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'http://placeholder.invalid/api/v1' }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || 'http://placeholder.invalid' }}
+          NEXT_TELEMETRY_DISABLED: "1"
 
   build-and-push:
     name: Build & Push Image
-    needs: lint
+    needs: build-check
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface AuthState {
   accessToken: string | null;
@@ -17,6 +17,22 @@ interface AuthState {
   isAuthenticated: () => boolean;
 }
 
+const cookieStorage = {
+  getItem: (name: string): string | null => {
+    if (typeof document === 'undefined') return null;
+    const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : null;
+  },
+  setItem: (name: string, value: string): void => {
+    if (typeof document === 'undefined') return;
+    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=86400; SameSite=Lax`;
+  },
+  removeItem: (name: string): void => {
+    if (typeof document === 'undefined') return;
+    document.cookie = `${name}=; path=/; max-age=0`;
+  },
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -30,6 +46,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'flyngo-auth',
+      storage: createJSONStorage(() => cookieStorage),
     },
   ),
 );

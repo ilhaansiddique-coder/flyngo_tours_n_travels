@@ -23,7 +23,7 @@ export function Footer() {
               alt="Fly&Go"
               width={120}
               height={40}
-              className="rounded-lg object-cover"
+              className="rounded-lg object-cover w-auto h-auto"
             />
           </Link>
           <p className="text-xs text-white/60">&copy; {new Date().getFullYear()} Fly&Go Travel. High Velocity Luxury.</p>

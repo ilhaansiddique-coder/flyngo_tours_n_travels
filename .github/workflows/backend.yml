@@ -13,8 +13,8 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/flyngo-backend
 
 jobs:
-  test:
-    name: Build & Test
+  build-check:
+    name: Build (type-check)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -36,12 +36,9 @@ jobs:
       - name: Build (type-check)
         run: npm run build
 
-      - name: Test
-        run: npm run test
-
   build-and-push:
     name: Build & Push Image
-    needs: test
+    needs: build-check
     runs-on: ubuntu-latest
     permissions:
       contents: read

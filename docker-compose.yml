@@ -2,7 +2,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: ../backend.Dockerfile
+      dockerfile: Dockerfile
     container_name: flyngo-backend
     environment:
       NODE_ENV: production
@@ -22,7 +22,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: ../frontend.Dockerfile
+      dockerfile: Dockerfile
     container_name: flyngo-frontend
     ports:
       - '3000:3000'

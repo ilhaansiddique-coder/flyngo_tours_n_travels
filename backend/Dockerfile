@@ -2,9 +2,11 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
+COPY .npmrc package.json package-lock.json* ./
+RUN npm ci --no-audit --no-fund
+
 COPY prisma ./prisma
-RUN npm install --no-audit --no-fund
+RUN npx prisma generate
 
 COPY . .
 RUN npm run build
@@ -16,13 +18,19 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 WORKDIR /app
 
+COPY --from=builder /app/package.json /app/package-lock.json ./
+RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
+
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json .
-COPY prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/prisma ./prisma
+COPY docker-entrypoint.sh ./
+
+RUN chmod +x docker-entrypoint.sh
 
 USER nestjs
 
 EXPOSE 4000
 
-CMD ["node", "dist/main"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

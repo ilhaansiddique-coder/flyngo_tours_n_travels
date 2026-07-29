@@ -54,6 +54,8 @@ async function bootstrap() {
   const port = configService.get('BACKEND_PORT') || 4000;
   await app.listen(port, configService.get('BACKEND_HOST') || '0.0.0.0');
 
+  app.enableShutdownHooks();
+
   logger.log(`Server running on http://localhost:${port}`);
   logger.log(`Swagger docs at http://localhost:${port}/api/docs`);
 }

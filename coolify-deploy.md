@@ -33,13 +33,18 @@ Create these:
 |---|---|
 | `NEXT_PUBLIC_API_URL` | `https://api.flyngo.world/api/v1` |
 | `NEXT_PUBLIC_SITE_URL` | `https://flyngo.world` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` *(optional)* |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | *(optional)* |
 | `NEXT_PUBLIC_GA4_ID` | `G-XXXXXXX` *(optional)* |
 | `NEXT_PUBLIC_GTM_ID` | `GTM-XXXXXXX` *(optional)* |
 | `NEXT_PUBLIC_META_PIXEL_ID` | *(optional)* |
 | `NEXT_PUBLIC_TIKTOK_PIXEL_ID` | *(optional)* |
 | `NEXT_PUBLIC_CLARITY_ID` | *(optional)* |
+| `COOLIFY_DEPLOY_WEBHOOK` | `https://<your-coolify>/webhooks/deploy/<uuid>` |
 
-`NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_SITE_URL` are **required** for the frontend build to bake in the right API base.
+`NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_SITE_URL` are **required** for the frontend build.
+`COOLIFY_DEPLOY_WEBHOOK` enables **instant auto-deploy** — Coolify redeploys the
+moment GitHub Actions finishes pushing the new image.
 
 ### 2. Make ghcr.io packages public (one click per package)
 
@@ -86,18 +91,12 @@ Resource → **Environment Variables** → paste from `.env.coolify.example` and
 
 1. Push code to `main`
 2. GitHub Actions builds both images (~3-5 min). Watch progress at **Actions** tab
-3. Coolify auto-deploys on webhook (if configured) or click **Deploy** manually
-4. Pull fresh images, restart containers — total downtime ~5 seconds
+3. CI triggers the Coolify deploy webhook automatically — Coolify pulls the new image and redeploys
+4. On startup, the backend auto-runs `prisma migrate deploy` — no manual migration step needed
+5. Total downtime: ~5 seconds per service
 
-## First-run Prisma migration
-
-After the first successful deploy:
-
-```bash
-docker exec -it flyngo-backend npx prisma migrate deploy
-# optionally seed
-docker exec -it flyngo-backend npx prisma db seed
-```
+> **No webhook yet?** Set `COOLIFY_DEPLOY_WEBHOOK` in GitHub Actions Variables (step 1).
+> Until then, click **Deploy** manually in Coolify after the CI build finishes.
 
 ## Rollback
 
@@ -115,6 +114,8 @@ docker exec -it flyngo-backend npx prisma db seed
 | Frontend shows wrong API URL | `NEXT_PUBLIC_API_URL` is baked at build time. Update the GitHub Variable, re-run the workflow, redeploy. |
 | 404 page not found (Traefik) | FQDN not set on the service in Coolify, or container crashed. Check `docker ps` and the Coolify service logs. |
 | Backend can't reach `flyngo-db` | Confirm the Service name in Coolify is exactly `flyngo-db` — that's the internal DNS name. |
+| Auto-deploy not triggering | Get your deploy webhook URL from Coolify → Resource → Deploy Webhooks → copy URL → paste as `COOLIFY_DEPLOY_WEBHOOK` in GitHub Actions Variables. |
+| Prisma migration fails on startup | Check container logs: `docker logs flyngo-backend`. Ensure `DATABASE_URL` is correct. |
 
 ## Local development
 

@@ -32,8 +32,8 @@ backend/test/**/*.js
 .DS_Store
 Thumbs.db
 
-# Prisma
-backend/prisma/migrations/
+# Prisma — migrations ARE committed (required for production deploy)
+# backend/prisma/migrations/  ← removed: migrations must be tracked in git
 
 # Docker
 infrastructure/docker/volumes/

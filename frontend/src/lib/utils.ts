@@ -25,5 +25,5 @@ export function absoluteUrl(path: string): string {
 }
 
 export function apiUrl(path: string): string {
-  return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1'}${path}`;
+  return `/api/v1${path}`;
 }

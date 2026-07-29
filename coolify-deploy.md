@@ -33,7 +33,6 @@ Create these:
 
 | Variable | Example |
 |---|---|
-| `NEXT_PUBLIC_API_URL` | `https://api.flyngo.world/api/v1` |
 | `NEXT_PUBLIC_SITE_URL` | `https://flyngo.world` |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` *(optional)* |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | *(optional)* |

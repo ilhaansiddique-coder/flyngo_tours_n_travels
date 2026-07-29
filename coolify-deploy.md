@@ -1,89 +1,121 @@
 # Flyngo — Coolify Deployment
 
-## Project layout
+## Architecture
+
 ```
-flyngo_tours_n_travels/
-├── backend/
-│   ├── Dockerfile
-│   └── ...
-├── frontend/
-│   ├── Dockerfile
-│   └── ...
-├── docker-compose.yml
-├── docker-compose.coolify.yml
-└── .env.coolify.example
+git push origin main
+        │
+        ▼
+GitHub Actions ──┬─ backend.yml  → build & push ghcr.io/.../flyngo-backend:main
+                 └─ frontend.yml → build & push ghcr.io/.../flyngo-frontend:main
+        │
+        ▼
+Coolify (on the server)
+   ├─ Resource: flyngo (Docker Compose)   ← docker-compose.coolify.yml
+   │   └─ pulls ghcr.io images, runs containers
+   ├─ Service: flyngo-db    (PostgreSQL 16)
+   ├─ Service: flyngo-redis (Redis 7)
+   └─ Service: flyngo-meili (Meilisearch 1.12)
 ```
 
-## Files
-- `docker-compose.yml` — base stack (Postgres + Redis + Meili + backend + frontend + nginx). Used for local dev and as the Coolify base.
-- `docker-compose.coolify.yml` — override: drops bundled Postgres/Redis/Meili; injects env from Coolify. Coolify adds Traefik labels automatically when you set FQDNs in the UI.
-- `.env.coolify.example` — env template to paste into Coolify.
+**Build ≠ Run.** GitHub Actions builds and pushes images on every push. Coolify
+just pulls and runs them. This eliminates every "Coolify can't build this compose
+file" class of bug permanently.
 
-## Why one Docker Compose stack, not two Applications
-- `depends_on` ordering only works inside one compose project
-- Env vars are declared in one place
-- Internal service DNS works automatically
-- The override file pattern is what Coolify's "Additional Compose Locations" field is designed for
+## One-time setup
 
-## Coolify Setup
+### 1. GitHub — set workflow variables
 
-### 1. Provision stateful services
+Repo → **Settings** → **Secrets and variables** → **Actions** → **Variables** tab.
+Create these:
+
+| Variable | Example |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | `https://api.flyngo.world/api/v1` |
+| `NEXT_PUBLIC_SITE_URL` | `https://flyngo.world` |
+| `NEXT_PUBLIC_GA4_ID` | `G-XXXXXXX` *(optional)* |
+| `NEXT_PUBLIC_GTM_ID` | `GTM-XXXXXXX` *(optional)* |
+| `NEXT_PUBLIC_META_PIXEL_ID` | *(optional)* |
+| `NEXT_PUBLIC_TIKTOK_PIXEL_ID` | *(optional)* |
+| `NEXT_PUBLIC_CLARITY_ID` | *(optional)* |
+
+`NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_SITE_URL` are **required** for the frontend build to bake in the right API base.
+
+### 2. Make ghcr.io packages public (one click per package)
+
+After the first workflow run pushes an image, visit:
+- https://github.com/ilhaansiddique-coder?tab=packages → `flyngo-backend` → **Package settings** → **Change visibility** → **Public**
+- Same for `flyngo-frontend`
+
+This lets Coolify pull without a registry token. (Alternative: add a GitHub Personal Access Token to Coolify as a registry credential and keep images private.)
+
+### 3. Coolify — provision stateful services
+
 Coolify → `+ Add` → **Service** (one each):
-- **PostgreSQL 16** — name `flyngo-db`, env `POSTGRES_USER=flyngo`, `POSTGRES_PASSWORD=...`, `POSTGRES_DB=flyngo`, persistent storage `/var/lib/postgresql/data`.
-- **Redis 7** — name `flyngo-redis`, persistent storage `/data`, set `REDIS_PASSWORD`.
-- **Meilisearch v1.12** — name `flyngo-meili`, env `MEILI_MASTER_KEY=...`, persistent storage `/meili_data`.
+- **PostgreSQL 16** — name `flyngo-db`, env `POSTGRES_USER=flyngo`, `POSTGRES_PASSWORD=...`, `POSTGRES_DB=flyngo`, persistent volume on `/var/lib/postgresql/data`
+- **Redis 7** — name `flyngo-redis`, persistent volume on `/data`, set `REDIS_PASSWORD`
+- **Meilisearch v1.12** — name `flyngo-meili`, env `MEILI_MASTER_KEY=...`, persistent volume on `/meili_data`
 
-### 2. Point domain DNS
-- `flyngo.world` → `A` record → `<COOLIFY_SERVER_IP>`
-- `api.flyngo.world` → `A` record → `<COOLIFY_SERVER_IP>`
+### 4. Coolify — add the app resource
 
-### 3. Add the project
-Coolify → **Projects** → `+ New` → `flyngo` → **+ New Resource** → **Docker Compose**:
+**Projects** → `+ New` → `flyngo` → **+ New Resource** → **Docker Compose**:
 - **Git Repo:** `ilhaansiddique-coder/flyngo_tours_n_travels`
 - **Branch:** `main`
-- **Base Directory:** *(leave empty)*
-- **Docker Compose Location:** `docker-compose.coolify.yml`  (this file defines only `backend` + `frontend`; Postgres/Redis/Meili are separate Coolify Services)
-- **Build Pack:** Docker Compose (NOT Dockerfile)
+- **Base Directory:** *(empty)*
+- **Docker Compose Location:** `docker-compose.coolify.yml`
+- **Build Pack:** Docker Compose
 
-Each service already has its own `Dockerfile` inside its folder, so Coolify's default build context works without any custom paths.
+### 5. Coolify — set FQDNs on each service
 
-> Note: the older `docker-compose.yml` (with bundled nginx + db + redis + meili) is for local dev only. On Coolify we use the standalone `docker-compose.coolify.yml` because `deploy.remove` overrides are ignored by Compose and cause silent deploy failures.
+Click the resource, then each service:
+- `frontend` → FQDN: `https://flyngo.world` (or your sslip.io URL while testing)
+- `backend` → FQDN: `https://api.flyngo.world` (or matching sslip.io URL)
 
-### 4. Set FQDNs on services
-After the resource is created, click each service:
-- `frontend` → FQDN: `https://flyngo.world`
-- `backend` → FQDN: `https://api.flyngo.world`
+Coolify adds Traefik labels and TLS automatically.
 
-Coolify adds the Traefik labels and TLS for you.
+### 6. Coolify — environment variables
 
-### 5. Environment variables
-Coolify → Resource → **Environment Variables** → paste from `.env.coolify.example`, fill real values. Generate JWT secrets with:
+Resource → **Environment Variables** → paste from `.env.coolify.example` and fill real values:
+- `DATABASE_URL` — `postgresql://flyngo:<password>@flyngo-db:5432/flyngo?schema=public`
+- `REDIS_HOST=flyngo-redis`, `REDIS_PASSWORD=...`
+- `MEILISEARCH_HOST=http://flyngo-meili:7700`, `MEILISEARCH_API_KEY=...`
+- `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` — `openssl rand -hex 32` each
+- `FRONTEND_URL`, `ADMIN_URL`, plus the rest as needed
+
+## Deploy flow (every release)
+
+1. Push code to `main`
+2. GitHub Actions builds both images (~3-5 min). Watch progress at **Actions** tab
+3. Coolify auto-deploys on webhook (if configured) or click **Deploy** manually
+4. Pull fresh images, restart containers — total downtime ~5 seconds
+
+## First-run Prisma migration
+
+After the first successful deploy:
+
 ```bash
-openssl rand -hex 32
+docker exec -it flyngo-backend npx prisma migrate deploy
+# optionally seed
+docker exec -it flyngo-backend npx prisma db seed
 ```
 
-### 6. Deploy
-Click **Deploy**. Watch logs. If the frontend build fails on `.next/standalone` being missing, `output: 'standalone'` must be set in `frontend/next.config.ts` (already added).
+## Rollback
 
-### 7. First-run Prisma migration
-After first successful build, open the **backend** container → **Exec**:
 ```bash
-npx prisma migrate deploy
+# in Coolify, edit docker-compose.coolify.yml tag from :main to :sha-<commit>
+# or use the Coolify "Rollback" UI to redeploy the previous image tag
 ```
-Optionally seed:
-```bash
-npx prisma db seed
-```
-
-### 8. Auto-deploy on push
-Coolify → Resource → **Webhooks** → copy the URL → GitHub repo → Settings → Webhooks → Add. Event: `Just the push event`.
 
 ## Common issues
 
 | Symptom | Fix |
 |---|---|
-| `failed to read dockerfile: open Dockerfile: no such file or directory` | Build Pack must be **Docker Compose**, not Dockerfile. |
-| Stack never builds, no `flyngo-*` containers appear | `Docker Compose Location` is set to `docker-compose.yml` (which has the override pattern). Switch it to `docker-compose.coolify.yml` only — that file is standalone with just `backend` + `frontend`. |
-| Frontend build fails: `Cannot find module '.next/standalone/server.js'` | `next.config.ts` missing `output: 'standalone'`. Already added in this repo. |
-| Backend can't reach `flyngo-db` / `flyngo-redis` / `flyngo-meili` | Use the Coolify service hostnames exactly. Internal DNS only works inside Coolify's network. |
-| TLS not issuing | Domain DNS not yet propagated, or FQDN in resource doesn't match. Wait 5-10 min after DNS. |
+| Workflow fails at "Login to GitHub Container Registry" | Confirm `packages: write` permission is on the job (already set). If still failing, check that the repo's workflow permissions allow packages write (Settings → Actions → General → Workflow permissions → Read and write). |
+| Coolify can't pull image | Make packages public (step 2) or add a GitHub PAT to Coolify's registry credentials. |
+| Frontend shows wrong API URL | `NEXT_PUBLIC_API_URL` is baked at build time. Update the GitHub Variable, re-run the workflow, redeploy. |
+| 404 page not found (Traefik) | FQDN not set on the service in Coolify, or container crashed. Check `docker ps` and the Coolify service logs. |
+| Backend can't reach `flyngo-db` | Confirm the Service name in Coolify is exactly `flyngo-db` — that's the internal DNS name. |
+
+## Local development
+
+`docker-compose.yml` (the original) is for local dev. It bundles Postgres, Redis, Meili, backend, frontend, and nginx — run `docker compose up -d` and you have the full stack at `localhost:3000` / `localhost:4000`. The Coolify file is for production only.

@@ -1,9 +1,13 @@
+# Flyngo — Coolify runtime stack
+#
+# Images are built and pushed to ghcr.io by GitHub Actions on every push to main.
+# Coolify pulls them; no build happens on the server. Stateless services only —
+# Postgres, Redis, Meilisearch are separate Coolify Services with hostnames:
+#   flyngo-db, flyngo-redis, flyngo-meili
+
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    image: flyngo/backend:latest
+    image: ghcr.io/ilhaansiddique-coder/flyngo-backend:main
     container_name: flyngo-backend
     restart: always
     environment:
@@ -57,26 +61,12 @@ services:
       start_period: 30s
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    image: flyngo/frontend:latest
+    image: ghcr.io/ilhaansiddique-coder/flyngo-frontend:main
     container_name: flyngo-frontend
     restart: always
     depends_on:
       backend:
         condition: service_started
-    environment:
-      NODE_ENV: production
-      NEXT_TELEMETRY_DISABLED: "1"
-      PORT: "3000"
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
-      NEXT_PUBLIC_GA4_ID: ${NEXT_PUBLIC_GA4_ID:-}
-      NEXT_PUBLIC_GTM_ID: ${NEXT_PUBLIC_GTM_ID:-}
-      NEXT_PUBLIC_META_PIXEL_ID: ${NEXT_PUBLIC_META_PIXEL_ID:-}
-      NEXT_PUBLIC_TIKTOK_PIXEL_ID: ${NEXT_PUBLIC_TIKTOK_PIXEL_ID:-}
-      NEXT_PUBLIC_CLARITY_ID: ${NEXT_PUBLIC_CLARITY_ID:-}
     healthcheck:
       test: ['CMD-SHELL', 'wget --spider -q http://localhost:3000/ || exit 1']
       interval: 30s

@@ -170,11 +170,9 @@ export default function UsersPage() {
       .toUpperCase();
 
   const getRolePermissions = (role: Role): string[] => {
-    if (role.permissions) return role.permissions.map((p) => p.permission.code);
-    const permMap = permissionsList.reduce(
-      (acc, p) => ({ ...acc, [p.id]: p.code }),
-      {} as Record<string, string>,
-    );
+    if (role.permissions && role.permissions.length > 0) {
+      return role.permissions.map((p) => p.permission.code);
+    }
     return [];
   };
 

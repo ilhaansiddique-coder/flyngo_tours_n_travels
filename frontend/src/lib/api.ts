@@ -28,7 +28,19 @@ class ApiClient {
     }
 
     const json = await response.json();
-    return json.data ?? json;
+    const unwrapped = json.data ?? json;
+
+    if (
+      unwrapped &&
+      typeof unwrapped === 'object' &&
+      !Array.isArray(unwrapped) &&
+      Array.isArray(unwrapped.items) &&
+      unwrapped.meta
+    ) {
+      return { data: unwrapped.items, meta: unwrapped.meta } as T;
+    }
+
+    return unwrapped as T;
   }
 
   get<T>(endpoint: string, options?: FetchOptions): Promise<T> {

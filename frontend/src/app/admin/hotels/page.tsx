@@ -89,7 +89,7 @@ export default function AdminHotelsPage() {
       const res = await fetch(`${API_BASE}/hotels?${params}`, { headers: authHeaders() });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || 'Failed to fetch hotels');
-      setHotels(json.data ?? []);
+      setHotels(json.data ?? json.items ?? []);
       if (json.meta) setMeta(json.meta);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -104,7 +104,7 @@ export default function AdminHotelsPage() {
       const res = await fetch(`${API_BASE}/destinations?limit=1000`, { headers: authHeaders() });
       const json = await res.json();
       if (res.ok) {
-        setDestinations(json.data ?? []);
+        setDestinations(json.data ?? json.items ?? []);
       }
     } catch {
       // non-critical

@@ -30,14 +30,17 @@ export class AdminService {
       totalCustomers: customerCount,
       totalRevenue: revenueResult._sum.amount || 0,
       conversionRate: totalUsers > 0 ? ((totalBookings / totalUsers) * 100).toFixed(1) : '0',
-      bookingsByStatus: bookingsByStatus.map((b) => ({ status: b.status, count: b._count.id })),
+      bookingsByStatus: bookingsByStatus.reduce(
+        (acc: Record<string, number>, b) => ({ ...acc, [b.status]: b._count.id }),
+        {},
+      ),
       monthlyRevenue,
       recentBookings,
     };
   }
 
   private async getMonthlyRevenue(tenantId: string) {
-    const months: { month: string; year: number; revenue: number }[] = [];
+    const months: { month: number; year: number; revenue: number }[] = [];
     for (let i = 11; i >= 0; i--) {
       const start = new Date();
       start.setMonth(start.getMonth() - i, 1);
@@ -51,7 +54,7 @@ export class AdminService {
       });
 
       months.push({
-        month: start.toLocaleString('default', { month: 'short' }),
+        month: start.getMonth() + 1,
         year: start.getFullYear(),
         revenue: Number(result._sum.amount || 0),
       });

@@ -30,8 +30,15 @@ export class BookingController {
   @Get('admin/all')
   @Roles('admin', 'super_admin')
   @ApiOperation({ summary: 'List all bookings (admin)' })
-  async listAllBookings(@CurrentTenantId() tenantId: string, @Query('page') page?: string) {
-    return this.bookingService.listAllBookings(tenantId, parseInt(page || '1', 10));
+  async listAllBookings(
+    @CurrentTenantId() tenantId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('per_page') perPage?: string,
+  ) {
+    const pageNum = parseInt(page || '1', 10);
+    const limitNum = parseInt(limit || perPage || '20', 10);
+    return this.bookingService.listAllBookings(tenantId, pageNum, limitNum);
   }
 
   @Get(':id')

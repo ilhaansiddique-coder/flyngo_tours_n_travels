@@ -71,8 +71,8 @@ export default function AdminFlightsPage() {
     setError('');
     try {
       const res: any = await getFlights({ page: String(page), limit: String(meta.limit) });
-      if (res && res.data) {
-        setFlights(res.data);
+      if (res && (res.data || res.items)) {
+        setFlights(res.data ?? res.items);
         if (res.meta) setMeta(res.meta);
       } else if (Array.isArray(res)) {
         setFlights(res);

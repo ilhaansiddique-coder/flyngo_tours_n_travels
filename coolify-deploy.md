@@ -121,9 +121,11 @@ These override the defaults in `docker-compose.yml`.
 ## Local development
 
 ```bash
-# Full stack with pre-built images (requires ghcr.io access):
-docker compose up -d
+# Option 1: Root-level single command (needs local Postgres + Redis)
+npm run dev             # starts backend + frontend in watch mode
 
-# Full stack building from source:
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
+# Option 2: Full Docker stack (Postgres, Redis, Meilisearch included)
+npm run docker:dev      # build from source, start everything
+npm run docker:up       # pull pre-built images from ghcr.io
+npm run docker:down     # stop everything
 ```

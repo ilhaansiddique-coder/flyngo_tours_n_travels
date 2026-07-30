@@ -17,11 +17,19 @@ async function bootstrap() {
   app.use(helmet());
   app.use(cookieParser());
 
+  const corsOrigins = [
+    configService.get('FRONTEND_URL') || 'http://localhost:3000',
+    configService.get('ADMIN_URL') || 'http://localhost:3001',
+  ];
+
   app.enableCors({
-    origin: [
-      configService.get('FRONTEND_URL') || 'http://localhost:3000',
-      configService.get('ADMIN_URL') || 'http://localhost:3001',
-    ],
+    origin: (origin, callback) => {
+      if (!origin || corsOrigins.includes(origin) || corsOrigins.includes('*')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id'],

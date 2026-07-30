@@ -71,6 +71,8 @@ services:
     image: ghcr.io/ilhaansiddique-coder/flyngo-frontend:main
     container_name: flyngo-frontend
     restart: always
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://backend:4000}
     ports:
       - '3000:3000'
     depends_on:

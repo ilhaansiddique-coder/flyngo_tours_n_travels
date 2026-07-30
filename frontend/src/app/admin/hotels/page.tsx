@@ -6,11 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
-import { useAuthStore } from '@/stores/auth.store';
 import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
 import { Building2, Plus, Pencil, Trash2, Star, Search } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const LIMIT = 10;
 
 interface Destination {
@@ -54,8 +52,7 @@ const defaultForm = {
 };
 
 export default function AdminHotelsPage() {
-  const { createHotel, updateHotel, deleteHotel, getDestinations } = useApi();
-  const accessToken = useAuthStore((s) => s.accessToken);
+  const { getHotels, createHotel, updateHotel, deleteHotel, getDestinations } = useApi();
 
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
@@ -74,25 +71,18 @@ export default function AdminHotelsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const authHeaders = (): Record<string, string> => {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
-    return headers;
-  };
-
   const fetchHotels = async (pageNum = 1) => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
-      const params = new URLSearchParams({ page: String(pageNum), limit: String(LIMIT) });
-      if (search) params.set('search', search);
-      const res = await fetch(`${API_BASE}/hotels?${params}`, { headers: authHeaders() });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || 'Failed to fetch hotels');
-      setHotels(json.data ?? json.items ?? []);
-      if (json.meta) setMeta(json.meta);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const params: Record<string, string> = { page: String(pageNum), limit: String(LIMIT) };
+      if (search) params.search = search;
+      const res = await getHotels(params);
+      const data = res as any;
+      setHotels(Array.isArray(data) ? data : data?.data ?? []);
+      if (data?.meta) setMeta(data.meta);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch hotels');
       setHotels([]);
     } finally {
       setLoading(false);
@@ -101,11 +91,9 @@ export default function AdminHotelsPage() {
 
   const fetchDestinations = async () => {
     try {
-      const res = await fetch(`${API_BASE}/destinations?limit=1000`, { headers: authHeaders() });
-      const json = await res.json();
-      if (res.ok) {
-        setDestinations(json.data ?? json.items ?? []);
-      }
+      const res = await getDestinations({ limit: '1000' });
+      const data = res as any;
+      setDestinations(Array.isArray(data) ? data : data?.data ?? []);
     } catch {
       // non-critical
     }

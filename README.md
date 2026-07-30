@@ -30,15 +30,39 @@ flyngo/
 ## Quick Start
 
 ```bash
-# Development
-docker compose -f infrastructure/docker/docker-compose.yml up -d
-cd backend && npm install && npx prisma migrate dev && npm run start:dev
-cd frontend && npm install && npm run dev
+# Install dependencies (all three workspaces)
+npm install && npm --prefix backend install && npm --prefix frontend install
+
+# Set up the database
+npm run db:migrate
+npm run db:seed   # optional: seed sample data
+
+# Start both frontend + backend with one command
+npm run dev
 ```
 
-## Environment
+Backend → http://localhost:4000 (Swagger at /api/docs)  
+Frontend → http://localhost:3000
 
-Copy `.env.example` to `.env` in both `backend/` and `frontend/`.
+### Docker (full stack: Postgres, Redis, Meilisearch, backend, frontend)
+
+```bash
+npm run docker:dev     # build from source, start everything
+npm run docker:up      # pull pre-built images from ghcr.io
+npm run docker:down    # stop everything
+```
+
+### Other Commands
+
+| Command | What it does |
+|---------|-------------|
+| `npm run dev` | Start backend + frontend in watch mode |
+| `npm run build` | Build both backend and frontend |
+| `npm run lint` | Lint both workspaces |
+| `npm run test` | Run all tests |
+| `npm run db:migrate` | Run Prisma migrations |
+| `npm run db:seed` | Seed the database |
+| `npm run db:studio` | Open Prisma Studio GUI |
 
 ## License
 

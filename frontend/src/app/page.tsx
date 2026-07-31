@@ -1,6 +1,10 @@
 'use client';
 
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PlaneTakeoff, CalendarDays, MapPin, ChevronLeft, ChevronRight, Rocket, ArrowUpRight, ArrowRight } from 'lucide-react';
 
 const routes = [
@@ -18,6 +22,18 @@ const stats = [
 ];
 
 export default function HomePage() {
+  const router = useRouter();
+  const [destination, setDestination] = useState('');
+  const [serviceType, setServiceType] = useState('First Class');
+  const [departureDate, setDepartureDate] = useState('');
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (destination) params.set('destination', destination);
+    if (serviceType) params.set('class', serviceType);
+    if (departureDate) params.set('date', departureDate);
+    router.push(`/booking?${params.toString()}`);
+  };
   return (
     <main>
       {/* Hero Section */}
@@ -50,19 +66,32 @@ export default function HomePage() {
         {/* Search Bar */}
         <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[1100px] px-4 z-20">
           <div className="glass-white shadow-2xl rounded-full">
-            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-0 bg-white/10 backdrop-blur-xl rounded-full shadow-2xl border border-white/20 overflow-hidden p-2">
+            <form
+              onSubmit={(e) => { e.preventDefault(); handleSearch(); }}
+              className="flex flex-col md:flex-row items-stretch md:items-center gap-0 bg-white/10 backdrop-blur-xl rounded-full shadow-2xl border border-white/20 overflow-hidden p-2"
+            >
               <div className="flex-1 flex flex-col px-8 py-3 border-r border-white/10">
                 <label className="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1">Where to next?</label>
                 <div className="flex items-center">
                   <MapPin className="text-[#00eefc] mr-2 w-5 h-5" />
-                  <input className="bg-transparent border-none outline-none text-base text-white placeholder:text-white/40 w-full p-0" placeholder="Destinations" type="text" />
+                  <input
+                    className="bg-transparent border-none outline-none text-base text-white placeholder:text-white/40 w-full p-0"
+                    placeholder="Destinations"
+                    type="text"
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                  />
                 </div>
               </div>
               <div className="flex-1 flex flex-col px-8 py-3 border-r border-white/10">
                 <label className="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1">Service Type</label>
                 <div className="flex items-center cursor-pointer relative">
                   <PlaneTakeoff className="text-[#00eefc] mr-2 w-5 h-5" />
-                  <select className="bg-transparent border-none outline-none text-base text-white w-full appearance-none p-0 pr-6">
+                  <select
+                    className="bg-transparent border-none outline-none text-base text-white w-full appearance-none p-0 pr-6"
+                    value={serviceType}
+                    onChange={(e) => setServiceType(e.target.value)}
+                  >
                     <option className="bg-surface">First Class</option>
                     <option className="bg-surface">Business Class</option>
                     <option className="bg-surface">Premium Economy</option>
@@ -77,14 +106,22 @@ export default function HomePage() {
                 <label className="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1">Departure Date</label>
                 <div className="flex items-center">
                   <CalendarDays className="text-[#00eefc] mr-2 w-5 h-5" />
-                  <input className="bg-transparent border-none outline-none text-base text-white w-full p-0 [color-scheme:dark]" type="date" />
+                  <input
+                    className="bg-transparent border-none outline-none text-base text-white w-full p-0 [color-scheme:dark]"
+                    type="date"
+                    value={departureDate}
+                    onChange={(e) => setDepartureDate(e.target.value)}
+                  />
                 </div>
               </div>
-              <button className="bg-blue-600 text-white px-10 py-4 rounded-full text-sm font-bold tracking-wider transition-all duration-300 hover:bg-blue-700 hover:shadow-lg flex items-center justify-center gap-2 group whitespace-nowrap ml-2">
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-10 py-4 rounded-full text-sm font-bold tracking-wider transition-all duration-300 hover:bg-blue-700 hover:shadow-lg flex items-center justify-center gap-2 group whitespace-nowrap ml-2"
+              >
                 FIND JOURNEY
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </section>

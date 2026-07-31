@@ -16,7 +16,7 @@ export default function FlightsPage() {
     const fetchFlights = async () => {
       try {
         const data: any = await getFlights();
-        setFlights(data.items ?? data ?? []);
+        setFlights(data.data ?? data ?? []);
       } catch (err: any) {
         setError(err.message || 'Failed to load flights');
       } finally {

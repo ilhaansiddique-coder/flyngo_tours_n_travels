@@ -16,7 +16,7 @@ export default function ToursPage() {
     const fetchTours = async () => {
       try {
         const data: any = await getTours();
-        setTours(data.items ?? data ?? []);
+        setTours(data.data ?? data ?? []);
       } catch (err: any) {
         setError(err.message || 'Failed to load tours');
       } finally {

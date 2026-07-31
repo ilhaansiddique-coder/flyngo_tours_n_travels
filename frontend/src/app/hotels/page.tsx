@@ -16,7 +16,7 @@ export default function HotelsPage() {
     const fetchHotels = async () => {
       try {
         const data: any = await getHotels();
-        setHotels(data.items ?? data ?? []);
+        setHotels(data.data ?? data ?? []);
       } catch (err: any) {
         setError(err.message || 'Failed to load hotels');
       } finally {

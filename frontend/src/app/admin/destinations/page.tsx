@@ -58,8 +58,8 @@ export default function AdminDestinationsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await getDestinations({ page: String(page), limit: '10' }) as unknown as { items: DestinationItem[]; meta: PaginationMeta };
-      setDestinations(res.items ?? []);
+      const res = await getDestinations({ page: String(page), limit: '10' }) as unknown as { data: DestinationItem[]; meta: PaginationMeta };
+      setDestinations(res.data ?? []);
       setMeta(res.meta ?? { page: 1, limit: 10, total: 0, totalPages: 0 });
     } catch (err: any) {
       setError(err.message || 'Failed to load destinations');

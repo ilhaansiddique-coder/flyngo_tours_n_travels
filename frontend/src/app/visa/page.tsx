@@ -28,7 +28,7 @@ export default function VisaPage() {
     const fetch = async () => {
       try {
         const data: any = await getVisaServices();
-        setVisaServices(data.items ?? data ?? []);
+        setVisaServices(data.data ?? data ?? []);
       } catch (err: any) {
         setError(err.message || 'Failed to load visa services');
       } finally {

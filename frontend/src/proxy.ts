@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 const adminRoutes = ['/admin'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
 

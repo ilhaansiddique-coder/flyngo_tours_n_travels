@@ -109,13 +109,30 @@ These override the defaults in `docker-compose.yml`.
 
 ## Common issues
 
+> **Before debugging anything else, verify the deployed image is actually current.**
+> If the live site still shows old behavior after a "Deploy" click in Coolify, the pull
+> probably failed silently and the old image kept running.
+>
+> ```bash
+> # Replace the URL with your live frontend URL:
+> curl -sS http://YOUR-DOMAIN/_next/static/chunks/app/auth/login/page-*.js 2>/dev/null \
+>   | grep -c localhost:4000
+> ```
+>
+> - `0` → new image is running, look elsewhere.
+> - `> 0` → old image is still serving. Check that the ghcr.io package is **public**
+>   (see "Coolify can't pull image" below), then click **Deploy** again in Coolify.
+>   In the Coolify UI, the running container's **Image** field should show
+>   `...@sha256:<hash>` matching the latest commit on `main`.
+
 | Symptom | Fix |
 |---|---|
 | Workflow login fails | Repo → Settings → Actions → General → Workflow permissions → "Read and write". |
-| Coolify can't pull image | Make ghcr.io packages public (step 2) or add a GitHub PAT to Coolify. |
+| **Coolify can't pull image / site keeps serving old JS** | **Make ghcr.io packages public (step 2 above).** If private, Coolify's pull fails silently and the container keeps the old image. Verify with `curl -sI https://ghcr.io/v2/ilhaansiddique-coder/flyngo-frontend/manifests/main` — `200` = public, `401` = private. Alternative: add a GitHub PAT (with `read:packages`) to Coolify's registry config. |
+| CORS / Private Network Access error on login | Frontend container env needs `BACKEND_URL` set to a URL the **Next.js server** can reach (e.g. `https://api.YOUR-DOMAIN`). Backend container env needs `FRONTEND_URL` and `ADMIN_URL` set to the real public origin. The frontend uses relative `/api/v1/*` paths proxied by Next.js — never call the backend over a loopback/private URL from a public page. |
 | 404 on pages | FQDN not set on service in Coolify, or container crashed. Check logs. |
 | Backend can't reach DB | Service name must be exactly `flyngo-db` — that's the internal DNS name. |
-| Auto-deploy not firing | Get webhook URL from Coolify → Resource → Deploy Webhooks → paste as `COOLIFY_DEPLOY_WEBHOOK` in GitHub Variables. |
+| Auto-deploy not firing | Get webhook URL from Coolify → Resource → Deploy Webhooks → paste as `COOLIFY_DEPLOY_WEBHOOK` in GitHub Variables. For Coolify v4+, the URL contains a `?token=...` query param. |
 | Migration fails on startup | Check `docker logs flyngo-backend`. Verify `DATABASE_URL` in Coolify env vars. |
 
 ## Local development

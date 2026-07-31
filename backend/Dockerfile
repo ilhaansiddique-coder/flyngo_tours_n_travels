@@ -17,7 +17,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 WORKDIR /app
 
 COPY --from=builder /app/package.json /app/package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma

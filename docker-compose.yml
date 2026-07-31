@@ -1,0 +1,126 @@
+# Flyngo — Production stack (Coolify default)
+# Images are pre-built by GitHub Actions and pushed to ghcr.io.
+# This file PULLS images — no build happens on the server.
+#
+# Local dev with build-from-source:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+  backend:
+    image: ghcr.io/ilhaansiddique-coder/flyngo-backend:main
+    container_name: flyngo-backend
+    restart: always
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 4000
+      DATABASE_URL: ${DATABASE_URL:-postgresql://flyngo:flyngo@postgres:5432/flyngo?schema=public}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change-me-access}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-refresh}
+      JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-15m}
+      JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      ADMIN_URL: ${ADMIN_URL:-http://localhost:3001}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      BKASH_API_KEY: ${BKASH_API_KEY:-}
+      BKASH_SECRET_KEY: ${BKASH_SECRET_KEY:-}
+      BKASH_USERNAME: ${BKASH_USERNAME:-}
+      BKASH_PASSWORD: ${BKASH_PASSWORD:-}
+      BKASH_BASE_URL: ${BKASH_BASE_URL:-https://tokenized.sandbox.bka.sh/v1.2.0-beta}
+      NAGAD_MERCHANT_ID: ${NAGAD_MERCHANT_ID:-}
+      NAGAD_SECRET_KEY: ${NAGAD_SECRET_KEY:-}
+      NAGAD_BASE_URL: ${NAGAD_BASE_URL:-}
+      SSLC_STORE_ID: ${SSLC_STORE_ID:-}
+      SSLC_STORE_PASSWORD: ${SSLC_STORE_PASSWORD:-}
+      SSLC_BASE_URL: ${SSLC_BASE_URL:-https://sandbox.sslcommerz.com}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@flyngo.world}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY:-}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-}
+      MEILISEARCH_HOST: ${MEILISEARCH_HOST:-http://meilisearch:7700}
+      MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:-}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+    ports:
+      - '4000:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'node -e "const h=require(\"http\");h.get(\"http://localhost:4000/api/v1/health\",r=>{let d=\"\";r.on(\"data\",c=>d+=c);r.on(\"end\",()=>{try{const j=JSON.parse(d);process.exit(j.status===\"ok\"?0:1)}catch{process.exit(1)}})}).on(\"error\",()=>process.exit(1))"']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    image: ghcr.io/ilhaansiddique-coder/flyngo-frontend:main
+    container_name: flyngo-frontend
+    restart: always
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://backend:4000}
+    ports:
+      - '3000:3000'
+    depends_on:
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ['CMD-SHELL', 'node -e "const h=require(\"http\");h.get(\"http://localhost:3000/\",r=>{process.exit(r.statusCode===200?0:1)}).on(\"error\",()=>process.exit(1))"']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: flyngo-postgres
+    environment:
+      POSTGRES_USER: flyngo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flyngo}
+      POSTGRES_DB: flyngo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U flyngo']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: flyngo-redis
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    container_name: flyngo-meilisearch
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_API_KEY:-masterKey}
+      MEILI_ENV: development
+    volumes:
+      - meilisearch_data:/meili_data
+
+volumes:
+  postgres_data:
+  redis_data:
+  meilisearch_data:

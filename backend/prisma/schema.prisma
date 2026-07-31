@@ -102,6 +102,7 @@ model User {
   notifications Notification[]
   auditLogs     AuditLog[]
   blogPosts     BlogPost[]
+  reviews       Review[]
 
   @@unique([tenantId, email])
   @@map("users")
@@ -689,8 +690,8 @@ model AuditLog {
 // =============================================================================
 
 model Media {
-  id       String @id @default(uuid())
-  tenantId String @map("tenant_id")
+  id       String   @id @default(uuid())
+  tenantId String   @map("tenant_id")
 
   url      String
   alt      String?
@@ -707,4 +708,68 @@ model Media {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("media")
+}
+
+// =============================================================================
+// TRANSPORT (BD market: airport transfer, intercity bus, launch/ferry, car rental)
+// =============================================================================
+
+model Transport {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+
+  vehicleType String   @map("vehicle_type") // car, bus, ferry, shuttle, microbus
+  operatorName String? @map("operator_name")
+  title       String
+
+  originCity      String  @map("origin_city")
+  destinationCity String  @map("destination_city")
+  boardingPoints  String[] @default([]) @map("boarding_points")
+  droppingPoints  String[] @default([]) @map("dropping_points")
+
+  departureTime String? @map("departure_time")
+  arrivalTime   String? @map("arrival_time")
+  duration      String?
+
+  price         Decimal  @db.Decimal(10, 2)
+  currency      String   @default("BDT")
+  totalSeats    Int      @default(0) @map("total_seats")
+  availableSeats Int     @default(0) @map("available_seats")
+
+  amenities     String[] @default([])
+
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  @@map("transports")
+}
+
+// =============================================================================
+// REVIEWS (Customer reviews on tours/hotels/flights/visa)
+// =============================================================================
+
+model Review {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+
+  itemType  String   @map("item_type") // tour, hotel, flight, visa
+  itemId    String   @map("item_id")
+
+  rating    Int
+  title     String?
+  content   String   @db.Text
+
+  isApproved Boolean @default(false) @map("is_approved")
+  isVerified Boolean @default(false) @map("is_verified") // verified booking
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([tenantId, itemType, itemId])
+  @@map("reviews")
 }

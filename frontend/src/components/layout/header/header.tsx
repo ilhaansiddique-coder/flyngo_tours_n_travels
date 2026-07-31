@@ -36,6 +36,8 @@ export function Header() {
     return () => { document.body.style.overflow = ''; };
   }, [isMobileMenuOpen]);
 
+  if (pathname.startsWith('/admin')) return null;
+
   return (
     <header className="fixed top-0 w-full z-50 h-20 transition-all duration-300 bg-white/10 backdrop-blur-xl border-b border-white/20">
       <div className="flex justify-between items-center px-16 max-w-[1440px] mx-auto h-full">

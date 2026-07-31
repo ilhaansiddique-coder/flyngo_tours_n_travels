@@ -4,6 +4,14 @@ interface FetchOptions extends RequestInit {
   token?: string;
 }
 
+function clearAuthAndRedirect() {
+  if (typeof document === 'undefined') return;
+  document.cookie = 'flyngo-auth=; path=/; max-age=0';
+  if (window.location.pathname.startsWith('/admin')) {
+    window.location.href = '/auth/login?callbackUrl=' + encodeURIComponent(window.location.pathname);
+  }
+}
+
 class ApiClient {
   private async request<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
     const { token, ...fetchOptions } = options;
@@ -23,6 +31,9 @@ class ApiClient {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        clearAuthAndRedirect();
+      }
       const error = await response.json().catch(() => ({ message: 'An error occurred' }));
       throw new ApiError(response.status, error.message || 'Request failed', error.errors);
     }

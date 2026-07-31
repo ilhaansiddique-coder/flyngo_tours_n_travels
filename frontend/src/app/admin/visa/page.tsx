@@ -11,11 +11,11 @@ import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } 
 import { Globe, Plus, Pencil, Trash2, Search } from 'lucide-react';
 
 interface VisaService {
-  _id: string;
+  id: string;
   title: string;
-  country?: { _id: string; name: string };
+  country?: { id: string; name: string };
   destinationId?: string;
-  destination?: { _id: string; name: string };
+  destination?: { id: string; name: string };
   description?: string;
   price: number;
   processingTime?: string;
@@ -24,7 +24,7 @@ interface VisaService {
 }
 
 interface Destination {
-  _id: string;
+  id: string;
   name: string;
 }
 
@@ -81,7 +81,7 @@ export default function AdminVisaPage() {
     setEditItem(item);
     setForm({
       title: item.title || '',
-      destinationId: item.destinationId || item.destination?._id || item.country?._id || '',
+      destinationId: item.destinationId || item.destination?.id || item.country?.id || '',
       description: item.description || '',
       processingTime: item.processingTime || '',
       price: String(item.price || ''),
@@ -109,7 +109,7 @@ export default function AdminVisaPage() {
       };
 
       if (editItem) {
-        await updateVisaService(editItem._id, body);
+        await updateVisaService(editItem.id, body);
       } else {
         await createVisaService(body);
       }
@@ -126,7 +126,7 @@ export default function AdminVisaPage() {
   const handleDelete = async () => {
     if (!deleteItem) return;
     try {
-      await deleteVisaService(deleteItem._id);
+      await deleteVisaService(deleteItem.id);
       setDeleteItem(null);
       await loadData();
     } catch (err: any) {
@@ -201,7 +201,7 @@ export default function AdminVisaPage() {
               </thead>
               <tbody>
                 {filtered.map((v) => (
-                  <tr key={v._id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                  <tr key={v.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
                     <td className="p-4 font-medium">{v.title}</td>
                     <td className="p-4 text-gray-500">
                       {v.country?.name || v.destination?.name || '—'}
@@ -248,7 +248,7 @@ export default function AdminVisaPage() {
             value={form.destinationId}
             onChange={(v) => setForm((f) => ({ ...f, destinationId: v }))}
             placeholder="Select a destination..."
-            options={destinations.map((d) => ({ label: d.name, value: d._id }))}
+            options={destinations.map((d) => ({ label: d.name, value: d.id }))}
           />
         </FormField>
         <FormField label="Description" required>

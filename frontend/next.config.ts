@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import path from 'node:path';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -17,6 +18,9 @@ const nextConfig: NextConfig = {
       'lucide-react',
       '@radix-ui/react-icons',
     ],
+  },
+  turbopack: {
+    root: path.resolve(__dirname),
   },
   async rewrites() {
     return [

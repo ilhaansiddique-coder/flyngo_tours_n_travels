@@ -38,8 +38,8 @@ export function FormField({ label, children, required }: { label: string; childr
   );
 }
 
-export function FormInput({ value, onChange, placeholder, type = 'text', required }: {
-  value?: string; onChange?: (v: string) => void; placeholder?: string; type?: string; required?: boolean;
+export function FormInput({ value, onChange, placeholder, type = 'text', required, disabled }: {
+  value?: string; onChange?: (v: string) => void; placeholder?: string; type?: string; required?: boolean; disabled?: boolean;
 }) {
   return (
     <input
@@ -48,7 +48,8 @@ export function FormInput({ value, onChange, placeholder, type = 'text', require
       onChange={(e) => onChange?.(e.target.value)}
       placeholder={placeholder}
       required={required}
-      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+      disabled={disabled}
+      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none disabled:opacity-50 disabled:cursor-not-allowed"
     />
   );
 }
@@ -70,6 +71,15 @@ export function FormTextarea({ value, onChange, placeholder, rows = 3 }: {
 export function FormSelect({ value, onChange, options, placeholder }: {
   value?: string; onChange?: (v: string) => void; options: { label: string; value: string }[]; placeholder?: string;
 }) {
+  const seen = new Set<string>();
+  const deduped = options.map((o) => {
+    let key = o.value;
+    if (seen.has(key)) {
+      key = `${o.value}__${Math.random().toString(36).slice(2, 7)}`;
+    }
+    seen.add(key);
+    return { ...o, value: o.value, _key: key };
+  });
   return (
     <select
       value={value ?? ''}
@@ -77,8 +87,8 @@ export function FormSelect({ value, onChange, options, placeholder }: {
       className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
     >
       {placeholder && <option value="">{placeholder}</option>}
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>{o.label}</option>
+      {deduped.map((o) => (
+        <option key={o._key} value={o.value}>{o.label}</option>
       ))}
     </select>
   );

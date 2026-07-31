@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
@@ -19,9 +19,19 @@ export class AdminController {
   }
 
   @Get('audit-logs')
-  @ApiOperation({ summary: 'Get audit logs' })
-  async getAuditLogs(@CurrentTenantId() tenantId: string, @Query() pagination: PaginationDto) {
-    return this.adminService.getAuditLogs(tenantId, pagination.page, pagination.limit);
+  @ApiOperation({ summary: 'Get audit logs (supports filters: action, entity, userId, startDate, endDate)' })
+  async getAuditLogs(
+    @CurrentTenantId() tenantId: string,
+    @Query() pagination: PaginationDto,
+    @Query('action') action?: string,
+    @Query('entity') entity?: string,
+    @Query('userId') userId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.adminService.getAuditLogs(tenantId, pagination.page, pagination.limit, {
+      action, entity, userId, startDate, endDate,
+    });
   }
 
   @Get('roles')
@@ -30,9 +40,51 @@ export class AdminController {
     return this.adminService.getRoles(tenantId);
   }
 
+  @Post('roles')
+  @Roles('super_admin')
+  @ApiOperation({ summary: 'Create a role' })
+  async createRole(@CurrentTenantId() tenantId: string, @Body() body: any) {
+    return this.adminService.createRole(tenantId, body);
+  }
+
+  @Patch('roles/:id')
+  @Roles('super_admin')
+  @ApiOperation({ summary: 'Update a role' })
+  async updateRole(@Param('id') id: string, @CurrentTenantId() tenantId: string, @Body() body: any) {
+    return this.adminService.updateRole(id, tenantId, body);
+  }
+
+  @Delete('roles/:id')
+  @Roles('super_admin')
+  @ApiOperation({ summary: 'Delete a role' })
+  async removeRole(@Param('id') id: string, @CurrentTenantId() tenantId: string) {
+    return this.adminService.removeRole(id, tenantId);
+  }
+
   @Get('permissions')
   @ApiOperation({ summary: 'Get all permissions' })
   async getPermissions() {
     return this.adminService.getPermissions();
+  }
+
+  @Post('permissions')
+  @Roles('super_admin')
+  @ApiOperation({ summary: 'Create a permission' })
+  async createPermission(@Body() body: any) {
+    return this.adminService.createPermission(body);
+  }
+
+  @Patch('permissions/:id')
+  @Roles('super_admin')
+  @ApiOperation({ summary: 'Update a permission' })
+  async updatePermission(@Param('id') id: string, @Body() body: any) {
+    return this.adminService.updatePermission(id, body);
+  }
+
+  @Delete('permissions/:id')
+  @Roles('super_admin')
+  @ApiOperation({ summary: 'Delete a permission' })
+  async removePermission(@Param('id') id: string) {
+    return this.adminService.removePermission(id);
   }
 }

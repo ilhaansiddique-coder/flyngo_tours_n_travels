@@ -49,4 +49,45 @@ export class PaymentsService {
     // TODO: Implement bKash webhook verification
     return { received: true };
   }
+
+  async listAllPayments(tenantId: string, page = 1, limit = 20, filters?: { status?: string; method?: string }) {
+    const where: any = { tenantId };
+    if (filters?.status) where.status = filters.status;
+    if (filters?.method) where.method = filters.method;
+    const [items, total] = await Promise.all([
+      this.prisma.payment.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, fullName: true, email: true } },
+          booking: { select: { id: true, bookingCode: true, totalAmount: true } },
+        },
+      }),
+      this.prisma.payment.count({ where }),
+    ]);
+    return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  }
+
+  async updatePaymentStatus(id: string, tenantId: string, status: string) {
+    const existing = await this.prisma.payment.findFirst({ where: { id, tenantId } });
+    if (!existing) throw new BadRequestException('Payment not found');
+    return this.prisma.payment.update({ where: { id }, data: { status } });
+  }
+
+  async getPaymentStats(tenantId: string) {
+    const [total, byStatus, byMethod, sum] = await Promise.all([
+      this.prisma.payment.count({ where: { tenantId } }),
+      this.prisma.payment.groupBy({ by: ['status'], where: { tenantId }, _count: { id: true } }),
+      this.prisma.payment.groupBy({ by: ['method'], where: { tenantId }, _count: { id: true } }),
+      this.prisma.payment.aggregate({ where: { tenantId, status: 'completed' }, _sum: { amount: true } }),
+    ]);
+    return {
+      total,
+      totalCompleted: sum._sum.amount || 0,
+      byStatus: byStatus.reduce((acc: Record<string, number>, b) => ({ ...acc, [b.status]: b._count.id }), {}),
+      byMethod: byMethod.reduce((acc: Record<string, number>, b) => ({ ...acc, [b.method]: b._count.id }), {}),
+    };
+  }
 }

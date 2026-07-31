@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal, FormField, FormInput, FormSelect, ConfirmDialog } from '@/components/admin/ui';
 import { useEffect, useState } from 'react';
-import { Users, Search, Pencil, Trash2 } from 'lucide-react';
+import { Users, Search, Pencil, Trash2, Plus } from 'lucide-react';
 
 interface Role {
   id: string;
@@ -28,20 +28,24 @@ interface User {
 
 interface FormData {
   fullName: string;
+  email: string;
   phone: string;
+  password: string;
   roleId: string;
   isActive: boolean;
 }
 
 const initialForm: FormData = {
   fullName: '',
+  email: '',
   phone: '',
+  password: '',
   roleId: '',
   isActive: true,
 };
 
 export default function CustomersPage() {
-  const { getUsers, updateUser, deleteUser, getRoles } = useApi();
+  const { getUsers, createUser, updateUser, deleteUser, getRoles } = useApi();
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,11 +102,19 @@ export default function CustomersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const openCreateModal = () => {
+    setEditingUser(null);
+    setForm({ ...initialForm, roleId: roles[0]?.id || '' });
+    setModalOpen(true);
+  };
+
   const openEditModal = (user: User) => {
     setEditingUser(user);
     setForm({
       fullName: user.fullName || '',
+      email: user.email || '',
       phone: user.phone || '',
+      password: '',
       roleId: user.role?.id || '',
       isActive: user.isActive,
     });
@@ -111,17 +123,28 @@ export default function CustomersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingUser) return;
     setSubmitting(true);
     try {
-      await updateUser(editingUser.id, {
-        fullName: form.fullName,
-        phone: form.phone,
-        roleId: form.roleId,
-        isActive: form.isActive,
-      });
+      if (editingUser) {
+        await updateUser(editingUser.id, {
+          fullName: form.fullName,
+          phone: form.phone,
+          roleId: form.roleId,
+          isActive: form.isActive,
+        });
+      } else {
+        const body: any = {
+          fullName: form.fullName,
+          email: form.email,
+          phone: form.phone || undefined,
+          roleId: form.roleId,
+          isActive: form.isActive,
+        };
+        if (form.password) body.password = form.password;
+        await createUser(body);
+      }
       setModalOpen(false);
-      fetchUsers();
+      fetchUsers(1);
     } catch {
       // error handled silently
     } finally {
@@ -182,6 +205,9 @@ export default function CustomersPage() {
             }}
           />
         </div>
+        <Button size="md" className="gap-2" onClick={openCreateModal}>
+          <Plus className="w-4 h-4" /> Add Customer
+        </Button>
       </div>
 
       {loading && (
@@ -305,7 +331,7 @@ export default function CustomersPage() {
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title="Edit Customer"
+        title={editingUser ? 'Edit Customer' : 'Add Customer'}
       >
         <form onSubmit={handleSubmit}>
           <FormField label="Full Name" required>
@@ -317,13 +343,36 @@ export default function CustomersPage() {
             />
           </FormField>
 
+          {!editingUser && (
+            <FormField label="Email" required>
+              <FormInput
+                type="email"
+                value={form.email}
+                onChange={(v) => setForm({ ...form, email: v })}
+                placeholder="customer@example.com"
+                required
+              />
+            </FormField>
+          )}
+
           <FormField label="Phone">
             <FormInput
               value={form.phone}
               onChange={(v) => setForm({ ...form, phone: v })}
-              placeholder="Phone number"
+              placeholder="+880 1XXX XXX XXX"
             />
           </FormField>
+
+          {!editingUser && (
+            <FormField label="Password">
+              <FormInput
+                type="password"
+                value={form.password}
+                onChange={(v) => setForm({ ...form, password: v })}
+                placeholder="Leave empty to auto-generate"
+              />
+            </FormField>
+          )}
 
           <FormField label="Role">
             <FormSelect
@@ -351,7 +400,7 @@ export default function CustomersPage() {
               Cancel
             </Button>
             <Button type="submit" loading={submitting}>
-              Update Customer
+              {editingUser ? 'Update' : 'Create'} Customer
             </Button>
           </div>
         </form>

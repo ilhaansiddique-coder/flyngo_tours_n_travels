@@ -54,6 +54,16 @@ export class BookingController {
     return this.bookingService.updateStatus(id, tenantId, status);
   }
 
+  @Post('admin')
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: 'Create a booking on behalf of a user (admin)' })
+  async adminCreate(
+    @CurrentTenantId() tenantId: string,
+    @Body() body: { userId: string; type: 'tour' | 'hotel' | 'flight' | 'visa' | 'package'; itemId: string; startDate: string; endDate?: string; guests?: number; notes?: string; totalAmount?: number },
+  ) {
+    return this.bookingService.adminCreateBooking(tenantId, body);
+  }
+
   @Post(':id/cancel')
   @ApiOperation({ summary: 'Cancel a booking' })
   async cancel(@Param('id') id: string, @CurrentTenantId() tenantId: string, @CurrentUser('id') userId: string) {

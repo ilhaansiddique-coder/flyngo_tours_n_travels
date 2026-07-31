@@ -6,22 +6,24 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Modal, FormField, FormSelect, ConfirmDialog } from '@/components/admin/ui';
+import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
 import { useEffect, useState } from 'react';
-import { Shield, Users, Search, Pencil, Trash2 } from 'lucide-react';
+import { Shield, Users, Search, Pencil, Trash2, Plus, Key } from 'lucide-react';
 
 interface Role {
   id: string;
   name: string;
   code: string;
+  isSystem?: boolean;
   _count?: { users: number; permissions: number };
-  permissions?: { permission: { id: string; code: string } }[];
+  permissions?: { permission: { id: string; code: string; name: string; group?: string } }[];
 }
 
 interface User {
   id: string;
   fullName: string;
   email: string;
+  phone?: string;
   role?: Role;
   isActive: boolean;
   createdAt: string;
@@ -31,12 +33,18 @@ interface Permission {
   id: string;
   code: string;
   name: string;
+  group?: string;
 }
 
-type Tab = 'users' | 'roles';
+type Tab = 'users' | 'roles' | 'permissions';
 
 export default function UsersPage() {
-  const { getUsers, getRoles, getPermissions, updateUser, deleteUser } = useApi();
+  const api = useApi();
+  const {
+    getUsers, createUser, updateUser, deleteUser,
+    getRoles, createRole, updateRole, deleteRole,
+    getPermissions, createPermission, updatePermission, deletePermission,
+  } = api;
 
   const [activeTab, setActiveTab] = useState<Tab>('users');
 
@@ -52,27 +60,38 @@ export default function UsersPage() {
   const [rolesLoading, setRolesLoading] = useState(true);
   const [rolesError, setRolesError] = useState<string | null>(null);
 
-  const [modalOpen, setModalOpen] = useState(false);
+  const [userModalOpen, setUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [editRoleId, setEditRoleId] = useState('');
-  const [editIsActive, setEditIsActive] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [userForm, setUserForm] = useState({ fullName: '', email: '', phone: '', password: '', roleId: '', isActive: true });
+  const [userSubmitting, setUserSubmitting] = useState(false);
 
-  const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string | null }>({
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [roleForm, setRoleForm] = useState({ name: '', code: '', permissionIds: [] as string[], isSystem: false });
+  const [roleSubmitting, setRoleSubmitting] = useState(false);
+
+  const [permissionModalOpen, setPermissionModalOpen] = useState(false);
+  const [editingPermission, setEditingPermission] = useState<Permission | null>(null);
+  const [permissionForm, setPermissionForm] = useState({ name: '', code: '', description: '', group: '' });
+  const [permissionSubmitting, setPermissionSubmitting] = useState(false);
+
+  const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; kind: 'user' | 'role' | 'permission' | null; id: string | null }>({
     open: false,
+    kind: null,
     id: null,
   });
 
-  const fetchUsers = async (page?: number) => {
+  const fetchUsers = async (page = 1) => {
     setUsersLoading(true);
     setUsersError(null);
     try {
-      const params: Record<string, string> = { page: String(page ?? meta.page) };
+      const params: Record<string, string> = { page: String(page), limit: '20' };
       if (search) params.search = search;
       const res = await getUsers(params);
       const data = res as any;
-      setUsers(Array.isArray(data) ? data : data?.data ?? []);
-      setMeta(data?.meta ?? { page: 1, total: 0, totalPages: 1 });
+      const items = Array.isArray(data) ? data : data?.items ?? data?.data ?? [];
+      setUsers(items);
+      setMeta(data?.meta ?? { page: 1, total: items.length, totalPages: 1 });
     } catch (err: any) {
       setUsersError(err.message || 'Failed to load users');
     } finally {
@@ -87,11 +106,9 @@ export default function UsersPage() {
       const [rolesRes, permsRes] = await Promise.all([getRoles(), getPermissions()]);
       const rolesData = rolesRes as any;
       const permsData = permsRes as any;
-
       const fetchedRoles: Role[] = Array.isArray(rolesData) ? rolesData : rolesData?.data ?? [];
       setRoles(fetchedRoles);
       setRoleOptions(fetchedRoles.map((r) => ({ label: r.name, value: r.id })));
-
       setPermissionsList(Array.isArray(permsData) ? permsData : permsData?.data ?? []);
     } catch (err: any) {
       setRolesError(err.message || 'Failed to load roles');
@@ -101,105 +118,198 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(1);
     fetchRolesAndPermissions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const openEditModal = (user: User) => {
-    setEditingUser(user);
-    setEditRoleId(user.role?.id || '');
-    setEditIsActive(user.isActive);
-    setModalOpen(true);
+  const openCreateUserModal = () => {
+    setEditingUser(null);
+    setUserForm({ fullName: '', email: '', phone: '', password: '', roleId: roleOptions[0]?.value || '', isActive: true });
+    setUserModalOpen(true);
   };
 
-  const handleUpdateUser = async (e: React.FormEvent) => {
+  const openEditUserModal = (user: User) => {
+    setEditingUser(user);
+    setUserForm({
+      fullName: user.fullName || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      password: '',
+      roleId: user.role?.id || '',
+      isActive: user.isActive,
+    });
+    setUserModalOpen(true);
+  };
+
+  const handleUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingUser) return;
-    setSubmitting(true);
+    setUserSubmitting(true);
     try {
-      await updateUser(editingUser.id, {
-        roleId: editRoleId || undefined,
-        isActive: editIsActive,
-      });
-      setModalOpen(false);
-      fetchUsers();
+      if (editingUser) {
+        const body: any = { fullName: userForm.fullName, phone: userForm.phone, roleId: userForm.roleId, isActive: userForm.isActive };
+        await updateUser(editingUser.id, body);
+      } else {
+        const body: any = {
+          fullName: userForm.fullName,
+          email: userForm.email,
+          phone: userForm.phone || undefined,
+          roleId: userForm.roleId,
+          isActive: userForm.isActive,
+        };
+        if (userForm.password) body.password = userForm.password;
+        await createUser(body);
+      }
+      setUserModalOpen(false);
+      fetchUsers(1);
     } catch {
       // silently fail
     } finally {
-      setSubmitting(false);
+      setUserSubmitting(false);
+    }
+  };
+
+  const openCreateRoleModal = () => {
+    setEditingRole(null);
+    setRoleForm({ name: '', code: '', permissionIds: [], isSystem: false });
+    setRoleModalOpen(true);
+  };
+
+  const openEditRoleModal = (role: Role) => {
+    setEditingRole(role);
+    setRoleForm({
+      name: role.name,
+      code: role.code,
+      permissionIds: role.permissions?.map((p) => p.permission.id) ?? [],
+      isSystem: role.isSystem ?? false,
+    });
+    setRoleModalOpen(true);
+  };
+
+  const handleRoleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRoleSubmitting(true);
+    try {
+      if (editingRole) {
+        await updateRole(editingRole.id, {
+          name: roleForm.name,
+          permissionIds: roleForm.permissionIds,
+          isSystem: roleForm.isSystem,
+        });
+      } else {
+        await createRole({
+          name: roleForm.name,
+          code: roleForm.code,
+          permissionIds: roleForm.permissionIds,
+          isSystem: roleForm.isSystem,
+        });
+      }
+      setRoleModalOpen(false);
+      fetchRolesAndPermissions();
+    } catch {
+      // silently fail
+    } finally {
+      setRoleSubmitting(false);
+    }
+  };
+
+  const togglePermission = (id: string) => {
+    setRoleForm((prev) => ({
+      ...prev,
+      permissionIds: prev.permissionIds.includes(id)
+        ? prev.permissionIds.filter((p) => p !== id)
+        : [...prev.permissionIds, id],
+    }));
+  };
+
+  const openCreatePermissionModal = () => {
+    setEditingPermission(null);
+    setPermissionForm({ name: '', code: '', description: '', group: '' });
+    setPermissionModalOpen(true);
+  };
+
+  const openEditPermissionModal = (perm: Permission) => {
+    setEditingPermission(perm);
+    setPermissionForm({
+      name: perm.name,
+      code: perm.code,
+      description: '',
+      group: perm.group || '',
+    });
+    setPermissionModalOpen(true);
+  };
+
+  const handlePermissionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPermissionSubmitting(true);
+    try {
+      if (editingPermission) {
+        await updatePermission(editingPermission.id, {
+          name: permissionForm.name,
+          description: permissionForm.description || undefined,
+          group: permissionForm.group || undefined,
+        });
+      } else {
+        await createPermission({
+          name: permissionForm.name,
+          code: permissionForm.code,
+          description: permissionForm.description || undefined,
+          group: permissionForm.group || undefined,
+        });
+      }
+      setPermissionModalOpen(false);
+      fetchRolesAndPermissions();
+    } catch {
+      // silently fail
+    } finally {
+      setPermissionSubmitting(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirmDelete.id) return;
+    if (!confirmDelete.id || !confirmDelete.kind) return;
     try {
-      await deleteUser(confirmDelete.id);
-      setConfirmDelete({ open: false, id: null });
-      fetchUsers();
+      if (confirmDelete.kind === 'user') await deleteUser(confirmDelete.id);
+      if (confirmDelete.kind === 'role') await deleteRole(confirmDelete.id);
+      if (confirmDelete.kind === 'permission') await deletePermission(confirmDelete.id);
+      setConfirmDelete({ open: false, kind: null, id: null });
+      if (confirmDelete.kind === 'user') fetchUsers(1);
+      else fetchRolesAndPermissions();
     } catch {
       // silently fail
     }
   };
 
-  const handleSearch = () => {
-    fetchUsers(1);
-  };
-
-  const goToPage = (page: number) => {
-    const params: Record<string, string> = { page: String(page) };
-    if (search) params.search = search;
-    setUsersLoading(true);
-    setUsersError(null);
-    getUsers(params)
-      .then((res: any) => {
-        setUsers(Array.isArray(res) ? res : res?.data ?? []);
-        setMeta((res?.meta as typeof meta) ?? { page: 1, total: 0, totalPages: 1 });
-      })
-      .catch((err: any) => {
-        setUsersError(err.message || 'Failed to load users');
-      })
-      .finally(() => setUsersLoading(false));
-  };
-
   const initials = (name: string) =>
-    name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
+    name.split(' ').map((n) => n[0]).join('').toUpperCase();
 
-  const getRolePermissions = (role: Role): string[] => {
-    if (role.permissions && role.permissions.length > 0) {
-      return role.permissions.map((p) => p.permission.code);
-    }
-    return [];
-  };
+  const groupedPermissions = permissionsList.reduce<Record<string, Permission[]>>((acc, p) => {
+    const g = p.group || 'general';
+    if (!acc[g]) acc[g] = [];
+    acc[g].push(p);
+    return acc;
+  }, {});
 
   const renderTabs = () => (
     <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 w-fit">
-      <button
-        onClick={() => setActiveTab('users')}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-          activeTab === 'users'
-            ? 'bg-white dark:bg-gray-900 text-brand-600 shadow-sm'
-            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-        }`}
-      >
-        <Users className="w-4 h-4" />
-        Users
-      </button>
-      <button
-        onClick={() => setActiveTab('roles')}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-          activeTab === 'roles'
-            ? 'bg-white dark:bg-gray-900 text-brand-600 shadow-sm'
-            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-        }`}
-      >
-        <Shield className="w-4 h-4" />
-        Roles &amp; Permissions
-      </button>
+      {[
+        { id: 'users', label: 'Users', icon: Users },
+        { id: 'roles', label: 'Roles', icon: Shield },
+        { id: 'permissions', label: 'Permissions', icon: Key },
+      ].map((t) => (
+        <button
+          key={t.id}
+          onClick={() => setActiveTab(t.id as Tab)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === t.id
+              ? 'bg-white dark:bg-gray-900 text-brand-600 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+          }`}
+        >
+          <t.icon className="w-4 h-4" />
+          {t.label}
+        </button>
+      ))}
     </div>
   );
 
@@ -213,11 +323,12 @@ export default function UsersPage() {
             className="pl-9 w-64"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSearch();
-            }}
+            onKeyDown={(e) => { if (e.key === 'Enter') fetchUsers(1); }}
           />
         </div>
+        <Button size="md" className="gap-2" onClick={openCreateUserModal}>
+          <Plus className="w-4 h-4" /> Add User
+        </Button>
       </div>
 
       {usersLoading && (
@@ -230,136 +341,98 @@ export default function UsersPage() {
         <Card hover={false}>
           <div className="text-center py-12">
             <p className="text-red-500 mb-4">{usersError}</p>
-            <Button variant="outline" onClick={() => fetchUsers()}>
-              Retry
-            </Button>
+            <Button variant="outline" onClick={() => fetchUsers(1)}>Retry</Button>
           </div>
         </Card>
       )}
 
       {!usersLoading && !usersError && (
-        <>
-          <Card hover={false} padding="none">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
-                    <th className="p-4 font-medium">Name</th>
-                    <th className="p-4 font-medium">Email</th>
-                    <th className="p-4 font-medium">Role</th>
-                    <th className="p-4 font-medium">Status</th>
-                    <th className="p-4 font-medium">Join Date</th>
-                    <th className="p-4 font-medium">Actions</th>
+        <Card hover={false} padding="none">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
+                  <th className="p-4 font-medium">Name</th>
+                  <th className="p-4 font-medium">Email</th>
+                  <th className="p-4 font-medium">Role</th>
+                  <th className="p-4 font-medium">Status</th>
+                  <th className="p-4 font-medium">Join Date</th>
+                  <th className="p-4 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-12 text-center text-gray-500">
+                      <Users className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <p>No users found</p>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {users.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="p-12 text-center text-gray-500">
-                        <Users className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                        <p>No users found</p>
+                ) : (
+                  users.map((u) => (
+                    <tr key={u.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center font-bold text-brand-600 dark:text-brand-400">
+                            {initials(u.fullName)}
+                          </div>
+                          <span className="font-medium">{u.fullName}</span>
+                        </div>
+                      </td>
+                      <td className="p-4 text-gray-500">{u.email}</td>
+                      <td className="p-4">
+                        <Badge variant="info">{u.role?.name || '\u2014'}</Badge>
+                      </td>
+                      <td className="p-4">
+                        <Badge variant={u.isActive ? 'success' : 'warning'}>
+                          {u.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </td>
+                      <td className="p-4 text-gray-500">{formatDate(u.createdAt)}</td>
+                      <td className="p-4">
+                        <div className="flex gap-1">
+                          <button
+                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"
+                            title="Edit"
+                            onClick={() => openEditUserModal(u)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
+                            title="Delete"
+                            onClick={() => setConfirmDelete({ open: true, kind: 'user', id: u.id })}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
-                  ) : (
-                    users.map((u) => (
-                      <tr
-                        key={u.id}
-                        className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30"
-                      >
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center font-bold text-brand-600 dark:text-brand-400">
-                              {initials(u.fullName)}
-                            </div>
-                            <span className="font-medium">{u.fullName}</span>
-                          </div>
-                        </td>
-                        <td className="p-4 text-gray-500">{u.email}</td>
-                        <td className="p-4">
-                          <Badge variant="info">{u.role?.name || '\u2014'}</Badge>
-                        </td>
-                        <td className="p-4">
-                          <Badge variant={u.isActive ? 'success' : 'warning'}>
-                            {u.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </td>
-                        <td className="p-4 text-gray-500">{formatDate(u.createdAt)}</td>
-                        <td className="p-4">
-                          <div className="flex gap-1">
-                            <button
-                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"
-                              title="Edit"
-                              onClick={() => openEditModal(u)}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
-                              title="Delete"
-                              onClick={() => setConfirmDelete({ open: true, id: u.id })}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
-          {meta.totalPages > 1 && (
-            <div className="flex items-center justify-between text-sm text-gray-500">
-              <span>
-                Showing {users.length} of {meta.total} users
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={meta.page <= 1}
-                  onClick={() => goToPage(meta.page - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={meta.page >= meta.totalPages}
-                  onClick={() => goToPage(meta.page + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       )}
     </>
   );
 
   const renderRolesTab = () => (
     <>
+      <div className="flex justify-end">
+        <Button size="md" className="gap-2" onClick={openCreateRoleModal}>
+          <Plus className="w-4 h-4" /> Add Role
+        </Button>
+      </div>
+
       {rolesLoading && (
         <div className="flex items-center justify-center py-20">
           <div className="animate-spin h-8 w-8 border-4 border-brand-600 border-t-transparent rounded-full" />
         </div>
       )}
 
-      {rolesError && !rolesLoading && (
-        <Card hover={false}>
-          <div className="text-center py-12">
-            <p className="text-red-500 mb-4">{rolesError}</p>
-            <Button variant="outline" onClick={fetchRolesAndPermissions}>
-              Retry
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {!rolesLoading && !rolesError && (
+      {!rolesLoading && (
         <Card hover={false} padding="none">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -367,42 +440,64 @@ export default function UsersPage() {
                 <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
                   <th className="p-4 font-medium">Role Name</th>
                   <th className="p-4 font-medium">Code</th>
+                  <th className="p-4 font-medium">Type</th>
                   <th className="p-4 font-medium">Users</th>
                   <th className="p-4 font-medium">Permissions</th>
-                  <th className="p-4 font-medium">Permission Codes</th>
+                  <th className="p-4 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {roles.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-12 text-center text-gray-500">
+                    <td colSpan={6} className="p-12 text-center text-gray-500">
                       <Shield className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                       <p>No roles found</p>
                     </td>
                   </tr>
                 ) : (
                   roles.map((r) => {
-                    const permCodes = getRolePermissions(r);
+                    const permCodes = r.permissions?.map((p) => p.permission.code) ?? [];
                     return (
-                      <tr
-                        key={r.id}
-                        className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30"
-                      >
+                      <tr key={r.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
                         <td className="p-4 font-medium">{r.name}</td>
                         <td className="p-4 font-mono text-xs text-gray-500">{r.code}</td>
-                        <td className="p-4">{r._count?.users ?? 0}</td>
-                        <td className="p-4">{r._count?.permissions ?? 0}</td>
                         <td className="p-4">
-                          <div className="flex flex-wrap gap-1">
+                          <Badge variant={r.isSystem ? 'info' : 'default'}>
+                            {r.isSystem ? 'System' : 'Custom'}
+                          </Badge>
+                        </td>
+                        <td className="p-4">{r._count?.users ?? 0}</td>
+                        <td className="p-4">
+                          <div className="flex flex-wrap gap-1 max-w-md">
                             {permCodes.length > 0 ? (
-                              permCodes.map((code) => (
-                                <Badge key={code} variant="default" className="text-xs">
-                                  {code}
-                                </Badge>
+                              permCodes.slice(0, 5).map((code) => (
+                                <Badge key={code} variant="default" className="text-xs">{code}</Badge>
                               ))
                             ) : (
                               <span className="text-gray-400 text-xs">None</span>
                             )}
+                            {permCodes.length > 5 && (
+                              <Badge variant="default" className="text-xs">+{permCodes.length - 5} more</Badge>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex gap-1">
+                            <button
+                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"
+                              title="Edit"
+                              onClick={() => openEditRoleModal(r)}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                              title="Delete"
+                              disabled={r.isSystem}
+                              onClick={() => setConfirmDelete({ open: true, kind: 'role', id: r.id })}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -417,44 +512,245 @@ export default function UsersPage() {
     </>
   );
 
+  const renderPermissionsTab = () => (
+    <>
+      <div className="flex justify-end">
+        <Button size="md" className="gap-2" onClick={openCreatePermissionModal}>
+          <Plus className="w-4 h-4" /> Add Permission
+        </Button>
+      </div>
+
+      {rolesLoading && (
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin h-8 w-8 border-4 border-brand-600 border-t-transparent rounded-full" />
+        </div>
+      )}
+
+      {!rolesLoading && (
+        <div className="space-y-4">
+          {Object.entries(groupedPermissions).map(([group, perms]) => (
+            <Card key={group} hover={false} padding="none">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+                <h3 className="font-semibold capitalize">{group}</h3>
+                <p className="text-xs text-gray-500">{perms.length} permission(s)</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
+                      <th className="p-4 font-medium">Name</th>
+                      <th className="p-4 font-medium">Code</th>
+                      <th className="p-4 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {perms.map((p) => (
+                      <tr key={p.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                        <td className="p-4 font-medium">{p.name}</td>
+                        <td className="p-4 font-mono text-xs text-gray-500">{p.code}</td>
+                        <td className="p-4">
+                          <div className="flex gap-1">
+                            <button
+                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"
+                              title="Edit"
+                              onClick={() => openEditPermissionModal(p)}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
+                              title="Delete"
+                              onClick={() => setConfirmDelete({ open: true, kind: 'permission', id: p.id })}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div className="space-y-6">
       {renderTabs()}
-      {activeTab === 'users' ? renderUsersTab() : renderRolesTab()}
+      {activeTab === 'users' ? renderUsersTab() : activeTab === 'roles' ? renderRolesTab() : renderPermissionsTab()}
 
-      <Modal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title="Edit User"
-      >
-        <form onSubmit={handleUpdateUser}>
-          <FormField label="Role">
+      {/* USER MODAL */}
+      <Modal open={userModalOpen} onClose={() => setUserModalOpen(false)} title={editingUser ? 'Edit User' : 'Add User'}>
+        <form onSubmit={handleUserSubmit}>
+          <FormField label="Full Name" required>
+            <FormInput
+              value={userForm.fullName}
+              onChange={(v) => setUserForm({ ...userForm, fullName: v })}
+              placeholder="Full name"
+              required
+            />
+          </FormField>
+          <FormField label="Email" required>
+            <FormInput
+              type="email"
+              value={userForm.email}
+              onChange={(v) => setUserForm({ ...userForm, email: v })}
+              placeholder="user@example.com"
+              required
+              disabled={!!editingUser}
+            />
+          </FormField>
+          <FormField label="Phone">
+            <FormInput
+              value={userForm.phone}
+              onChange={(v) => setUserForm({ ...userForm, phone: v })}
+              placeholder="+880 1XXX XXX XXX"
+            />
+          </FormField>
+          <FormField label="Role" required>
             <FormSelect
-              value={editRoleId}
-              onChange={(v) => setEditRoleId(v)}
+              value={userForm.roleId}
+              onChange={(v) => setUserForm({ ...userForm, roleId: v })}
               placeholder="Select role"
               options={roleOptions}
             />
           </FormField>
-
+          {!editingUser && (
+            <FormField label="Password">
+              <FormInput
+                type="password"
+                value={userForm.password}
+                onChange={(v) => setUserForm({ ...userForm, password: v })}
+                placeholder="Leave empty to auto-generate"
+              />
+            </FormField>
+          )}
           <div className="flex items-center gap-6 mb-4">
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input
                 type="checkbox"
-                checked={editIsActive}
-                onChange={(e) => setEditIsActive(e.target.checked)}
+                checked={userForm.isActive}
+                onChange={(e) => setUserForm({ ...userForm, isActive: e.target.checked })}
                 className="rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
               />
               Active
             </label>
           </div>
-
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-            <Button variant="outline" type="button" onClick={() => setModalOpen(false)}>
-              Cancel
+            <Button variant="outline" type="button" onClick={() => setUserModalOpen(false)}>Cancel</Button>
+            <Button type="submit" loading={userSubmitting}>
+              {editingUser ? 'Update' : 'Create'} User
             </Button>
-            <Button type="submit" loading={submitting}>
-              Update User
+          </div>
+        </form>
+      </Modal>
+
+      {/* ROLE MODAL */}
+      <Modal open={roleModalOpen} onClose={() => setRoleModalOpen(false)} title={editingRole ? 'Edit Role' : 'Add Role'}>
+        <form onSubmit={handleRoleSubmit}>
+          <FormField label="Role Name" required>
+            <FormInput
+              value={roleForm.name}
+              onChange={(v) => setRoleForm({ ...roleForm, name: v })}
+              placeholder="e.g. Content Manager"
+              required
+            />
+          </FormField>
+          <FormField label="Code" required>
+            <FormInput
+              value={roleForm.code}
+              onChange={(v) => setRoleForm({ ...roleForm, code: v.toLowerCase() })}
+              placeholder="e.g. content_manager"
+              required
+              disabled={!!editingRole}
+            />
+          </FormField>
+          <FormField label="Permissions">
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 max-h-64 overflow-y-auto space-y-3">
+              {Object.entries(groupedPermissions).map(([group, perms]) => (
+                <div key={group}>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{group}</p>
+                  <div className="space-y-1">
+                    {perms.map((p) => (
+                      <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roleForm.permissionIds.includes(p.id)}
+                          onChange={() => togglePermission(p.id)}
+                          className="rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
+                        />
+                        <span>{p.name}</span>
+                        <span className="text-xs text-gray-400 font-mono">({p.code})</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </FormField>
+          <div className="flex items-center gap-6 mb-4">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={roleForm.isSystem}
+                onChange={(e) => setRoleForm({ ...roleForm, isSystem: e.target.checked })}
+                className="rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
+              />
+              System role (cannot be deleted)
+            </label>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <Button variant="outline" type="button" onClick={() => setRoleModalOpen(false)}>Cancel</Button>
+            <Button type="submit" loading={roleSubmitting}>
+              {editingRole ? 'Update' : 'Create'} Role
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* PERMISSION MODAL */}
+      <Modal open={permissionModalOpen} onClose={() => setPermissionModalOpen(false)} title={editingPermission ? 'Edit Permission' : 'Add Permission'}>
+        <form onSubmit={handlePermissionSubmit}>
+          <FormField label="Name" required>
+            <FormInput
+              value={permissionForm.name}
+              onChange={(v) => setPermissionForm({ ...permissionForm, name: v })}
+              placeholder="e.g. Manage Tours"
+              required
+            />
+          </FormField>
+          <FormField label="Code" required>
+            <FormInput
+              value={permissionForm.code}
+              onChange={(v) => setPermissionForm({ ...permissionForm, code: v })}
+              placeholder="e.g. tours.manage"
+              required
+              disabled={!!editingPermission}
+            />
+          </FormField>
+          <FormField label="Group">
+            <FormInput
+              value={permissionForm.group}
+              onChange={(v) => setPermissionForm({ ...permissionForm, group: v })}
+              placeholder="e.g. tours, hotels, billing"
+            />
+          </FormField>
+          <FormField label="Description">
+            <FormTextarea
+              value={permissionForm.description}
+              onChange={(v) => setPermissionForm({ ...permissionForm, description: v })}
+              placeholder="What this permission allows"
+              rows={2}
+            />
+          </FormField>
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <Button variant="outline" type="button" onClick={() => setPermissionModalOpen(false)}>Cancel</Button>
+            <Button type="submit" loading={permissionSubmitting}>
+              {editingPermission ? 'Update' : 'Create'} Permission
             </Button>
           </div>
         </form>
@@ -462,10 +758,10 @@ export default function UsersPage() {
 
       <ConfirmDialog
         open={confirmDelete.open}
-        onClose={() => setConfirmDelete({ open: false, id: null })}
+        onClose={() => setConfirmDelete({ open: false, kind: null, id: null })}
         onConfirm={handleDelete}
-        title="Delete User"
-        message="Are you sure you want to delete this user? This action cannot be undone."
+        title={`Delete ${confirmDelete.kind}`}
+        message="Are you sure you want to delete this item? This action cannot be undone."
       />
     </div>
   );

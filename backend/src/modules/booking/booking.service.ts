@@ -66,6 +66,36 @@ export class BookingService {
     return this.prisma.booking.update({ where: { id }, data: { status: 'cancelled', cancelledAt: new Date() } });
   }
 
+  async adminCreateBooking(tenantId: string, data: {
+    userId: string;
+    type: 'tour' | 'hotel' | 'flight' | 'visa' | 'package';
+    itemId: string;
+    startDate: string;
+    endDate?: string;
+    guests?: number;
+    notes?: string;
+    totalAmount?: number;
+  }) {
+    const user = await this.prisma.user.findFirst({ where: { id: data.userId, tenantId } });
+    if (!user) throw new BadRequestException('User not found in this tenant');
+    return this.prisma.booking.create({
+      data: {
+        tenantId,
+        userId: data.userId,
+        bookingType: data.type,
+        itemId: data.itemId,
+        startDate: new Date(data.startDate),
+        endDate: data.endDate ? new Date(data.endDate) : null,
+        guests: data.guests || 1,
+        notes: data.notes,
+        status: 'pending',
+        totalAmount: data.totalAmount ?? 0,
+        bookingCode: this.generateBookingCode(),
+      },
+      include: { user: { select: { id: true, fullName: true, email: true } } },
+    });
+  }
+
   private generateBookingCode(): string {
     return `FLY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
   }

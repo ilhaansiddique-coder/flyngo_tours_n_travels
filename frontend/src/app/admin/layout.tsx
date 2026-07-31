@@ -8,7 +8,7 @@ import {
   Ticket, Percent, UserPlus, BarChart3, Settings,
   Shield, FileText, LogOut, ChevronLeft,
   FileText as FileIcon, Image, Search as SearchIcon, Star, HelpCircle,
-  Megaphone
+  Megaphone, Car, MessageSquare, Bell, CreditCard
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -21,12 +21,17 @@ const navigation = [
   { label: 'Flights', href: '/admin/flights', icon: Plane },
   { label: 'Visa', href: '/admin/visa', icon: Globe },
   { label: 'Destinations', href: '/admin/destinations', icon: Ticket },
+  { label: 'Transport', href: '/admin/transport', icon: Car },
+  { label: 'Reviews', href: '/admin/reviews', icon: MessageSquare },
+  { label: 'Payments', href: '/admin/payments', icon: CreditCard },
   { label: 'Coupons', href: '/admin/coupons', icon: Percent },
   { label: 'Affiliates', href: '/admin/affiliates', icon: UserPlus },
+  { label: 'Campaigns', href: '/admin/marketing', icon: Megaphone },
   { label: 'Reports', href: '/admin/reports', icon: BarChart3 },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
   { label: 'Users & Roles', href: '/admin/users', icon: Shield },
   { label: 'Audit Logs', href: '/admin/audit-logs', icon: FileText },
+  { label: 'Notifications', href: '/admin/notifications', icon: Bell },
   // CMS
   { label: 'CMS Pages', href: '/admin/cms/pages', icon: FileIcon },
   { label: 'CMS Blogs', href: '/admin/cms/blogs', icon: FileIcon },
@@ -34,8 +39,6 @@ const navigation = [
   { label: 'SEO Manager', href: '/admin/cms/seo', icon: SearchIcon },
   { label: 'Testimonials', href: '/admin/cms/testimonials', icon: Star },
   { label: 'FAQs', href: '/admin/cms/faqs', icon: HelpCircle },
-  // Marketing
-  { label: 'Marketing', href: '/admin/marketing', icon: Megaphone },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

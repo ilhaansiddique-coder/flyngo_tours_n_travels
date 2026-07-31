@@ -18,6 +18,8 @@ import { AiModule } from './modules/ai/ai.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
+import { TransportModule } from './modules/transport/transport.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 
 @Module({
@@ -41,6 +43,8 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
     NotificationsModule,
     AdminModule,
     HealthModule,
+    TransportModule,
+    ReviewsModule,
   ],
 })
 export class AppModule implements NestModule {

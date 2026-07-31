@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Globe, Share2 } from 'lucide-react';
 import logoImg from '@/images/flyngo_transparent.png';
 
@@ -13,6 +14,8 @@ const footerNav = [
 ];
 
 export function Footer() {
+  const pathname = usePathname();
+  if (pathname.startsWith('/admin')) return null;
   return (
     <footer className="w-full py-12 bg-surface border-t border-white/5 opacity-80 hover:opacity-100 transition-all">
       <div className="flex flex-col md:flex-row justify-between items-center px-16 max-w-[1440px] mx-auto gap-8">

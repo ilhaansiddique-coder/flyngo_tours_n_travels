@@ -72,12 +72,50 @@ export class MarketingService {
     return this.prisma.coupon.delete({ where: { id } });
   }
 
-  async listAllAffiliates(tenantId: string) {
-    return this.prisma.affiliate.findMany({
-      where: { tenantId },
-      include: { referrals: true, commissions: true },
-      orderBy: { createdAt: 'desc' },
+  async listAllAffiliates(tenantId: string, page = 1, limit = 20) {
+    const where = { tenantId };
+    const [items, total] = await Promise.all([
+      this.prisma.affiliate.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { referrals: true, commissions: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.affiliate.count({ where }),
+    ]);
+    return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  }
+
+  async createAffiliate(tenantId: string, data: any) {
+    return this.prisma.affiliate.create({
+      data: {
+        tenantId,
+        userId: data.userId,
+        referralCode: data.referralCode,
+        commissionRate: data.commissionRate ?? 5.0,
+        isActive: data.isActive ?? true,
+      },
     });
+  }
+
+  async updateAffiliate(id: string, tenantId: string, data: any) {
+    const existing = await this.prisma.affiliate.findFirst({ where: { id, tenantId } });
+    if (!existing) throw new NotFoundException('Affiliate not found');
+    return this.prisma.affiliate.update({
+      where: { id },
+      data: {
+        referralCode: data.referralCode,
+        commissionRate: data.commissionRate,
+        isActive: data.isActive,
+      },
+    });
+  }
+
+  async removeAffiliate(id: string, tenantId: string) {
+    const existing = await this.prisma.affiliate.findFirst({ where: { id, tenantId } });
+    if (!existing) throw new NotFoundException('Affiliate not found');
+    return this.prisma.affiliate.delete({ where: { id } });
   }
 
   async getAffiliateStats(tenantId: string, affiliateId: string) {

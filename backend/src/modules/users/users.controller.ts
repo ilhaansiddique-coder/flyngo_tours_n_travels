@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Delete, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -29,6 +29,13 @@ export class UsersController {
   @ApiOperation({ summary: 'List all users (admin)' })
   async listUsers(@CurrentTenantId() tenantId: string, @Query() pagination: PaginationDto) {
     return this.usersService.listUsers(tenantId, pagination.page, pagination.limit);
+  }
+
+  @Post()
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: 'Create a user (admin)' })
+  async createUser(@CurrentTenantId() tenantId: string, @Body() body: any) {
+    return this.usersService.createUser(tenantId, body);
   }
 
   @Get(':id')

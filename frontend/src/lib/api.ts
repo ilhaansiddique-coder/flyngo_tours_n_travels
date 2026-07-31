@@ -1,5 +1,12 @@
 const API_BASE = '/api/v1';
 
+if (typeof window !== 'undefined' && /^https?:\/\//i.test(API_BASE)) {
+  throw new Error(
+    `[api] API_BASE must be a relative path so the Next.js rewrite can proxy it. ` +
+      `Got absolute URL: ${API_BASE}. Use '/api/v1' and set BACKEND_URL in the environment.`,
+  );
+}
+
 interface FetchOptions extends RequestInit {
   token?: string;
 }

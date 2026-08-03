@@ -28,7 +28,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
-      - run: npm ci
+      - run: npm install --no-audit --prefer-offline
 
       - name: Prisma generate
         run: npx prisma generate

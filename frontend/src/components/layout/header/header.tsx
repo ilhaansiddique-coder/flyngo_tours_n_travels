@@ -21,7 +21,12 @@ const navItems = [
 export function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
+
+  useEffect(() => {
+    setAuthReady(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -244,7 +249,9 @@ export function Header() {
                 className="my-4"
                 style={{ borderTop: '1px solid var(--color-mobile-divider)' }}
               />
-              {isAuthenticated() && user ? (
+          {!authReady ? (
+            <div className="flex items-center gap-3" style={{ minWidth: 180, minHeight: 40 }} aria-hidden="true" />
+          ) : isAuthenticated() && user ? (
                 <>
                   <Link
                     href="/admin/dashboard"

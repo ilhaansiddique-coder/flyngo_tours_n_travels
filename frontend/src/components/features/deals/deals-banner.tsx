@@ -40,10 +40,10 @@ export function DealsBanner() {
   return (
     <Section background="white">
       <Container>
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950 via-violet-950 to-slate-900 p-8 sm:p-12">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#042e5b] via-[#021935] to-[#1a0a05] p-8 sm:p-12">
           {/* Background decorations */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/15 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/15 rounded-full blur-3xl" />
 
           <div className="relative">
             {/* Header */}

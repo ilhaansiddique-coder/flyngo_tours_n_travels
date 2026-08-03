@@ -1,11 +1,7 @@
 'use client';
 
-'use client';
-
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { PlaneTakeoff, CalendarDays, MapPin, ChevronLeft, ChevronRight, Rocket, ArrowUpRight, ArrowRight } from 'lucide-react';
+import { PlaneTakeoff, ChevronLeft, ChevronRight, Rocket, ArrowUpRight } from 'lucide-react';
+import { HeroSection } from '@/components/features/hero/hero-section';
 
 const routes = [
   { from: 'LHR', fromCity: 'London', to: 'JFK', toCity: 'New York', duration: 'Direct · 7h 45m', price: '$1,240' },
@@ -22,109 +18,10 @@ const stats = [
 ];
 
 export default function HomePage() {
-  const router = useRouter();
-  const [destination, setDestination] = useState('');
-  const [serviceType, setServiceType] = useState('First Class');
-  const [departureDate, setDepartureDate] = useState('');
-
-  const handleSearch = () => {
-    const params = new URLSearchParams();
-    if (destination) params.set('destination', destination);
-    if (serviceType) params.set('class', serviceType);
-    if (departureDate) params.set('date', departureDate);
-    router.push(`/booking?${params.toString()}`);
-  };
   return (
     <main>
       {/* Hero Section */}
-      <section className="relative h-screen min-h-[700px] w-full flex items-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img
-            alt="Luxury travel background with blue and white aesthetic"
-            className="w-full h-full object-cover brightness-[0.85]"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2Vke4Q6ZGIoLFvdAiYQpUMjSsa1OApffMFqvvcBVrTUhDQSPrwbRqQ4EHlJgxj4UaDu4tzISvY-_npW0zOSMEtu3tGBE_rCp5v6KYgK93fa-aX_OmcO3CuAKHtyfJY_azelB4WNa7kn43b7oZMG5pfOiswaeL51ZSdd5ZX2IlifxF0ayan5KfRFsYVOG93AzpRQG1qwnGEbTm42I6immIGr982o9TAmoljNjgb34UeDxOPXBFrsipkg"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/40 via-transparent to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent" />
-        </div>
-
-        <div className="relative z-10 px-16 max-w-[1440px] mx-auto w-full">
-          <div className="max-w-2xl animate-fade-in-up">
-            <span className="inline-block glass-white px-4 py-1.5 rounded-full text-white text-xs tracking-widest uppercase shadow-sm mb-6">
-              Blue Horizon Club
-            </span>
-            <h1 className="font-display text-[60px] leading-[1.1] tracking-[-0.02em] font-bold text-white mb-6 drop-shadow-xl text-glow-blue">
-              Your Escape,<br />
-              <span className="text-white italic opacity-90">Purely Refined.</span>
-            </h1>
-            <p className="text-lg leading-relaxed text-white/90 mb-12 max-w-md drop-shadow-md">
-              Seamless velocity meets ethereal comfort. Discover the world in a new light with Fly&Go&apos;s signature white-glove service.
-            </p>
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[1100px] px-4 z-20">
-          <div className="glass-white shadow-2xl rounded-full">
-            <form
-              onSubmit={(e) => { e.preventDefault(); handleSearch(); }}
-              className="flex flex-col md:flex-row items-stretch md:items-center gap-0 bg-white/10 backdrop-blur-xl rounded-full shadow-2xl border border-white/20 overflow-hidden p-2"
-            >
-              <div className="flex-1 flex flex-col px-8 py-3 border-r border-white/10">
-                <label className="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1">Where to next?</label>
-                <div className="flex items-center">
-                  <MapPin className="text-[#00eefc] mr-2 w-5 h-5" />
-                  <input
-                    className="bg-transparent border-none outline-none text-base text-white placeholder:text-white/40 w-full p-0"
-                    placeholder="Destinations"
-                    type="text"
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="flex-1 flex flex-col px-8 py-3 border-r border-white/10">
-                <label className="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1">Service Type</label>
-                <div className="flex items-center cursor-pointer relative">
-                  <PlaneTakeoff className="text-[#00eefc] mr-2 w-5 h-5" />
-                  <select
-                    className="bg-transparent border-none outline-none text-base text-white w-full appearance-none p-0 pr-6"
-                    value={serviceType}
-                    onChange={(e) => setServiceType(e.target.value)}
-                  >
-                    <option className="bg-surface">First Class</option>
-                    <option className="bg-surface">Business Class</option>
-                    <option className="bg-surface">Premium Economy</option>
-                    <option className="bg-surface">Economy</option>
-                  </select>
-                  <svg className="absolute right-0 text-white/50 w-4 h-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-              <div className="flex-1 flex flex-col px-8 py-3">
-                <label className="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-1">Departure Date</label>
-                <div className="flex items-center">
-                  <CalendarDays className="text-[#00eefc] mr-2 w-5 h-5" />
-                  <input
-                    className="bg-transparent border-none outline-none text-base text-white w-full p-0 [color-scheme:dark]"
-                    type="date"
-                    value={departureDate}
-                    onChange={(e) => setDepartureDate(e.target.value)}
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-10 py-4 rounded-full text-sm font-bold tracking-wider transition-all duration-300 hover:bg-blue-700 hover:shadow-lg flex items-center justify-center gap-2 group whitespace-nowrap ml-2"
-              >
-                FIND JOURNEY
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </form>
-          </div>
-        </div>
-      </section>
+      <HeroSection />
 
       {/* Curated Experiences */}
       <section className="mt-32 px-16 max-w-[1440px] mx-auto mb-32">

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Playfair_Display, Hanken_Grotesk } from 'next/font/google';
+import { Montserrat } from 'next/font/google';
 import { Providers } from '@/components/providers';
 import { Header } from '@/components/layout/header/header';
 import { MainContent } from '@/components/layout/main-content';
@@ -7,16 +7,10 @@ import { Footer } from '@/components/layout/footer/footer';
 import { cn } from '@/lib/utils';
 import '@/styles/globals.css';
 
-const playfair = Playfair_Display({
+const montserrat = Montserrat({
   subsets: ['latin'],
-  weight: ['600', '700'],
-  variable: '--font-playfair',
-});
-
-const hanken = Hanken_Grotesk({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-hanken',
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-montserrat',
 });
 
 export const metadata: Metadata = {
@@ -37,8 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body
         className={cn(
-          playfair.variable,
-          hanken.variable,
+          montserrat.variable,
           'font-sans antialiased bg-surface text-on-surface'
         )}
         suppressHydrationWarning

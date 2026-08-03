@@ -8,6 +8,10 @@ on:
       - '.github/workflows/backend.yml'
   workflow_dispatch:
 
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/flyngo-backend

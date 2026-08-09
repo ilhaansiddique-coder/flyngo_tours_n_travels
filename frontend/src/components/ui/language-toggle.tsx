@@ -33,7 +33,7 @@ export function LanguageToggle() {
             className={cn(
               'px-2.5 py-1 rounded-full transition-colors',
               active
-                ? 'bg-[#00eefc] text-surface shadow-sm'
+                    ? 'bg-primary text-on-primary shadow-sm'
                 : 'text-on-surface-variant hover:text-on-surface'
             )}
             style={active ? undefined : { color: 'var(--color-header-text-muted)' }}

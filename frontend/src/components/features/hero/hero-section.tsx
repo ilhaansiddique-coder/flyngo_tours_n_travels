@@ -50,44 +50,60 @@ export function HeroSection() {
   const isBn = locale === 'bn';
 
   return (
-    <section className="relative isolate overflow-hidden bg-[#020617]">
+    <section
+      className="hero-surface relative isolate overflow-hidden"
+      style={{ color: 'var(--color-hero-text)' }}
+    >
       {/* Backdrop layers: grid + dual-tone radial wash (blue + orange) */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-grid opacity-70" />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(ellipse 60% 50% at 72% 38%, rgba(24,129,255,0.22), transparent 70%), radial-gradient(ellipse 40% 35% at 18% 65%, rgba(243,101,35,0.16), transparent 70%)',
-          }}
-        />
       </div>
 
       <div className="relative mx-auto grid w-full max-w-[1600px] grid-cols-1 items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)] lg:gap-16 lg:px-16 lg:py-24">
         {/* ------------------ left: copy + CTAs + search ------------------ */}
         <header className="relative z-10 text-center lg:text-left">
-          <span className="inline-flex items-center gap-2 px-3 py-1 mb-5 rounded-full text-[10px] tracking-widest uppercase font-bold text-[#00eefc] border border-[#00eefc]/30 bg-[#00eefc]/5">
+          <span
+            className="inline-flex items-center gap-2 px-3 py-1 mb-5 rounded-full text-[10px] tracking-widest uppercase font-bold border"
+            style={{
+              color: 'var(--color-secondary)',
+              borderColor: 'color-mix(in oklab, var(--color-secondary) 30%, transparent)',
+              backgroundColor: 'color-mix(in oklab, var(--color-secondary) 5%, transparent)',
+            }}
+          >
             <FileCheck className="w-3 h-3" />
             {t('hero_badge')}
           </span>
 
-          <h1 className="font-display text-5xl font-extrabold leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl lg:text-7xl">
+          <h1
+            className="font-display text-5xl font-extrabold leading-[1.05] tracking-[-0.02em] sm:text-6xl lg:text-7xl"
+            style={{ color: 'var(--color-hero-text)' }}
+          >
             {t('hero_title_a')}{' '}
             <span className="gradient-text-warm">{t('hero_title_b')}</span>
             <br />
-            <span className="text-4xl font-semibold tracking-[-0.01em] opacity-90 sm:text-5xl lg:text-6xl">
+            <span
+              className="text-4xl font-semibold tracking-[-0.01em] sm:text-5xl lg:text-6xl"
+              style={{ color: 'var(--color-hero-text)', opacity: 0.9 }}
+            >
               {t('hero_title_c')}
             </span>
           </h1>
 
-          <p className="mt-6 max-w-xl text-base leading-relaxed text-gray-400 sm:text-lg lg:mt-8 lg:mx-0 mx-auto">
+          <p
+            className="mt-6 max-w-xl text-base leading-relaxed sm:text-lg lg:mt-8 lg:mx-0 mx-auto"
+            style={{ color: 'var(--color-hero-text-muted)' }}
+          >
             {t('hero_subtitle')}
           </p>
 
           <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start lg:mt-10">
             <Link
               href="/tours"
-              className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-amber-500 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition hover:from-blue-500 hover:to-amber-400 sm:text-base"
+              className="group inline-flex items-center justify-center gap-2 rounded-2xl px-8 py-3.5 text-sm font-semibold text-white shadow-lg transition sm:text-base"
+              style={{
+                background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-tertiary) 100%)',
+                boxShadow: '0 12px 28px -8px color-mix(in oklab, var(--color-primary) 50%, transparent)',
+              }}
             >
               <PlaneIcon className="h-4 w-4" />
               {t('hero_cta_explore')}
@@ -95,7 +111,11 @@ export function HeroSection() {
             </Link>
             <Link
               href="/visa"
-              className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-rose-500 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition hover:from-amber-400 hover:to-rose-400 sm:text-base"
+              className="group inline-flex items-center justify-center gap-2 rounded-2xl px-8 py-3.5 text-sm font-semibold text-white shadow-lg transition sm:text-base"
+              style={{
+                background: 'linear-gradient(90deg, var(--color-tertiary) 0%, var(--color-tertiary) 100%)',
+                boxShadow: '0 12px 28px -8px color-mix(in oklab, var(--color-tertiary) 50%, transparent)',
+              }}
             >
               <FileCheck className="h-4 w-4" />
               {t('hero_visa_cta')}
@@ -103,7 +123,12 @@ export function HeroSection() {
             </Link>
             <Link
               href="/destinations"
-              className="group inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/10 sm:text-base"
+              className="group inline-flex items-center justify-center gap-2 rounded-2xl border px-8 py-3.5 text-sm font-semibold backdrop-blur-sm transition sm:text-base"
+              style={{
+                color: 'var(--color-hero-text)',
+                borderColor: 'color-mix(in oklab, var(--color-hero-text) 20%, transparent)',
+                backgroundColor: 'color-mix(in oklab, var(--color-hero-text) 5%, transparent)',
+              }}
             >
               {t('hero_cta_destinations')}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -113,13 +138,14 @@ export function HeroSection() {
           {/* Service pills — quick visual proof of what we do */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
             {[
-              { label: isBn ? 'ট্যুর প্যাকেজ' : 'Tour Packages', icon: Plane, tint: 'text-blue-300 border-blue-400/20 bg-blue-500/5' },
-              { label: isBn ? 'ভিসা প্রসেসিং' : 'Visa Processing', icon: FileCheck, tint: 'text-amber-300 border-amber-400/20 bg-amber-500/5' },
-              { label: isBn ? 'হজ্জ ও ওমরাহ' : 'Hajj & Umrah', icon: FileCheck, tint: 'text-emerald-300 border-emerald-400/20 bg-emerald-500/5' },
+              { label: isBn ? 'ট্যুর প্যাকেজ' : 'Tour Packages', icon: Plane, token: 'primary' as const },
+              { label: isBn ? 'ভিসা প্রসেসিং' : 'Visa Processing', icon: FileCheck, token: 'tertiary' as const },
+              { label: isBn ? 'হজ্জ ও ওমরাহ' : 'Hajj & Umrah', icon: FileCheck, token: 'emerald' as const },
             ].map((pill) => (
               <span
                 key={pill.label}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${pill.tint}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border"
+                style={pillStyle(pill.token)}
               >
                 <pill.icon className="w-3 h-3" />
                 {pill.label}
@@ -127,13 +153,22 @@ export function HeroSection() {
             ))}
           </div>
 
-          <dl className="mt-10 grid max-w-2xl grid-cols-2 gap-x-6 gap-y-4 border-t border-white/10 pt-6 sm:grid-cols-4 sm:gap-x-4 lg:mt-12 lg:mx-0 mx-auto">
+          <dl
+            className="mt-10 grid max-w-2xl grid-cols-2 gap-x-6 gap-y-4 border-t pt-6 sm:grid-cols-4 sm:gap-x-4 lg:mt-12 lg:mx-0 mx-auto"
+            style={{ borderColor: 'color-mix(in oklab, var(--color-hero-text) 10%, transparent)' }}
+          >
             {STATS.map((stat) => (
               <div key={stat.labelKey} className="text-center lg:text-left min-w-0">
-                <dt className="text-[10px] uppercase tracking-[0.06em] text-gray-500 whitespace-nowrap">
+                <dt
+                  className="text-[10px] uppercase tracking-[0.06em] whitespace-nowrap"
+                  style={{ color: 'var(--color-hero-text-muted)' }}
+                >
                   {t(stat.labelKey)}
                 </dt>
-                <dd className="mt-1 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl whitespace-nowrap">
+                <dd
+                  className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl whitespace-nowrap"
+                  style={{ color: 'var(--color-hero-text)' }}
+                >
                   {stat.value}
                 </dd>
               </div>
@@ -142,39 +177,62 @@ export function HeroSection() {
 
           {/* Search widget — flows in left column on desktop, full width on mobile */}
           <div className="mt-10 lg:mt-12">
-            <div className="rounded-3xl border border-white/10 bg-white/10 p-2 shadow-2xl shadow-blue-500/10 backdrop-blur-xl">
+            <div
+              className="rounded-3xl border p-2 shadow-2xl backdrop-blur-xl"
+              style={{
+                borderColor: 'color-mix(in oklab, var(--color-hero-text) 10%, transparent)',
+                backgroundColor: 'color-mix(in oklab, var(--color-hero-text) 10%, transparent)',
+                boxShadow: '0 24px 48px -12px color-mix(in oklab, var(--color-primary) 30%, transparent)',
+              }}
+            >
               <div className="flex flex-col gap-2 sm:flex-row">
-                <div className="flex flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 transition-colors hover:border-blue-400/40 focus-within:border-blue-400/60 focus-within:bg-white/10">
-                  <MapPin className="h-5 w-5 flex-shrink-0 text-blue-400" />
+                <div
+                  className="flex flex-1 items-center gap-3 rounded-2xl border px-4 py-3 transition-colors"
+                  style={searchFieldStyle()}
+                >
+                  <MapPin className="h-5 w-5 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
                   <input
                     type="text"
                     placeholder={t('search_where')}
                     aria-label="Destination"
-                    className="w-full border-none bg-transparent text-sm text-white outline-none placeholder:text-gray-500"
+                    className="w-full border-none bg-transparent text-sm outline-none"
+                    style={searchInputStyle()}
                   />
                 </div>
-                <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 transition-colors hover:border-blue-400/40 focus-within:border-blue-400/60 sm:w-44">
-                  <Calendar className="h-5 w-5 flex-shrink-0 text-blue-400" />
+                <div
+                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 transition-colors sm:w-44"
+                  style={searchFieldStyle()}
+                >
+                  <Calendar className="h-5 w-5 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
                   <input
                     type="text"
                     placeholder={t('search_dates')}
                     aria-label="Travel dates"
-                    className="w-full border-none bg-transparent text-sm text-white outline-none placeholder:text-gray-500"
+                    className="w-full border-none bg-transparent text-sm outline-none"
+                    style={searchInputStyle()}
                   />
                 </div>
-                <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 transition-colors hover:border-blue-400/40 focus-within:border-blue-400/60 sm:w-40">
-                  <Users className="h-5 w-5 flex-shrink-0 text-blue-400" />
+                <div
+                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 transition-colors sm:w-40"
+                  style={searchFieldStyle()}
+                >
+                  <Users className="h-5 w-5 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
                   <input
                     type="text"
                     placeholder={t('search_guests')}
                     aria-label="Number of guests"
-                    className="w-full border-none bg-transparent text-sm text-white outline-none placeholder:text-gray-500"
+                    className="w-full border-none bg-transparent text-sm outline-none"
+                    style={searchInputStyle()}
                   />
                 </div>
                 <button
                   type="submit"
                   aria-label="Search"
-                  className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-amber-500 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/25 transition hover:from-blue-500 hover:to-amber-400"
+                  className="flex items-center justify-center gap-2 rounded-2xl px-6 py-3 font-semibold text-white shadow-lg transition"
+                  style={{
+                    background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-tertiary) 100%)',
+                    boxShadow: '0 12px 28px -8px color-mix(in oklab, var(--color-primary) 50%, transparent)',
+                  }}
                 >
                   <Search className="h-5 w-5" />
                   <span className="hidden sm:inline">{t('search_btn')}</span>
@@ -186,7 +244,12 @@ export function HeroSection() {
               {QUICK_PLACES.map((place) => (
                 <button
                   key={place}
-                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-gray-400 backdrop-blur-sm transition-colors hover:border-white/20 hover:text-white"
+                  className="rounded-full border px-3 py-1.5 text-xs backdrop-blur-sm transition-colors"
+                  style={{
+                    color: 'var(--color-hero-text-muted)',
+                    borderColor: 'color-mix(in oklab, var(--color-hero-text) 10%, transparent)',
+                    backgroundColor: 'color-mix(in oklab, var(--color-hero-text) 5%, transparent)',
+                  }}
                 >
                   {place}
                 </button>
@@ -197,7 +260,9 @@ export function HeroSection() {
 
         {/* ------------------ right: globe ------------------ */}
         <div className="relative order-first lg:order-last">
-          <div className="relative mx-auto aspect-square w-full max-w-[520px]">
+          {/* Light mode: globe fills 100% of the available column.
+              Dark mode: capped at 520px (original sizing). */}
+          <div className="relative mx-auto aspect-square w-full max-w-full lg:max-w-full dark:max-w-[520px] dark:lg:max-w-[520px]">
             <Globe />
           </div>
 
@@ -213,8 +278,12 @@ export function HeroSection() {
                   style={{ animationDelay: `${i * 0.6}s` }}
                 >
                   <span className="route-dot" />
-                  <span className="text-[11px] font-medium text-white">
-                    {from} <span className="text-gray-400">→</span> {to}
+                  <span
+                    className="text-[11px] font-medium"
+                    style={{ color: 'var(--color-hero-text)' }}
+                  >
+                    {from}{' '}
+                    <span style={{ color: 'var(--color-hero-text-muted)' }}>→</span> {to}
                   </span>
                 </li>
               );
@@ -233,8 +302,12 @@ export function HeroSection() {
                   style={{ animationDelay: `${(i + 3) * 0.6}s` }}
                 >
                   <span className="route-dot" />
-                  <span className="text-[11px] font-medium text-white">
-                    {from} <span className="text-gray-400">→</span> {to}
+                  <span
+                    className="text-[11px] font-medium"
+                    style={{ color: 'var(--color-hero-text)' }}
+                  >
+                    {from}{' '}
+                    <span style={{ color: 'var(--color-hero-text-muted)' }}>→</span> {to}
                   </span>
                 </li>
               );
@@ -245,11 +318,53 @@ export function HeroSection() {
 
       {/* Scroll indicator */}
       <div className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 animate-bounce lg:flex">
-        <span className="text-[10px] uppercase tracking-widest text-blue-400/80">Scroll</span>
-        <div className="flex h-8 w-5 justify-center rounded-full border border-blue-400/40 pt-1">
-          <div className="h-2 w-1 rounded-full bg-amber-500 animate-pulse" />
+        <span
+          className="text-[10px] uppercase tracking-widest"
+          style={{ color: 'color-mix(in oklab, var(--color-primary) 80%, transparent)' }}
+        >
+          Scroll
+        </span>
+        <div
+          className="flex h-8 w-5 justify-center rounded-full border pt-1"
+          style={{ borderColor: 'color-mix(in oklab, var(--color-primary) 40%, transparent)' }}
+        >
+          <div
+            className="h-2 w-1 rounded-full animate-pulse"
+            style={{ backgroundColor: 'var(--color-tertiary)' }}
+          />
         </div>
       </div>
     </section>
   );
+}
+
+type PillToken = 'primary' | 'tertiary' | 'emerald';
+
+function pillStyle(token: PillToken): React.CSSProperties {
+  if (token === 'emerald') {
+    return {
+      color: 'color-mix(in oklab, #10b981 75%, var(--color-hero-text) 25%)',
+      borderColor: 'color-mix(in oklab, #10b981 30%, transparent)',
+      backgroundColor: 'color-mix(in oklab, #10b981 8%, transparent)',
+    };
+  }
+  const base = token === 'primary' ? 'var(--color-primary)' : 'var(--color-tertiary)';
+  return {
+    color: `color-mix(in oklab, ${base} 75%, var(--color-hero-text) 25%)`,
+    borderColor: `color-mix(in oklab, ${base} 20%, transparent)`,
+    backgroundColor: `color-mix(in oklab, ${base} 5%, transparent)`,
+  };
+}
+
+function searchFieldStyle(): React.CSSProperties {
+  return {
+    borderColor: 'color-mix(in oklab, var(--color-hero-text) 10%, transparent)',
+    backgroundColor: 'color-mix(in oklab, var(--color-hero-text) 5%, transparent)',
+  };
+}
+
+function searchInputStyle(): React.CSSProperties {
+  return {
+    color: 'var(--color-hero-text)',
+  };
 }

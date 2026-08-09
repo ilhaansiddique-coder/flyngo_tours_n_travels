@@ -1,4 +1,5 @@
 import { Section, Container } from '@/components/ui/section';
+import { PageHero } from '@/components/ui/page-hero';
 
 export const metadata = {
   title: 'Privacy Policy — Flyngo',
@@ -51,25 +52,24 @@ const sections = [
 export default function PrivacyPage() {
   return (
     <>
-      <Section background="brand" className="pt-32 pb-20">
-        <Container>
-          <h1 className="font-display text-4xl sm:text-5xl font-bold text-white text-center">Privacy Policy</h1>
-          <p className="mt-4 text-brand-100 text-center">Last updated: January 2026</p>
-        </Container>
-      </Section>
+      <PageHero
+        eyebrow="Legal"
+        title={<>Privacy <span className="gradient-text-warm">Policy</span></>}
+        subtitle="Last updated: January 2026"
+      />
 
-      <Section background="white">
+      <Section>
         <Container size="narrow">
           <div className="prose dark:prose-invert max-w-none">
-            <p className="text-lg text-gray-600 dark:text-gray-400">
+            <p className="text-lg text-white/70">
               Flyngo (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) respects your privacy and is committed to protecting your personal
               data. This policy explains what we collect, how we use it, and the rights you have over your
               information.
             </p>
             {sections.map((s) => (
               <div key={s.title} className="mt-8">
-                <h2 className="font-display text-2xl font-bold text-gray-900 dark:text-white">{s.title}</h2>
-                <p className="mt-3 text-gray-600 dark:text-gray-400 leading-relaxed">{s.body}</p>
+                <h2 className="font-display text-2xl font-bold text-white">{s.title}</h2>
+                <p className="mt-3 text-white/60 leading-relaxed">{s.body}</p>
               </div>
             ))}
           </div>

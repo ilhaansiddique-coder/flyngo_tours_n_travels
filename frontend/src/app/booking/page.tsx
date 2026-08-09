@@ -83,13 +83,23 @@ export default function BookingPage() {
 
   if (bookingSuccess) {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center pt-20">
-        <div className="max-w-md w-full px-4">
-          <div className="glass text-center p-12 rounded-2xl border-outline-variant">
-            <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center mx-auto mb-6">
-              <Check className="w-8 h-8 text-green-400" />
+      <div className="relative min-h-screen bg-[#020617] flex items-center justify-center pt-20 overflow-hidden">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-grid opacity-50" />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0,238,252,0.10), transparent 70%)',
+            }}
+          />
+        </div>
+        <div className="relative max-w-md w-full px-4">
+          <div className="glass-deep text-center p-12 rounded-2xl">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mx-auto mb-6">
+              <Check className="w-8 h-8 text-emerald-300" />
             </div>
-            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            <h2 className="font-display text-2xl font-bold text-white mb-2">
               {bookingType === 'custom'
                 ? isBn
                   ? 'অনুরোধ পাঠানো হয়েছে!'
@@ -98,7 +108,7 @@ export default function BookingPage() {
                 ? 'বুকিং নিশ্চিত!'
                 : 'Booking Confirmed!'}
             </h2>
-            <p className="text-on-surface-variant mb-4">
+            <p className="text-white/60 mb-4">
               {bookingType === 'custom'
                 ? isBn
                   ? 'আমাদের টিম ২৪ ঘন্টার মধ্যে আপনার সাথে যোগাযোগ করবে।'
@@ -116,7 +126,7 @@ export default function BookingPage() {
               </Link>
               <Button
                 size="lg"
-                className="flex-1 bg-white text-surface hover:bg-[#00eefc] font-bold"
+                className="flex-1"
                 onClick={() => {
                   setBookingSuccess(false);
                   reset();
@@ -436,10 +446,10 @@ export default function BookingPage() {
 
   // -------- STANDARD booking flow with type selector --------
   return (
-    <div className="min-h-screen bg-surface pt-24">
+    <div className="min-h-screen bg-[#020617] pt-24 pb-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-10">
-          <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">
+          <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
             {t('booking_type_label')}
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -458,8 +468,8 @@ export default function BookingPage() {
                 }}
                 className={`px-3 py-2.5 rounded-xl text-sm font-semibold border transition ${
                   bookingType === type
-                    ? 'bg-[#00eefc]/20 border-[#00eefc] text-on-surface'
-                    : 'bg-surface-container border-outline-variant text-on-surface-variant hover:border-[#00eefc]/50'
+                    ? 'bg-[#00eefc]/20 border-[#00eefc] text-white'
+                    : 'bg-white/5 border-white/15 text-white/60 hover:border-[#00eefc]/50 hover:text-white'
                 }`}
               >
                 {t(`booking_type_${type}` as any)}
@@ -475,15 +485,15 @@ export default function BookingPage() {
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
                     currentStep >= step.number
-                      ? 'bg-[#00eefc] text-surface'
-                      : 'bg-surface-container text-on-surface-variant'
+                      ? 'bg-[#00eefc] text-[#020617]'
+                      : 'bg-white/10 text-white/40'
                   }`}
                 >
                   {currentStep > step.number ? <Check className="w-4 h-4" /> : step.number}
                 </div>
                 <span
                   className={`text-sm font-medium ${
-                    currentStep >= step.number ? 'text-on-surface' : 'text-on-surface-variant'
+                    currentStep >= step.number ? 'text-white' : 'text-white/40'
                   }`}
                 >
                   {step.label}
@@ -492,7 +502,7 @@ export default function BookingPage() {
               {i < STANDARD_STEPS.length - 1 && (
                 <div
                   className={`w-12 h-0.5 ${
-                    currentStep > step.number ? 'bg-[#00eefc]' : 'bg-surface-container'
+                    currentStep > step.number ? 'bg-[#00eefc]' : 'bg-white/10'
                   }`}
                 />
               )}
@@ -500,29 +510,27 @@ export default function BookingPage() {
           ))}
         </div>
 
-        <div className="glass p-8 rounded-2xl border-outline-variant">
+        <div className="glass p-8 rounded-2xl">
           {error && (
-            <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
+            <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm text-center">
               {error}
             </div>
           )}
 
           {currentStep === 1 && (
             <div className="space-y-6">
-              <h2 className="font-display text-2xl font-bold text-on-surface">Booking Details</h2>
+              <h2 className="font-display text-2xl font-bold text-white">Booking Details</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="First Name"
                   value={formData.firstName || ''}
                   onChange={(e) => updateForm('firstName', e.target.value)}
-                  className="bg-surface-container border-outline-variant text-on-surface"
                   required
                 />
                 <Input
                   label="Last Name"
                   value={formData.lastName || ''}
                   onChange={(e) => updateForm('lastName', e.target.value)}
-                  className="bg-surface-container border-outline-variant text-on-surface"
                   required
                 />
               </div>
@@ -531,7 +539,6 @@ export default function BookingPage() {
                 type="email"
                 value={formData.email || ''}
                 onChange={(e) => updateForm('email', e.target.value)}
-                className="bg-surface-container border-outline-variant text-on-surface"
                 required
               />
               <Input
@@ -539,7 +546,6 @@ export default function BookingPage() {
                 type="tel"
                 value={formData.phone || ''}
                 onChange={(e) => updateForm('phone', e.target.value)}
-                className="bg-surface-container border-outline-variant text-on-surface"
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
@@ -547,7 +553,7 @@ export default function BookingPage() {
                   type="date"
                   value={formData.startDate || ''}
                   onChange={(e) => updateForm('startDate', e.target.value)}
-                  className="bg-surface-container border-outline-variant text-on-surface [color-scheme:dark]"
+                  className="[color-scheme:dark]"
                   required
                 />
                 <Input
@@ -555,7 +561,7 @@ export default function BookingPage() {
                   type="date"
                   value={formData.endDate || ''}
                   onChange={(e) => updateForm('endDate', e.target.value)}
-                  className="bg-surface-container border-outline-variant text-on-surface [color-scheme:dark]"
+                  className="[color-scheme:dark]"
                 />
               </div>
               <Input
@@ -563,14 +569,12 @@ export default function BookingPage() {
                 type="number"
                 value={formData.guests || ''}
                 onChange={(e) => updateForm('guests', e.target.value)}
-                className="bg-surface-container border-outline-variant text-on-surface"
                 min={1}
               />
               <Input
                 label="Special Requests"
                 value={formData.notes || ''}
                 onChange={(e) => updateForm('notes', e.target.value)}
-                className="bg-surface-container border-outline-variant text-on-surface"
                 placeholder="Any special requirements?"
               />
             </div>
@@ -578,50 +582,50 @@ export default function BookingPage() {
 
           {currentStep === 2 && (
             <div className="space-y-6">
-              <h2 className="font-display text-2xl font-bold text-on-surface">Review Your Booking</h2>
+              <h2 className="font-display text-2xl font-bold text-white">Review Your Booking</h2>
               <div className="space-y-4">
-                <div className="flex justify-between py-3 border-b border-outline-variant text-on-surface-variant">
+                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
                   <span>Service</span>
-                  <span className="font-medium text-on-surface">{displayName}</span>
+                  <span className="font-medium text-white">{displayName}</span>
                 </div>
-                <div className="flex justify-between py-3 border-b border-outline-variant text-on-surface-variant">
+                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
                   <span>Type</span>
-                  <span className="font-medium text-on-surface">
+                  <span className="font-medium text-white">
                     {t(`booking_type_${bookingType}` as any)}
                   </span>
                 </div>
-                <div className="flex justify-between py-3 border-b border-outline-variant text-on-surface-variant">
+                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
                   <span>Guest Name</span>
-                  <span className="font-medium text-on-surface">
+                  <span className="font-medium text-white">
                     {formData.firstName} {formData.lastName}
                   </span>
                 </div>
-                <div className="flex justify-between py-3 border-b border-outline-variant text-on-surface-variant">
+                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
                   <span>Email</span>
-                  <span className="font-medium text-on-surface">{formData.email}</span>
+                  <span className="font-medium text-white">{formData.email}</span>
                 </div>
-                <div className="flex justify-between py-3 border-b border-outline-variant text-on-surface-variant">
+                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
                   <span>Phone</span>
-                  <span className="font-medium text-on-surface">{formData.phone || '—'}</span>
+                  <span className="font-medium text-white">{formData.phone || '—'}</span>
                 </div>
-                <div className="flex justify-between py-3 border-b border-outline-variant text-on-surface-variant">
+                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
                   <span>Dates</span>
-                  <span className="font-medium text-on-surface">
+                  <span className="font-medium text-white">
                     {formData.startDate || '—'} {formData.endDate ? ` — ${formData.endDate}` : ''}
                   </span>
                 </div>
-                <div className="flex justify-between py-3 border-b border-outline-variant text-on-surface-variant">
+                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
                   <span>Guests</span>
-                  <span className="font-medium text-on-surface">{formData.guests || 1}</span>
+                  <span className="font-medium text-white">{formData.guests || 1}</span>
                 </div>
                 {formData.notes && (
-                  <div className="flex justify-between py-3 border-b border-outline-variant text-on-surface-variant">
+                  <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
                     <span>Notes</span>
-                    <span className="font-medium text-on-surface">{formData.notes}</span>
+                    <span className="font-medium text-white">{formData.notes}</span>
                   </div>
                 )}
                 <div className="flex justify-between py-3">
-                  <span className="text-lg font-bold text-on-surface">Total</span>
+                  <span className="text-lg font-bold text-white">Total</span>
                   <span className="text-lg font-bold text-[#00eefc]">
                     {formatCurrency(totalAmount || 0)}
                   </span>
@@ -632,34 +636,33 @@ export default function BookingPage() {
 
           {currentStep === 3 && (
             <div className="space-y-6">
-              <h2 className="font-display text-2xl font-bold text-on-surface">Confirm & Pay</h2>
-              <p className="text-on-surface-variant">Review your details and submit your booking.</p>
+              <h2 className="font-display text-2xl font-bold text-white">Confirm & Pay</h2>
+              <p className="text-white/60">Review your details and submit your booking.</p>
               <div className="glass-deep p-6 rounded-xl">
-                <div className="flex justify-between text-sm text-on-surface-variant mb-2">
+                <div className="flex justify-between text-sm text-white/60 mb-2">
                   <span>Subtotal</span>
                   <span>{formatCurrency(totalAmount || 0)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-on-surface-variant mb-2">
+                <div className="flex justify-between text-sm text-white/60 mb-2">
                   <span>Processing Fee</span>
                   <span>{formatCurrency(0)}</span>
                 </div>
-                <div className="flex justify-between font-bold text-lg mt-3 pt-3 border-t border-outline-variant">
-                  <span className="text-on-surface">Total</span>
+                <div className="flex justify-between font-bold text-lg mt-3 pt-3 border-t border-white/10">
+                  <span className="text-white">Total</span>
                   <span className="text-[#00eefc]">{formatCurrency(totalAmount || 0)}</span>
                 </div>
               </div>
-              <p className="text-xs text-on-surface-variant text-center">
+              <p className="text-xs text-white/50 text-center">
                 By submitting, you agree to our Terms of Service. Payment will be processed separately
                 after confirmation.
               </p>
             </div>
           )}
 
-          <div className="flex justify-between mt-8 pt-6 border-t border-outline-variant">
+          <div className="flex justify-between mt-8 pt-6 border-t border-white/10">
             <Button
               variant="ghost"
               onClick={() => (currentStep === 1 ? window.history.back() : setStep(currentStep - 1))}
-              className="text-on-surface-variant hover:text-on-surface"
             >
               {currentStep === 1 ? 'Back' : 'Previous'}
             </Button>
@@ -667,13 +670,11 @@ export default function BookingPage() {
               <Button
                 variant="ghost"
                 onClick={reset}
-                className="text-on-surface-variant hover:text-on-surface"
               >
                 Cancel
               </Button>
               <Button
                 size="lg"
-                className="bg-white text-surface hover:bg-[#00eefc] font-bold"
                 disabled={submitting}
                 onClick={() => {
                   if (currentStep < 3) setStep(currentStep + 1);

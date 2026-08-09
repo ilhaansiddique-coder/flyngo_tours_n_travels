@@ -1,5 +1,6 @@
 import { Section, Container, SectionHeader } from '@/components/ui/section';
 import { Card } from '@/components/ui/card';
+import { PageHero } from '@/components/ui/page-hero';
 import { Globe, Users, Heart, Award } from 'lucide-react';
 
 const values = [
@@ -12,26 +13,23 @@ const values = [
 export default function AboutPage() {
   return (
     <>
-      <Section background="brand" className="pt-32 pb-24">
-        <Container>
-          <h1 className="font-display text-4xl sm:text-5xl font-bold text-white text-center">About Flyngo</h1>
-          <p className="mt-4 text-lg text-brand-100 text-center max-w-2xl mx-auto">
-            Your trusted partner for extraordinary journeys since 2020
-          </p>
-        </Container>
-      </Section>
+      <PageHero
+        eyebrow="Our Story"
+        title={<>About <span className="gradient-text-warm">Fly&Go</span></>}
+        subtitle="Your trusted partner for extraordinary journeys since 2020."
+      />
 
-      <Section background="white">
+      <Section>
         <Container size="narrow">
-          <div className="prose prose-lg dark:prose-invert mx-auto">
-            <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
-              Flyngo is a full-service travel platform dedicated to making world exploration
+          <div className="prose prose-lg mx-auto">
+            <p className="text-xl text-on-surface leading-relaxed">
+              Fly&Go is a full-service travel platform dedicated to making world exploration
               accessible, seamless, and unforgettable. Whether you&apos;re planning a solo adventure,
               family vacation, or corporate retreat, we provide end-to-end solutions for tours,
               hotels, flights, and visa processing.
             </p>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-              Founded with a vision to simplify travel planning, Flyngo combines cutting-edge
+            <p className="text-on-surface-variant leading-relaxed">
+              Founded with a vision to simplify travel planning, Fly&Go combines cutting-edge
               technology with expert human support. Our platform serves thousands of happy travelers,
               offering curated experiences in the world&apos;s most sought-after destinations.
             </p>
@@ -39,35 +37,40 @@ export default function AboutPage() {
         </Container>
       </Section>
 
-      <Section background="gray">
+      <Section background="subtle">
         <Container>
-          <SectionHeader title="Our Values" subtitle="What drives everything we do" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <SectionHeader eyebrow="Why Us" title="Our Values" subtitle="What drives everything we do" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {values.map((v) => (
               <Card key={v.title} hover={false}>
-                <div className="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-950 flex items-center justify-center mb-4">
-                  <v.icon className="w-6 h-6 text-brand-600 dark:text-brand-400" />
+                <div className="w-12 h-12 rounded-xl bg-accent-soft border border-accent-soft flex items-center justify-center mb-4">
+                  <v.icon className="w-6 h-6 text-accent" />
                 </div>
-                <h3 className="font-display text-lg font-bold mb-2">{v.title}</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">{v.description}</p>
+                <h3 className="font-display text-lg font-bold mb-2 text-on-surface">{v.title}</h3>
+                <p className="text-on-surface-variant text-sm">{v.description}</p>
               </Card>
             ))}
           </div>
         </Container>
       </Section>
 
-      <Section background="white">
+      <Section>
         <Container>
+          <SectionHeader title="By the Numbers" subtitle="A trusted name in luxury travel." />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { value: '500+', label: 'Destinations' },
-              { value: '50K+', label: 'Happy Travelers' },
-              { value: '1K+', label: 'Tour Packages' },
-              { value: '99%', label: 'Satisfaction Rate' },
+              { value: '500+', label: 'Destinations', accent: true },
+              { value: '50K+', label: 'Happy Travelers', accent: false },
+              { value: '1K+', label: 'Tour Packages', accent: true },
+              { value: '99%', label: 'Satisfaction Rate', accent: false },
             ].map((stat) => (
-              <div key={stat.label}>
-                <div className="font-display text-4xl font-bold text-brand-600 dark:text-brand-400">{stat.value}</div>
-                <div className="mt-1 text-gray-500">{stat.label}</div>
+              <div key={stat.label} className="rounded-2xl glass p-6 border-hairline">
+                <div className={`font-display text-4xl sm:text-5xl font-bold ${stat.accent ? 'text-accent' : 'text-on-surface'}`}>
+                  {stat.value}
+                </div>
+                <div className="mt-2 text-xs uppercase tracking-[0.12em] font-semibold text-on-surface-variant">
+                  {stat.label}
+                </div>
               </div>
             ))}
           </div>

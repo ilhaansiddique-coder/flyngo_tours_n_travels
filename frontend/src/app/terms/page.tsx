@@ -1,4 +1,5 @@
 import { Section, Container } from '@/components/ui/section';
+import { PageHero } from '@/components/ui/page-hero';
 
 export const metadata = {
   title: 'Terms of Service — Flyngo',
@@ -55,24 +56,23 @@ const sections = [
 export default function TermsPage() {
   return (
     <>
-      <Section background="brand" className="pt-32 pb-20">
-        <Container>
-          <h1 className="font-display text-4xl sm:text-5xl font-bold text-white text-center">Terms of Service</h1>
-          <p className="mt-4 text-brand-100 text-center">Last updated: January 2026</p>
-        </Container>
-      </Section>
+      <PageHero
+        eyebrow="Legal"
+        title={<>Terms of <span className="gradient-text-warm">Service</span></>}
+        subtitle="Last updated: January 2026"
+      />
 
-      <Section background="white">
+      <Section>
         <Container size="narrow">
           <div className="prose dark:prose-invert max-w-none">
-            <p className="text-lg text-gray-600 dark:text-gray-400">
+            <p className="text-lg text-white/70">
               These Terms of Service govern your use of the Flyngo platform. Please read them carefully
               before making a booking.
             </p>
             {sections.map((s) => (
               <div key={s.title} className="mt-8">
-                <h2 className="font-display text-2xl font-bold text-gray-900 dark:text-white">{s.title}</h2>
-                <p className="mt-3 text-gray-600 dark:text-gray-400 leading-relaxed">{s.body}</p>
+                <h2 className="font-display text-2xl font-bold text-white">{s.title}</h2>
+                <p className="mt-3 text-white/60 leading-relaxed">{s.body}</p>
               </div>
             ))}
           </div>

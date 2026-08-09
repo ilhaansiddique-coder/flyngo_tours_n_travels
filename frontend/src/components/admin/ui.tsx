@@ -11,12 +11,20 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto p-6">
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="relative bg-surface-container border border-outline-variant rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto p-6 text-on-surface"
+        style={{ boxShadow: '0 25px 50px -12px rgb(var(--shadow-color) / 0.5)' }}
+      >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold">{title}</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-surface-container-high rounded-lg text-on-surface-variant"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
         {children}
@@ -28,8 +36,8 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
 export function FormField({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
   return (
     <div className="mb-4">
-      <label className="block text-sm font-medium mb-1.5">
-        {label} {required && <span className="text-red-500">*</span>}
+      <label className="block text-sm font-medium mb-1.5 text-on-surface">
+        {label} {required && <span className="text-error">*</span>}
       </label>
       {children}
     </div>
@@ -47,7 +55,7 @@ export function FormInput({ value, onChange, placeholder, type = 'text', require
       placeholder={placeholder}
       required={required}
       disabled={disabled}
-      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm bg-surface-container text-on-surface placeholder:text-on-surface-variant/60 focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     />
   );
 }
@@ -61,7 +69,7 @@ export function FormTextarea({ value, onChange, placeholder, rows = 3 }: {
       onChange={(e) => onChange?.(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none resize-none"
+      className="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm bg-surface-container text-on-surface placeholder:text-on-surface-variant/60 focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none resize-none transition-colors"
     />
   );
 }
@@ -84,7 +92,7 @@ export function FormSelect({ value, onChange, options, placeholder }: {
     <select
       value={value ?? ''}
       onChange={(e) => onChange?.(e.target.value)}
-      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+      className="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm bg-surface-container text-on-surface focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-colors"
     >
       {placeholder && <option value="">{placeholder}</option>}
       {deduped.map((o) => (
@@ -100,13 +108,26 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, message }: {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="relative bg-surface-container border border-outline-variant rounded-2xl w-full max-w-sm mx-4 p-6 text-on-surface"
+        style={{ boxShadow: '0 25px 50px -12px rgb(var(--shadow-color) / 0.5)' }}
+      >
         <h3 className="text-lg font-bold mb-2">{title}</h3>
-        <p className="text-gray-500 text-sm mb-6">{message}</p>
+        <p className="text-on-surface-variant text-sm mb-6">{message}</p>
         <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
-          <button onClick={onConfirm} className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700">Confirm</button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-sm rounded-lg bg-error text-on-error hover:opacity-90"
+          >
+            Confirm
+          </button>
         </div>
       </div>
     </div>

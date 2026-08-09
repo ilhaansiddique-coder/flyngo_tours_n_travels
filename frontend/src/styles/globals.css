@@ -5,7 +5,7 @@
 /* Clickable elements get pointer cursor by default */
 button:not(:disabled),
 a[href],
-[role='button']:not([aria-disabled='true']),
+[role="button"]:not([aria-disabled="true"]),
 label[for],
 .cursor-pointer {
   cursor: pointer;
@@ -15,160 +15,275 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* ----------------------------------------------------------------
+   Fly&Go Velocity Theme — unified light + dark
+   Inspired by the hero section. Two coordinated palettes that
+   share a single visual language.
+
+   Brand pillars (used in both modes, slightly tuned):
+     • Primary   — Fly blue   #1881FF (both modes) / #0C6FDF (light tone)
+     • Accent    — Cyan       #00EEFC (both modes)
+     • Tertiary  — Go orange  #F36523 (both modes) / #D54F15 (light tone)
+
+   Token semantics (kept stable across modes):
+     • --color-primary / --color-tertiary = foreground brand colour
+       (good as text and CTA gradient stop on either surface)
+     • --color-accent = the bright cyan signature accent (decorative
+       highlights, route chips, glow effects)
+     • --color-primary-container / --color-tertiary-container = the
+       paired container/background fill
+     • --color-on-* = the readable text colour for a *-* background
+
+   Light mode  : cream surface, dark text, bright accents
+   Dark  mode  : deep navy surface, light text, glowing accents
+   ---------------------------------------------------------------- */
+
 :root {
-  --color-surface: #f8fafc;
-  --color-surface-bright: #e2e8f0;
-  --color-surface-container: #f1f5f9;
-  --color-surface-container-low: #ffffff;
-  --color-surface-container-lowest: #f8fafc;
-  --color-surface-container-high: #e2e8f0;
-  --color-surface-container-highest: #cbd5e1;
-  --color-surface-variant: #e2e8f0;
-  --color-surface-dim: #f1f5f9;
-  --color-surface-tint: #475569;
+  /* ============ LIGHT MODE (default) ============ */
+  /* Surfaces */
+  --color-background: #f5f7fb;
+  --color-surface: #ffffff;
+  --color-surface-bright: #ffffff;
+  --color-surface-container: #ffffff;
+  --color-surface-container-low: #f7f9fc;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-high: #eef2f8;
+  --color-surface-container-highest: #e6ecf5;
+  --color-surface-variant: #e6ecf5;
+  --color-surface-dim: #eef2f8;
+  --color-surface-tint: #0c6fdf;
 
-  --color-secondary-container: #1881ff;
-  --color-secondary-fixed-dim: #0c6fdf;
-  --color-secondary-fixed: #5fa9ff;
-  --color-secondary: #042e5b;
+  /* Brand: primary = Fly blue (foreground) */
+  --color-primary: #0c6fdf;
+  --color-primary-container: #d6e7ff;
+  --color-primary-fixed: #1881ff;
+  --color-primary-fixed-dim: #0c6fdf;
 
-  --color-on-surface: #0f172a;
-  --color-on-surface-variant: #475569;
-  --color-on-background: #0f172a;
+  /* Brand: accent = cyan (highlights, glows, route chips). In light
+     mode the cyan needs to be deep enough to read on white surfaces
+     — the original #00b8c4 was almost invisible against the page
+     background, especially when used as foreground text (prices,
+     icons, bullet dots). #0891b2 (cyan-600) is the deeper cousin
+     that keeps the same hue family with WCAG-AA contrast on white. */
+  --color-accent: #0891b2;
+  --color-accent-container: #cffafd;
+  --color-accent-fixed: #00eefc;
+  --color-accent-fixed-dim: #00b8c4;
+
+  /* Brand: tertiary = Go orange (CTAs, urgency) */
+  --color-tertiary: #d54f15;
+  --color-tertiary-container: #fde0d0;
+  --color-tertiary-fixed: #f36523;
+  --color-tertiary-fixed-dim: #d54f15;
+
+  /* `secondary` mirrors `accent` for backward compatibility with
+     code that still references --color-secondary as a foreground brand
+     colour. New code should prefer --color-accent. */
+  --color-secondary: var(--color-accent);
+  --color-secondary-container: var(--color-accent-container);
+  --color-secondary-fixed: var(--color-accent-fixed);
+  --color-secondary-fixed-dim: var(--color-accent-fixed-dim);
+
+  /* Foreground text */
+  --color-on-surface: #0a1628;
+  --color-on-surface-variant: #4a5568;
+  --color-on-background: #0a1628;
   --color-on-primary: #ffffff;
-  --color-on-primary-container: #cbd5e1;
+  --color-on-primary-container: #021935;
   --color-on-primary-fixed: #ffffff;
-  --color-on-primary-fixed-variant: #94a3b8;
+  --color-on-primary-fixed-variant: #021935;
   --color-on-secondary: #ffffff;
-  --color-on-secondary-container: #ffffff;
-  --color-on-secondary-fixed: #ffffff;
-  --color-on-secondary-fixed-variant: #cffafe;
+  --color-on-secondary-container: #002022;
+  --color-on-secondary-fixed: #002022;
+  --color-on-secondary-fixed-variant: #002022;
   --color-on-tertiary: #ffffff;
-  --color-on-tertiary-container: #44403c;
+  --color-on-tertiary-container: #2a0e03;
   --color-on-tertiary-fixed: #ffffff;
-  --color-on-tertiary-fixed-variant: #78716c;
+  --color-on-tertiary-fixed-variant: #2a0e03;
   --color-on-error: #ffffff;
-  --color-on-error-container: #7f1d1d;
+  --color-on-error-container: #410002;
 
-  --color-outline: #94a3b8;
-  --color-outline-variant: #cbd5e1;
+  --color-outline: #c4c7c8;
+  --color-outline-variant: rgba(10, 22, 40, 0.10);
 
-  --color-error: #dc2626;
-  --color-error-container: #fecaca;
+  --color-error: #d92626;
+  --color-error-container: #fde0e0;
 
-  --color-inverse-surface: #0f172a;
-  --color-inverse-on-surface: #f1f5f9;
-  --color-inverse-primary: #94a3b8;
+  --color-inverse-surface: #020617;
+  --color-inverse-on-surface: #d3e4fe;
+  --color-inverse-primary: #1881ff;
 
-  --color-background: #ffffff;
-  --color-primary: #031427;
-  --color-primary-container: #1e293b;
-  --color-primary-fixed: #1e293b;
-  --color-primary-fixed-dim: #334155;
-  --color-tertiary: #1c1917;
-  --color-tertiary-container: #e7e5e4;
-  --color-tertiary-fixed: #d6d3d1;
-  --color-tertiary-fixed-dim: #a8a29e;
+  /* Surfaces used by glass / overlays (light = soft white) */
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(10, 22, 40, 0.10);
+  --glass-bg-deep: rgba(255, 255, 255, 0.45);
 
-  --color-header-bg: rgba(255, 255, 255, 0.8);
-  --color-header-border: rgba(0, 0, 0, 0.1);
-  --color-header-text: #0f172a;
-  --color-header-text-muted: rgba(15, 23, 42, 0.6);
-  --color-header-search-bg: rgba(0, 0, 0, 0.04);
-  --color-header-search-border: rgba(0, 0, 0, 0.08);
-  --color-header-search-text: #0f172a;
-  --color-header-search-placeholder: rgba(15, 23, 42, 0.4);
-  --color-header-btn-bg: #0f172a;
+  /* Accent glow / kinetic line values (overridden in dark for a softer glow).
+     Light mode keeps the glow extremely subtle so the cream surface
+     doesn't pick up unwanted colour washes. */
+  --accent-glow: rgba(24, 129, 255, 0.04);
+  --accent-glow-strong: rgba(24, 129, 255, 0.10);
+
+  /* Header chrome (light = translucent white) */
+  --color-header-bg: rgba(255, 255, 255, 0.78);
+  --color-header-border: rgba(10, 22, 40, 0.08);
+  --color-header-text: #0a1628;
+  --color-header-text-muted: rgba(10, 22, 40, 0.60);
+  --color-header-search-bg: rgba(10, 22, 40, 0.04);
+  --color-header-search-border: rgba(10, 22, 40, 0.10);
+  --color-header-search-text: #0a1628;
+  --color-header-search-placeholder: rgba(10, 22, 40, 0.45);
+  --color-header-btn-bg: #0c6fdf;
   --color-header-btn-text: #ffffff;
-  --color-header-btn-hover-bg: #f36523;
+  --color-header-btn-hover-bg: #d54f15;
   --color-header-btn-hover-text: #ffffff;
-  --color-nav-active: #1881ff;
-  --color-nav-inactive: rgba(15, 23, 42, 0.6);
-  --color-nav-hover: #1881ff;
-  --color-mobile-menu-bg: #ffffff;
-  --color-mobile-nav-active: #1881ff;
-  --color-mobile-nav-bg: rgba(24, 129, 255, 0.08);
-  --color-mobile-nav-text: rgba(15, 23, 42, 0.7);
-  --color-mobile-nav-hover-bg: rgba(24, 129, 255, 0.05);
-  --color-mobile-divider: rgba(0, 0, 0, 0.08);
+  --color-nav-active: #0c6fdf;
+  --color-nav-inactive: rgba(10, 22, 40, 0.65);
+  --color-nav-hover: #0c6fdf;
+  --color-mobile-menu-bg: rgba(255, 255, 255, 0.98);
+  --color-mobile-nav-active: #0c6fdf;
+  --color-mobile-nav-bg: rgba(12, 111, 223, 0.08);
+  --color-mobile-nav-text: rgba(10, 22, 40, 0.70);
+  --color-mobile-nav-hover-bg: rgba(12, 111, 223, 0.05);
+  --color-mobile-divider: rgba(10, 22, 40, 0.08);
+
+  --shadow-color: 12, 22, 40;
+  --shadow-card: 0 1px 2px rgba(12, 22, 40, 0.04), 0 4px 12px -2px rgba(12, 22, 40, 0.10);
+  --shadow-card-hover: 0 4px 12px -2px rgba(12, 22, 40, 0.12), 0 16px 36px -6px rgba(12, 22, 40, 0.16);
+
+  /* Footer is always rendered dark — both light and dark mode use the
+     deep navy. This is the design intent: the brand lives in dark
+     chrome, the body content is light/dark adaptive. */
+  --color-footer-bg: #020617;
+  --color-footer-border: rgba(255, 255, 255, 0.08);
+  --color-footer-text: #ffffff;
+  --color-footer-text-muted: rgba(255, 255, 255, 0.60);
+  --color-footer-heading: #00b8c4;
+
+  /* The hero now adapts to the active theme. In light mode the hero
+     surface is a soft cream gradient and the foreground text is dark
+     navy; the globe still uses its dedicated brand palette so it reads
+     on either surface. The .dark override below keeps the navy chrome
+     for the dark theme. */
+  --color-hero-bg: #f5f7fb;
+  --color-hero-text: #0a1628;
+  --color-hero-text-muted: rgba(10, 22, 40, 0.60);
 }
 
 .dark {
-  --color-surface: #031427;
-  --color-surface-bright: #2a3a4f;
-  --color-surface-container: #102034;
-  --color-surface-container-low: #0b1c30;
-  --color-surface-container-lowest: #000f21;
-  --color-surface-container-high: #1b2b3f;
-  --color-surface-container-highest: #26364a;
-  --color-surface-variant: #26364a;
-  --color-surface-dim: #031427;
-  --color-surface-tint: #c6c6c7;
+  /* ============ DARK MODE ============ */
+  --color-background: #020617;
+  --color-surface: #020617;
+  --color-surface-bright: #0b1c30;
+  --color-surface-container: #0a1628;
+  --color-surface-container-low: #07111f;
+  --color-surface-container-lowest: #010410;
+  --color-surface-container-high: #102034;
+  --color-surface-container-highest: #1b2b3f;
+  --color-surface-variant: #1b2b3f;
+  --color-surface-dim: #010410;
+  --color-surface-tint: #5fa9ff;
 
-  --color-secondary-container: #1881ff;
-  --color-secondary-fixed-dim: #0c6fdf;
-  --color-secondary-fixed: #5fa9ff;
-  --color-secondary: #d3e8ff;
+  /* Brand: primary = Fly blue (#1881ff) — the foreground brand colour.
+     This is the value used by the hero CTAs and the `gradient-text-warm`
+     gradient's first stop, so the same blue reads in both modes. */
+  --color-primary: #1881ff;
+  --color-primary-container: #0c6fdf;
+  --color-primary-fixed: #5fa9ff;
+  --color-primary-fixed-dim: #0c6fdf;
+
+  /* Accent = cyan (#00eefc) — the signature glow / highlight tone. */
+  --color-accent: #00eefc;
+  --color-accent-container: #006f7a;
+  --color-accent-fixed: #7df4ff;
+  --color-accent-fixed-dim: #00b8c4;
+
+  /* Tertiary = Go orange (#f36523) — the warmer brand colour. */
+  --color-tertiary: #f36523;
+  --color-tertiary-container: #d54f15;
+  --color-tertiary-fixed: #ff8635;
+  --color-tertiary-fixed-dim: #d54f15;
+
+  /* `secondary` mirrors `accent` for backward compatibility. */
+  --color-secondary: var(--color-accent);
+  --color-secondary-container: var(--color-accent-container);
+  --color-secondary-fixed: var(--color-accent-fixed);
+  --color-secondary-fixed-dim: var(--color-accent-fixed-dim);
 
   --color-on-surface: #d3e4fe;
-  --color-on-surface-variant: #c4c7c8;
+  --color-on-surface-variant: #9aa3b2;
   --color-on-background: #d3e4fe;
-  --color-on-primary: #2f3131;
-  --color-on-primary-container: #636565;
-  --color-on-primary-fixed: #1a1c1c;
-  --color-on-primary-fixed-variant: #454747;
-  --color-on-secondary: #00363a;
-  --color-on-secondary-container: #00686f;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #ffffff;
+  --color-on-primary-fixed: #002349;
+  --color-on-primary-fixed-variant: #1881ff;
+  --color-on-secondary: #020617;
+  --color-on-secondary-container: #020617;
   --color-on-secondary-fixed: #002022;
-  --color-on-secondary-fixed-variant: #004f54;
-  --color-on-tertiary: #313030;
-  --color-on-tertiary-container: #656464;
-  --color-on-tertiary-fixed: #1c1b1b;
-  --color-on-tertiary-fixed-variant: #474646;
-  --color-on-error: #690005;
+  --color-on-secondary-fixed-variant: #00eefc;
+  --color-on-tertiary: #020617;
+  --color-on-tertiary-container: #ffffff;
+  --color-on-tertiary-fixed: #2a0e03;
+  --color-on-tertiary-fixed-variant: #2a0e03;
+  --color-on-error: #ffb4ab;
   --color-on-error-container: #ffdad6;
 
-  --color-outline: #8e9192;
-  --color-outline-variant: #444748;
+  --color-outline: #5fa9ff;
+  --color-outline-variant: rgba(255, 255, 255, 0.12);
 
-  --color-error: #ffb4ab;
-  --color-error-container: #93000a;
+  --color-error: #ff6b6b;
+  --color-error-container: rgba(255, 107, 107, 0.12);
 
   --color-inverse-surface: #d3e4fe;
-  --color-inverse-on-surface: #213145;
-  --color-inverse-primary: #5d5f5f;
+  --color-inverse-on-surface: #020617;
+  --color-inverse-primary: #0c6fdf;
 
-  --color-background: #031427;
-  --color-primary: #ffffff;
-  --color-primary-container: #e2e2e2;
-  --color-primary-fixed: #e2e2e2;
-  --color-primary-fixed-dim: #c6c6c7;
-  --color-tertiary: #ffffff;
-  --color-tertiary-container: #e5e2e1;
-  --color-tertiary-fixed: #e5e2e1;
-  --color-tertiary-fixed-dim: #c8c6c5;
+  /* Glass / overlays tuned for the navy surface */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-bg-deep: rgba(255, 255, 255, 0.03);
 
-  --color-header-bg: rgba(255, 255, 255, 0.1);
-  --color-header-border: rgba(255, 255, 255, 0.2);
+  /* Glow values lean cyan in dark mode for the hero's signature neon look */
+  --accent-glow: rgba(0, 238, 252, 0.15);
+  --accent-glow-strong: rgba(0, 238, 252, 0.30);
+
+  --color-header-bg: rgba(2, 6, 23, 0.7);
+  --color-header-border: rgba(255, 255, 255, 0.08);
   --color-header-text: #ffffff;
   --color-header-text-muted: rgba(255, 255, 255, 0.6);
   --color-header-search-bg: rgba(255, 255, 255, 0.05);
   --color-header-search-border: rgba(255, 255, 255, 0.1);
   --color-header-search-text: #ffffff;
   --color-header-search-placeholder: rgba(255, 255, 255, 0.5);
-  --color-header-btn-bg: #ffffff;
-  --color-header-btn-text: #031427;
+  --color-header-btn-bg: #1881ff;
+  --color-header-btn-text: #ffffff;
   --color-header-btn-hover-bg: #f36523;
   --color-header-btn-hover-text: #ffffff;
-  --color-nav-active: #f36523;
+  --color-nav-active: #00eefc;
   --color-nav-inactive: rgba(255, 255, 255, 0.7);
-  --color-nav-hover: #f36523;
-  --color-mobile-menu-bg: #031427;
-  --color-mobile-nav-active: #f36523;
-  --color-mobile-nav-bg: rgba(24, 129, 255, 0.08);
+  --color-nav-hover: #00eefc;
+  --color-mobile-menu-bg: #020617;
+  --color-mobile-nav-active: #00eefc;
+  --color-mobile-nav-bg: rgba(24, 129, 255, 0.1);
   --color-mobile-nav-text: rgba(255, 255, 255, 0.7);
-  --color-mobile-nav-hover-bg: rgba(24, 129, 255, 0.05);
+  --color-mobile-nav-hover-bg: rgba(24, 129, 255, 0.06);
   --color-mobile-divider: rgba(255, 255, 255, 0.08);
+
+  --shadow-color: 0, 0, 0;
+  --shadow-card: 0 4px 16px -2px rgba(0, 0, 0, 0.4);
+  --shadow-card-hover: 0 12px 32px -4px rgba(0, 0, 0, 0.5);
+
+  /* Footer stays dark in both modes (see light block for the design note) */
+  --color-footer-bg: #020617;
+  --color-footer-border: rgba(255, 255, 255, 0.08);
+  --color-footer-text: #ffffff;
+  --color-footer-text-muted: rgba(255, 255, 255, 0.60);
+  --color-footer-heading: #00eefc;
+
+  /* Hero is always dark — the brand statement sits above the body */
+  --color-hero-bg: #020617;
+  --color-hero-text: #ffffff;
+  --color-hero-text-muted: rgba(255, 255, 255, 0.55);
 }
 
 @theme inline {
@@ -229,116 +344,172 @@ button:disabled {
   --font-sans: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui;
   --font-display: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui;
 
-  /* ------------------------------------------------------------------ */
-  /* Brand palette: remap Tailwind utility families to the logo's two   */
-  /* colours — #1881FF (Fly blue) and #F36523 (Go orange). Every        */
-  /* `bg-indigo-600`, `text-violet-400`, `from-amber-500`, `border-blue- */
-  /* 500/25`, etc. across the codebase now resolves to brand colours.   */
-  /* ------------------------------------------------------------------ */
+  /* Note: Tailwind utility-family remaps (indigo→Fly blue, amber→Go orange, etc.)
+     live in the `.dark` block at the top of the @layer base section. They are
+     intentionally scoped to dark mode so light mode keeps the standard Tailwind
+     hues for tonal variety, while in dark mode the same utilities resolve to
+     the brand palette. */
 
-  /* indigo → Fly blue (primary brand) */
-  --color-indigo-50:  #e6f1ff;
-  --color-indigo-100: #cce4ff;
-  --color-indigo-200: #99c9ff;
-  --color-indigo-300: #66adff;
-  --color-indigo-400: #3392ff;
-  --color-indigo-500: #1881ff;
-  --color-indigo-600: #0c6fdf;
-  --color-indigo-700: #095ab3;
-  --color-indigo-800: #064487;
-  --color-indigo-900: #042e5b;
-  --color-indigo-950: #021935;
+  /* gray → neutral text/border that adapts to surface brightness.
+     Uses on-surface for 100/200/300 ramps, ensuring soft neutrals
+     on the white surface and the navy surface alike. */
+  --color-gray-50:  color-mix(in oklab, var(--color-on-surface) 4%, transparent);
+  --color-gray-100: color-mix(in oklab, var(--color-on-surface) 8%, transparent);
+  --color-gray-200: color-mix(in oklab, var(--color-on-surface) 12%, transparent);
+  --color-gray-300: color-mix(in oklab, var(--color-on-surface) 20%, transparent);
+  --color-gray-400: color-mix(in oklab, var(--color-on-surface) 35%, transparent);
+  --color-gray-500: color-mix(in oklab, var(--color-on-surface) 50%, transparent);
+  --color-gray-600: color-mix(in oklab, var(--color-on-surface) 65%, transparent);
+  --color-gray-700: color-mix(in oklab, var(--color-on-surface) 80%, transparent);
+  --color-gray-800: color-mix(in oklab, var(--color-on-surface) 90%, transparent);
+  --color-gray-900: var(--color-on-surface);
+  --color-gray-950: var(--color-on-surface);
 
-  /* violet → deep Fly blue (for secondary accents) */
-  --color-violet-50:  #e6f1ff;
-  --color-violet-100: #cce4ff;
-  --color-violet-200: #99c9ff;
-  --color-violet-300: #66adff;
-  --color-violet-400: #3392ff;
-  --color-violet-500: #0c6fdf;
-  --color-violet-600: #095ab3;
-  --color-violet-700: #064487;
-  --color-violet-800: #042e5b;
-  --color-violet-900: #021935;
-  --color-violet-950: #010d20;
+  /* white/black → adaptive surface tints. Using `currentColor` for
+     black keeps shadows; for white we use the actual surface. */
+  --color-white: var(--color-surface);
+  --color-black: rgb(var(--shadow-color));
 
-  /* fuchsia → mid Fly blue (for tertiary wash) */
-  --color-fuchsia-50:  #e6f1ff;
-  --color-fuchsia-100: #cce4ff;
-  --color-fuchsia-200: #99c9ff;
-  --color-fuchsia-300: #66adff;
-  --color-fuchsia-400: #3392ff;
-  --color-fuchsia-500: #1881ff;
-  --color-fuchsia-600: #0c6fdf;
-  --color-fuchsia-700: #095ab3;
-  --color-fuchsia-800: #064487;
-  --color-fuchsia-900: #042e5b;
-  --color-fuchsia-950: #021935;
+  /* slate + zinc share the gray ramp */
+  --color-slate-50:  var(--color-gray-50);
+  --color-slate-100: var(--color-gray-100);
+  --color-slate-200: var(--color-gray-200);
+  --color-slate-300: var(--color-gray-300);
+  --color-slate-400: var(--color-gray-400);
+  --color-slate-500: var(--color-gray-500);
+  --color-slate-600: var(--color-gray-600);
+  --color-slate-700: var(--color-gray-700);
+  --color-slate-800: var(--color-gray-800);
+  --color-slate-900: var(--color-gray-900);
+  --color-slate-950: var(--color-gray-950);
 
-  /* amber → Go orange (brand accent / CTAs / highlights) */
-  --color-amber-50:  #fff1e8;
-  --color-amber-100: #ffe1cd;
-  --color-amber-200: #ffc39a;
-  --color-amber-300: #ffa568;
-  --color-amber-400: #ff8635;
-  --color-amber-500: #f36523;
-  --color-amber-600: #d54f15;
-  --color-amber-700: #a83e10;
-  --color-amber-800: #7a2c0b;
-  --color-amber-900: #4d1b07;
-  --color-amber-950: #2a0e03;
+  --color-zinc-50:  var(--color-gray-50);
+  --color-zinc-100: var(--color-gray-100);
+  --color-zinc-200: var(--color-gray-200);
+  --color-zinc-300: var(--color-gray-300);
+  --color-zinc-400: var(--color-gray-400);
+  --color-zinc-500: var(--color-gray-500);
+  --color-zinc-600: var(--color-gray-600);
+  --color-zinc-700: var(--color-gray-700);
+  --color-zinc-800: var(--color-gray-800);
+  --color-zinc-900: var(--color-gray-900);
+  --color-zinc-950: var(--color-gray-950);
+}
 
-  /* sky → mid Fly blue (so the dashboard doesn't feel monochrome) */
-  --color-sky-50:  #e6f1ff;
-  --color-sky-100: #cce4ff;
-  --color-sky-200: #99c9ff;
-  --color-sky-300: #66adff;
-  --color-sky-400: #3392ff;
-  --color-sky-500: #1881ff;
-  --color-sky-600: #0c6fdf;
-  --color-sky-700: #095ab3;
-  --color-sky-800: #064487;
-  --color-sky-900: #042e5b;
-  --color-sky-950: #021935;
+@layer base {
+  /* ----------------------------------------------------------------
+     Brand palette: remap Tailwind utility families to the logo's two
+     colours — Fly blue + Go orange + Cyan — inside the dark theme.
+     Light mode keeps the standard Tailwind hues so the public site
+     can use `text-amber-500` (true orange), `text-emerald-500` (true
+     green), etc. for tonal variety, while in dark mode those same
+     utilities resolve to brand colours that match the hero.
+     ---------------------------------------------------------------- */
+  .dark {
+    /* indigo → Fly blue (primary brand) */
+    --color-indigo-50:  #e6f1ff;
+    --color-indigo-100: #cce4ff;
+    --color-indigo-200: #99c9ff;
+    --color-indigo-300: #66adff;
+    --color-indigo-400: #3392ff;
+    --color-indigo-500: #1881ff;
+    --color-indigo-600: #0c6fdf;
+    --color-indigo-700: #095ab3;
+    --color-indigo-800: #064487;
+    --color-indigo-900: #042e5b;
+    --color-indigo-950: #021935;
 
-  /* cyan → lighter Fly blue (used in the header accent) */
-  --color-cyan-50:  #f0f7ff;
-  --color-cyan-100: #dceeff;
-  --color-cyan-200: #b8ddff;
-  --color-cyan-300: #94cbff;
-  --color-cyan-400: #5fa9ff;
-  --color-cyan-500: #1881ff;
-  --color-cyan-600: #0c6fdf;
-  --color-cyan-700: #095ab3;
-  --color-cyan-800: #064487;
-  --color-cyan-900: #042e5b;
-  --color-cyan-950: #021935;
+    /* violet → deep Fly blue (for secondary accents) */
+    --color-violet-50:  #e6f1ff;
+    --color-violet-100: #cce4ff;
+    --color-violet-200: #99c9ff;
+    --color-violet-300: #66adff;
+    --color-violet-400: #3392ff;
+    --color-violet-500: #0c6fdf;
+    --color-violet-600: #095ab3;
+    --color-violet-700: #064487;
+    --color-violet-800: #042e5b;
+    --color-violet-900: #021935;
+    --color-violet-950: #010d20;
 
-  /* brand → Fly blue (semantic alias used across the codebase) */
-  --color-brand-50:  #e6f1ff;
-  --color-brand-100: #cce4ff;
-  --color-brand-200: #99c9ff;
-  --color-brand-300: #66adff;
-  --color-brand-400: #3392ff;
-  --color-brand-500: #1881ff;
-  --color-brand-600: #0c6fdf;
-  --color-brand-700: #095ab3;
-  --color-brand-800: #064487;
-  --color-brand-900: #042e5b;
-  --color-brand-950: #021935;
+    /* fuchsia → mid Fly blue (for tertiary wash) */
+    --color-fuchsia-50:  #e6f1ff;
+    --color-fuchsia-100: #cce4ff;
+    --color-fuchsia-200: #99c9ff;
+    --color-fuchsia-300: #66adff;
+    --color-fuchsia-400: #3392ff;
+    --color-fuchsia-500: #1881ff;
+    --color-fuchsia-600: #0c6fdf;
+    --color-fuchsia-700: #095ab3;
+    --color-fuchsia-800: #064487;
+    --color-fuchsia-900: #042e5b;
+    --color-fuchsia-950: #021935;
 
-  /* rose → Go orange (warm accent — for badges, urgency, etc.) */
-  --color-rose-50:  #fff1e8;
-  --color-rose-100: #ffe1cd;
-  --color-rose-200: #ffc39a;
-  --color-rose-300: #ffa568;
-  --color-rose-400: #ff8635;
-  --color-rose-500: #f36523;
-  --color-rose-600: #d54f15;
-  --color-rose-700: #a83e10;
-  --color-rose-800: #7a2c0b;
-  --color-rose-900: #4d1b07;
-  --color-rose-950: #2a0e03;
+    /* amber → Go orange (brand accent / CTAs / highlights) */
+    --color-amber-50:  #fff1e8;
+    --color-amber-100: #ffe1cd;
+    --color-amber-200: #ffc39a;
+    --color-amber-300: #ffa568;
+    --color-amber-400: #ff8635;
+    --color-amber-500: #f36523;
+    --color-amber-600: #d54f15;
+    --color-amber-700: #a83e10;
+    --color-amber-800: #7a2c0b;
+    --color-amber-900: #4d1b07;
+    --color-amber-950: #2a0e03;
+
+    /* sky → mid Fly blue (so the dashboard doesn't feel monochrome) */
+    --color-sky-50:  #e6f1ff;
+    --color-sky-100: #cce4ff;
+    --color-sky-200: #99c9ff;
+    --color-sky-300: #66adff;
+    --color-sky-400: #3392ff;
+    --color-sky-500: #1881ff;
+    --color-sky-600: #0c6fdf;
+    --color-sky-700: #095ab3;
+    --color-sky-800: #064487;
+    --color-sky-900: #042e5b;
+    --color-sky-950: #021935;
+
+    /* cyan → lighter Fly blue (used in the header accent) */
+    --color-cyan-50:  #f0f7ff;
+    --color-cyan-100: #dceeff;
+    --color-cyan-200: #b8ddff;
+    --color-cyan-300: #94cbff;
+    --color-cyan-400: #5fa9ff;
+    --color-cyan-500: #1881ff;
+    --color-cyan-600: #0c6fdf;
+    --color-cyan-700: #095ab3;
+    --color-cyan-800: #064487;
+    --color-cyan-900: #042e5b;
+    --color-cyan-950: #021935;
+
+    /* brand → Fly blue (semantic alias used across the codebase) */
+    --color-brand-50:  #e6f1ff;
+    --color-brand-100: #cce4ff;
+    --color-brand-200: #99c9ff;
+    --color-brand-300: #66adff;
+    --color-brand-400: #3392ff;
+    --color-brand-500: #1881ff;
+    --color-brand-600: #0c6fdf;
+    --color-brand-700: #095ab3;
+    --color-brand-800: #064487;
+    --color-brand-900: #042e5b;
+    --color-brand-950: #021935;
+
+    /* rose → Go orange (warm accent — for badges, urgency, etc.) */
+    --color-rose-50:  #fff1e8;
+    --color-rose-100: #ffe1cd;
+    --color-rose-200: #ffc39a;
+    --color-rose-300: #ffa568;
+    --color-rose-400: #ff8635;
+    --color-rose-500: #f36523;
+    --color-rose-600: #d54f15;
+    --color-rose-700: #a83e10;
+    --color-rose-800: #7a2c0b;
+    --color-rose-900: #4d1b07;
+    --color-rose-950: #2a0e03;
+  }
 }
 
 * {
@@ -352,6 +523,14 @@ html {
   overscroll-behavior: none;
 }
 
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
 body {
   color: var(--color-on-surface);
   font-family: var(--font-sans), 'Montserrat', ui-sans-serif, system-ui;
@@ -359,6 +538,8 @@ body {
   margin: 0;
   overscroll-behavior: none;
   overflow-x: hidden;
+  background: var(--color-background);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 @keyframes fadeInUp {
@@ -367,8 +548,8 @@ body {
 }
 
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 20px rgba(0, 238, 252, 0.1); }
-  50% { box-shadow: 0 0 40px rgba(0, 238, 252, 0.25); }
+  0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+  50% { box-shadow: 0 0 40px var(--accent-glow-strong); }
 }
 
 @keyframes kineticPulse {
@@ -382,56 +563,32 @@ body {
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-:root .glass {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.dark .glass {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
 }
 
 .glass-deep {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--glass-bg-deep);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-:root .glass-deep {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.dark .glass-deep {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
 }
 
 .velocity-glow {
   transition: box-shadow 0.4s ease, border-color 0.4s ease;
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-:root .velocity-glow {
-  border-color: rgba(0, 0, 0, 0.08);
+  border-color: var(--glass-border);
 }
 
 .velocity-glow:hover {
-  box-shadow: 0 0 30px rgba(0, 238, 252, 0.15), 0 0 60px rgba(0, 238, 252, 0.05);
-  border-color: rgba(0, 238, 252, 0.3);
+  box-shadow: 0 0 30px var(--accent-glow-strong), 0 0 60px var(--accent-glow);
+  border-color: var(--accent-glow-strong);
 }
 
 .kinetic-line {
   height: 2px;
-  background: linear-gradient(90deg, transparent, #00eefc, transparent);
+  background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
   border-radius: 2px;
 }
 
@@ -450,17 +607,27 @@ body {
   animation: slideUp 0.8s ease-out both;
 }
 
-/* Subtle grid backdrop used behind the hero */
+/* Subtle grid backdrop used behind the hero.
+   The grid colour tracks the on-surface variable so it works in
+   both light and dark modes without modification. */
 .bg-grid {
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+    linear-gradient(to right, color-mix(in oklab, var(--color-on-surface) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-on-surface) 10%, transparent) 1px, transparent 1px);
   background-size: 56px 56px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
 }
 
 .gradient-text-warm {
-  background: linear-gradient(90deg, #1881ff 0%, #5fa9ff 45%, #f36523 100%);
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 45%, var(--color-tertiary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.dark .gradient-text-warm {
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 45%, var(--color-tertiary) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -471,14 +638,14 @@ body {
   0%,
   100% {
     box-shadow:
-      0 0 0 1px rgba(24, 129, 255, 0.18),
-      0 0 0 0 rgba(24, 129, 255, 0.35);
+      0 0 0 1px color-mix(in oklab, var(--color-primary) 30%, transparent),
+      0 0 0 0 color-mix(in oklab, var(--color-primary) 40%, transparent);
     transform: translateY(0);
   }
   35% {
     box-shadow:
-      0 0 0 1px rgba(24, 129, 255, 0.6),
-      0 0 18px 2px rgba(24, 129, 255, 0.35);
+      0 0 0 1px color-mix(in oklab, var(--color-primary) 60%, transparent),
+      0 0 18px 2px color-mix(in oklab, var(--color-primary) 35%, transparent);
     transform: translateY(-2px);
   }
 }
@@ -489,12 +656,17 @@ body {
   gap: 0.5rem;
   padding: 0.4rem 0.7rem;
   border-radius: 9999px;
-  background: rgba(11, 14, 23, 0.7);
-  border: 1px solid rgba(24, 129, 255, 0.3);
+  background: var(--color-surface-container);
+  border: 1px solid color-mix(in oklab, var(--color-on-surface) 18%, transparent);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   animation: routePulse 6s ease-in-out infinite;
   will-change: box-shadow, transform;
+  box-shadow: 0 2px 6px rgba(12, 22, 40, 0.06);
+}
+.dark .route-chip {
+  border-color: var(--color-outline-variant);
+  box-shadow: none;
 }
 
 .route-dot {
@@ -502,8 +674,8 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 9999px;
-  background: #f36523;
-  box-shadow: 0 0 8px #f36523;
+  background: var(--color-tertiary);
+  box-shadow: 0 0 8px var(--color-tertiary);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -511,4 +683,123 @@ body {
   .route-chip {
     animation: none;
   }
+}
+
+/* ----------------------------------------------------------------
+   Theme-aware surface / border / text utilities.
+
+   These map to the CSS variables so a single class name renders
+   correctly in both light and dark mode without inline styles. They
+   were introduced when migrating the public site off hard-coded
+   hex colours. Where Tailwind utilities (bg-background, text-on-surface,
+   border-outline-variant) already cover the same semantic, prefer those.
+
+   Naming follows the bg-/text-/border- prefix convention so they
+   compose with arbitrary opacity syntax (e.g. `bg-surface/50`).
+   ---------------------------------------------------------------- */
+
+/* Surfaces */
+.surface-page         { background-color: var(--color-background); }
+.surface-card         { background-color: var(--color-surface-container); }
+.surface-card-low     { background-color: var(--color-surface-container-low); }
+.surface-card-high    { background-color: var(--color-surface-container-high); }
+.surface-card-highest { background-color: var(--color-surface-container-highest); }
+.surface-bright       { background-color: var(--color-surface-bright); }
+.surface-default      { background-color: var(--color-surface); }
+.surface-variant      { background-color: var(--color-surface-variant); }
+
+/* Text */
+.text-on-bg           { color: var(--color-on-background); }
+.text-on-surface      { color: var(--color-on-surface); }
+.text-muted           { color: var(--color-on-surface-variant); }
+.text-primary         { color: var(--color-primary); }
+.text-accent          { color: var(--color-accent); }
+.text-tertiary        { color: var(--color-tertiary); }
+.text-inverse         { color: var(--color-inverse-on-surface); }
+
+/* Borders */
+.border-hairline      { border-color: var(--color-outline-variant); }
+.border-soft          { border-color: color-mix(in oklab, var(--color-on-surface) 10%, transparent); }
+.border-medium        { border-color: color-mix(in oklab, var(--color-on-surface) 18%, transparent); }
+.border-faint         { border-color: color-mix(in oklab, var(--color-on-surface) 6%, transparent); }
+
+/* Accent (cyan) tints used for borders, glows and ring colours */
+.border-accent-soft   { border-color: color-mix(in oklab, var(--color-accent) 30%, transparent); }
+.border-accent-firm   { border-color: color-mix(in oklab, var(--color-accent) 45%, transparent); }
+.bg-accent-soft       { background-color: color-mix(in oklab, var(--color-accent) 8%, transparent); }
+.bg-accent-firm       { background-color: color-mix(in oklab, var(--color-accent) 15%, transparent); }
+.bg-on-surface-soft   { background-color: color-mix(in oklab, var(--color-on-background) 6%, transparent); }
+.bg-on-surface-firm   { background-color: color-mix(in oklab, var(--color-on-background) 12%, transparent); }
+
+/* Composite "panel" — used for the dark glass cards and the light
+   elevated cards. The card uses the surface-container for the
+   background and a soft border so it reads on both surfaces. */
+.theme-panel {
+  background-color: var(--color-surface-container);
+  border: 1px solid var(--color-outline-variant);
+}
+
+.theme-panel-low {
+  background-color: var(--color-surface-container-low);
+  border: 1px solid var(--color-outline-variant);
+}
+
+.theme-panel-high {
+  background-color: var(--color-surface-container-high);
+  border: 1px solid var(--color-outline-variant);
+}
+
+/* Image scrim — used to keep text legible over photos in either
+   theme. Light mode needs a stronger scrim because the surface
+   text colour is dark; dark mode already has a dark background. */
+.scrim-strong { background: linear-gradient(180deg, transparent 0%, color-mix(in oklab, var(--color-background) 70%, transparent) 60%, var(--color-background) 100%); }
+.scrim-soft   { background: linear-gradient(180deg, transparent 0%, color-mix(in oklab, var(--color-background) 50%, transparent) 100%); }
+
+/* Hover ring used by service / destination / package cards. The
+   glow is cyan in dark mode (the signature neon), blue in light. */
+.hover-accent-ring:hover {
+  border-color: color-mix(in oklab, var(--color-accent) 40%, transparent);
+  box-shadow: 0 12px 32px -12px var(--accent-glow-strong);
+}
+
+/* Card elevation for light mode. The cream-on-white surface needs
+   a real shadow for card boundaries to read — a 10% outline is
+   not enough on its own. In dark mode the surface contrast already
+   separates cards, so we drop the shadow. */
+.card-elevated {
+  box-shadow: 0 1px 2px rgba(12, 22, 40, 0.05), 0 6px 16px -4px rgba(12, 22, 40, 0.10);
+}
+.dark .card-elevated {
+  box-shadow: none;
+}
+.card-elevated-hover:hover {
+  box-shadow: 0 2px 4px rgba(12, 22, 40, 0.06), 0 16px 36px -6px rgba(12, 22, 40, 0.18);
+}
+.dark .card-elevated-hover:hover {
+  box-shadow: 0 12px 32px -12px var(--accent-glow-strong);
+}
+
+/* Subtle hairline strengthened in light mode so card edges are
+   visible without leaning on a heavy shadow. */
+.border-hairline-strong {
+  border-color: rgba(10, 22, 40, 0.18);
+}
+.dark .border-hairline-strong {
+  border-color: var(--color-outline-variant);
+}
+
+/* Hero surface. Light mode uses a soft cream surface with only a
+   hint of brand colour so the globe and copy remain the focal points.
+   Dark mode keeps the deep-navy + saturated radial glow. */
+.hero-surface {
+  background:
+    radial-gradient(ellipse 60% 50% at 72% 38%, color-mix(in oklab, var(--color-primary) 6%, transparent), transparent 70%),
+    radial-gradient(ellipse 40% 35% at 18% 65%, color-mix(in oklab, var(--color-tertiary) 4%, transparent), transparent 70%),
+    var(--color-hero-bg);
+}
+.dark .hero-surface {
+  background:
+    radial-gradient(ellipse 60% 50% at 72% 38%, color-mix(in oklab, var(--color-primary) 22%, transparent), transparent 70%),
+    radial-gradient(ellipse 40% 35% at 18% 65%, color-mix(in oklab, var(--color-tertiary) 16%, transparent), transparent 70%),
+    var(--color-hero-bg);
 }

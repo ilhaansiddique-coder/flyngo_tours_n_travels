@@ -2,22 +2,26 @@ import { cn } from '@/lib/utils';
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'cyan' | 'amber';
   className?: string;
 }
+
+const VARIANT_STYLES: Record<NonNullable<BadgeProps['variant']>, string> = {
+  default: 'bg-primary/10 text-primary border-primary/30',
+  cyan: 'bg-primary/10 text-primary border-primary/30',
+  success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/30',
+  warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/30',
+  amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/30',
+  danger: 'bg-error/10 text-error border-error/30',
+  info: 'bg-brand-500/10 text-brand-600 dark:text-brand-300 border-brand-500/30',
+};
 
 export function Badge({ children, variant = 'default', className }: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-        {
-          'bg-brand-50 dark:bg-brand-950 text-brand-700 dark:text-brand-300': variant === 'default',
-          'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300': variant === 'success',
-          'bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300': variant === 'warning',
-          'bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300': variant === 'danger',
-          'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300': variant === 'info',
-        },
+        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border',
+        VARIANT_STYLES[variant],
         className,
       )}
     >

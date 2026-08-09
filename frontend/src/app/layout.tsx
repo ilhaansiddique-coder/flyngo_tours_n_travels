@@ -32,8 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body
         className={cn(
           montserrat.variable,
-          'font-sans antialiased bg-surface text-on-surface'
+          'font-sans antialiased'
         )}
+        style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-on-surface)' }}
         suppressHydrationWarning
       >
         <Providers>

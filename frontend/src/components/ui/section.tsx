@@ -5,19 +5,20 @@ interface SectionProps {
   className?: string;
   children: React.ReactNode;
   id?: string;
-  background?: 'white' | 'gray' | 'brand';
+  background?: 'default' | 'subtle' | 'brand' | 'gradient';
 }
 
-export function Section({ className, children, id, background = 'white' }: SectionProps) {
+export function Section({ className, children, id, background = 'default' }: SectionProps) {
   return (
     <section
       id={id}
       className={cn(
-        'py-20 lg:py-28',
+        'py-20 lg:py-28 relative',
         {
-          'bg-white dark:bg-gray-950': background === 'white',
-          'bg-gray-50 dark:bg-gray-900/50': background === 'gray',
-          'bg-brand-600 dark:bg-brand-900': background === 'brand',
+          'bg-transparent': background === 'default',
+          'bg-surface-container/50 border-y border-outline-variant/40': background === 'subtle',
+          'bg-gradient-to-r from-primary to-tertiary text-on-primary': background === 'brand',
+          'bg-gradient-to-b from-background via-surface-container-low to-background': background === 'gradient',
         },
         className,
       )}
@@ -45,14 +46,19 @@ export function Container({ className, children, size = 'default' }: { className
   );
 }
 
-export function SectionHeader({ title, subtitle, center = true }: { title: string; subtitle?: string; center?: boolean }) {
+export function SectionHeader({ title, subtitle, center = true, eyebrow }: { title: string; subtitle?: string; center?: boolean; eyebrow?: string }) {
   return (
     <div className={cn('mb-16', center && 'text-center')}>
-      <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">
+      {eyebrow && (
+        <span className="inline-block text-[10px] tracking-[0.25em] uppercase font-bold text-primary mb-3">
+          {eyebrow}
+        </span>
+      )}
+      <h2 className="font-display text-3xl sm:text-4xl font-bold text-on-surface tracking-tight">
         {title}
       </h2>
       {subtitle && (
-        <p className="mt-4 text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+        <p className="mt-4 text-lg text-on-surface-variant max-w-2xl mx-auto">
           {subtitle}
         </p>
       )}

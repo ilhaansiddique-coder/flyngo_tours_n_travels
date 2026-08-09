@@ -2,6 +2,7 @@
 
 import { Section, Container } from '@/components/ui/section';
 import { FlightCard } from '@/components/features/flights/flight-card';
+import { PageHero } from '@/components/ui/page-hero';
 import { useApi } from '@/hooks/use-api';
 import { useEffect, useState } from 'react';
 import type { Flight } from '@/types';
@@ -28,28 +29,25 @@ export default function FlightsPage() {
 
   return (
     <>
-      <Section background="brand" className="pt-32 pb-24">
-        <Container>
-          <h1 className="font-display text-4xl sm:text-5xl font-bold text-white text-center">Find & Book Flights</h1>
-          <p className="mt-4 text-lg text-brand-100 text-center max-w-2xl mx-auto">
-            Search hundreds of airlines for the best deals worldwide
-          </p>
-        </Container>
-      </Section>
-      <Section background="white">
+      <PageHero
+        eyebrow="Worldwide Routes"
+        title={<>Find & Book <span className="gradient-text-warm">Flights</span></>}
+        subtitle="Search hundreds of airlines for the best deals worldwide."
+      />
+      <Section>
         <Container>
           {loading ? (
             <div className="text-center py-20">
-              <div className="inline-block w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-              <p className="mt-4 text-gray-500">Loading flights...</p>
+              <div className="inline-block w-8 h-8 border-2 border-[#00eefc] border-t-transparent rounded-full animate-spin" />
+              <p className="mt-4 text-white/60">Loading flights...</p>
             </div>
           ) : error ? (
             <div className="text-center py-20">
-              <p className="text-red-500">{error}</p>
+              <p className="text-red-400">{error}</p>
             </div>
           ) : flights.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-gray-500 text-lg">No flights available yet.</p>
+              <p className="text-white/50 text-lg">No flights available yet.</p>
             </div>
           ) : (
             <div className="space-y-4">

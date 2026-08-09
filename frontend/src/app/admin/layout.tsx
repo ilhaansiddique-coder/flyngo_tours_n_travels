@@ -46,21 +46,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="flex min-h-screen bg-[#020617] text-white">
       {/* Sidebar */}
       <aside className={cn(
-        'fixed left-0 top-0 z-40 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800',
+        'fixed left-0 top-0 z-40 h-screen bg-[#07111f] border-r border-white/10',
         'transition-all duration-300 flex flex-col',
         collapsed ? 'w-20' : 'w-64',
       )}>
         {/* Logo */}
-        <div className={cn('h-16 flex items-center border-b border-gray-200 dark:border-gray-800 px-4', collapsed ? 'justify-center' : 'gap-3')}>
-          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center flex-shrink-0">
+        <div className={cn('h-16 flex items-center border-b border-white/10 px-4', collapsed ? 'justify-center' : 'gap-3')}>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-amber-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/30">
             <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           </div>
-          {!collapsed && <span className="font-display text-lg font-bold">Flyngo Admin</span>}
+          {!collapsed && <span className="font-display text-lg font-bold text-white">Fly&Go Admin</span>}
         </div>
 
         {/* Nav */}
@@ -72,14 +72,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
                   collapsed && 'justify-center',
                   isActive
-                    ? 'bg-brand-50 dark:bg-brand-950 text-brand-700 dark:text-brand-300'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
+                    ? 'bg-gradient-to-r from-blue-600/20 to-amber-500/10 text-[#00eefc] border border-[#00eefc]/30 shadow-lg shadow-[#00eefc]/5'
+                    : 'text-white/60 hover:bg-white/5 hover:text-white',
                 )}
               >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
+                <item.icon className={cn('w-5 h-5 flex-shrink-0', isActive && 'text-[#00eefc]')} />
                 {!collapsed && item.label}
               </Link>
             );
@@ -87,11 +87,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 dark:border-gray-800 p-4">
+        <div className="border-t border-white/10 p-4">
           <button
             onClick={() => setCollapsed(!collapsed)}
             className={cn(
-              'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800',
+              'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/50 hover:bg-white/5 hover:text-white transition-colors',
               collapsed && 'justify-center',
             )}
           >
@@ -101,7 +101,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link
             href="/"
             className={cn(
-              'w-full flex items-center gap-3 px-3 py-2 mt-1 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
+              'w-full flex items-center gap-3 px-3 py-2 mt-1 rounded-xl text-sm text-white/60 hover:bg-white/5 hover:text-white transition-colors',
               collapsed && 'justify-center',
             )}
           >
@@ -114,21 +114,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main Content */}
       <main className={cn('flex-1 transition-all duration-300', collapsed ? 'ml-20' : 'ml-64')}>
         {/* Top Bar */}
-        <div className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between px-6 sticky top-0 z-30">
-          <h1 className="font-display text-xl font-bold">
+        <div className="h-16 border-b border-white/10 bg-[#07111f]/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-30">
+          <h1 className="font-display text-xl font-bold text-white">
             {navigation.find((n) => n.href === pathname)?.label || 'Dashboard'}
           </h1>
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white/60 hover:bg-white/5 hover:text-white transition-colors"
               title="Go to Home Page"
             >
               <Home className="w-4 h-4" />
               Home
             </Link>
-            <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center">
-              <span className="text-sm font-bold text-brand-600 dark:text-brand-400">A</span>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#00eefc] to-blue-500 flex items-center justify-center text-[#020617] font-bold">
+              <span className="text-sm font-bold">A</span>
             </div>
           </div>
         </div>

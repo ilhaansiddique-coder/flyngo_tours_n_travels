@@ -1,5 +1,7 @@
-import { Section, Container } from '@/components/ui/section';
+import { Section, Container, SectionHeader } from '@/components/ui/section';
 import { Card } from '@/components/ui/card';
+import { PageHero } from '@/components/ui/page-hero';
+import { ChevronRight } from 'lucide-react';
 
 const faqs = [
   { question: 'How do I book a tour?', answer: 'Browse our tours page, select your preferred package, choose your dates and number of guests, and complete the secure checkout. Our team will confirm your booking within 24 hours.' },
@@ -17,21 +19,23 @@ const faqs = [
 export default function FAQPage() {
   return (
     <>
-      <Section background="brand" className="pt-32 pb-24">
-        <Container>
-          <h1 className="font-display text-4xl sm:text-5xl font-bold text-white text-center">Frequently Asked Questions</h1>
-          <p className="mt-4 text-lg text-brand-100 text-center max-w-2xl mx-auto">
-            Find answers to common questions about our services
-          </p>
-        </Container>
-      </Section>
-      <Section background="white">
+      <PageHero
+        eyebrow="Help & Support"
+        title={<>Frequently Asked <span className="gradient-text-warm">Questions</span></>}
+        subtitle="Find answers to common questions about our services."
+      />
+      <Section>
         <Container size="narrow">
           <div className="space-y-4">
             {faqs.map((faq, i) => (
-              <Card key={i} hover={false}>
-                <h3 className="font-display text-lg font-bold mb-2">{faq.question}</h3>
-                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{faq.answer}</p>
+              <Card key={i} hover={false} className="hover:border-accent-soft transition-colors">
+                <details className="group">
+                  <summary className="flex items-start justify-between gap-4 cursor-pointer list-none">
+                    <h3 className="font-display text-lg font-bold text-on-surface">{faq.question}</h3>
+                    <ChevronRight className="w-5 h-5 text-accent mt-1 transition-transform group-open:rotate-90 flex-shrink-0" />
+                  </summary>
+                  <p className="mt-3 text-on-surface-variant leading-relaxed">{faq.answer}</p>
+                </details>
               </Card>
             ))}
           </div>

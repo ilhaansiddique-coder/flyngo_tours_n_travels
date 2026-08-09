@@ -209,7 +209,7 @@ export function Header() {
           <LanguageToggle />
 
           <button
-            className="lg:hidden p-2 rounded-xl transition-colors hover:bg-white/10"
+            className="lg:hidden p-2 rounded-xl transition-colors hover:bg-surface-container-high"
             style={{ color: 'var(--color-header-text)' }}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle menu"

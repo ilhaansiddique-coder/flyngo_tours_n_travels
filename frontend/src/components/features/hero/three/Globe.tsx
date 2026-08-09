@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
+import { useTheme } from "next-themes";
 import {
   CITIES,
   ROUTES,
@@ -14,6 +15,41 @@ import {
 import Plane from "./Plane";
 
 const RADIUS = 1;
+
+/* Theme palette — the globe reads from a pair of color sets so it
+   looks correct on both the navy hero (dark) and the cream hero
+   (light). The dark theme keeps the neon-cyan accent and the deep
+   navy sphere; the light theme deepens the land-dot color to a
+   saturated blue and darkens the sphere so it still reads as a 3D
+   object against a cream surface. */
+const PALETTE = {
+  dark: {
+    core: "#021935",
+    land: "#1881ff",
+    graticule: "#0c6fdf",
+    atmosphere: "#1881ff",
+    arcPrimary: "#f36523",
+    arcSecondary: "#5fa9ff",
+    planePrimary: "#f36523",
+    planeSecondary: "#ffffff",
+    marker: "#f36523",
+    arcBlending: THREE.AdditiveBlending as THREE.Blending,
+  },
+  light: {
+    core: "#0c6fdf",
+    land: "#0a1628",
+    graticule: "#0c6fdf",
+    atmosphere: "#0c6fdf",
+    arcPrimary: "#d54f15",
+    arcSecondary: "#0c6fdf",
+    planePrimary: "#d54f15",
+    planeSecondary: "#0a1628",
+    marker: "#d54f15",
+    arcBlending: THREE.NormalBlending as THREE.Blending,
+  },
+} as const;
+
+type Palette = (typeof PALETTE)[keyof typeof PALETTE];
 
 /* ------------------------------------------------------------------ dots -- */
 
@@ -46,7 +82,7 @@ const dotFragment = /* glsl */ `
   }
 `;
 
-function LandDots() {
+function LandDots({ palette }: { palette: Palette }) {
   const material = useRef<THREE.ShaderMaterial>(null);
 
   const { positions, randoms } = useMemo(() => {
@@ -65,9 +101,9 @@ function LandDots() {
       uTime: { value: 0 },
       uSize: { value: 2.4 },
       uDpr: { value: 1 },
-      uColor: { value: new THREE.Color("#1881ff") },
+      uColor: { value: new THREE.Color(palette.land) },
     }),
-    [],
+    [palette],
   );
 
   useFrame((state) => {
@@ -114,10 +150,10 @@ const glowFragment = /* glsl */ `
   }
 `;
 
-function Atmosphere() {
+function Atmosphere({ palette }: { palette: Palette }) {
   const uniforms = useMemo(
-    () => ({ uColor: { value: new THREE.Color("#1881ff") } }),
-    [],
+    () => ({ uColor: { value: new THREE.Color(palette.atmosphere) } }),
+    [palette],
   );
 
   return (
@@ -128,7 +164,7 @@ function Atmosphere() {
         fragmentShader={glowFragment}
         uniforms={uniforms}
         side={THREE.BackSide}
-        blending={THREE.AdditiveBlending}
+        blending={THREE.NormalBlending}
         transparent
         depthWrite={false}
       />
@@ -170,11 +206,13 @@ function Arc({
   to,
   offset,
   color,
+  blending,
 }: {
   from: THREE.Vector3;
   to: THREE.Vector3;
   offset: number;
   color: string;
+  blending: THREE.Blending;
 }) {
   const material = useRef<THREE.ShaderMaterial>(null);
 
@@ -208,7 +246,7 @@ function Arc({
         uniforms={uniforms}
         transparent
         depthWrite={false}
-        blending={THREE.AdditiveBlending}
+        blending={blending}
       />
     </mesh>
   );
@@ -216,7 +254,7 @@ function Arc({
 
 /* -------------------------------------------------------------- markers -- */
 
-function Marker({ position, delay }: { position: THREE.Vector3; delay: number }) {
+function Marker({ position, delay, color }: { position: THREE.Vector3; delay: number; color: string }) {
   const ring = useRef<THREE.Mesh>(null);
   const ringMaterial = useRef<THREE.MeshBasicMaterial>(null);
 
@@ -236,13 +274,13 @@ function Marker({ position, delay }: { position: THREE.Vector3; delay: number })
     <group position={position} quaternion={quaternion}>
       <mesh>
         <circleGeometry args={[0.012, 16]} />
-        <meshBasicMaterial color="#f36523" toneMapped={false} />
+        <meshBasicMaterial color={color} toneMapped={false} />
       </mesh>
       <mesh ref={ring}>
         <ringGeometry args={[0.014, 0.019, 24]} />
         <meshBasicMaterial
           ref={ringMaterial}
-          color="#f36523"
+          color={color}
           transparent
           opacity={0.6}
           side={THREE.DoubleSide}
@@ -255,7 +293,7 @@ function Marker({ position, delay }: { position: THREE.Vector3; delay: number })
 
 /* ---------------------------------------------------------------- scene -- */
 
-function GlobeScene({ withPlanes }: { withPlanes: boolean }) {
+function GlobeScene({ withPlanes, palette }: { withPlanes: boolean; palette: Palette }) {
   const group = useRef<THREE.Group>(null);
 
   const cityPoints = useMemo(
@@ -272,17 +310,17 @@ function GlobeScene({ withPlanes }: { withPlanes: boolean }) {
       {/* Opaque core so dots on the far side stay hidden */}
       <mesh>
         <sphereGeometry args={[RADIUS * 0.995, 64, 64]} />
-        <meshBasicMaterial color="#021935" />
+        <meshBasicMaterial color={palette.core} />
       </mesh>
 
       {/* Faint graticule */}
       <lineSegments>
         <wireframeGeometry args={[new THREE.SphereGeometry(RADIUS * 0.997, 24, 16)]} />
-        <lineBasicMaterial color="#0c6fdf" transparent opacity={0.3} />
+        <lineBasicMaterial color={palette.graticule} transparent opacity={0.3} />
       </lineSegments>
 
-      <LandDots />
-      <Atmosphere />
+      <LandDots palette={palette} />
+      <Atmosphere palette={palette} />
 
       {ROUTES.map(([a, b], i) => (
         <Arc
@@ -290,7 +328,8 @@ function GlobeScene({ withPlanes }: { withPlanes: boolean }) {
           from={cityPoints[a]}
           to={cityPoints[b]}
           offset={(i / ROUTES.length) * 0.9}
-          color={i % 3 === 0 ? "#f36523" : "#5fa9ff"}
+          color={i % 3 === 0 ? palette.arcPrimary : palette.arcSecondary}
+          blending={palette.arcBlending}
         />
       ))}
 
@@ -301,18 +340,29 @@ function GlobeScene({ withPlanes }: { withPlanes: boolean }) {
             from={cityPoints[a]}
             to={cityPoints[b]}
             offset={(i / ROUTES.length) * 1.4}
-            color={i % 3 === 0 ? "#f36523" : "#ffffff"}
+            color={i % 3 === 0 ? palette.planePrimary : palette.planeSecondary}
           />
         ))}
 
       {cityPoints.map((p, i) => (
-        <Marker key={i} position={p} delay={i / cityPoints.length} />
+        <Marker key={i} position={p} delay={i / cityPoints.length} color={palette.marker} />
       ))}
     </group>
   );
 }
 
 export default function Globe({ withPlanes = true }: { withPlanes?: boolean }) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Until the theme is resolved we render the dark palette to avoid a
+  // flash of the wrong colors on first paint.
+  const palette: Palette = mounted && resolvedTheme === "light" ? PALETTE.light : PALETTE.dark;
+
   return (
     <Canvas
       camera={{ position: [0, 0, 3.1], fov: 42 }}
@@ -320,7 +370,7 @@ export default function Globe({ withPlanes = true }: { withPlanes?: boolean }) {
       gl={{ antialias: true, alpha: true }}
     >
       <ambientLight intensity={0.6} />
-      <GlobeScene withPlanes={withPlanes} />
+      <GlobeScene withPlanes={withPlanes} palette={palette} />
       <OrbitControls
         enablePan={false}
         enableZoom={false}

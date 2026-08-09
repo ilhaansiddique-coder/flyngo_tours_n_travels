@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 import { forwardRef } from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'gradient';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   as?: 'button' | 'a';
@@ -10,17 +10,18 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', loading, children, disabled, as: Component = 'button', ...props }, ref) => {
+  ({ className, variant = 'primary', size = 'md', loading, children, disabled, as: Component = 'button', style, ...props }, ref) => {
     const baseStyles = cn(
       'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200',
-      'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-950',
+      'focus:outline-none focus:ring-2 focus:ring-primary/50',
       'disabled:opacity-50 disabled:cursor-not-allowed',
       {
-        'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 shadow-sm hover:shadow-md': variant === 'primary',
-        'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100': variant === 'secondary',
-        'border-2 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400': variant === 'outline',
-        'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white': variant === 'ghost',
-        'bg-red-600 text-white hover:bg-red-700': variant === 'danger',
+        'text-white shadow-lg hover:opacity-95': variant === 'primary',
+        'bg-primary text-on-primary shadow-lg shadow-primary/20 hover:opacity-90': variant === 'gradient',
+        'bg-surface-container/60 backdrop-blur-md text-on-surface border border-outline-variant hover:bg-surface-container-high hover:border-outline': variant === 'secondary',
+        'border border-outline-variant bg-transparent text-on-surface hover:border-primary hover:text-primary': variant === 'outline',
+        'text-on-surface-variant hover:text-primary hover:bg-surface-container/50': variant === 'ghost',
+        'bg-error text-on-error hover:opacity-90': variant === 'danger',
         'px-3 py-1.5 text-sm': size === 'sm',
         'px-5 py-2.5 text-sm': size === 'md',
         'px-8 py-4 text-base': size === 'lg',
@@ -28,10 +29,19 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       className,
     );
 
+    const variantStyle: React.CSSProperties | undefined =
+      variant === 'primary'
+        ? {
+            background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-tertiary) 100%)',
+            boxShadow: '0 12px 28px -8px var(--accent-glow-strong)',
+            ...style,
+          }
+        : style;
+
     if (Component === 'a') {
       const NextLink = require('next/link').default;
       return (
-        <NextLink href={(props as any).href || '#'} className={baseStyles} {...(props as any)}>
+        <NextLink href={(props as any).href || '#'} className={baseStyles} style={variantStyle} {...(props as any)}>
           {loading && <Spinner className="mr-2" />}
           {children}
         </NextLink>
@@ -39,7 +49,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     return (
-      <button ref={ref} className={baseStyles} disabled={disabled || loading} {...props}>
+      <button ref={ref} className={baseStyles} style={variantStyle} disabled={disabled || loading} {...props}>
         {loading && <Spinner className="mr-2" />}
         {children}
       </button>

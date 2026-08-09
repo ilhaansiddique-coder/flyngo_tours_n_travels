@@ -11,8 +11,8 @@ export function Card({ className, children, hover = true, padding = 'md' }: Card
   return (
     <div
       className={cn(
-        'bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800',
-        hover && 'hover:shadow-xl hover:shadow-brand-500/5 hover:border-brand-300 dark:hover:border-brand-700 transition-all duration-300',
+        'relative overflow-hidden rounded-2xl border border-outline-variant bg-surface-container/60 backdrop-blur-md text-on-surface card-elevated',
+        hover && 'transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl dark:hover:shadow-primary/10',
         {
           'p-0': padding === 'none',
           'p-4': padding === 'sm',

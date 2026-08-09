@@ -63,7 +63,7 @@ export const bn: Messages = {
   stat_destinations: 'গন্তব্য',
   stat_happy_travelers: 'ভ্রমণকারী',
   stat_tour_packages: 'প্যাকেজ',
-  stat_concierge: 'কনসিয়ার্জ',
+  stat_concierge: 'প্রহরী',
   hajj_hero_title: 'হজ্জ ও ওমরাহ,',
   hajj_hero_title_b: 'যত্নের সাথে',
   hajj_hero_sub: 'সম্পূর্ণ তীর্থযাত্রা প্যাকেজ — ভিসা, ফ্লাইট, হারামের কাছে হোটেল এবং গাইডেড জিয়ারত। হাজারো পরিবারের আস্থা।',

@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { Search, Menu, X, User, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { LanguageToggle } from '@/components/ui/language-toggle';
 import { useLocale } from '@/contexts/locale-context';
 import logoImg from '@/images/flyngo_transparent.png';
 
@@ -205,6 +206,7 @@ export function Header() {
           )}
 
           <ThemeToggle />
+          <LanguageToggle />
 
           <button
             className="lg:hidden p-2 rounded-xl transition-colors hover:bg-white/10"

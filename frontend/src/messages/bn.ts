@@ -11,7 +11,7 @@ export const bn: Messages = {
   nav_signin: 'সাইন ইন',
   nav_book: 'বুক করুন',
   slogan: 'আপনার বিশ্বস্ত পার্টনার',
-  hero_badge: 'ব্লু হরাইজন ক্লাব',
+  hero_badge: 'ট্যুর · ভিসা · হজ্জ ও ওমরাহ',
   hero_title_a: 'আবিষ্কার করুন',
   hero_title_b: 'বিশ্বকে',
   hero_title_c: 'আপনার মতো করে',

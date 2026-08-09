@@ -9,7 +9,7 @@ export const en = {
   nav_signin: 'Sign In',
   nav_book: 'Book Now',
   slogan: 'Your Trusted Partner',
-  hero_badge: 'Blue Horizon Club',
+  hero_badge: 'Tours · Visa · Hajj & Umrah',
   hero_title_a: 'Discover',
   hero_title_b: 'the World',
   hero_title_c: 'Your Way',

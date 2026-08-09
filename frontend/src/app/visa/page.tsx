@@ -10,12 +10,18 @@ import { useEffect, useState } from 'react';
 
 interface VisaService {
   id: string;
-  country: string;
+  country: string | { name?: string };
   name: string;
   title?: string;
   processingTime: string;
   price: number;
   requirements: string[];
+}
+
+function getCountryName(country: VisaService['country']): string {
+  if (!country) return '—';
+  if (typeof country === 'string') return country;
+  return country.name ?? '—';
 }
 
 export default function VisaPage() {
@@ -73,7 +79,7 @@ export default function VisaPage() {
                     </div>
                     <div>
                       <h3 className="font-display text-lg font-bold">{visa.title || visa.name}</h3>
-                      <p className="text-sm text-gray-500">{visa.country}</p>
+                      <p className="text-sm text-gray-500">{getCountryName(visa.country)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mb-4">

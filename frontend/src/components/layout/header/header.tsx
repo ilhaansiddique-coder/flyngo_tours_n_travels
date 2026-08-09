@@ -59,7 +59,7 @@ export function Header() {
         borderColor: 'var(--color-header-border)',
       }}
     >
-      <div className="flex justify-between items-center px-16 max-w-[1440px] mx-auto h-full">
+      <div className="flex justify-between items-center px-16 max-w-[1600px] mx-auto h-full">
         <div className="flex items-center gap-12">
           <Link href="/" className="flex flex-col items-start leading-tight">
             <Image

@@ -25,7 +25,7 @@ export default function HomePage() {
       <HeroSection />
 
       {/* Curated Experiences */}
-      <section className="mt-32 px-16 max-w-[1440px] mx-auto mb-32">
+      <section className="mt-32 px-16 max-w-[1600px] mx-auto mb-32">
         <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
           <div>
             <h2 className="font-display text-[48px] leading-tight font-semibold text-on-surface mb-4">Curated Experiences</h2>
@@ -85,7 +85,7 @@ export default function HomePage() {
       {/* Stats Section */}
       <section className="bg-surface-container py-24 mb-32 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-400/20 to-transparent" />
-        <div className="px-16 max-w-[1440px] mx-auto grid grid-cols-2 lg:grid-cols-4 gap-12 text-center">
+        <div className="px-16 max-w-[1600px] mx-auto grid grid-cols-2 lg:grid-cols-4 gap-12 text-center">
           {stats.map((stat) => (
             <div key={stat.label}>
               <span className={`block font-display text-[48px] leading-tight font-semibold mb-2 ${stat.accent ? 'text-[#00eefc]' : 'text-on-surface'}`}>
@@ -101,7 +101,7 @@ export default function HomePage() {
       <PopularPackages />
 
       {/* Newsletter CTA */}
-      <section className="px-16 max-w-[1440px] mx-auto mb-32">
+      <section className="px-16 max-w-[1600px] mx-auto mb-32">
         <div className="glass-deep p-16 rounded-2xl relative overflow-hidden flex flex-col items-center text-center">
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-400/10 via-transparent to-transparent pointer-events-none" />
           <Rocket className="w-16 h-16 text-[#00eefc] mb-8" />

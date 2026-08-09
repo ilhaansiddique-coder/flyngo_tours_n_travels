@@ -25,7 +25,7 @@ export function PopularPackages() {
   const isBn = locale === 'bn';
 
   return (
-    <section className="px-4 sm:px-6 lg:px-16 max-w-[1440px] mx-auto mb-32">
+    <section className="px-4 sm:px-6 lg:px-16 max-w-[1600px] mx-auto mb-32">
       <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
         <div>
           <span className="text-xs tracking-[0.25em] uppercase text-[#00eefc] font-semibold mb-3 block">

@@ -18,7 +18,7 @@ export function Footer() {
   if (pathname.startsWith('/admin')) return null;
   return (
     <footer className="w-full py-12 bg-surface border-t border-outline-variant opacity-80 hover:opacity-100 transition-all">
-      <div className="flex flex-col md:flex-row justify-between items-center px-16 max-w-[1440px] mx-auto gap-8">
+      <div className="flex flex-col md:flex-row justify-between items-center px-16 max-w-[1600px] mx-auto gap-8">
         <div className="flex flex-col items-center md:items-start gap-4">
           <Link href="/" className="flex items-center gap-3">
             <Image

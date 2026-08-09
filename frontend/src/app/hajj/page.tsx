@@ -26,7 +26,7 @@ export default function HajjPage() {
           />
         </div>
 
-        <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16 py-20">
+        <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-20">
           <span className="inline-flex items-center gap-2 px-3 py-1 mb-6 rounded-full text-[10px] tracking-widest uppercase font-bold text-emerald-300 border border-emerald-400/30 bg-emerald-500/5">
             <FileCheck className="w-3 h-3" />
             {t('hajj_hero_badge')}
@@ -80,7 +80,7 @@ export default function HajjPage() {
       </section>
 
       {/* Packages */}
-      <section id="packages" className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16 py-20">
+      <section id="packages" className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-20">
         <h2 className="font-display text-3xl sm:text-4xl font-semibold text-white mb-10">
           {isBn ? 'আমাদের প্যাকেজ' : 'Our Packages'}
         </h2>
@@ -148,7 +148,7 @@ export default function HajjPage() {
       </section>
 
       {/* Process timeline */}
-      <section className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16 py-20">
+      <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-20">
         <h2 className="font-display text-3xl sm:text-4xl font-semibold text-white mb-10">
           {isBn ? 'প্রক্রিয়া' : 'How It Works'}
         </h2>

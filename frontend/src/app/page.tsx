@@ -3,6 +3,7 @@
 import { PlaneTakeoff, ChevronLeft, ChevronRight, Rocket, ArrowUpRight } from 'lucide-react';
 import { HeroSection } from '@/components/features/hero/hero-section';
 import { PopularPackages } from '@/components/features/packages/popular-packages';
+import { useLocale } from '@/contexts/locale-context';
 
 const routes = [
   { from: 'LHR', fromCity: 'London', to: 'JFK', toCity: 'New York', duration: 'Direct · 7h 45m', price: '$1,240' },
@@ -11,14 +12,15 @@ const routes = [
   { from: 'LAX', fromCity: 'Los Angeles', to: 'SYD', toCity: 'Sydney', duration: 'Direct · 15h 10m', price: '$1,580' },
 ];
 
-const stats = [
-  { value: '120+', label: 'Global Hubs', accent: false },
-  { value: '15ms', label: 'Booking Velocity', accent: true },
-  { value: '24/7', label: 'Concierge Care', accent: false },
-  { value: '98%', label: 'Member Loyalty', accent: true },
+const STATS: { value: string; labelKey: 'stat_destinations' | 'stat_happy_travelers' | 'stat_tour_packages' | 'stat_concierge'; accent: boolean }[] = [
+  { value: '500+', labelKey: 'stat_destinations', accent: false },
+  { value: '50K+', labelKey: 'stat_happy_travelers', accent: true },
+  { value: '1K+', labelKey: 'stat_tour_packages', accent: false },
+  { value: '24/7', labelKey: 'stat_concierge', accent: true },
 ];
 
 export default function HomePage() {
+  const { t } = useLocale();
   return (
     <main>
       {/* Hero Section */}
@@ -83,15 +85,17 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-surface-container py-24 mb-32 relative overflow-hidden">
+      <section className="bg-surface-container py-20 sm:py-24 mb-32 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-400/20 to-transparent" />
-        <div className="px-16 max-w-[1600px] mx-auto grid grid-cols-2 lg:grid-cols-4 gap-12 text-center">
-          {stats.map((stat) => (
-            <div key={stat.label}>
-              <span className={`block font-display text-[48px] leading-tight font-semibold mb-2 ${stat.accent ? 'text-[#00eefc]' : 'text-on-surface'}`}>
+        <div className="px-6 sm:px-10 lg:px-16 max-w-[1600px] mx-auto grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 text-center">
+          {STATS.map((stat) => (
+            <div key={stat.labelKey} className="min-w-0">
+              <span className={`block font-display text-[40px] sm:text-[48px] leading-tight font-semibold mb-2 whitespace-nowrap ${stat.accent ? 'text-[#00eefc]' : 'text-on-surface'}`}>
                 {stat.value}
               </span>
-              <span className="text-sm tracking-[0.1em] uppercase text-on-surface-variant font-semibold">{stat.label}</span>
+              <span className="block text-xs sm:text-sm tracking-[0.08em] uppercase text-on-surface-variant font-semibold whitespace-nowrap">
+                {t(stat.labelKey)}
+              </span>
             </div>
           ))}
         </div>

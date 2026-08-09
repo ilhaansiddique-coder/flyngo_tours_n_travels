@@ -20,11 +20,11 @@ const ROUTE_CHIPS = [
   { from: 5, to: 1 },
 ] as const;
 
-const STATS = [
-  { value: '500+', label: 'Destinations' },
-  { value: '50K+', label: 'Happy Travelers' },
-  { value: '1K+', label: 'Tour Packages' },
-  { value: '24/7', label: 'Concierge' },
+const STATS: { value: string; labelKey: 'stat_destinations' | 'stat_happy_travelers' | 'stat_tour_packages' | 'stat_concierge' }[] = [
+  { value: '500+', labelKey: 'stat_destinations' },
+  { value: '50K+', labelKey: 'stat_happy_travelers' },
+  { value: '1K+', labelKey: 'stat_tour_packages' },
+  { value: '24/7', labelKey: 'stat_concierge' },
 ];
 
 const QUICK_PLACES = ['Bali', 'Dubai', 'Maldives', 'Switzerland', 'Thailand'];
@@ -127,13 +127,13 @@ export function HeroSection() {
             ))}
           </div>
 
-          <dl className="mt-10 grid max-w-md grid-cols-2 gap-6 border-t border-white/10 pt-6 sm:grid-cols-4 lg:mt-12 lg:mx-0 mx-auto">
+          <dl className="mt-10 grid max-w-2xl grid-cols-2 gap-x-6 gap-y-4 border-t border-white/10 pt-6 sm:grid-cols-4 sm:gap-x-4 lg:mt-12 lg:mx-0 mx-auto">
             {STATS.map((stat) => (
-              <div key={stat.label} className="text-center lg:text-left">
-                <dt className="text-[10px] uppercase tracking-widest text-gray-500">
-                  {stat.label}
+              <div key={stat.labelKey} className="text-center lg:text-left min-w-0">
+                <dt className="text-[10px] uppercase tracking-[0.06em] text-gray-500 whitespace-nowrap">
+                  {t(stat.labelKey)}
                 </dt>
-                <dd className="mt-1 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                <dd className="mt-1 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl whitespace-nowrap">
                   {stat.value}
                 </dd>
               </div>

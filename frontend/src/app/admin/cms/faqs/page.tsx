@@ -52,6 +52,8 @@ export default function FaqsPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchFaqs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

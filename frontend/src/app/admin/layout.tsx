@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, BookOpen, Users, Map, Building2, Plane, Globe,
   Ticket, Percent, UserPlus, BarChart3, Settings,
-  Shield, FileText, LogOut, ChevronLeft, Home,
+  Shield, FileText, ChevronLeft, Home,
   FileText as FileIcon, Image, Search as SearchIcon, Star, HelpCircle,
   Megaphone, Car, MessageSquare, Bell, CreditCard
 } from 'lucide-react';

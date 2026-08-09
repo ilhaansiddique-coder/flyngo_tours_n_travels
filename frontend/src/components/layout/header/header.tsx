@@ -8,23 +8,30 @@ import { useState, useEffect } from 'react';
 import { Search, Menu, X, User, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useLocale } from '@/contexts/locale-context';
 import logoImg from '@/images/flyngo_transparent.png';
 
 const navItems = [
-  { label: 'Home', href: '/' },
-  { label: 'Tours', href: '/tours' },
-  { label: 'Hotels', href: '/hotels' },
-  { label: 'Tickets', href: '/flights' },
-  { label: 'Transport', href: '/transport' },
-];
+  { key: 'nav_home', href: '/' },
+  { key: 'nav_tours', href: '/tours' },
+  { key: 'nav_visa', href: '/visa' },
+  { key: 'nav_hajj', href: '/hajj' },
+  { key: 'nav_hotels', href: '/hotels' },
+  { key: 'nav_tickets', href: '/flights' },
+  { key: 'nav_transport', href: '/transport' },
+] as const;
 
 export function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [authReady, setAuthReady] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
+  const { t } = useLocale();
 
   useEffect(() => {
+    // SSR hydration guard — render the same on server and first client render
+    // then reveal the auth-dependent UI on the second render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAuthReady(true);
   }, []);
 
@@ -54,7 +61,7 @@ export function Header() {
     >
       <div className="flex justify-between items-center px-16 max-w-[1440px] mx-auto h-full">
         <div className="flex items-center gap-12">
-          <Link href="/" className="flex items-center">
+          <Link href="/" className="flex flex-col items-start leading-tight">
             <Image
               src={logoImg}
               alt="Fly&Go"
@@ -63,6 +70,12 @@ export function Header() {
               priority
               className="rounded-xl object-cover w-auto h-auto"
             />
+            <span
+              className="mt-1 text-[10px] sm:text-[11px] tracking-[0.18em] uppercase font-semibold"
+              style={{ color: 'var(--color-nav-inactive)' }}
+            >
+              {t('slogan')}
+            </span>
           </Link>
           <nav className="hidden md:flex gap-8">
             {navItems.map((item) => {
@@ -90,7 +103,7 @@ export function Header() {
                     if (!active) (e.target as HTMLElement).style.color = 'var(--color-nav-inactive)';
                   }}
                 >
-                  {item.label}
+                  {t(item.key as any)}
                 </Link>
               );
             })}
@@ -161,7 +174,7 @@ export function Header() {
                 onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-header-text)')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-header-text-muted)')}
               >
-                Sign In
+                {t('nav_signin')}
               </Link>
               <Link
                 href="/booking"
@@ -179,7 +192,7 @@ export function Header() {
                   e.currentTarget.style.color = 'var(--color-header-btn-text)';
                 }}
               >
-                Book Now
+                {t('nav_book')}
               </Link>
               <Link
                 href="/auth/login"
@@ -241,7 +254,7 @@ export function Header() {
                     }}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    {item.label}
+                    {t(item.key as any)}
                   </Link>
                 );
               })}

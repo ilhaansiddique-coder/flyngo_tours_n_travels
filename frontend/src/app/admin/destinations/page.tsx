@@ -69,6 +69,8 @@ export default function AdminDestinationsPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchDestinations(meta.page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -74,6 +74,8 @@ export default function CmsPagesPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchPages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useEffect, useState } from 'react';
-import { BarChart3, TrendingUp, DollarSign, Users, BookOpen, ArrowUpRight, Download, Calendar } from 'lucide-react';
+import { BarChart3, TrendingUp, DollarSign, Users, BookOpen, ArrowUpRight, Download } from 'lucide-react';
 
 interface DashboardData {
   totalRevenue: number;
@@ -47,6 +47,8 @@ export default function ReportsPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

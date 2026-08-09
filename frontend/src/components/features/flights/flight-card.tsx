@@ -2,7 +2,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
-import { Plane, Clock, Users } from 'lucide-react';
+import { Plane } from 'lucide-react';
 
 interface FlightCardProps {
   id: string;

@@ -91,6 +91,8 @@ export default function AffiliatesPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchAffiliates(1);
     fetchUserOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps

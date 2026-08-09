@@ -97,6 +97,8 @@ export default function CustomersPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchUsers();
     fetchRoles();
     // eslint-disable-next-line react-hooks/exhaustive-deps

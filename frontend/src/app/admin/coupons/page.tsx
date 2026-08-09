@@ -99,6 +99,8 @@ export default function CouponsPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchCoupons();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

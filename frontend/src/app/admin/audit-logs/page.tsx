@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { formatDate } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import { useEffect, useState, useCallback } from 'react';
-import { FileText, Search, Download, Filter as FilterIcon } from 'lucide-react';
+import { FileText, Download, Filter as FilterIcon } from 'lucide-react';
 
 interface AuditUser {
   id: string;

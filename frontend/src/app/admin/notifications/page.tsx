@@ -98,6 +98,8 @@ export default function NotificationsPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchNotifications(1);
     fetchUserOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps

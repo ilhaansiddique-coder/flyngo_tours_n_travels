@@ -25,15 +25,15 @@ export default function AboutPage() {
         <Container size="narrow">
           <div className="prose prose-lg dark:prose-invert mx-auto">
             <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
-              Flyngo is a full-service travel platform dedicated to making world exploration 
-              accessible, seamless, and unforgettable. Whether you're planning a solo adventure, 
-              family vacation, or corporate retreat, we provide end-to-end solutions for tours, 
+              Flyngo is a full-service travel platform dedicated to making world exploration
+              accessible, seamless, and unforgettable. Whether you&apos;re planning a solo adventure,
+              family vacation, or corporate retreat, we provide end-to-end solutions for tours,
               hotels, flights, and visa processing.
             </p>
             <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-              Founded with a vision to simplify travel planning, Flyngo combines cutting-edge 
-              technology with expert human support. Our platform serves thousands of happy travelers, 
-              offering curated experiences in the world's most sought-after destinations.
+              Founded with a vision to simplify travel planning, Flyngo combines cutting-edge
+              technology with expert human support. Our platform serves thousands of happy travelers,
+              offering curated experiences in the world&apos;s most sought-after destinations.
             </p>
           </div>
         </Container>

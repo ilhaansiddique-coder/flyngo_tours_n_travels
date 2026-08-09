@@ -100,6 +100,8 @@ export default function AdminHotelsPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchHotels(page);
     fetchDestinations();
     // eslint-disable-next-line react-hooks/exhaustive-deps

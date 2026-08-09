@@ -1,9 +1,8 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
-import { Clock, Users, Star } from 'lucide-react';
+import { Clock, Users } from 'lucide-react';
 
 interface TourCardProps {
   id: string;

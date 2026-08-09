@@ -24,7 +24,6 @@ export function useApi() {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/tours' + qs, auth());
   }, [auth]);
-  const getTour = useCallback(async (id: string) => api.get(`/tours/${id}`, auth()), [auth]);
   const createTour = useCallback(async (body: any) => api.post('/tours', body, auth()), [auth]);
   const updateTour = useCallback(async (id: string, body: any) => api.patch(`/tours/${id}`, body, auth()), [auth]);
   const deleteTour = useCallback(async (id: string) => api.delete(`/tours/${id}`, auth()), [auth]);
@@ -33,7 +32,6 @@ export function useApi() {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/hotels' + qs, auth());
   }, [auth]);
-  const getHotel = useCallback(async (id: string) => api.get(`/hotels/${id}`, auth()), [auth]);
   const createHotel = useCallback(async (body: any) => api.post('/hotels', body, auth()), [auth]);
   const updateHotel = useCallback(async (id: string, body: any) => api.patch(`/hotels/${id}`, body, auth()), [auth]);
   const deleteHotel = useCallback(async (id: string) => api.delete(`/hotels/${id}`, auth()), [auth]);
@@ -42,7 +40,6 @@ export function useApi() {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/flights' + qs, auth());
   }, [auth]);
-  const getFlight = useCallback(async (id: string) => api.get(`/flights/${id}`, auth()), [auth]);
   const createFlight = useCallback(async (body: any) => api.post('/flights', body, auth()), [auth]);
   const updateFlight = useCallback(async (id: string, body: any) => api.patch(`/flights/${id}`, body, auth()), [auth]);
   const deleteFlight = useCallback(async (id: string) => api.delete(`/flights/${id}`, auth()), [auth]);
@@ -60,11 +57,6 @@ export function useApi() {
   const updateDestination = useCallback(async (id: string, body: any) => api.patch(`/destinations/${id}`, body, auth()), [auth]);
   const deleteDestination = useCallback(async (id: string) => api.delete(`/destinations/${id}`, auth()), [auth]);
 
-  const getBlogs = useCallback(async (params?: Record<string, string>) => {
-    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-    return api.get('/cms/blogs' + qs, auth());
-  }, [auth]);
-  const getBlog = useCallback(async (slug: string) => api.get(`/cms/blogs/${slug}`, auth()), [auth]);
   const listBlogs = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/cms/admin/blogs' + qs, auth());
@@ -81,13 +73,11 @@ export function useApi() {
   const updatePage = useCallback(async (id: string, body: any) => api.patch(`/cms/pages/${id}`, body, auth()), [auth]);
   const deletePage = useCallback(async (id: string) => api.delete(`/cms/pages/${id}`, auth()), [auth]);
 
-  const getFaqs = useCallback(async () => api.get('/cms/faqs', auth()), [auth]);
   const listFaqs = useCallback(async () => api.get('/cms/admin/faqs', auth()), [auth]);
   const createFaq = useCallback(async (body: any) => api.post('/cms/admin/faqs', body, auth()), [auth]);
   const updateFaq = useCallback(async (id: string, body: any) => api.patch(`/cms/admin/faqs/${id}`, body, auth()), [auth]);
   const deleteFaq = useCallback(async (id: string) => api.delete(`/cms/admin/faqs/${id}`, auth()), [auth]);
 
-  const getTestimonials = useCallback(async () => api.get('/cms/testimonials', auth()), [auth]);
   const listTestimonials = useCallback(async () => api.get('/cms/admin/testimonials', auth()), [auth]);
   const createTestimonial = useCallback(async (body: any) => api.post('/cms/admin/testimonials', body, auth()), [auth]);
   const updateTestimonial = useCallback(async (id: string, body: any) => api.patch(`/cms/admin/testimonials/${id}`, body, auth()), [auth]);
@@ -176,18 +166,16 @@ export function useApi() {
   const getTenantSettings = useCallback(async () => api.get('/tenant/settings', auth()), [auth]);
   const updateTenantSettings = useCallback(async (body: any) => api.patch('/tenant/settings', body, auth()), [auth]);
 
-  const validateCoupon = useCallback(async (code: string) => api.post('/marketing/coupons/validate', { code }, auth()), [auth]);
-
   return {
-    getTours, getTour, createTour, updateTour, deleteTour,
-    getHotels, getHotel, createHotel, updateHotel, deleteHotel,
-    getFlights, getFlight, createFlight, updateFlight, deleteFlight,
+    getTours, createTour, updateTour, deleteTour,
+    getHotels, createHotel, updateHotel, deleteHotel,
+    getFlights, createFlight, updateFlight, deleteFlight,
     getVisaServices, createVisaService, updateVisaService, deleteVisaService,
     getDestinations, createDestination, updateDestination, deleteDestination,
-    getBlogs, getBlog, listBlogs, createBlog, updateBlog, deleteBlog,
+    listBlogs, createBlog, updateBlog, deleteBlog,
     listPages, createPage, updatePage, deletePage,
-    getFaqs, listFaqs, createFaq, updateFaq, deleteFaq,
-    getTestimonials, listTestimonials, createTestimonial, updateTestimonial, deleteTestimonial,
+    listFaqs, createFaq, updateFaq, deleteFaq,
+    listTestimonials, createTestimonial, updateTestimonial, deleteTestimonial,
     getDashboard, getAuditLogs,
     getRoles, createRole, updateRole, deleteRole,
     getPermissions, createPermission, updatePermission, deletePermission,
@@ -200,6 +188,5 @@ export function useApi() {
     getReviews, approveReview, deleteReview,
     getNotifications, sendNotification, deleteNotification,
     getTenantSettings, updateTenantSettings,
-    validateCoupon,
   };
 }

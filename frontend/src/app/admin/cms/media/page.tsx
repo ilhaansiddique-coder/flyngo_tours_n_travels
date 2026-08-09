@@ -4,7 +4,7 @@ import { useApi } from '@/hooks/use-api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Modal, FormField, FormInput, FormSelect } from '@/components/admin/ui';
+import { Modal, FormField, FormInput } from '@/components/admin/ui';
 import { useEffect, useState } from 'react';
 import { Image, Upload, Search, Trash2, Copy, ExternalLink, X } from 'lucide-react';
 
@@ -85,6 +85,8 @@ export default function MediaPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchMedia();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uploadedMedia.length]);

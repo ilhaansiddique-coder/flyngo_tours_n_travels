@@ -2,6 +2,7 @@
 
 import { PlaneTakeoff, ChevronLeft, ChevronRight, Rocket, ArrowUpRight } from 'lucide-react';
 import { HeroSection } from '@/components/features/hero/hero-section';
+import { PopularPackages } from '@/components/features/packages/popular-packages';
 
 const routes = [
   { from: 'LHR', fromCity: 'London', to: 'JFK', toCity: 'New York', duration: 'Direct · 7h 45m', price: '$1,240' },
@@ -96,39 +97,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Popular Routes */}
-      <section className="px-16 max-w-[1440px] mx-auto mb-32">
-        <div className="flex items-center gap-4 mb-12">
-          <div className="h-[1px] flex-1 bg-outline-variant" />
-          <h2 className="text-sm tracking-[0.2em] uppercase text-on-surface-variant font-semibold whitespace-nowrap">Popular High Velocity Routes</h2>
-          <div className="h-[1px] flex-1 bg-outline-variant" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {routes.map((route) => (
-            <div
-              key={`${route.from}-${route.to}`}
-              className={`glass p-6 rounded-xl velocity-glow transition-all group cursor-pointer ${route.featured ? 'border-[#00eefc]/30' : ''}`}
-            >
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <span className="font-display text-[32px] font-semibold text-on-surface block">{route.from}</span>
-                  <span className="text-xs text-on-surface-variant">{route.fromCity}</span>
-                </div>
-                <PlaneTakeoff className="text-[#00eefc] w-6 h-6 mt-2" />
-                <div className="text-right">
-                  <span className="font-display text-[32px] font-semibold text-on-surface block">{route.to}</span>
-                  <span className="text-xs text-on-surface-variant">{route.toCity}</span>
-                </div>
-              </div>
-              <div className="flex justify-between items-center text-xs text-on-surface-variant mb-6">
-                <span>{route.duration}</span>
-                <span className="text-on-surface font-bold">From {route.price}</span>
-              </div>
-              <div className="kinetic-line w-0 group-hover:w-full transition-all duration-500" />
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Popular Packages — replaces Popular Routes */}
+      <PopularPackages />
 
       {/* Newsletter CTA */}
       <section className="px-16 max-w-[1440px] mx-auto mb-32">

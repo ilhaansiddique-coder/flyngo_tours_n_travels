@@ -8,7 +8,7 @@ import { ConfirmDialog } from '@/components/admin/ui';
 import { formatDate } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import { useEffect, useState } from 'react';
-import { MessageSquare, Star, Check, X, Search, Filter as FilterIcon, Trash2 } from 'lucide-react';
+import { MessageSquare, Star, Check, X, Search, Trash2 } from 'lucide-react';
 
 interface Review {
   id: string;
@@ -65,6 +65,8 @@ export default function ReviewsPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchReviews(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

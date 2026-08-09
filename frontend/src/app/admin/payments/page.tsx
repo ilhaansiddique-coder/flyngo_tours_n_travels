@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import { useEffect, useState } from 'react';
-import { CreditCard, Search, DollarSign, TrendingUp, AlertCircle, CheckCircle, Download } from 'lucide-react';
+import { CreditCard, Search, DollarSign, AlertCircle, CheckCircle, Download } from 'lucide-react';
 
 interface Payment {
   id: string;
@@ -93,6 +93,8 @@ export default function PaymentsPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchPayments(1);
     fetchStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps

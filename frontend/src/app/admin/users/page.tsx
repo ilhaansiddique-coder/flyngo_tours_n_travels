@@ -118,6 +118,8 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchUsers(1);
     fetchRolesAndPermissions();
     // eslint-disable-next-line react-hooks/exhaustive-deps

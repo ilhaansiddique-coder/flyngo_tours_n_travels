@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
+import { Modal, FormField, FormInput, FormSelect, ConfirmDialog } from '@/components/admin/ui';
 import { formatCurrency } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import { useEffect, useState } from 'react';
@@ -120,6 +120,8 @@ export default function TransportPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchItems(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

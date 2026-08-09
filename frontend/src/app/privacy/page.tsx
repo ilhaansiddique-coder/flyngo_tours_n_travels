@@ -62,7 +62,7 @@ export default function PrivacyPage() {
         <Container size="narrow">
           <div className="prose dark:prose-invert max-w-none">
             <p className="text-lg text-gray-600 dark:text-gray-400">
-              Flyngo ("we", "us", "our") respects your privacy and is committed to protecting your personal
+              Flyngo (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) respects your privacy and is committed to protecting your personal
               data. This policy explains what we collect, how we use it, and the rights you have over your
               information.
             </p>

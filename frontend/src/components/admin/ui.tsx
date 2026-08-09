@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-
 interface ModalProps {
   open: boolean;
   onClose: () => void;
@@ -68,6 +66,8 @@ export function FormTextarea({ value, onChange, placeholder, rows = 3 }: {
   );
 }
 
+let keyCounter = 0;
+
 export function FormSelect({ value, onChange, options, placeholder }: {
   value?: string; onChange?: (v: string) => void; options: { label: string; value: string }[]; placeholder?: string;
 }) {
@@ -75,7 +75,7 @@ export function FormSelect({ value, onChange, options, placeholder }: {
   const deduped = options.map((o) => {
     let key = o.value;
     if (seen.has(key)) {
-      key = `${o.value}__${Math.random().toString(36).slice(2, 7)}`;
+      key = `${o.value}__${++keyCounter}`;
     }
     seen.add(key);
     return { ...o, value: o.value, _key: key };

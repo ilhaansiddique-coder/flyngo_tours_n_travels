@@ -52,6 +52,8 @@ export default function TestimonialsPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchTestimonials();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

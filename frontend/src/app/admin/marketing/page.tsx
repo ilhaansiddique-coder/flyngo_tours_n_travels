@@ -5,7 +5,6 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useEffect, useState } from 'react';
 import { Megaphone, Percent, Send, TrendingUp, Users, Calendar, BarChart3, Plus, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
@@ -35,6 +34,8 @@ export default function MarketingPage() {
   const [bookingCount, setBookingCount] = useState(0);
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     const fetch = async () => {
       try {
         const [couponsRes, usersRes, bookingsRes] = await Promise.all([

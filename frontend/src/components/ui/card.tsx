@@ -26,11 +26,3 @@ export function Card({ className, children, hover = true, padding = 'md' }: Card
     </div>
   );
 }
-
-export function CardImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
-  return (
-    <div className={cn('overflow-hidden rounded-xl', className)}>
-      <img src={src} alt={alt} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-    </div>
-  );
-}

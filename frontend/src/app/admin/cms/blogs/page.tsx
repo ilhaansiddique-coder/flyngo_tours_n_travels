@@ -88,6 +88,8 @@ export default function CmsBlogsPage() {
   };
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     fetchBlogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

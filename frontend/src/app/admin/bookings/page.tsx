@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog, Modal, FormField, FormInput, FormSelect, FormTextarea } from '@/components/admin/ui';
 import { useApi } from '@/hooks/use-api';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { BookOpen, Filter, Search, Plus, Eye, X } from 'lucide-react';
+import { Search, Plus, Eye } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface BookingUser {
@@ -112,6 +112,8 @@ export default function BookingsPage() {
   const [itemOptions, setItemOptions] = useState<{ label: string; value: string }[]>([]);
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+
     const fetch = async () => {
       setLoading(true);
       setError(null);

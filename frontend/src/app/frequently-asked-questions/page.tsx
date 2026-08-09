@@ -1,4 +1,4 @@
-import { Section, Container, SectionHeader } from '@/components/ui/section';
+import { Section, Container } from '@/components/ui/section';
 import { Card } from '@/components/ui/card';
 
 const faqs = [

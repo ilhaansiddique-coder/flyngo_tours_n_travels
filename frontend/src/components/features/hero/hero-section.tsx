@@ -2,8 +2,9 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Search, MapPin, Calendar, Users, ArrowRight } from 'lucide-react';
-import { CITIES, ROUTES } from '@/lib/geo';
+import { Search, MapPin, Calendar, Users, ArrowRight, FileCheck, Plane } from 'lucide-react';
+import { CITIES } from '@/lib/geo';
+import { useLocale } from '@/contexts/locale-context';
 
 const Globe = dynamic(() => import('./three/Globe').then((m) => m.default), {
   ssr: false,
@@ -17,7 +18,7 @@ const ROUTE_CHIPS = [
   { from: 3, to: 4 },
   { from: 4, to: 7 },
   { from: 5, to: 1 },
-];
+] as const;
 
 const STATS = [
   { value: '500+', label: 'Destinations' },
@@ -45,6 +46,9 @@ function PlaneIcon({ className = '' }: { className?: string }) {
 }
 
 export function HeroSection() {
+  const { t, locale } = useLocale();
+  const isBn = locale === 'bn';
+
   return (
     <section className="relative isolate overflow-hidden bg-[#020617]">
       {/* Backdrop layers: grid + dual-tone radial wash (blue + orange) */}
@@ -62,34 +66,65 @@ export function HeroSection() {
       <div className="relative mx-auto grid w-full max-w-[1440px] grid-cols-1 items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)] lg:gap-16 lg:px-16 lg:py-24">
         {/* ------------------ left: copy + CTAs + search ------------------ */}
         <header className="relative z-10 text-center lg:text-left">
+          <span className="inline-flex items-center gap-2 px-3 py-1 mb-5 rounded-full text-[10px] tracking-widest uppercase font-bold text-[#00eefc] border border-[#00eefc]/30 bg-[#00eefc]/5">
+            <FileCheck className="w-3 h-3" />
+            {t('hero_badge')}
+          </span>
+
           <h1 className="font-display text-5xl font-extrabold leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl lg:text-7xl">
-            Discover{' '}
-            <span className="gradient-text-warm">the World</span>
+            {t('hero_title_a')}{' '}
+            <span className="gradient-text-warm">{t('hero_title_b')}</span>
             <br />
-            <span className="text-4xl font-semibold tracking-[-0.01em] opacity-90 sm:text-5xl lg:text-6xl">Your Way</span>
+            <span className="text-4xl font-semibold tracking-[-0.01em] opacity-90 sm:text-5xl lg:text-6xl">
+              {t('hero_title_c')}
+            </span>
           </h1>
 
           <p className="mt-6 max-w-xl text-base leading-relaxed text-gray-400 sm:text-lg lg:mt-8 lg:mx-0 mx-auto">
-            Book extraordinary tours, flights, hotels, and visa services with AI-powered
-            recommendations tailored just for you.
+            {t('hero_subtitle')}
           </p>
 
-          <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start lg:mt-10">
+          <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start lg:mt-10">
             <Link
               href="/tours"
               className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-amber-500 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition hover:from-blue-500 hover:to-amber-400 sm:text-base"
             >
               <PlaneIcon className="h-4 w-4" />
-              Explore Tours
+              {t('hero_cta_explore')}
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+            <Link
+              href="/visa"
+              className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-rose-500 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition hover:from-amber-400 hover:to-rose-400 sm:text-base"
+            >
+              <FileCheck className="h-4 w-4" />
+              {t('hero_visa_cta')}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               href="/destinations"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/10 sm:text-base"
+              className="group inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/10 sm:text-base"
             >
-              View Destinations
-              <span aria-hidden>→</span>
+              {t('hero_cta_destinations')}
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
+          </div>
+
+          {/* Service pills — quick visual proof of what we do */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+            {[
+              { label: isBn ? 'ট্যুর প্যাকেজ' : 'Tour Packages', icon: Plane, tint: 'text-blue-300 border-blue-400/20 bg-blue-500/5' },
+              { label: isBn ? 'ভিসা প্রসেসিং' : 'Visa Processing', icon: FileCheck, tint: 'text-amber-300 border-amber-400/20 bg-amber-500/5' },
+              { label: isBn ? 'হজ্জ ও ওমরাহ' : 'Hajj & Umrah', icon: FileCheck, tint: 'text-emerald-300 border-emerald-400/20 bg-emerald-500/5' },
+            ].map((pill) => (
+              <span
+                key={pill.label}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${pill.tint}`}
+              >
+                <pill.icon className="w-3 h-3" />
+                {pill.label}
+              </span>
+            ))}
           </div>
 
           <dl className="mt-10 grid max-w-md grid-cols-2 gap-6 border-t border-white/10 pt-6 sm:grid-cols-4 lg:mt-12 lg:mx-0 mx-auto">
@@ -113,7 +148,8 @@ export function HeroSection() {
                   <MapPin className="h-5 w-5 flex-shrink-0 text-blue-400" />
                   <input
                     type="text"
-                    placeholder="Where do you want to go?"
+                    placeholder={t('search_where')}
+                    aria-label="Destination"
                     className="w-full border-none bg-transparent text-sm text-white outline-none placeholder:text-gray-500"
                   />
                 </div>
@@ -121,7 +157,8 @@ export function HeroSection() {
                   <Calendar className="h-5 w-5 flex-shrink-0 text-blue-400" />
                   <input
                     type="text"
-                    placeholder="Add dates"
+                    placeholder={t('search_dates')}
+                    aria-label="Travel dates"
                     className="w-full border-none bg-transparent text-sm text-white outline-none placeholder:text-gray-500"
                   />
                 </div>
@@ -129,13 +166,18 @@ export function HeroSection() {
                   <Users className="h-5 w-5 flex-shrink-0 text-blue-400" />
                   <input
                     type="text"
-                    placeholder="Guests"
+                    placeholder={t('search_guests')}
+                    aria-label="Number of guests"
                     className="w-full border-none bg-transparent text-sm text-white outline-none placeholder:text-gray-500"
                   />
                 </div>
-                <button className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-amber-500 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/25 transition hover:from-blue-500 hover:to-amber-400">
+                <button
+                  type="submit"
+                  aria-label="Search"
+                  className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-amber-500 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/25 transition hover:from-blue-500 hover:to-amber-400"
+                >
                   <Search className="h-5 w-5" />
-                  <span className="hidden sm:inline">Search</span>
+                  <span className="hidden sm:inline">{t('search_btn')}</span>
                 </button>
               </div>
             </div>
@@ -155,7 +197,7 @@ export function HeroSection() {
 
         {/* ------------------ right: globe ------------------ */}
         <div className="relative order-first lg:order-last">
-          <div className="relative aspect-square w-full">
+          <div className="relative mx-auto aspect-square w-full max-w-[520px]">
             <Globe />
           </div>
 
@@ -172,7 +214,7 @@ export function HeroSection() {
                 >
                   <span className="route-dot" />
                   <span className="text-[11px] font-medium text-white">
-                    {from} <span className="text-gray-500">→</span> {to}
+                    {from} <span className="text-gray-400">→</span> {to}
                   </span>
                 </li>
               );
@@ -192,7 +234,7 @@ export function HeroSection() {
                 >
                   <span className="route-dot" />
                   <span className="text-[11px] font-medium text-white">
-                    {from} <span className="text-gray-500">→</span> {to}
+                    {from} <span className="text-gray-400">→</span> {to}
                   </span>
                 </li>
               );

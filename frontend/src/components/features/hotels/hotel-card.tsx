@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
-import { Star, MapPin, Wifi, Coffee, Dumbbell } from 'lucide-react';
+import { Star, MapPin } from 'lucide-react';
 
 interface HotelCardProps {
   id: string;

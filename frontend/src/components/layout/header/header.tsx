@@ -71,7 +71,7 @@ export function Header() {
               className="rounded-xl object-cover w-auto h-auto"
             />
             <span
-              className="mt-0.5 text-[6px] sm:text-[7px] tracking-[0.22em] uppercase font-medium opacity-70"
+              className="mt-0.5 text-[7px] sm:text-[8px] tracking-[0.2em] uppercase font-medium opacity-70"
               style={{ color: 'var(--color-nav-inactive)' }}
             >
               {t('slogan')}

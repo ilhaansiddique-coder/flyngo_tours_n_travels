@@ -94,4 +94,8 @@ jobs:
 
       - name: Trigger Coolify deploy
         if: vars.COOLIFY_DEPLOY_WEBHOOK != ''
-        run: curl -X POST "${{ vars.COOLIFY_DEPLOY_WEBHOOK }}"
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}" \
+            "${{ vars.COOLIFY_DEPLOY_WEBHOOK }}"
+          echo "✓ Deploy triggered"

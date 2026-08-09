@@ -8,6 +8,7 @@
 services:
   backend:
     image: ghcr.io/ilhaansiddique-coder/flyngo-backend:main
+    pull_policy: always
     container_name: flyngo-backend
     restart: always
     environment:
@@ -69,6 +70,7 @@ services:
 
   frontend:
     image: ghcr.io/ilhaansiddique-coder/flyngo-frontend:main
+    pull_policy: always
     container_name: flyngo-frontend
     restart: always
     environment:

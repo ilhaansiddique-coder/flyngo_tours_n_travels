@@ -306,7 +306,7 @@ function GlobeScene({ withPlanes }: { withPlanes: boolean }) {
         ))}
 
       {cityPoints.map((p, i) => (
-        <Marker key={CITIES[i].name} position={p} delay={i / CITIES.length} />
+        <Marker key={i} position={p} delay={i / cityPoints.length} />
       ))}
     </group>
   );

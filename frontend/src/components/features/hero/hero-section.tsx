@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Search, MapPin, Calendar, Users, ArrowRight, FileCheck, Plane } from 'lucide-react';
-import { CITIES } from '@/lib/geo';
+import { CITIES, cityName } from '@/lib/geo';
 import { useLocale } from '@/contexts/locale-context';
 
 const Globe = dynamic(() => import('./three/Globe').then((m) => m.default), {
@@ -204,8 +204,8 @@ export function HeroSection() {
           {/* Floating route chips on the left of the globe */}
           <ul className="pointer-events-none absolute -left-3 top-4 hidden flex-col gap-2 sm:flex lg:-left-8">
             {ROUTE_CHIPS.slice(0, 3).map((r, i) => {
-              const from = CITIES[r.from]?.name ?? '';
-              const to = CITIES[r.to]?.name ?? '';
+              const from = cityName(CITIES[r.from], locale);
+              const to = cityName(CITIES[r.to], locale);
               return (
                 <li
                   key={`${r.from}-${r.to}`}
@@ -224,8 +224,8 @@ export function HeroSection() {
           {/* Floating route chips on the right of the globe */}
           <ul className="pointer-events-none absolute -right-3 bottom-12 hidden flex-col items-end gap-2 sm:flex lg:-right-8">
             {ROUTE_CHIPS.slice(3).map((r, i) => {
-              const from = CITIES[r.from]?.name ?? '';
-              const to = CITIES[r.to]?.name ?? '';
+              const from = cityName(CITIES[r.from], locale);
+              const to = cityName(CITIES[r.to], locale);
               return (
                 <li
                   key={`${r.from}-${r.to}`}

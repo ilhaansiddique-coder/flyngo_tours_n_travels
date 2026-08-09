@@ -38,22 +38,27 @@ export function landPointCloud(radius = 1): Float32Array {
   return positions;
 }
 
-export type City = { name: string; lat: number; lon: number };
+export type City = { name: string; nameBn: string; lat: number; lon: number };
 
 export const CITIES: City[] = [
-  { name: "New York", lat: 40.71, lon: -74.01 },
-  { name: "London", lat: 51.51, lon: -0.13 },
-  { name: "Dubai", lat: 25.2, lon: 55.27 },
-  { name: "Singapore", lat: 1.35, lon: 103.82 },
-  { name: "Tokyo", lat: 35.68, lon: 139.69 },
-  { name: "São Paulo", lat: -23.55, lon: -46.63 },
-  { name: "Lagos", lat: 6.52, lon: 3.38 },
-  { name: "Sydney", lat: -33.87, lon: 151.21 },
-  { name: "Mumbai", lat: 19.08, lon: 72.88 },
-  { name: "Frankfurt", lat: 50.11, lon: 8.68 },
-  { name: "San Francisco", lat: 37.77, lon: -122.42 },
-  { name: "Nairobi", lat: -1.29, lon: 36.82 },
+  { name: "New York", nameBn: "নিউ ইয়র্ক", lat: 40.71, lon: -74.01 },
+  { name: "London", nameBn: "লন্ডন", lat: 51.51, lon: -0.13 },
+  { name: "Dubai", nameBn: "দুবাই", lat: 25.2, lon: 55.27 },
+  { name: "Singapore", nameBn: "সিঙ্গাপুর", lat: 1.35, lon: 103.82 },
+  { name: "Tokyo", nameBn: "টোকিও", lat: 35.68, lon: 139.69 },
+  { name: "São Paulo", nameBn: "সাও পাওলো", lat: -23.55, lon: -46.63 },
+  { name: "Lagos", nameBn: "লাগোস", lat: 6.52, lon: 3.38 },
+  { name: "Sydney", nameBn: "সিডনি", lat: -33.87, lon: 151.21 },
+  { name: "Mumbai", nameBn: "মুম্বাই", lat: 19.08, lon: 72.88 },
+  { name: "Frankfurt", nameBn: "ফ্রাঙ্কফুর্ট", lat: 50.11, lon: 8.68 },
+  { name: "San Francisco", nameBn: "সান ফ্রান্সিসকো", lat: 37.77, lon: -122.42 },
+  { name: "Nairobi", nameBn: "নাইরোবি", lat: -1.29, lon: 36.82 },
 ];
+
+export function cityName(c: City | undefined, locale: 'en' | 'bn'): string {
+  if (!c) return '';
+  return locale === 'bn' ? c.nameBn : c.name;
+}
 
 /** Index pairs into CITIES that get a flight arc. */
 export const ROUTES: [number, number][] = [

@@ -44,8 +44,8 @@ export function FormField({ label, children, required }: { label: string; childr
   );
 }
 
-export function FormInput({ value, onChange, placeholder, type = 'text', required, disabled }: {
-  value?: string; onChange?: (v: string) => void; placeholder?: string; type?: string; required?: boolean; disabled?: boolean;
+export function FormInput({ value, onChange, placeholder, type = 'text', required, disabled, accept }: {
+  value?: string; onChange?: (v: string) => void; placeholder?: string; type?: string; required?: boolean; disabled?: boolean; accept?: string;
 }) {
   return (
     <input
@@ -55,6 +55,7 @@ export function FormInput({ value, onChange, placeholder, type = 'text', require
       placeholder={placeholder}
       required={required}
       disabled={disabled}
+      accept={accept}
       className="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm bg-surface-container text-on-surface placeholder:text-on-surface-variant/60 focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     />
   );

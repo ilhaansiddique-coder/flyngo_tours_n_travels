@@ -148,9 +148,10 @@ async function main() {
   const adminPassword = await bcryptjs.hash('Admin123!', 12);
 
   const adminUser = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: TENANT_ID, email: 'admin@flyngo.com' } },
+    where: { id: '00000000-0000-0000-0000-00000000admin' },
     update: {},
     create: {
+      id: '00000000-0000-0000-0000-00000000admin',
       email: 'admin@flyngo.com',
       fullName: 'Super Admin',
       passwordHash: adminPassword,

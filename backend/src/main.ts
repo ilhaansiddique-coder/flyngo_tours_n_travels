@@ -32,12 +32,19 @@ async function bootstrap() {
     configService.get('FRONTEND_URL') || 'http://localhost:3000',
     configService.get('ADMIN_URL') || 'http://localhost:3001',
   ];
+  // Allow additional origins via comma-separated CORS_ORIGINS env var.
+  const extraOrigins = (configService.get('CORS_ORIGINS') || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const allowedOrigins = [...corsOrigins, ...extraOrigins];
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || corsOrigins.includes(origin) || corsOrigins.includes('*')) {
+      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
         callback(null, true);
       } else {
+        logger.warn(`CORS rejected origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));
       }
     },

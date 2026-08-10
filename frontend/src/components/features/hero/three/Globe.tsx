@@ -20,8 +20,8 @@ export type GlobeRoute = {
   id: string;
   fromCityId: string;
   toCityId: string;
-  fromCity?: City & { id: string };
-  toCity?: City & { id: string };
+  fromCity?: { id: string; name?: string; nameEn?: string; nameBn?: string };
+  toCity?: { id: string; name?: string; nameEn?: string; nameBn?: string };
   isActive: boolean;
   sortOrder: number;
 };
@@ -317,7 +317,7 @@ function GlobeScene({
 }: {
   withPlanes: boolean;
   palette: Palette;
-  cities: (City & { id?: string })[];
+  cities: { id?: string; lat: number; lon: number; name?: string }[];
   routes: { id?: string; fromCityId: string; toCityId: string }[];
 }) {
   const group = useRef<THREE.Group>(null);
@@ -402,7 +402,7 @@ export default function Globe({
   routes: routesProp,
 }: {
   withPlanes?: boolean;
-  cities?: (City & { id?: string })[];
+  cities?: { id?: string; lat: number; lon: number; name?: string }[];
   routes?: GlobeRoute[];
 }) {
   const palette: Palette = PALETTE;

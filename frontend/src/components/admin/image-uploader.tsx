@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 interface ImageUploaderProps {
   value?: string;
-  onChange: (url: string | undefined) => void;
+  onChange: (url: string) => void;
   onUpload?: (file: File) => Promise<{ url: string }>;
   folder?: string;
   alt?: string;
@@ -98,7 +98,7 @@ export function ImageUploader({
           />
           <button
             type="button"
-            onClick={() => onChange(undefined)}
+            onClick={() => onChange('')}
             disabled={disabled}
             className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 disabled:opacity-50"
             title="Remove image"

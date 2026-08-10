@@ -60,10 +60,13 @@ export const CITIES: City[] = [
   { name: "Nairobi", nameBn: "নাইরোবি", lat: -1.29, lon: 36.82 },
 ];
 
-export function cityName(c: City | undefined, locale: 'en' | 'bn'): string {
+export function cityName(
+  c: { name?: string; nameEn?: string; nameBn?: string } | undefined,
+  locale: 'en' | 'bn',
+): string {
   if (!c) return '';
-  if (locale === 'bn') return c.nameBn || c.name;
-  return c.name;
+  if (locale === 'bn') return c.nameBn || c.nameEn || c.name || '';
+  return c.nameEn || c.name || '';
 }
 
 /** Index pairs into CITIES that get a flight arc. */

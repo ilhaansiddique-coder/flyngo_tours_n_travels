@@ -1,19 +1,58 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useLocale } from '@/contexts/locale-context';
-import { POPULAR_PACKAGES } from '@/lib/packages';
-import { MapPin, Clock, Phone, FileCheck, ArrowRight, Shield, Users, Plane } from 'lucide-react';
+import { useApi } from '@/hooks/use-api';
+import { useFormatCurrency } from '@/lib/utils';
+import { MapPin, Clock, Phone, FileCheck, ArrowRight, Shield, Users, Plane, Sparkles } from 'lucide-react';
+
+interface HajjPackage {
+  id: string;
+  title: string;
+  tier: string;
+  durationDays: number;
+  price: number;
+  currency: string;
+  makkahNights: number;
+  madinahNights: number;
+  highlights: string[];
+  inclusions: string[];
+  isFeatured: boolean;
+  order: number;
+}
 
 export default function HajjPage() {
   const { t, locale } = useLocale();
   const isBn = locale === 'bn';
+  const { getHajjPackages, submitHajjPreRegistration } = useApi();
+  const fmt = useFormatCurrency();
+  const [packages, setPackages] = useState<HajjPackage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showPreReg, setShowPreReg] = useState(false);
+  const [preReg, setPreReg] = useState({ fullName: '', phone: '', email: '', district: '', travelers: 1, packageTier: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
-  const hajjPackages = POPULAR_PACKAGES.filter((p) => p.category === 'hajj' || p.category === 'umrah');
+  useEffect(() => {
+    getHajjPackages({ limit: '50' })
+      .then((r: any) => setPackages(r?.items ?? []))
+      .finally(() => setLoading(false));
+  }, [getHajjPackages]);
+
+  const handlePreReg = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await submitHajjPreRegistration({ ...preReg, travelers: Number(preReg.travelers) || 1, year: new Date().getFullYear() + 1 });
+      setSubmitted(true);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <main className="min-h-screen surface-page pt-24">
-      {/* Hero */}
       <section className="relative isolate overflow-hidden">
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-grid opacity-50" />
@@ -55,6 +94,18 @@ export default function HajjPage() {
               {t('hajj_cta_packages')}
               <ArrowRight className="w-4 h-4" />
             </a>
+            <button
+              onClick={() => setShowPreReg(true)}
+              className="inline-flex items-center gap-2 rounded-2xl border px-8 py-3.5 text-sm font-semibold backdrop-blur-sm transition"
+              style={{
+                color: 'var(--color-on-surface)',
+                borderColor: 'color-mix(in oklab, var(--color-on-surface) 20%, transparent)',
+                backgroundColor: 'color-mix(in oklab, var(--color-on-surface) 5%, transparent)',
+              }}
+            >
+              <Sparkles className="w-4 h-4" />
+              Hajj Pre-Register
+            </button>
             <Link
               href="/booking"
               className="inline-flex items-center gap-2 rounded-2xl border px-8 py-3.5 text-sm font-semibold backdrop-blur-sm transition"
@@ -69,7 +120,6 @@ export default function HajjPage() {
             </Link>
           </div>
 
-          {/* Trust strip */}
           <div className="mt-14 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl">
             {[
               { icon: Shield, label: isBn ? 'লাইসেন্সপ্রাপ্ত অপারেটর' : 'Licensed Operator', tint: 'text-emerald-700 dark:text-emerald-300 border-emerald-500/30' },
@@ -88,107 +138,136 @@ export default function HajjPage() {
         </div>
       </section>
 
-      {/* Packages */}
       <section id="packages" className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-20">
         <h2 className="font-display text-3xl sm:text-4xl font-semibold text-on-surface mb-10">
           {isBn ? 'আমাদের প্যাকেজ' : 'Our Packages'}
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {hajjPackages.map((pkg) => (
-            <Link
-              key={pkg.id}
-              href={pkg.href}
-              className="group relative flex flex-col overflow-hidden rounded-2xl glass border border-emerald-500/30 hover:border-emerald-500/60 transition-all hover:-translate-y-1"
-            >
-              <div className="relative h-56 overflow-hidden">
-                <img
-                  src={pkg.image}
-                  alt={isBn ? pkg.titleBn : pkg.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 scrim-soft" />
-                {pkg.badge && (
-                  <span
-                    className="absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] tracking-widest uppercase font-bold shadow-lg"
-                    style={{
-                      backgroundColor: 'var(--color-accent)',
-                      color: 'var(--color-on-primary)',
-                      boxShadow: '0 12px 28px -8px var(--accent-glow-strong)',
-                    }}
-                  >
-                    {isBn ? pkg.badgeBn : pkg.badge}
+        {loading ? (
+          <p className="text-sm text-muted">Loading packages…</p>
+        ) : packages.length === 0 ? (
+          <p className="text-sm text-muted">No packages available right now.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {packages.map((pkg) => (
+              <Link
+                key={pkg.id}
+                href="/booking"
+                className="group relative flex flex-col overflow-hidden rounded-2xl glass border border-emerald-500/30 hover:border-emerald-500/60 transition-all hover:-translate-y-1"
+              >
+                <div className="relative h-56 overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-700 to-amber-700 flex items-center justify-center">
+                  <Sparkles className="w-20 h-20 text-white/20" />
+                  <div className="absolute inset-0 scrim-soft" />
+                  {pkg.isFeatured && (
+                    <span
+                      className="absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] tracking-widest uppercase font-bold shadow-lg"
+                      style={{
+                        backgroundColor: 'var(--color-accent)',
+                        color: 'var(--color-on-primary)',
+                        boxShadow: '0 12px 28px -8px var(--accent-glow-strong)',
+                      }}
+                    >
+                      Featured
+                    </span>
+                  )}
+                  <span className="absolute top-3 right-3 px-2 py-1 rounded-full text-[10px] uppercase tracking-widest font-bold bg-black/30 text-white backdrop-blur-sm">
+                    {pkg.tier.replace(/_/g, ' ')}
                   </span>
-                )}
-              </div>
-
-              <div className="p-6">
-                <h3 className="font-display text-2xl font-semibold text-on-surface mb-2">
-                  {isBn ? pkg.titleBn : pkg.title}
-                </h3>
-                <div className="flex items-center gap-2 text-xs text-on-surface-variant mb-4">
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span>{pkg.destination}</span>
                 </div>
 
-                <ul className="space-y-1.5 mb-5 text-sm text-on-surface/80">
-                  {(isBn ? pkg.highlightsBn : pkg.highlights).map((h, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="mt-1.5 h-1 w-1 rounded-full bg-emerald-500 flex-shrink-0" />
-                      <span>{h}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="pt-4 border-t border-hairline flex items-center justify-between">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-widest text-on-surface-variant">
-                      {t('pkg_from')}
-                    </div>
-                    <div className="font-display text-2xl font-bold text-on-surface">
-                      ${pkg.priceUsd.toLocaleString()}
-                    </div>
-                    <div className="text-[10px] text-on-surface-variant flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {pkg.durationDays} {isBn ? 'দিন' : 'days'}
-                    </div>
+                <div className="p-6">
+                  <h3 className="font-display text-2xl font-semibold text-on-surface mb-2">{pkg.title}</h3>
+                  <div className="flex items-center gap-2 text-xs text-on-surface-variant mb-4">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>
+                      {pkg.durationDays} {isBn ? 'দিন' : 'days'} · {pkg.makkahNights}N Makkah · {pkg.madinahNights}N Madinah
+                    </span>
                   </div>
-                  <span
-                    className="inline-flex items-center gap-1 px-5 py-2.5 rounded-full text-xs font-bold transition-colors"
-                    style={{
-                      backgroundColor: 'color-mix(in oklab, #10b981 15%, transparent)',
-                      color: 'var(--color-on-surface)',
-                    }}
-                  >
-                    {t('pkg_book')}
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                  </span>
+
+                  <ul className="space-y-1.5 mb-5 text-sm text-on-surface/80">
+                    {pkg.highlights.slice(0, 4).map((h, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="mt-1.5 h-1 w-1 rounded-full bg-emerald-500 flex-shrink-0" />
+                        <span>{h}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="pt-4 border-t border-hairline flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-widest text-on-surface-variant">
+                        {isBn ? 'শুরু' : 'Starts from'}
+                      </div>
+                      <div className="font-display text-2xl font-bold text-on-surface">
+                        {fmt(pkg.price, pkg.currency)}
+                      </div>
+                      <div className="text-[10px] text-on-surface-variant">per person</div>
+                    </div>
+                    <span
+                      className="inline-flex items-center gap-1 px-5 py-2.5 rounded-full text-xs font-bold transition-colors"
+                      style={{
+                        backgroundColor: 'color-mix(in oklab, #10b981 15%, transparent)',
+                        color: 'var(--color-on-surface)',
+                      }}
+                    >
+                      {t('pkg_book')}
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* Process timeline */}
-      <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-20">
-        <h2 className="font-display text-3xl sm:text-4xl font-semibold text-on-surface mb-10">
-          {isBn ? 'প্রক্রিয়া' : 'How It Works'}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[
-            { n: '01', t: isBn ? 'পরামর্শ' : 'Consultation', d: isBn ? 'আপনার প্রয়োজন জানুন' : 'Tell us your needs' },
-            { n: '02', t: isBn ? 'প্যাকেজ নির্বাচন' : 'Pick Package', d: isBn ? 'আপনার জন্য সঠিক প্যাকেজ' : 'Choose the right one' },
-            { n: '03', t: isBn ? 'ডকুমেন্ট ও ভিসা' : 'Documents & Visa', d: isBn ? 'আমরা সব সামলাই' : 'We handle everything' },
-            { n: '04', t: isBn ? 'যাত্রা' : 'Travel', d: isBn ? 'নিরাপদে পৌঁছান' : 'Travel with peace' },
-          ].map((step) => (
-            <div key={step.n} className="rounded-2xl glass border border-hairline p-6">
-              <div className="text-accent font-display text-2xl font-bold mb-2">{step.n}</div>
-              <div className="font-semibold text-on-surface mb-1">{step.t}</div>
-              <div className="text-sm text-on-surface-variant">{step.d}</div>
-            </div>
-          ))}
+      {showPreReg && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+          onClick={() => setShowPreReg(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border bg-surface p-6 shadow-2xl"
+            style={{ borderColor: 'var(--color-outline-variant)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {submitted ? (
+              <div className="text-center py-6">
+                <Sparkles className="w-12 h-12 mx-auto text-emerald-500 mb-3" />
+                <h3 className="font-display text-xl font-bold mb-2">Thank you</h3>
+                <p className="text-sm text-muted mb-4">Your Hajj pre-registration has been received. Our team will contact you within 24 hours.</p>
+                <button
+                  onClick={() => { setShowPreReg(false); setSubmitted(false); }}
+                  className="px-5 py-2 rounded-full text-sm font-semibold text-white"
+                  style={{ background: 'linear-gradient(90deg, #10b981 0%, var(--color-tertiary) 100%)' }}
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handlePreReg} className="space-y-3">
+                <h3 className="font-display text-xl font-bold mb-1">Hajj Pre-Registration</h3>
+                <p className="text-xs text-muted mb-3">Reserve your slot for upcoming Hajj. We will contact you with package options.</p>
+                <input required placeholder="Full name" value={preReg.fullName} onChange={(e) => setPreReg({ ...preReg, fullName: e.target.value })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />
+                <input required placeholder="Phone" value={preReg.phone} onChange={(e) => setPreReg({ ...preReg, phone: e.target.value })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />
+                <input type="email" placeholder="Email (optional)" value={preReg.email} onChange={(e) => setPreReg({ ...preReg, email: e.target.value })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />
+                <input placeholder="District (optional)" value={preReg.district} onChange={(e) => setPreReg({ ...preReg, district: e.target.value })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />
+                <input required type="number" min="1" placeholder="Number of travelers" value={preReg.travelers} onChange={(e) => setPreReg({ ...preReg, travelers: Number(e.target.value) })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />
+                <select value={preReg.packageTier} onChange={(e) => setPreReg({ ...preReg, packageTier: e.target.value })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }}>
+                  <option value="">Preferred tier (optional)</option>
+                  {packages.map((p) => <option key={p.id} value={p.tier}>{p.title}</option>)}
+                </select>
+                <div className="flex gap-2 pt-2">
+                  <button type="button" onClick={() => setShowPreReg(false)} className="flex-1 px-4 py-2 rounded-md border text-sm" style={{ borderColor: 'var(--color-outline-variant)' }}>Cancel</button>
+                  <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 rounded-md text-sm font-semibold text-white" style={{ background: 'linear-gradient(90deg, #10b981 0%, var(--color-tertiary) 100%)' }}>
+                    {submitting ? 'Submitting…' : 'Submit'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
-      </section>
+      )}
     </main>
   );
 }

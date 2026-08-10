@@ -44,7 +44,10 @@ export function useApi() {
   const updateFlight = useCallback(async (id: string, body: any) => api.patch(`/flights/${id}`, body, auth()), [auth]);
   const deleteFlight = useCallback(async (id: string) => api.delete(`/flights/${id}`, auth()), [auth]);
 
-  const getVisaServices = useCallback(async () => api.get('/visa', auth()), [auth]);
+  const getVisaServices = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/visa' + qs, auth());
+  }, [auth]);
   const createVisaService = useCallback(async (body: any) => api.post('/visa', body, auth()), [auth]);
   const updateVisaService = useCallback(async (id: string, body: any) => api.patch(`/visa/${id}`, body, auth()), [auth]);
   const deleteVisaService = useCallback(async (id: string) => api.delete(`/visa/${id}`, auth()), [auth]);
@@ -143,6 +146,38 @@ export function useApi() {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/transport' + qs, auth());
   }, [auth]);
+
+  const getHajjPackages = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/hajj-packages' + qs, auth());
+  }, [auth]);
+  const createHajjPackage = useCallback(async (body: any) => api.post('/hajj-packages', body, auth()), [auth]);
+  const updateHajjPackage = useCallback(async (id: string, body: any) => api.patch(`/hajj-packages/${id}`, body, auth()), [auth]);
+  const deleteHajjPackage = useCallback(async (id: string) => api.delete(`/hajj-packages/${id}`, auth()), [auth]);
+
+  const getUmrahPackages = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/umrah-packages' + qs, auth());
+  }, [auth]);
+  const createUmrahPackage = useCallback(async (body: any) => api.post('/umrah-packages', body, auth()), [auth]);
+  const updateUmrahPackage = useCallback(async (id: string, body: any) => api.patch(`/umrah-packages/${id}`, body, auth()), [auth]);
+  const deleteUmrahPackage = useCallback(async (id: string) => api.delete(`/umrah-packages/${id}`, auth()), [auth]);
+
+  const getVisaCountries = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/visa-countries' + qs, auth());
+  }, [auth]);
+  const createVisaCountry = useCallback(async (body: any) => api.post('/visa-countries', body, auth()), [auth]);
+  const updateVisaCountry = useCallback(async (id: string, body: any) => api.patch(`/visa-countries/${id}`, body, auth()), [auth]);
+  const deleteVisaCountry = useCallback(async (id: string) => api.delete(`/visa-countries/${id}`, auth()), [auth]);
+
+  const submitHajjPreRegistration = useCallback(async (body: any) => api.post('/hajj-pre-registration', body), []);
+  const getHajjPreRegistrations = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/hajj-pre-registration' + qs, auth());
+  }, [auth]);
+  const updateHajjPreRegistrationStatus = useCallback(async (id: string, status: string) =>
+    api.patch(`/hajj-pre-registration/${id}/status`, { status }, auth()), [auth]);
   const createTransport = useCallback(async (body: any) => api.post('/transport', body, auth()), [auth]);
   const updateTransport = useCallback(async (id: string, body: any) => api.patch(`/transport/${id}`, body, auth()), [auth]);
   const deleteTransport = useCallback(async (id: string) => api.delete(`/transport/${id}`, auth()), [auth]);
@@ -163,14 +198,56 @@ export function useApi() {
     api.post('/notifications/admin/send', body, auth()), [auth]);
   const deleteNotification = useCallback(async (id: string) => api.delete(`/notifications/admin/${id}`, auth()), [auth]);
 
+  // User self-service
+  const getMyProfile = useCallback(async () => api.get('/users/me', auth()), [auth]);
+  const updateMyProfile = useCallback(async (body: any) => api.patch('/users/me', body, auth()), [auth]);
+  const getMyBookings = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/bookings' + qs, auth());
+  }, [auth]);
+  const cancelMyBooking = useCallback(async (id: string) => api.post(`/bookings/${id}/cancel`, {}, auth()), [auth]);
+  const getMyPayments = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/payments/my' + qs, auth());
+  }, [auth]);
+
   const getTenantSettings = useCallback(async () => api.get('/tenant/settings', auth()), [auth]);
   const updateTenantSettings = useCallback(async (body: any) => api.patch('/tenant/settings', body, auth()), [auth]);
+
+  const globalSearch = useCallback(async (q: string) => {
+    const term = q.trim();
+    if (!term) {
+      return { tours: [], hotels: [], flights: [], visa: [], transport: [], destinations: [], hajj: [], umrah: [], visaCountries: [] };
+    }
+    const params = { q: term, limit: '6' };
+    const safe = async <T,>(p: Promise<any>): Promise<T[]> => {
+      try {
+        const res = await p;
+        return Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : [];
+      } catch {
+        return [];
+      }
+    };
+    const [tours, hotels, flights, visa, transport, destinations, hajj, umrah, visaCountries] = await Promise.all([
+      safe<any>(getTours(params)),
+      safe<any>(getHotels(params)),
+      safe<any>(getFlights(params)),
+      safe<any>(getVisaServices(params)),
+      safe<any>(getTransport(params)),
+      safe<any>(getDestinations(params)),
+      safe<any>(getHajjPackages(params)),
+      safe<any>(getUmrahPackages(params)),
+      safe<any>(getVisaCountries(params)),
+    ]);
+    return { tours, hotels, flights, visa, transport, destinations, hajj, umrah, visaCountries };
+  }, [getTours, getHotels, getFlights, getVisaServices, getTransport, getDestinations, getHajjPackages, getUmrahPackages, getVisaCountries]);
 
   return {
     getTours, createTour, updateTour, deleteTour,
     getHotels, createHotel, updateHotel, deleteHotel,
     getFlights, createFlight, updateFlight, deleteFlight,
     getVisaServices, createVisaService, updateVisaService, deleteVisaService,
+    globalSearch,
     getDestinations, createDestination, updateDestination, deleteDestination,
     listBlogs, createBlog, updateBlog, deleteBlog,
     listPages, createPage, updatePage, deletePage,
@@ -185,8 +262,13 @@ export function useApi() {
     getBookings, createBooking, adminCreateBooking, cancelBooking, updateBookingStatus,
     getPayments, getPaymentStats, updatePaymentStatus,
     getTransport, createTransport, updateTransport, deleteTransport,
+    getHajjPackages, createHajjPackage, updateHajjPackage, deleteHajjPackage,
+    getUmrahPackages, createUmrahPackage, updateUmrahPackage, deleteUmrahPackage,
+    getVisaCountries, createVisaCountry, updateVisaCountry, deleteVisaCountry,
+    submitHajjPreRegistration, getHajjPreRegistrations, updateHajjPreRegistrationStatus,
     getReviews, approveReview, deleteReview,
     getNotifications, sendNotification, deleteNotification,
+    getMyProfile, updateMyProfile, getMyBookings, cancelMyBooking, getMyPayments,
     getTenantSettings, updateTenantSettings,
   };
 }

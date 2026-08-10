@@ -14,8 +14,12 @@ export class TransportController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'List transport options' })
-  async findAll(@CurrentTenantId() tenantId: string, @Query() pagination: PaginationDto) {
-    return this.transportService.findAll(tenantId, pagination.page, pagination.limit);
+  async findAll(
+    @CurrentTenantId() tenantId: string,
+    @Query() pagination: PaginationDto,
+    @Query('q') q?: string,
+  ) {
+    return this.transportService.findAll(tenantId, pagination.page, pagination.limit, q);
   }
 
   @Get(':id')

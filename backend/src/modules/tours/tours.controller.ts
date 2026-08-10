@@ -14,8 +14,12 @@ export class ToursController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'List all tours' })
-  async findAll(@CurrentTenantId() tenantId: string, @Query() pagination: PaginationDto) {
-    return this.toursService.findAll(tenantId, pagination.page, pagination.limit);
+  async findAll(
+    @CurrentTenantId() tenantId: string,
+    @Query() pagination: PaginationDto,
+    @Query('q') q?: string,
+  ) {
+    return this.toursService.findAll(tenantId, pagination.page, pagination.limit, q);
   }
 
   @Get(':id')

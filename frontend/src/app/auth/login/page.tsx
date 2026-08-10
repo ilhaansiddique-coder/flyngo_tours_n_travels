@@ -4,19 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Mail, Lock, LogIn, FileCheck } from 'lucide-react';
+import { Mail, Phone, Lock, LogIn, FileCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
 import logoImg from '@/images/flyngo_transparent.png';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const { login, loading, error } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(email, password);
+    await login(identifier, password);
   };
 
   return (
@@ -42,7 +42,7 @@ export default function LoginPage() {
             Velocity Club
           </span>
           <h1 className="font-display text-3xl font-bold text-white">Welcome Back</h1>
-          <p className="mt-2 text-white/60">Sign in to your account</p>
+          <p className="mt-2 text-white/60">Sign in with your email or phone</p>
         </div>
 
         <div className="glass-deep p-8 rounded-2xl">
@@ -54,14 +54,20 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#00eefc] z-10" />
+              {identifier.includes('@') ? (
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#00eefc] z-10" />
+              ) : (
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#00eefc] z-10" />
+              )}
               <Input
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                inputMode="email"
+                placeholder="Email or phone number"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="pl-10"
                 required
+                autoComplete="username"
               />
             </div>
             <div className="relative">
@@ -73,6 +79,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10"
                 required
+                autoComplete="current-password"
               />
             </div>
             <div className="flex items-center justify-between text-sm">

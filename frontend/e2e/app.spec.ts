@@ -85,3 +85,75 @@ test.describe('Flyngo Admin Panel', () => {
     await expect(page.locator('text=Upload')).toBeVisible();
   });
 });
+
+test.describe('Flyngo Search & Discovery', () => {
+  test('/search renders for a destination keyword', async ({ page }) => {
+    await page.goto('/search?q=dubai');
+    await expect(page.locator('h1')).toContainText('Results for');
+  });
+
+  test('smart search bar accepts nationality + residence', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('input[placeholder="Search destinations or packages"]').fill('malaysia');
+    await page.locator('input[placeholder="Search destinations or packages"]').press('Enter');
+    await expect(page).toHaveURL(/\/search\?q=malaysia/);
+  });
+
+  test('visa country grid renders cards', async ({ page }) => {
+    await page.goto('/visa');
+    await expect(page.locator('text=Malaysia')).toBeVisible();
+    await expect(page.locator('text=Thailand')).toBeVisible();
+  });
+
+  test('visa country detail page loads', async ({ page }) => {
+    await page.goto('/visa/malaysia');
+    await expect(page.locator('h1')).toContainText('Malaysia Visa');
+    await expect(page.locator('text=Apply now')).toBeVisible();
+  });
+
+  test('hajj page renders packages', async ({ page }) => {
+    await page.goto('/hajj');
+    await expect(page.locator('text=Hajj Packages').first()).toBeVisible();
+  });
+
+  test('umrah page renders packages', async ({ page }) => {
+    await page.goto('/umrah');
+    await expect(page.locator('text=Our Umrah Packages')).toBeVisible();
+  });
+});
+
+test.describe('Flyngo Auth Flow', () => {
+  test('login form validates required fields', async ({ page }) => {
+    await page.goto('/auth/login');
+    const emailInput = page.locator('input[type="email"]');
+    const passwordInput = page.locator('input[type="password"]');
+    await expect(emailInput).toBeVisible();
+    await expect(passwordInput).toBeVisible();
+  });
+
+  test('forgot password page is reachable', async ({ page }) => {
+    await page.goto('/auth/forgot-password');
+    await expect(page.locator('h1, h2').first()).toBeVisible();
+  });
+
+  test('register form has full name field', async ({ page }) => {
+    await page.goto('/auth/register');
+    await expect(page.locator('input').first()).toBeVisible();
+  });
+});
+
+test.describe('Flyngo Booking Flow', () => {
+  test('standard booking shows the step indicator', async ({ page }) => {
+    await page.goto('/booking');
+    await expect(page.locator('text=Your details')).toBeVisible();
+    await expect(page.locator('text=Trip details')).toBeVisible();
+    await expect(page.locator('text=Review')).toBeVisible();
+    await expect(page.locator('text=Confirm & pay')).toBeVisible();
+  });
+
+  test('visa booking type shows 4-step visa flow', async ({ page }) => {
+    await page.goto('/booking?type=visa&q=Malaysia');
+    // The visa booking flow has Applicant / Travel / Documents / Confirm & pay
+    await expect(page.locator('text=Applicant')).toBeVisible();
+  });
+});

@@ -9,8 +9,18 @@ function slugify(text: string): string {
 export class ToursService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(tenantId: string, page = 1, limit = 20) {
-    const where = { tenantId, deletedAt: null };
+  async findAll(tenantId: string, page = 1, limit = 20, q?: string) {
+    const where: any = { tenantId, deletedAt: null };
+    if (q && q.trim()) {
+      const term = q.trim();
+      where.OR = [
+        { title: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+        { destination: { name: { contains: term, mode: 'insensitive' } } },
+        { startLocation: { contains: term, mode: 'insensitive' } },
+        { endLocation: { contains: term, mode: 'insensitive' } },
+      ];
+    }
     const [items, total] = await Promise.all([
       this.prisma.tour.findMany({
         where,

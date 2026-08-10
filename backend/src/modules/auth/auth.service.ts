@@ -18,15 +18,21 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto, tenantId: string): Promise<TokenResponseDto> {
+    // Users can sign in by either email or phone. The frontend always sends
+    // both fields when one is empty so we can run a single query that
+    // matches either identifier.
+    const orFilters: any[] = [{ phone: dto.phone }];
+    if (dto.email) orFilters.push({ email: dto.email });
+
     const user = await this.prisma.user.findFirst({
-      where: { email: dto.email, tenantId },
+      where: { tenantId, OR: orFilters, deletedAt: null },
     });
 
-    if (!user || user.deletedAt || !user.passwordHash) {
+    if (!user || !user.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await bcryptjs.compare(dto.password, user.passwordHash!);
+    const isPasswordValid = await bcryptjs.compare(dto.password, user.passwordHash);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -35,12 +41,17 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto, tenantId: string): Promise<TokenResponseDto> {
-    const existing = await this.prisma.user.findFirst({
-      where: { email: dto.email, tenantId },
-    });
+    // Uniqueness check — at least one of (email, phone) must be present
+    // and neither can already be registered for this tenant.
+    const orFilters: any[] = [];
+    if (dto.email) orFilters.push({ email: dto.email });
+    if (dto.phone) orFilters.push({ phone: dto.phone });
 
+    const existing = await this.prisma.user.findFirst({
+      where: { tenantId, OR: orFilters, deletedAt: null },
+    });
     if (existing) {
-      throw new ConflictException('Email already registered');
+      throw new ConflictException('An account with this email or phone already exists');
     }
 
     const passwordHash = await bcryptjs.hash(dto.password, 12);
@@ -51,7 +62,7 @@ export class AuthService {
 
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
+        email: dto.email || null,
         passwordHash,
         fullName: dto.fullName,
         phone: dto.phone,

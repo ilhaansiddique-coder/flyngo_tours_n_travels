@@ -5,7 +5,12 @@ import { PrismaService } from '../../database/prisma.service';
 export class FlightsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async search(tenantId: string, params: { origin?: string; destination?: string; date?: string }, page = 1, limit = 20) {
+  async search(
+    tenantId: string,
+    params: { origin?: string; destination?: string; date?: string; q?: string },
+    page = 1,
+    limit = 20,
+  ) {
     const where: any = { tenantId, deletedAt: null };
     if (params.origin) where.originCode = params.origin;
     if (params.destination) where.destinationCode = params.destination;
@@ -14,6 +19,15 @@ export class FlightsService {
       const dayEnd = new Date(params.date);
       dayEnd.setDate(dayEnd.getDate() + 1);
       where.departureTime = { gte: dayStart, lt: dayEnd };
+    }
+    if (params.q && params.q.trim()) {
+      const term = params.q.trim();
+      where.OR = [
+        { airline: { contains: term, mode: 'insensitive' } },
+        { flightNumber: { contains: term, mode: 'insensitive' } },
+        { originCity: { contains: term, mode: 'insensitive' } },
+        { destinationCity: { contains: term, mode: 'insensitive' } },
+      ];
     }
 
     const [items, total] = await Promise.all([

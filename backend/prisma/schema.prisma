@@ -80,7 +80,7 @@ model User {
   id           String    @id @default(uuid())
   tenantId     String    @map("tenant_id")
   tenant       Tenant    @relation(fields: [tenantId], references: [id])
-  email        String
+  email        String?
   fullName     String    @map("full_name")
   phone        String?
   avatarUrl    String?   @map("avatar_url")
@@ -92,6 +92,7 @@ model User {
   emailVerifiedAt  DateTime? @map("email_verified_at")
   lastLoginAt      DateTime? @map("last_login_at")
   refreshToken     String?   @map("refresh_token")
+  phoneVerifiedAt  DateTime? @map("phone_verified_at")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -104,7 +105,8 @@ model User {
   blogPosts     BlogPost[]
   reviews       Review[]
 
-  @@unique([tenantId, email])
+  @@index([tenantId, email])
+  @@index([tenantId, phone])
   @@map("users")
 }
 
@@ -378,16 +380,53 @@ model Booking {
   couponCode String? @map("coupon_code")
   notes      String?
 
+  // Hotel-specific fields
+  hotelId       String? @map("hotel_id")
+  roomId        String? @map("room_id")
+  hotelName     String? @map("hotel_name")
+  roomName      String? @map("room_name")
+  roomsCount    Int     @default(1) @map("rooms_count")
+  adults        Int     @default(1)
+  children      Int     @default(0)
+  childAges     Int[]   @default([]) @map("child_ages")
+  mealPlan      String? @map("meal_plan") // RO, BB, HB, FB, AI
+  nights        Int     @default(1)
+  pricePerNight Decimal? @map("price_per_night") @db.Decimal(10, 2)
+  arrivalTime   String? @map("arrival_time")
+  flightNumber  String? @map("flight_number")
+
   cancelledAt DateTime? @map("cancelled_at")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  payments Payment[]
+  payments  Payment[]
+  travelers BookingTraveler[]
 
   @@index([tenantId, userId])
+  @@index([hotelId])
+  @@index([roomId])
   @@map("bookings")
+}
+
+model BookingTraveler {
+  id        String  @id @default(uuid())
+  tenantId  String  @map("tenant_id")
+  bookingId String  @map("booking_id")
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  isLead    Boolean @default(false) @map("is_lead")
+  fullName  String  @map("full_name")
+  email     String?
+  phone     String?
+  age       Int?
+  type      String  @default("adult") // adult, child, infant
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([bookingId])
+  @@map("booking_travelers")
 }
 
 // =============================================================================
@@ -708,6 +747,125 @@ model Media {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("media")
+}
+
+// =============================================================================
+// VISA COUNTRIES (curated country-level cards for the visa grid — Malaysia, UK, etc.)
+// =============================================================================
+
+model VisaCountry {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+
+  name        String
+  slug        String
+  flagUrl     String?  @map("flag_url")
+  imageUrl    String?  @map("image_url")
+  region      String?  // asia, europe, americas, oceania, africa, middle_east
+  visaTypes   String[] @default([]) @map("visa_types") // tourist, business, student, work
+  processingTime String? @map("processing_time")
+  fee         Decimal  @db.Decimal(10, 2)
+  currency    String   @default("BDT")
+  requirements String[] @default([])
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  isFeatured  Boolean  @default(false) @map("is_featured")
+  order       Int      @default(0)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@unique([tenantId, slug])
+  @@map("visa_countries")
+}
+
+// =============================================================================
+// HAJJ PACKAGES
+// =============================================================================
+
+model HajjPackage {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+
+  title        String
+  slug         String
+  tier         String   // pre_registration, non_shifting, shifting, cheap, five_star, vip, a_grade
+  durationDays Int      @map("duration_days")
+  price        Decimal  @db.Decimal(10, 2)
+  currency     String   @default("BDT")
+  makkahNights Int      @default(0) @map("makkah_nights")
+  madinahNights Int     @default(0) @map("madinah_nights")
+  inclusions   String[] @default([])
+  highlights   String[] @default([])
+  imageUrl     String?  @map("image_url")
+  isActive     Boolean  @default(true) @map("is_active")
+  isFeatured   Boolean  @default(false) @map("is_featured")
+  order        Int      @default(0)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@unique([tenantId, slug])
+  @@map("hajj_packages")
+}
+
+// =============================================================================
+// UMRAH PACKAGES
+// =============================================================================
+
+model UmrahPackage {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+
+  title        String
+  slug         String
+  durationDays Int      @map("duration_days")
+  price        Decimal  @db.Decimal(10, 2)
+  currency     String   @default("BDT")
+  makkahNights Int      @default(0) @map("makkah_nights")
+  madinahNights Int     @default(0) @map("madinah_nights")
+  addOnCity    String?  @map("add_on_city") // optional combined-trip city e.g. "Qatar", "Turkey", "Jordan"
+  inclusions   String[] @default([])
+  highlights   String[] @default([])
+  imageUrl     String?  @map("image_url")
+  isActive     Boolean  @default(true) @map("is_active")
+  isFeatured   Boolean  @default(false) @map("is_featured")
+  order        Int      @default(0)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@unique([tenantId, slug])
+  @@map("umrah_packages")
+}
+
+// =============================================================================
+// HAJJ PRE-REGISTRATION (submissions from the public form)
+// =============================================================================
+
+model HajjPreRegistration {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+
+  fullName     String  @map("full_name")
+  phone        String
+  email        String?
+  passportNo   String? @map("passport_no")
+  district     String?
+  travelers    Int     @default(1)
+  packageTier  String? @map("package_tier") // pre_registration, non_shifting, shifting, etc.
+  year         Int?
+  status       String  @default("new") // new, contacted, registered, rejected
+  notes        String? @db.Text
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([tenantId, status])
+  @@map("hajj_pre_registrations")
 }
 
 // =============================================================================

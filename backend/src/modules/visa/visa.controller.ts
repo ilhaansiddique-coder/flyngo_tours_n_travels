@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { VisaService } from './visa.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
@@ -13,8 +13,8 @@ export class VisaController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'Get all visa services' })
-  async getAll(@CurrentTenantId() tenantId: string) {
-    return this.visaService.getVisaServices(tenantId);
+  async getAll(@CurrentTenantId() tenantId: string, @Query('q') q?: string) {
+    return this.visaService.getVisaServices(tenantId, q);
   }
 
   @Get(':id')

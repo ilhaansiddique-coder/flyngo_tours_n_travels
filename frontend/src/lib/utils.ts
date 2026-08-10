@@ -1,15 +1,19 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { formatCurrency as formatCurrencyCore, useFormatCurrency as useFormatCurrencyCore, Currency } from '@/contexts/currency-context';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-  }).format(amount);
+/** Format an amount in the given currency (no conversion). */
+export function formatCurrency(amount: number, currency: Currency | string = 'USD'): string {
+  return formatCurrencyCore(amount, currency);
+}
+
+/** Hook variant: returns a formatter bound to the active currency. */
+export function useFormatCurrency() {
+  return useFormatCurrencyCore();
 }
 
 export function formatDate(date: string | Date): string {

@@ -5,8 +5,17 @@ import { PrismaService } from '../../database/prisma.service';
 export class TransportService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(tenantId: string, page = 1, limit = 20) {
-    const where = { tenantId, deletedAt: null };
+  async findAll(tenantId: string, page = 1, limit = 20, q?: string) {
+    const where: any = { tenantId, deletedAt: null };
+    if (q && q.trim()) {
+      const term = q.trim();
+      where.OR = [
+        { title: { contains: term, mode: 'insensitive' } },
+        { operatorName: { contains: term, mode: 'insensitive' } },
+        { originCity: { contains: term, mode: 'insensitive' } },
+        { destinationCity: { contains: term, mode: 'insensitive' } },
+      ];
+    }
     const [items, total] = await Promise.all([
       this.prisma.transport.findMany({
         where,

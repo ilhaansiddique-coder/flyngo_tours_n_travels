@@ -1,112 +1,157 @@
 'use client';
 
-import { Section, Container } from '@/components/ui/section';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { PageHero } from '@/components/ui/page-hero';
-import { formatCurrency } from '@/lib/utils';
-import { Clock, CheckCircle, Globe } from 'lucide-react';
-import { useApi } from '@/hooks/use-api';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useApi } from '@/hooks/use-api';
+import { useFormatCurrency } from '@/lib/utils';
+import { Briefcase, Clock, FileCheck, ArrowRight } from 'lucide-react';
 
-interface VisaService {
+interface VisaCountry {
   id: string;
-  country: string | { name?: string };
   name: string;
-  title?: string;
-  processingTime: string;
-  price: number;
-  requirements: string[];
-}
-
-function getCountryName(country: VisaService['country']): string {
-  if (!country) return '—';
-  if (typeof country === 'string') return country;
-  return country.name ?? '—';
+  slug: string;
+  flagUrl?: string;
+  region?: string;
+  visaTypes: string[];
+  processingTime?: string;
+  fee: number;
+  currency: string;
+  isFeatured: boolean;
+  order: number;
 }
 
 export default function VisaPage() {
-  const { getVisaServices } = useApi();
-  const [visaServices, setVisaServices] = useState<VisaService[]>([]);
+  const { getVisaCountries } = useApi();
+  const [countries, setCountries] = useState<VisaCountry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const data: any = await getVisaServices();
-        setVisaServices(data.data ?? data ?? []);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load visa services');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
-  }, [getVisaServices]);
+    getVisaCountries({ limit: '50' })
+      .then((r: any) => setCountries(r?.items ?? []))
+      .finally(() => setLoading(false));
+  }, [getVisaCountries]);
+
+  const featured = countries.filter((c) => c.isFeatured);
+  const others = countries.filter((c) => !c.isFeatured);
 
   return (
-    <>
-      <PageHero
-        eyebrow="Visa & Documentation"
-        title={<>Visa <span className="gradient-text-warm">Services</span></>}
-        subtitle="Hassle-free visa processing with expert guidance every step of the way."
-      />
-      <Section>
-        <Container>
-          {loading ? (
-            <div className="text-center py-20">
-              <div className="inline-block w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-              <p className="mt-4 text-on-surface-variant">Loading visa services...</p>
+    <main className="min-h-screen surface-page pt-24">
+      <section className="relative isolate overflow-hidden">
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-grid opacity-50" />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 50% 40% at 30% 30%, color-mix(in oklab, var(--color-primary) 14%, transparent), transparent 70%)',
+            }}
+          />
+        </div>
+
+        <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-20">
+          <span className="inline-flex items-center gap-2 px-3 py-1 mb-6 rounded-full text-[10px] tracking-widest uppercase font-bold text-blue-700 dark:text-blue-300 border border-blue-500/30 bg-blue-500/10">
+            <Briefcase className="w-3 h-3" />
+            Visa Processing
+          </span>
+
+          <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-[-0.02em] text-on-surface mb-6 max-w-3xl">
+            Visa <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">made simple</span>
+          </h1>
+
+          <p className="text-lg text-on-surface-variant max-w-2xl mb-10 leading-relaxed">
+            Hassle-free visa processing for popular destinations. Transparent fees, fast turnaround, dedicated support.
+          </p>
+        </div>
+      </section>
+
+      <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-12">
+        {loading ? (
+          <p className="text-sm text-muted">Loading countries…</p>
+        ) : countries.length === 0 ? (
+          <p className="text-sm text-muted">No visa services available right now.</p>
+        ) : (
+          <>
+            {featured.length > 0 && (
+              <div className="mb-12">
+                <h2 className="font-display text-2xl sm:text-3xl font-semibold text-on-surface mb-6">Top destinations</h2>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {featured.map((c) => (
+                    <CountryCard key={c.id} country={c} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {others.length > 0 && (
+              <div>
+                <h2 className="font-display text-2xl sm:text-3xl font-semibold text-on-surface mb-6">All visa services</h2>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {others.map((c) => (
+                    <CountryCard key={c.id} country={c} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
+      <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-12">
+        <div className="rounded-2xl border p-8 glass" style={{ borderColor: 'var(--color-outline-variant)' }}>
+          <h3 className="font-display text-xl font-semibold text-on-surface mb-3">Why choose our visa service?</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+            <div>
+              <FileCheck className="w-5 h-5 text-primary mb-2" />
+              <div className="font-semibold mb-1">No hidden charges</div>
+              <p className="text-on-surface-variant">The fee you see is the fee you pay. We itemize every charge upfront.</p>
             </div>
-          ) : error ? (
-            <div className="text-center py-20">
-              <p className="text-error">{error}</p>
+            <div>
+              <Clock className="w-5 h-5 text-primary mb-2" />
+              <div className="font-semibold mb-1">Fast turnaround</div>
+              <p className="text-on-surface-variant">Document review within 24 hours, embassy submission within 48 hours.</p>
             </div>
-          ) : visaServices.length === 0 ? (
-            <div className="text-center py-20">
-              <p className="text-on-surface-variant text-lg">No visa services available yet.</p>
+            <div>
+              <Briefcase className="w-5 h-5 text-primary mb-2" />
+              <div className="font-semibold mb-1">End-to-end support</div>
+              <p className="text-on-surface-variant">From form filling to interview prep, we handle every step.</p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {visaServices.map((visa) => (
-                <Card key={visa.id} className="group" hover={false}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-accent-soft border border-accent-soft flex items-center justify-center">
-                      <Globe className="w-6 h-6 text-accent" />
-                    </div>
-                    <div>
-                      <h3 className="font-display text-lg font-bold text-on-surface">{visa.title || visa.name}</h3>
-                      <p className="text-sm text-on-surface-variant">{getCountryName(visa.country)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Clock className="w-4 h-4 text-accent" />
-                    <span className="text-sm text-on-surface/80">{visa.processingTime}</span>
-                  </div>
-                  {(visa.requirements?.length > 0) && (
-                    <div className="mb-4">
-                      <p className="text-sm font-medium text-on-surface/80 mb-2">Requirements</p>
-                      <ul className="space-y-1">
-                        {visa.requirements.map((req) => (
-                          <li key={req} className="flex items-center gap-2 text-sm text-on-surface-variant">
-                            <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-300 flex-shrink-0" />
-                            {req}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between pt-4 border-t border-hairline">
-                    <p className="text-xl font-bold text-accent">{formatCurrency(visa.price)}</p>
-                    <Button size="sm">Apply Now</Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </Container>
-      </Section>
-    </>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function CountryCard({ country }: { country: VisaCountry }) {
+  const fmt = useFormatCurrency();
+  return (
+    <Link
+      href={`/visa/${country.slug}`}
+      className="group flex flex-col rounded-2xl border glass overflow-hidden hover:-translate-y-1 transition-all"
+      style={{ borderColor: 'var(--color-outline-variant)', boxShadow: '0 8px 24px -12px rgba(7,86,184,0.18)' }}
+    >
+      <div className="aspect-[5/3] overflow-hidden bg-on-surface-soft flex items-center justify-center">
+        {country.flagUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={country.flagUrl} alt={country.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+        ) : (
+          <Briefcase className="w-10 h-10 text-muted" />
+        )}
+      </div>
+      <div className="p-4">
+        <h3 className="font-display text-lg font-semibold text-on-surface mb-1">{country.name}</h3>
+        <div className="flex items-center gap-1.5 text-xs text-muted mb-2">
+          <Clock className="w-3 h-3" />
+          <span>{country.processingTime || 'Contact us'}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted">Visa fee</span>
+          <span className="font-bold text-on-surface">{fmt(country.fee, country.currency)}</span>
+        </div>
+        <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold" style={{ color: 'var(--color-nav-active)' }}>
+          View details <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+        </div>
+      </div>
+    </Link>
   );
 }

@@ -8,7 +8,7 @@ import {
   Ticket, Percent, UserPlus, BarChart3, Settings,
   Shield, FileText, ChevronLeft, Home,
   FileText as FileIcon, Image, Search as SearchIcon, Star, HelpCircle,
-  Megaphone, Car, MessageSquare, Bell, CreditCard
+  Megaphone, Car, MessageSquare, Bell, CreditCard, Sparkles, Flag, FileCheck
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -20,6 +20,10 @@ const navigation = [
   { label: 'Hotels', href: '/admin/hotels', icon: Building2 },
   { label: 'Flights', href: '/admin/flights', icon: Plane },
   { label: 'Visa', href: '/admin/visa', icon: Globe },
+  { label: 'Visa Countries', href: '/admin/visa-countries', icon: Flag },
+  { label: 'Hajj Packages', href: '/admin/hajj', icon: Sparkles },
+  { label: 'Hajj Pre-Regs', href: '/admin/hajj-pre-registrations', icon: FileCheck },
+  { label: 'Umrah Packages', href: '/admin/umrah', icon: Sparkles },
   { label: 'Destinations', href: '/admin/destinations', icon: Ticket },
   { label: 'Transport', href: '/admin/transport', icon: Car },
   { label: 'Reviews', href: '/admin/reviews', icon: MessageSquare },

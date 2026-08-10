@@ -2,18 +2,27 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DestinationAutocomplete } from '@/components/ui/destination-autocomplete';
 import { formatCurrency } from '@/lib/utils';
 import { useBookingStore } from '@/stores/booking.store';
 import { useApi } from '@/hooks/use-api';
 import { useState } from 'react';
-import { Check, Loader2, Sparkles, MapPin, Wallet, Users as UsersIcon, Heart } from 'lucide-react';
+import { Check, Loader2, Sparkles, MapPin, Wallet, Users as UsersIcon, Heart, ArrowRight, ArrowLeft, AlertCircle, Compass, Building2, Plane, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { useLocale } from '@/contexts/locale-context';
 
 const STANDARD_STEPS = [
-  { number: 1, label: 'Details' },
-  { number: 2, label: 'Review' },
-  { number: 3, label: 'Payment' },
+  { number: 1, key: 'booking_step_details' },
+  { number: 2, key: 'booking_step_trip' },
+  { number: 3, key: 'booking_step_review' },
+  { number: 4, key: 'booking_step_confirm' },
+];
+
+const VISA_STEPS = [
+  { number: 1, key: 'booking_step_applicant' },
+  { number: 2, key: 'booking_step_travel' },
+  { number: 3, key: 'booking_step_documents' },
+  { number: 4, key: 'booking_step_confirm' },
 ];
 
 const CUSTOM_STEPS = [
@@ -25,6 +34,124 @@ const CUSTOM_STEPS = [
 ];
 
 type BookingType = 'tour' | 'hotel' | 'flight' | 'visa' | 'custom';
+
+const TYPE_META: Record<BookingType, { icon: typeof Compass; accent: string }> = {
+  tour: { icon: Compass, accent: 'primary' },
+  hotel: { icon: Building2, accent: 'primary' },
+  flight: { icon: Plane, accent: 'primary' },
+  visa: { icon: Briefcase, accent: 'primary' },
+  custom: { icon: Sparkles, accent: 'primary' },
+};
+
+function ItemSummaryCard({ t }: { t: (k: any) => string }) {
+  const { selectedItem } = useBookingStore();
+  const item = (selectedItem as any) || {};
+  const hasItem = !!(item?.title || item?.name);
+
+  return (
+    <div className="glass rounded-2xl p-5 sticky top-28">
+      <div className="text-[10px] uppercase tracking-widest font-bold text-muted mb-2">
+        {t('booking_your_selection')}
+      </div>
+      {hasItem ? (
+        <div>
+          <div className="font-display text-lg font-bold text-on-surface leading-tight">
+            {item.title || item.name}
+          </div>
+          {item.destination?.name && (
+            <div className="flex items-center gap-1 mt-1 text-xs text-muted">
+              <MapPin className="w-3 h-3" />
+              <span>{item.destination.name}{item.destination?.country ? `, ${item.destination.country}` : ''}</span>
+            </div>
+          )}
+          {item.price != null && (
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="text-[10px] uppercase tracking-widest text-muted">From</span>
+              <span className="font-display text-base font-bold text-on-surface">
+                {formatCurrency(Number(item.price), item.currency || 'USD')}
+              </span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-sm text-muted">{t('booking_no_item')}</div>
+      )}
+    </div>
+  );
+}
+
+function StepIndicator({
+  steps,
+  currentStep,
+  t,
+  withIcons,
+}: {
+  steps: { number: number; label?: string; key?: string; icon?: typeof Compass }[];
+  currentStep: number;
+  t: (k: any) => string;
+  withIcons?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-1 mb-8">
+      {steps.map((step, i) => {
+        const active = currentStep >= step.number;
+        const done = currentStep > step.number;
+        const Icon = step.icon;
+        return (
+          <div key={step.number} className="flex items-center flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+              <div
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                  active ? 'text-white shadow-md' : 'text-muted'
+                }`}
+                style={active ? { background: 'linear-gradient(135deg, var(--color-primary), var(--color-tertiary))' } : { backgroundColor: 'var(--color-surface-container)' }}
+              >
+                {done ? <Check className="w-4 h-4" /> : withIcons && Icon ? <Icon className="w-4 h-4" /> : step.number}
+              </div>
+              <span
+                className={`text-[10px] sm:text-xs font-semibold whitespace-nowrap text-center max-w-[80px] ${
+                  active ? 'text-on-surface' : 'text-muted'
+                }`}
+              >
+                {step.key ? t(step.key as any) : step.label}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <div
+                className={`flex-1 h-0.5 mx-1 sm:mx-2 transition-colors ${
+                  done ? '' : ''
+                }`}
+                style={{
+                  backgroundColor: done
+                    ? 'var(--color-primary)'
+                    : 'color-mix(in oklab, var(--color-on-surface) 12%, transparent)',
+                }}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <div className="mb-6 p-3 rounded-xl flex items-center gap-2 text-sm border" style={{ backgroundColor: 'color-mix(in oklab, var(--color-error, #ef4444) 10%, transparent)', borderColor: 'color-mix(in oklab, var(--color-error, #ef4444) 30%, transparent)', color: 'var(--color-error, #ef4444)' }}>
+      <AlertCircle className="w-4 h-4 shrink-0" />
+      <span>{message}</span>
+    </div>
+  );
+}
+
+function SectionHeading({ title, help }: { title: string; help?: string }) {
+  return (
+    <div className="mb-5">
+      <h2 className="font-display text-xl sm:text-2xl font-bold text-on-surface">{title}</h2>
+      {help && <p className="text-sm text-muted mt-1">{help}</p>}
+    </div>
+  );
+}
 
 export default function BookingPage() {
   const { currentStep, setStep, selectedItem, totalAmount, reset, setFormData, formData } = useBookingStore();
@@ -39,7 +166,99 @@ export default function BookingPage() {
 
   const updateForm = (key: string, value: string) => {
     setFormData({ ...formData, [key]: value });
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   };
+
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  function validateEmail(v: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+  }
+
+  function validatePhone(v: string) {
+    const digits = v.replace(/\D/g, '');
+    return digits.length >= 7 && digits.length <= 15;
+  }
+
+  function validateCurrentStep(): { ok: boolean; errors: Record<string, string> } {
+    const errors: Record<string, string> = {};
+    const reqMissing = (key: string, label: string) => {
+      if (!formData[key] || !String(formData[key]).trim()) errors[key] = `${label} is required`;
+    };
+
+    if (bookingType === 'custom') {
+      if (currentStep === 1) {
+        reqMissing('destination', 'Destination');
+      } else if (currentStep === 2) {
+        reqMissing('startDate', 'Start date');
+      } else if (currentStep === 3) {
+        reqMissing('guests', 'Number of travelers');
+      } else if (currentStep === 5) {
+        reqMissing('firstName', 'Full name');
+        reqMissing('phone', 'Phone');
+        reqMissing('email', 'Email');
+        if (formData.email && !validateEmail(formData.email)) errors.email = 'Enter a valid email';
+        if (formData.phone && !validatePhone(formData.phone)) errors.phone = 'Enter a valid phone';
+      }
+    } else if (bookingType === 'visa') {
+      if (currentStep === 1) {
+        reqMissing('firstName', 'First name');
+        reqMissing('lastName', 'Last name');
+        reqMissing('dob', 'Date of birth');
+        reqMissing('placeOfBirth', 'Place of birth');
+        reqMissing('email', 'Email');
+        reqMissing('phone', 'Phone');
+        if (formData.email && !validateEmail(formData.email)) errors.email = 'Enter a valid email';
+        if (formData.phone && !validatePhone(formData.phone)) errors.phone = 'Enter a valid phone';
+      } else if (currentStep === 2) {
+        reqMissing('destination', 'Destination country');
+        reqMissing('arrivalDate', 'Arrival date');
+        reqMissing('departureDate', 'Departure date');
+        reqMissing('purpose', 'Purpose of travel');
+      }
+      // step 3 = documents checklist (no required text fields); step 4 = review/confirm (nothing to validate)
+    } else {
+      // tour / hotel / flight
+      if (currentStep === 1) {
+        reqMissing('firstName', 'First name');
+        reqMissing('lastName', 'Last name');
+        reqMissing('email', 'Email');
+        reqMissing('phone', 'Phone');
+        if (formData.email && !validateEmail(formData.email)) errors.email = 'Enter a valid email';
+        if (formData.phone && !validatePhone(formData.phone)) errors.phone = 'Enter a valid phone';
+      } else if (currentStep === 2) {
+        reqMissing('destination', 'Destination');
+        reqMissing('startDate', 'Start date');
+        reqMissing('guests', 'Number of guests');
+      }
+    }
+
+    return { ok: Object.keys(errors).length === 0, errors };
+  }
+
+  function tryAdvance() {
+    const result = validateCurrentStep();
+    setFieldErrors(result.errors);
+    if (!result.ok) {
+      setError(t('booking_validation_required'));
+      if (typeof window !== 'undefined') window.scrollTo({ top: 200, behavior: 'smooth' });
+      return;
+    }
+    setError(null);
+    if (bookingType === 'custom') {
+      if (currentStep < 5) setStep(currentStep + 1);
+      else handleSubmit();
+    } else {
+      const max = bookingType === 'visa' ? 4 : 4;
+      if (currentStep < max) setStep(currentStep + 1);
+      else handleSubmit();
+    }
+  }
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -67,7 +286,7 @@ export default function BookingPage() {
           (bookingType === 'custom' ? 'QUOTE-PENDING' : 'FLY-XXXX-XXXX')
       );
       setBookingSuccess(true);
-      setStep(bookingType === 'custom' ? 6 : 4);
+      setStep(bookingType === 'custom' ? 6 : 5);
     } catch (err: any) {
       setError(err.message || 'Booking failed. Please try again.');
     } finally {
@@ -83,45 +302,31 @@ export default function BookingPage() {
 
   if (bookingSuccess) {
     return (
-      <div className="relative min-h-screen bg-[#020617] flex items-center justify-center pt-20 overflow-hidden">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 bg-grid opacity-50" />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0,238,252,0.10), transparent 70%)',
-            }}
-          />
-        </div>
-        <div className="relative max-w-md w-full px-4">
-          <div className="glass-deep text-center p-12 rounded-2xl">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mx-auto mb-6">
-              <Check className="w-8 h-8 text-emerald-300" />
+      <main className="min-h-screen surface-page pt-24 pb-16 flex items-center justify-center">
+        <div className="max-w-md w-full px-4">
+          <div className="glass text-center p-10 sm:p-12 rounded-2xl">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 border"
+              style={{ backgroundColor: 'color-mix(in oklab, var(--color-primary) 15%, transparent)', borderColor: 'color-mix(in oklab, var(--color-primary) 40%, transparent)' }}
+            >
+              <Check className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
             </div>
-            <h2 className="font-display text-2xl font-bold text-white mb-2">
+            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
               {bookingType === 'custom'
-                ? isBn
-                  ? 'অনুরোধ পাঠানো হয়েছে!'
-                  : 'Request Submitted!'
-                : isBn
-                ? 'বুকিং নিশ্চিত!'
-                : 'Booking Confirmed!'}
+                ? t('booking_success_title_quote')
+                : t('booking_success_title')}
             </h2>
-            <p className="text-white/60 mb-4">
+            <p className="text-muted mb-2">
               {bookingType === 'custom'
-                ? isBn
-                  ? 'আমাদের টিম ২৪ ঘন্টার মধ্যে আপনার সাথে যোগাযোগ করবে।'
-                  : 'Our team will contact you within 24 hours with a tailored quote.'
-                : isBn
-                ? 'আপনার বুকিং সফলভাবে জমা হয়েছে।'
-                : 'Your booking has been submitted successfully.'}
+                ? t('booking_success_help_quote')
+                : t('booking_success_help')}
             </p>
-            <p className="font-mono text-lg font-bold text-[#00eefc] mb-8">{bookingCode}</p>
-            <div className="flex gap-4">
+            <p className="text-[10px] uppercase tracking-widest font-bold text-muted mt-4">{t('booking_booking_code')}</p>
+            <p className="font-mono text-lg font-bold text-on-surface mb-8">{bookingCode}</p>
+            <div className="flex gap-3">
               <Link href="/" className="flex-1">
                 <Button variant="ghost" size="lg" className="w-full">
-                  {isBn ? 'হোমে ফিরুন' : 'Back to Home'}
+                  {t('booking_back_home')}
                 </Button>
               </Link>
               <Button
@@ -132,92 +337,53 @@ export default function BookingPage() {
                   reset();
                 }}
               >
-                {isBn ? 'নতুন বুকিং' : 'New Booking'}
+                {t('booking_new')}
               </Button>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   // -------- CUSTOM PACKAGE multi-step flow --------
   if (bookingType === 'custom') {
     return (
-      <div className="min-h-screen bg-[#020617] pt-24 pb-16">
+      <main className="min-h-screen surface-page pt-24 pb-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <span className="inline-flex items-center gap-2 px-3 py-1 mb-3 rounded-full text-[10px] tracking-widest uppercase font-bold text-rose-300 border border-rose-400/30 bg-rose-500/5">
+            <span className="inline-flex items-center gap-2 px-3 py-1 mb-3 rounded-full text-[10px] tracking-widest uppercase font-bold border" style={{ color: 'var(--color-primary)', borderColor: 'color-mix(in oklab, var(--color-primary) 30%, transparent)', backgroundColor: 'color-mix(in oklab, var(--color-primary) 8%, transparent)' }}>
               <Sparkles className="w-3 h-3" />
               {t('booking_type_custom')}
             </span>
-            <h1 className="font-display text-3xl sm:text-4xl font-bold text-white">
+            <h1 className="font-display text-3xl sm:text-4xl font-bold text-on-surface">
               {isBn ? 'আপনার স্বপ্নের যাত্রা তৈরি করুন' : 'Design Your Dream Journey'}
             </h1>
-            <p className="text-white/60 mt-2">
+            <p className="text-muted mt-2">
               {isBn ? '৫টি সহজ ধাপে আপনার নিখুঁত প্যাকেজ।' : '5 quick steps. We handle the rest.'}
             </p>
           </div>
 
-          <div className="flex items-center justify-between mb-10 gap-1">
-            {CUSTOM_STEPS.map((step, i) => {
-              const Icon = step.icon;
-              const active = currentStep >= step.number;
-              return (
-                <div key={step.number} className="flex items-center flex-1 last:flex-none">
-                  <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
-                    <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
-                        active ? 'bg-rose-500 text-white' : 'bg-white/10 text-white/40'
-                      }`}
-                    >
-                      {currentStep > step.number ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
-                    </div>
-                    <span
-                      className={`text-[10px] sm:text-xs font-semibold whitespace-nowrap ${
-                        active ? 'text-white' : 'text-white/40'
-                      }`}
-                    >
-                      {t(step.key as any)}
-                    </span>
-                  </div>
-                  {i < CUSTOM_STEPS.length - 1 && (
-                    <div
-                      className={`flex-1 h-0.5 mx-1 ${
-                        currentStep > step.number ? 'bg-rose-500' : 'bg-white/10'
-                      }`}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <StepIndicator steps={CUSTOM_STEPS} currentStep={currentStep} t={t} withIcons />
 
-          <div className="glass p-6 sm:p-8 rounded-2xl border-white/10">
-            {error && (
-              <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
-                {error}
-              </div>
-            )}
+          <div className="glass p-6 sm:p-8 rounded-2xl">
+            {error && <ErrorBanner message={error} />}
 
             {currentStep === 1 && (
               <div className="space-y-4">
-                <h2 className="font-display text-xl font-bold text-white mb-4">
-                  {t('custom_step_destination')}
-                </h2>
-                <Input
+                <SectionHeading title={t('custom_step_destination')} />
+                <DestinationAutocomplete
                   label={isBn ? 'গন্তব্য দেশ/শহর' : 'Destination country / city'}
                   value={formData.destination || ''}
-                  onChange={(e) => updateForm('destination', e.target.value)}
-                  className="bg-white/5 border-white/10 text-white"
+                  onChange={(v) => updateForm('destination', v)}
                   placeholder={isBn ? 'যেমন: তুরস্ক, বালি, মালদ্বীপ' : 'e.g. Turkey, Bali, Maldives'}
                   required
+                  error={fieldErrors.destination}
                 />
                 <Input
                   label={isBn ? 'একাধিক গন্তব্য (ঐচ্ছিক)' : 'Multiple stops (optional)'}
                   value={formData.stops || ''}
                   onChange={(e) => updateForm('stops', e.target.value)}
-                  className="bg-white/5 border-white/10 text-white"
                   placeholder={isBn ? 'দুবাই → আবুধাবি' : 'Dubai → Abu Dhabi'}
                 />
               </div>
@@ -225,31 +391,27 @@ export default function BookingPage() {
 
             {currentStep === 2 && (
               <div className="space-y-4">
-                <h2 className="font-display text-xl font-bold text-white mb-4">
-                  {t('custom_step_dates')}
-                </h2>
+                <SectionHeading title={t('custom_step_dates')} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
-                    label={isBn ? 'শুরুর তারিখ' : 'Start date'}
+                    label={isBn ? 'শুরুর তারি�' : 'Start date'}
                     type="date"
                     value={formData.startDate || ''}
                     onChange={(e) => updateForm('startDate', e.target.value)}
-                    className="bg-white/5 border-white/10 text-white [color-scheme:dark]"
                     required
+                    error={fieldErrors.startDate}
                   />
                   <Input
                     label={isBn ? 'শেষ তারিখ (আনুমানিক)' : 'End date (approx)'}
                     type="date"
                     value={formData.endDate || ''}
                     onChange={(e) => updateForm('endDate', e.target.value)}
-                    className="bg-white/5 border-white/10 text-white [color-scheme:dark]"
                   />
                 </div>
                 <Input
                   label={isBn ? 'ভ্রমণের নমনীয়তা' : 'Flexibility'}
                   value={formData.flexibility || ''}
                   onChange={(e) => updateForm('flexibility', e.target.value)}
-                  className="bg-white/5 border-white/10 text-white"
                   placeholder={isBn ? 'যেমন: ±৩ দিন নমনীয়' : 'e.g. ±3 days flexible'}
                 />
               </div>
@@ -257,9 +419,7 @@ export default function BookingPage() {
 
             {currentStep === 3 && (
               <div className="space-y-4">
-                <h2 className="font-display text-xl font-bold text-white mb-4">
-                  {t('custom_step_travelers')}
-                </h2>
+                <SectionHeading title={t('custom_step_travelers')} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label={t('custom_travelers')}
@@ -267,8 +427,8 @@ export default function BookingPage() {
                     min={1}
                     value={formData.guests || ''}
                     onChange={(e) => updateForm('guests', e.target.value)}
-                    className="bg-white/5 border-white/10 text-white"
                     required
+                    error={fieldErrors.guests}
                   />
                   <Input
                     label={t('custom_budget')}
@@ -276,12 +436,11 @@ export default function BookingPage() {
                     min={0}
                     value={formData.budget || ''}
                     onChange={(e) => updateForm('budget', e.target.value)}
-                    className="bg-white/5 border-white/10 text-white"
                     placeholder="5000"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
                     {t('custom_travel_style')}
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -293,9 +452,10 @@ export default function BookingPage() {
                           onClick={() => updateForm('travelStyle', style)}
                           className={`px-3 py-2 rounded-xl text-sm font-semibold border transition ${
                             formData.travelStyle === style
-                              ? 'bg-rose-500/20 border-rose-400 text-white'
-                              : 'bg-white/5 border-white/10 text-white/70 hover:border-white/30'
+                              ? 'border-[var(--color-primary)] text-on-surface'
+                              : 'border-soft text-muted hover:border-medium'
                           }`}
+                          style={formData.travelStyle === style ? { backgroundColor: 'color-mix(in oklab, var(--color-primary) 15%, transparent)' } : { backgroundColor: 'var(--color-surface-container)' }}
                         >
                           {t(`custom_travel_style_${style}` as any)}
                         </button>
@@ -308,11 +468,9 @@ export default function BookingPage() {
 
             {currentStep === 4 && (
               <div className="space-y-4">
-                <h2 className="font-display text-xl font-bold text-white mb-4">
-                  {t('custom_step_preferences')}
-                </h2>
+                <SectionHeading title={t('custom_step_preferences')} />
                 <div>
-                  <label className="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
                     {t('custom_accommodation')}
                   </label>
                   <div className="grid grid-cols-3 gap-2">
@@ -323,9 +481,10 @@ export default function BookingPage() {
                         onClick={() => updateForm('accommodation', a)}
                         className={`px-3 py-2 rounded-xl text-sm font-semibold border transition ${
                           formData.accommodation === a
-                            ? 'bg-rose-500/20 border-rose-400 text-white'
-                            : 'bg-white/5 border-white/10 text-white/70 hover:border-white/30'
+                            ? 'border-[var(--color-primary)] text-on-surface'
+                            : 'border-soft text-muted hover:border-medium'
                         }`}
+                        style={formData.accommodation === a ? { backgroundColor: 'color-mix(in oklab, var(--color-primary) 15%, transparent)' } : { backgroundColor: 'var(--color-surface-container)' }}
                       >
                         {t(`custom_accommodation_${a}` as any)}
                       </button>
@@ -333,7 +492,7 @@ export default function BookingPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
                     {t('custom_meals')}
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -344,9 +503,10 @@ export default function BookingPage() {
                         onClick={() => updateForm('meals', m)}
                         className={`px-3 py-2 rounded-xl text-sm font-semibold border transition ${
                           formData.meals === m
-                            ? 'bg-rose-500/20 border-rose-400 text-white'
-                            : 'bg-white/5 border-white/10 text-white/70 hover:border-white/30'
+                            ? 'border-[var(--color-primary)] text-on-surface'
+                            : 'border-soft text-muted hover:border-medium'
                         }`}
+                        style={formData.meals === m ? { backgroundColor: 'color-mix(in oklab, var(--color-primary) 15%, transparent)' } : { backgroundColor: 'var(--color-surface-container)' }}
                       >
                         {t(`custom_meals_${m}` as any)}
                       </button>
@@ -354,14 +514,14 @@ export default function BookingPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-white/70 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
                     {t('custom_requests')}
                   </label>
                   <textarea
                     value={formData.notes || ''}
                     onChange={(e) => updateForm('notes', e.target.value)}
                     rows={4}
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 outline-none focus:border-rose-400/60"
+                    className="w-full px-4 py-3 rounded-xl text-on-surface placeholder:text-muted outline-none border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all bg-surface-container/60 backdrop-blur-md"
                     placeholder={t('custom_requests_ph')}
                   />
                 </div>
@@ -370,24 +530,22 @@ export default function BookingPage() {
 
             {currentStep === 5 && (
               <div className="space-y-4">
-                <h2 className="font-display text-xl font-bold text-white mb-4">
-                  {t('custom_step_contact')}
-                </h2>
+                <SectionHeading title={t('custom_step_contact')} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label={isBn ? 'পুরো নাম' : 'Full name'}
                     value={formData.firstName || ''}
                     onChange={(e) => updateForm('firstName', e.target.value)}
-                    className="bg-white/5 border-white/10 text-white"
                     required
+                    error={fieldErrors.firstName}
                   />
                   <Input
                     label={isBn ? 'ফোন' : 'Phone'}
                     type="tel"
                     value={formData.phone || ''}
                     onChange={(e) => updateForm('phone', e.target.value)}
-                    className="bg-white/5 border-white/10 text-white"
                     required
+                    error={fieldErrors.phone}
                   />
                 </div>
                 <Input
@@ -395,34 +553,32 @@ export default function BookingPage() {
                   type="email"
                   value={formData.email || ''}
                   onChange={(e) => updateForm('email', e.target.value)}
-                  className="bg-white/5 border-white/10 text-white"
                   required
+                  error={fieldErrors.email}
                 />
               </div>
             )}
 
-            <div className="flex justify-between mt-8 pt-6 border-t border-white/10">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 mt-8 pt-6 border-t border-soft">
               <Button
                 variant="ghost"
-                onClick={() => (currentStep === 1 ? setBookingType('tour') : setStep(currentStep - 1))}
-                className="text-white/60 hover:text-white"
+                onClick={() => {
+                  if (currentStep === 1) {
+                    setBookingType('tour');
+                  } else {
+                    setStep(currentStep - 1);
+                  }
+                  setFieldErrors({});
+                  setError(null);
+                }}
               >
-                {currentStep === 1
-                  ? isBn
-                    ? 'বুকিং ধরন'
-                    : 'Booking type'
-                  : isBn
-                  ? 'পূর্ববর্তী'
-                  : 'Previous'}
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                {currentStep === 1 ? t('booking_back_to_types') : t('booking_previous')}
               </Button>
               <Button
                 size="lg"
-                className="bg-rose-500 hover:bg-rose-400 text-white font-bold"
                 disabled={submitting}
-                onClick={() => {
-                  if (currentStep < 5) setStep(currentStep + 1);
-                  else handleSubmit();
-                }}
+                onClick={tryAdvance}
               >
                 {submitting ? (
                   <>
@@ -431,271 +587,303 @@ export default function BookingPage() {
                   </>
                 ) : currentStep === 5 ? (
                   isBn ? 'অনুরোধ পাঠান' : 'Submit Request'
-                ) : isBn ? (
-                  'পরবর্তী'
                 ) : (
-                  'Continue'
+                  <>
+                    {isBn ? 'পরবর্তী' : t('booking_next')}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
                 )}
               </Button>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
-  // -------- STANDARD booking flow with type selector --------
+  // -------- STANDARD booking flow --------
+  const maxStep = bookingType === 'visa' ? 4 : 4;
+  const steps = bookingType === 'visa' ? VISA_STEPS : STANDARD_STEPS;
+  const isLastStep = currentStep === maxStep;
+
   return (
-    <div className="min-h-screen bg-[#020617] pt-24 pb-16">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-10">
-          <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
-            {t('booking_type_label')}
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            {(['tour', 'hotel', 'flight', 'visa', 'custom'] as BookingType[]).map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => {
-                  if (type === 'custom') {
-                    setStep(1);
-                    setBookingType('custom');
-                  } else {
-                    setBookingType(type);
-                    setStep(1);
-                  }
-                }}
-                className={`px-3 py-2.5 rounded-xl text-sm font-semibold border transition ${
-                  bookingType === type
-                    ? 'bg-[#00eefc]/20 border-[#00eefc] text-white'
-                    : 'bg-white/5 border-white/15 text-white/60 hover:border-[#00eefc]/50 hover:text-white'
-                }`}
-              >
-                {t(`booking_type_${type}` as any)}
-              </button>
-            ))}
-          </div>
+    <main className="min-h-screen surface-page pt-24 pb-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-8">
+          <h1 className="font-display text-3xl sm:text-4xl font-bold text-on-surface">
+            {t('booking_title')}
+          </h1>
+          <p className="text-muted mt-2">{t('booking_subtitle')}</p>
         </div>
 
-        <div className="flex items-center justify-center gap-4 mb-12">
-          {STANDARD_STEPS.map((step, i) => (
-            <div key={step.number} className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                    currentStep >= step.number
-                      ? 'bg-[#00eefc] text-[#020617]'
-                      : 'bg-white/10 text-white/40'
-                  }`}
-                >
-                  {currentStep > step.number ? <Check className="w-4 h-4" /> : step.number}
-                </div>
-                <span
-                  className={`text-sm font-medium ${
-                    currentStep >= step.number ? 'text-white' : 'text-white/40'
-                  }`}
-                >
-                  {step.label}
-                </span>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+          <div>
+            {/* Type selector */}
+            <div className="mb-6">
+              <label className="block text-[10px] uppercase tracking-widest font-bold text-muted mb-2">
+                {t('booking_type_label')}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {(['tour', 'hotel', 'flight', 'visa', 'custom'] as BookingType[]).map((type) => {
+                  const Icon = TYPE_META[type].icon;
+                  const active = bookingType === type;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        if (type === 'custom') {
+                          setStep(1);
+                          setBookingType('custom');
+                        } else {
+                          setBookingType(type);
+                          setStep(1);
+                        }
+                        setFieldErrors({});
+                        setError(null);
+                      }}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition ${
+                        active ? 'text-on-surface' : 'text-muted hover:border-medium'
+                      }`}
+                      style={
+                        active
+                          ? {
+                              background: 'linear-gradient(135deg, color-mix(in oklab, var(--color-primary) 18%, transparent), color-mix(in oklab, var(--color-tertiary) 18%, transparent))',
+                              borderColor: 'var(--color-primary)',
+                            }
+                          : { backgroundColor: 'var(--color-surface-container)', borderColor: 'var(--color-outline-variant)' }
+                      }
+                    >
+                      <Icon className="w-4 h-4" />
+                      {t(`booking_type_${type}` as any)}
+                    </button>
+                  );
+                })}
               </div>
-              {i < STANDARD_STEPS.length - 1 && (
-                <div
-                  className={`w-12 h-0.5 ${
-                    currentStep > step.number ? 'bg-[#00eefc]' : 'bg-white/10'
-                  }`}
-                />
-              )}
             </div>
-          ))}
-        </div>
 
-        <div className="glass p-8 rounded-2xl">
-          {error && (
-            <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm text-center">
-              {error}
-            </div>
-          )}
+            <StepIndicator steps={steps} currentStep={currentStep} t={t} />
 
-          {currentStep === 1 && (
-            <div className="space-y-6">
-              <h2 className="font-display text-2xl font-bold text-white">Booking Details</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="First Name"
-                  value={formData.firstName || ''}
-                  onChange={(e) => updateForm('firstName', e.target.value)}
-                  required
-                />
-                <Input
-                  label="Last Name"
-                  value={formData.lastName || ''}
-                  onChange={(e) => updateForm('lastName', e.target.value)}
-                  required
-                />
-              </div>
-              <Input
-                label="Email"
-                type="email"
-                value={formData.email || ''}
-                onChange={(e) => updateForm('email', e.target.value)}
-                required
-              />
-              <Input
-                label="Phone"
-                type="tel"
-                value={formData.phone || ''}
-                onChange={(e) => updateForm('phone', e.target.value)}
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="Start Date"
-                  type="date"
-                  value={formData.startDate || ''}
-                  onChange={(e) => updateForm('startDate', e.target.value)}
-                  className="[color-scheme:dark]"
-                  required
-                />
-                <Input
-                  label="End Date"
-                  type="date"
-                  value={formData.endDate || ''}
-                  onChange={(e) => updateForm('endDate', e.target.value)}
-                  className="[color-scheme:dark]"
-                />
-              </div>
-              <Input
-                label="Number of Guests"
-                type="number"
-                value={formData.guests || ''}
-                onChange={(e) => updateForm('guests', e.target.value)}
-                min={1}
-              />
-              <Input
-                label="Special Requests"
-                value={formData.notes || ''}
-                onChange={(e) => updateForm('notes', e.target.value)}
-                placeholder="Any special requirements?"
-              />
-            </div>
-          )}
+            <div className="glass p-6 sm:p-8 rounded-2xl">
+              {error && <ErrorBanner message={error} />}
 
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <h2 className="font-display text-2xl font-bold text-white">Review Your Booking</h2>
-              <div className="space-y-4">
-                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
-                  <span>Service</span>
-                  <span className="font-medium text-white">{displayName}</span>
-                </div>
-                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
-                  <span>Type</span>
-                  <span className="font-medium text-white">
-                    {t(`booking_type_${bookingType}` as any)}
-                  </span>
-                </div>
-                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
-                  <span>Guest Name</span>
-                  <span className="font-medium text-white">
-                    {formData.firstName} {formData.lastName}
-                  </span>
-                </div>
-                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
-                  <span>Email</span>
-                  <span className="font-medium text-white">{formData.email}</span>
-                </div>
-                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
-                  <span>Phone</span>
-                  <span className="font-medium text-white">{formData.phone || '—'}</span>
-                </div>
-                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
-                  <span>Dates</span>
-                  <span className="font-medium text-white">
-                    {formData.startDate || '—'} {formData.endDate ? ` — ${formData.endDate}` : ''}
-                  </span>
-                </div>
-                <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
-                  <span>Guests</span>
-                  <span className="font-medium text-white">{formData.guests || 1}</span>
-                </div>
-                {formData.notes && (
-                  <div className="flex justify-between py-3 border-b border-white/10 text-white/60">
-                    <span>Notes</span>
-                    <span className="font-medium text-white">{formData.notes}</span>
+              {/* VISA FLOW */}
+              {currentStep === 1 && bookingType === 'visa' && (
+                <div className="space-y-5">
+                  <SectionHeading title={t('booking_step_applicant')} help={t('booking_visa_applicant_help')} />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input label={t('booking_first_name')} value={formData.firstName || ''} onChange={(e) => updateForm('firstName', e.target.value)} required error={fieldErrors.firstName} />
+                    <Input label={t('booking_last_name')} value={formData.lastName || ''} onChange={(e) => updateForm('lastName', e.target.value)} required error={fieldErrors.lastName} />
                   </div>
-                )}
-                <div className="flex justify-between py-3">
-                  <span className="text-lg font-bold text-white">Total</span>
-                  <span className="text-lg font-bold text-[#00eefc]">
-                    {formatCurrency(totalAmount || 0)}
-                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input label={isBn ? 'জন্ম তারিখ' : 'Date of birth'} type="date" value={formData.dob || ''} onChange={(e) => updateForm('dob', e.target.value)} required error={fieldErrors.dob} />
+                    <Input label={isBn ? 'জন্মস্থান' : 'Place of birth'} value={formData.placeOfBirth || ''} onChange={(e) => updateForm('placeOfBirth', e.target.value)} required error={fieldErrors.placeOfBirth} />
+                  </div>
+                  <Input label={t('booking_email')} type="email" value={formData.email || ''} onChange={(e) => updateForm('email', e.target.value)} required error={fieldErrors.email} />
+                  <Input label={t('booking_phone')} type="tel" value={formData.phone || ''} onChange={(e) => updateForm('phone', e.target.value)} required error={fieldErrors.phone} />
+                </div>
+              )}
+
+              {currentStep === 2 && bookingType === 'visa' && (
+                <div className="space-y-5">
+                  <SectionHeading title={t('booking_step_travel')} help={t('booking_visa_travel_help')} />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <DestinationAutocomplete
+                      label={isBn ? 'গন্তব্য দেশ' : 'Destination country'}
+                      value={formData.destination || ''}
+                      onChange={(v) => updateForm('destination', v)}
+                      required
+                      placeholder="e.g. Malaysia"
+                      error={fieldErrors.destination}
+                    />
+                    <Input label={isBn ? 'ভিসার ধরন' : 'Visa type'} value={formData.visaType || 'tourist'} onChange={(e) => updateForm('visaType', e.target.value)} placeholder="tourist / business / student" />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input label={isBn ? 'আগমনের তারিখ' : 'Intended arrival'} type="date" value={formData.arrivalDate || ''} onChange={(e) => updateForm('arrivalDate', e.target.value)} required error={fieldErrors.arrivalDate} />
+                    <Input label={isBn ? 'প্রস্থানের তারিখ' : 'Intended departure'} type="date" value={formData.departureDate || ''} onChange={(e) => updateForm('departureDate', e.target.value)} required error={fieldErrors.departureDate} />
+                  </div>
+                  <Input label={isBn ? 'ভ্রমণের উদ্দেশ্য' : 'Purpose of travel'} value={formData.purpose || ''} onChange={(e) => updateForm('purpose', e.target.value)} required placeholder="e.g. Tourism, family visit, business meeting" error={fieldErrors.purpose} />
+                  <Input label={isBn ? 'থাকার ঠিকানা' : 'Accommodation address'} value={formData.accommodation || ''} onChange={(e) => updateForm('accommodation', e.target.value)} placeholder="Hotel name and city" />
+                </div>
+              )}
+
+              {currentStep === 3 && bookingType === 'visa' && (
+                <div className="space-y-5">
+                  <SectionHeading title={t('booking_step_documents')} help={t('booking_visa_docs_help')} />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { key: 'doc_passport', label: 'Valid passport (min 6 months validity)' },
+                      { key: 'doc_photos', label: '2 passport-size photos (white background)' },
+                      { key: 'doc_bank', label: 'Bank statement (last 6 months)' },
+                      { key: 'doc_nid', label: 'National ID / birth certificate' },
+                      { key: 'doc_ticket', label: 'Confirmed return ticket' },
+                      { key: 'doc_hotel', label: 'Hotel booking or invitation letter' },
+                      { key: 'doc_cover', label: 'Cover letter (we can draft this for you)' },
+                      { key: 'doc_employment', label: 'Employment / student letter' },
+                    ].map((d) => (
+                      <label key={d.key} className="flex items-start gap-3 rounded-xl border border-soft p-3 cursor-pointer hover:border-medium transition-colors bg-surface-container/60">
+                        <input
+                          type="checkbox"
+                          checked={!!formData[d.key]}
+                          onChange={(e) => updateForm(d.key, e.target.checked ? 'yes' : '')}
+                          className="mt-0.5"
+                          style={{ accentColor: 'var(--color-primary)' }}
+                        />
+                        <span className="text-sm text-on-surface">{d.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <Input label={isBn ? 'নোট (ঐ�্ছিক)' : t('booking_notes')} value={formData.notes || ''} onChange={(e) => updateForm('notes', e.target.value)} placeholder="Anything we should know?" />
+                </div>
+              )}
+
+              {/* STANDARD FLOW */}
+              {currentStep === 1 && bookingType !== 'visa' && (
+                <div className="space-y-5">
+                  <SectionHeading title={t('booking_section_contact')} help={t('booking_section_contact_help')} />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input label={t('booking_first_name')} value={formData.firstName || ''} onChange={(e) => updateForm('firstName', e.target.value)} required error={fieldErrors.firstName} />
+                    <Input label={t('booking_last_name')} value={formData.lastName || ''} onChange={(e) => updateForm('lastName', e.target.value)} required error={fieldErrors.lastName} />
+                  </div>
+                  <Input label={t('booking_email')} type="email" value={formData.email || ''} onChange={(e) => updateForm('email', e.target.value)} required error={fieldErrors.email} />
+                  <Input label={t('booking_phone')} type="tel" value={formData.phone || ''} onChange={(e) => updateForm('phone', e.target.value)} required error={fieldErrors.phone} />
+                </div>
+              )}
+
+              {currentStep === 2 && bookingType !== 'visa' && (
+                <div className="space-y-5">
+                  <SectionHeading title={t('booking_section_trip')} help={t('booking_section_trip_help')} />
+                  <DestinationAutocomplete
+                    label={t('booking_destination')}
+                    value={formData.destination || ''}
+                    onChange={(v) => updateForm('destination', v)}
+                    placeholder={t('booking_destination_ph')}
+                    required
+                    error={fieldErrors.destination}
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input label={t('booking_start_date')} type="date" value={formData.startDate || ''} onChange={(e) => updateForm('startDate', e.target.value)} required error={fieldErrors.startDate} />
+                    <Input label={t('booking_end_date')} type="date" value={formData.endDate || ''} onChange={(e) => updateForm('endDate', e.target.value)} />
+                  </div>
+                  <Input label={t('booking_guests')} type="number" min={1} value={formData.guests || ''} onChange={(e) => updateForm('guests', e.target.value)} required error={fieldErrors.guests} />
+                  <div>
+                    <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+                      {t('booking_notes')}
+                    </label>
+                    <textarea
+                      value={formData.notes || ''}
+                      onChange={(e) => updateForm('notes', e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-xl text-on-surface placeholder:text-muted outline-none border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all bg-surface-container/60 backdrop-blur-md"
+                      placeholder={t('booking_notes_ph')}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* REVIEW (standard step 3 / visa step 4) */}
+              {((currentStep === 3 && bookingType !== 'visa') || (currentStep === 4 && bookingType === 'visa')) && (
+                <div className="space-y-5">
+                  <SectionHeading title={t('booking_review_title')} help={t('booking_review_help')} />
+                  {bookingType === 'visa' ? (
+                    <div className="space-y-3">
+                      <ReviewRow label={isBn ? 'আবেদনকারী' : 'Applicant'} value={`${formData.firstName || ''} ${formData.lastName || ''}`.trim() || '—'} />
+                      <ReviewRow label={t('booking_email')} value={formData.email || '—'} />
+                      <ReviewRow label={isBn ? 'গন্তব্য' : 'Destination'} value={formData.destination || '—'} />
+                      <ReviewRow label={isBn ? 'ভিসার ধরন' : 'Visa type'} value={<span className="capitalize">{formData.visaType || '—'}</span>} />
+                      <ReviewRow label={t('booking_dates')} value={`${formData.arrivalDate || '—'} → ${formData.departureDate || '—'}`} />
+                      <div className="rounded-2xl border border-soft p-5 mt-2 bg-surface-container/60">
+                        <div className="text-[10px] uppercase tracking-widest text-muted mb-2">{t('booking_field_service_fee')}</div>
+                        <div className="font-display text-3xl font-bold text-on-surface">{formatCurrency(totalAmount || 0, 'BDT')}</div>
+                        <p className="text-xs text-muted mt-2">{t('booking_field_embassy_help')}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <ReviewRow label={t('booking_service')} value={displayName} />
+                      <ReviewRow label={t('booking_type_label')} value={t(`booking_type_${bookingType}` as any)} />
+                      <ReviewRow label={t('booking_destination')} value={formData.destination || '—'} />
+                      <ReviewRow label={isBn ? 'অতিথির নাম' : 'Guest name'} value={`${formData.firstName || ''} ${formData.lastName || ''}`.trim() || '—'} />
+                      <ReviewRow label={t('booking_email')} value={formData.email || '—'} />
+                      <ReviewRow label={t('booking_phone')} value={formData.phone || '—'} />
+                      <ReviewRow label={t('booking_dates')} value={`${formData.startDate || '—'}${formData.endDate ? ` — ${formData.endDate}` : ''}`} />
+                      <ReviewRow label={t('booking_guests')} value={String(formData.guests || 1)} />
+                      {formData.notes && <ReviewRow label={t('booking_notes')} value={formData.notes} />}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* CONFIRM (standard step 4) */}
+              {currentStep === 4 && bookingType !== 'visa' && (
+                <div className="space-y-5">
+                  <SectionHeading title={t('booking_step_confirm')} help={t('booking_confirm_help')} />
+                  <p className="text-xs text-muted text-center">{t('booking_terms')}</p>
+                </div>
+              )}
+
+              {/* CONFIRM (visa step 4) */}
+              {currentStep === 4 && bookingType === 'visa' && (
+                <div className="space-y-5">
+                  <SectionHeading title={t('booking_step_confirm')} help={t('booking_confirm_help')} />
+                  <p className="text-xs text-muted text-center">{t('booking_terms')}</p>
+                </div>
+              )}
+
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 mt-8 pt-6 border-t border-soft">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    if (currentStep === 1) setBookingType('tour');
+                    else setStep(currentStep - 1);
+                    setFieldErrors({});
+                    setError(null);
+                  }}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  {currentStep === 1 ? t('booking_back_to_types') : t('booking_previous')}
+                </Button>
+                <div className="flex gap-2">
+                  <Button variant="ghost" onClick={reset}>{t('booking_cancel')}</Button>
+                  <Button
+                    size="lg"
+                    disabled={submitting}
+                    onClick={tryAdvance}
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {isBn ? 'পাঠানো হচ্ছে...' : 'Submitting...'}
+                      </>
+                    ) : isLastStep ? (
+                      t('booking_submit')
+                    ) : (
+                      <>
+                        {t('booking_next')}
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
-            </div>
-          )}
-
-          {currentStep === 3 && (
-            <div className="space-y-6">
-              <h2 className="font-display text-2xl font-bold text-white">Confirm & Pay</h2>
-              <p className="text-white/60">Review your details and submit your booking.</p>
-              <div className="glass-deep p-6 rounded-xl">
-                <div className="flex justify-between text-sm text-white/60 mb-2">
-                  <span>Subtotal</span>
-                  <span>{formatCurrency(totalAmount || 0)}</span>
-                </div>
-                <div className="flex justify-between text-sm text-white/60 mb-2">
-                  <span>Processing Fee</span>
-                  <span>{formatCurrency(0)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-lg mt-3 pt-3 border-t border-white/10">
-                  <span className="text-white">Total</span>
-                  <span className="text-[#00eefc]">{formatCurrency(totalAmount || 0)}</span>
-                </div>
-              </div>
-              <p className="text-xs text-white/50 text-center">
-                By submitting, you agree to our Terms of Service. Payment will be processed separately
-                after confirmation.
-              </p>
-            </div>
-          )}
-
-          <div className="flex justify-between mt-8 pt-6 border-t border-white/10">
-            <Button
-              variant="ghost"
-              onClick={() => (currentStep === 1 ? window.history.back() : setStep(currentStep - 1))}
-            >
-              {currentStep === 1 ? 'Back' : 'Previous'}
-            </Button>
-            <div className="flex gap-3">
-              <Button
-                variant="ghost"
-                onClick={reset}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="lg"
-                disabled={submitting}
-                onClick={() => {
-                  if (currentStep < 3) setStep(currentStep + 1);
-                  else handleSubmit();
-                }}
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : currentStep === 3 ? (
-                  'Confirm Booking'
-                ) : (
-                  'Continue'
-                )}
-              </Button>
             </div>
           </div>
+
+          {/* Sidebar summary */}
+          <aside className="hidden lg:block">
+            <ItemSummaryCard t={t} />
+          </aside>
         </div>
       </div>
+    </main>
+  );
+}
+
+function ReviewRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-3 border-b border-soft">
+      <span className="text-sm text-muted shrink-0">{label}</span>
+      <span className="text-sm font-medium text-on-surface text-right break-words">{value}</span>
     </div>
   );
 }

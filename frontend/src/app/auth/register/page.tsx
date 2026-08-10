@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Mail, Lock, User, FileCheck } from 'lucide-react';
+import { Mail, Lock, User, FileCheck, Phone } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
 import logoImg from '@/images/flyngo_transparent.png';
@@ -12,12 +12,13 @@ import logoImg from '@/images/flyngo_transparent.png';
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const { register, loading, error } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await register(name, email, password);
+    await register(name, email, phone, password);
   };
 
   return (
@@ -65,14 +66,26 @@ export default function RegisterPage() {
               />
             </div>
             <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#00eefc] z-10" />
+              <Input
+                type="tel"
+                placeholder="Phone number (e.g. +8801712345678)"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="pl-10"
+                required
+                autoComplete="tel"
+              />
+            </div>
+            <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#00eefc] z-10" />
               <Input
                 type="email"
-                placeholder="Email address"
+                placeholder="Email address (optional)"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10"
-                required
+                autoComplete="email"
               />
             </div>
             <div className="relative">
@@ -85,6 +98,7 @@ export default function RegisterPage() {
                 className="pl-10"
                 minLength={8}
                 required
+                autoComplete="new-password"
               />
             </div>
             <label className="flex items-center gap-2 text-sm text-white/60">

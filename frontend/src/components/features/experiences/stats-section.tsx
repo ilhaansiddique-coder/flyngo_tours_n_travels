@@ -116,20 +116,6 @@ export function StatsSection() {
               <StatCard key={i} stat={s} index={i} />
             ))}
           </div>
-
-          <div className="relative mt-10 pt-8 border-t border-faint flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted">
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Live booking status · 142 trips in motion today</span>
-            </div>
-            <div className="flex items-center gap-4 text-muted">
-              <span className="flex items-center gap-1.5">
-                <span className="text-on-bg">4.9</span>
-                <span>★</span>
-                <span>· 12,400 reviews</span>
-              </span>
-            </div>
-          </div>
         </div>
       </div>
     </section>

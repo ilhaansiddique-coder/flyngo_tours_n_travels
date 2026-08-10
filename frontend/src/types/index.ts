@@ -30,3 +30,16 @@ export interface Flight {
   price: number;
   availableSeats: number;
 }
+
+export interface Destination {
+  id: string;
+  name: string;
+  slug: string;
+  country: string;
+  continent?: string;
+  description?: string;
+  imageUrl?: string;
+  latitude?: number;
+  longitude?: number;
+  isFeatured?: boolean;
+}

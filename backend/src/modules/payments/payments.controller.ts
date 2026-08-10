@@ -32,6 +32,16 @@ export class PaymentsController {
     return this.paymentsService.getPaymentStatus(id, tenantId, userId);
   }
 
+  @Get('my')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user payments' })
+  async myPayments(
+    @CurrentTenantId() tenantId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.paymentsService.getMyPayments(tenantId, userId);
+  }
+
   @Post('webhook/stripe')
   @Public()
   @ApiOperation({ summary: 'Stripe webhook' })

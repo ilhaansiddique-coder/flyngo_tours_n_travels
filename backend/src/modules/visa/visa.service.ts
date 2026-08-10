@@ -5,9 +5,18 @@ import { PrismaService } from '../../database/prisma.service';
 export class VisaService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getVisaServices(tenantId: string) {
+  async getVisaServices(tenantId: string, q?: string) {
+    const where: any = { tenantId, deletedAt: null, isActive: true };
+    if (q && q.trim()) {
+      const term = q.trim();
+      where.OR = [
+        { title: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+        { country: { name: { contains: term, mode: 'insensitive' } } },
+      ];
+    }
     return this.prisma.visaService.findMany({
-      where: { tenantId, deletedAt: null, isActive: true },
+      where,
       include: { country: true },
       orderBy: { createdAt: 'desc' },
     });

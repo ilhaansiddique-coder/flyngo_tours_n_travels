@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Toaster } from 'sonner';
 import { LocaleProvider } from '@/contexts/locale-context';
+import { CurrencyProvider } from '@/contexts/currency-context';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -28,8 +29,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
         themes={['light', 'dark']}
       >
         <LocaleProvider>
-          {children}
-          <Toaster richColors position="top-right" />
+          <CurrencyProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+          </CurrencyProvider>
         </LocaleProvider>
       </ThemeProvider>
     </QueryClientProvider>

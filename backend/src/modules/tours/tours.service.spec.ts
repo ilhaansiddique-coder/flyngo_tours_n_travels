@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ToursService } from './tours.service';
 import { PrismaService } from '../../database/prisma.service';
+import { NotFoundException } from '@nestjs/common';
 
 describe('ToursService', () => {
   let service: ToursService;
@@ -87,11 +88,10 @@ describe('ToursService', () => {
       );
     });
 
-    it('should return null for non-existent tour', async () => {
+    it('should throw NotFoundException for non-existent tour', async () => {
       mockPrisma.tour.findFirst.mockResolvedValue(null);
 
-      const result = await service.findById('fake-id', 'tenant-1');
-      expect(result).toBeNull();
+      await expect(service.findById('fake-id', 'tenant-1')).rejects.toThrow(NotFoundException);
     });
   });
 });

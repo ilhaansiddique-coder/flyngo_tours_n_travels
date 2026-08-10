@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Search, MapPin, Calendar, Users, ArrowRight, FileCheck, Plane } from 'lucide-react';
+import { ArrowRight, FileCheck, Plane } from 'lucide-react';
 import { CITIES, cityName } from '@/lib/geo';
 import { useLocale } from '@/contexts/locale-context';
 
@@ -175,94 +175,30 @@ export function HeroSection() {
             ))}
           </dl>
 
-          {/* Search widget — flows in left column on desktop, full width on mobile */}
-          <div className="mt-10 lg:mt-12">
-            <div
-              className="rounded-3xl border p-2 shadow-2xl backdrop-blur-xl"
-              style={{
-                borderColor: 'color-mix(in oklab, var(--color-hero-text) 10%, transparent)',
-                backgroundColor: 'color-mix(in oklab, var(--color-hero-text) 10%, transparent)',
-                boxShadow: '0 24px 48px -12px color-mix(in oklab, var(--color-primary) 30%, transparent)',
-              }}
-            >
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <div
-                  className="flex flex-1 items-center gap-3 rounded-2xl border px-4 py-3 transition-colors"
-                  style={searchFieldStyle()}
-                >
-                  <MapPin className="h-5 w-5 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
-                  <input
-                    type="text"
-                    placeholder={t('search_where')}
-                    aria-label="Destination"
-                    className="w-full border-none bg-transparent text-sm outline-none"
-                    style={searchInputStyle()}
-                  />
-                </div>
-                <div
-                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 transition-colors sm:w-44"
-                  style={searchFieldStyle()}
-                >
-                  <Calendar className="h-5 w-5 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
-                  <input
-                    type="text"
-                    placeholder={t('search_dates')}
-                    aria-label="Travel dates"
-                    className="w-full border-none bg-transparent text-sm outline-none"
-                    style={searchInputStyle()}
-                  />
-                </div>
-                <div
-                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 transition-colors sm:w-40"
-                  style={searchFieldStyle()}
-                >
-                  <Users className="h-5 w-5 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
-                  <input
-                    type="text"
-                    placeholder={t('search_guests')}
-                    aria-label="Number of guests"
-                    className="w-full border-none bg-transparent text-sm outline-none"
-                    style={searchInputStyle()}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  aria-label="Search"
-                  className="flex items-center justify-center gap-2 rounded-2xl px-6 py-3 font-semibold text-white shadow-lg transition"
-                  style={{
-                    background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-tertiary) 100%)',
-                    boxShadow: '0 12px 28px -8px color-mix(in oklab, var(--color-primary) 50%, transparent)',
-                  }}
-                >
-                  <Search className="h-5 w-5" />
-                  <span className="hidden sm:inline">{t('search_btn')}</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-wrap justify-center gap-2 lg:justify-start">
-              {QUICK_PLACES.map((place) => (
-                <button
-                  key={place}
-                  className="rounded-full border px-3 py-1.5 text-xs backdrop-blur-sm transition-colors"
-                  style={{
-                    color: 'var(--color-hero-text-muted)',
-                    borderColor: 'color-mix(in oklab, var(--color-hero-text) 10%, transparent)',
-                    backgroundColor: 'color-mix(in oklab, var(--color-hero-text) 5%, transparent)',
-                  }}
-                >
-                  {place}
-                </button>
-              ))}
-            </div>
+          {/* Quick destination chips — the full search lives in the top bar. */}
+          <div className="mt-8 flex flex-wrap justify-center gap-2 lg:justify-start">
+            {QUICK_PLACES.map((place) => (
+              <button
+                key={place}
+                className="rounded-full border px-3 py-1.5 text-xs backdrop-blur-sm transition-colors"
+                style={{
+                  color: 'var(--color-hero-text-muted)',
+                  borderColor: 'color-mix(in oklab, var(--color-hero-text) 10%, transparent)',
+                  backgroundColor: 'color-mix(in oklab, var(--color-hero-text) 5%, transparent)',
+                }}
+              >
+                {place}
+              </button>
+            ))}
           </div>
         </header>
 
         {/* ------------------ right: globe ------------------ */}
         <div className="relative order-first lg:order-last">
-          {/* Light mode: globe fills 100% of the available column.
-              Dark mode: capped at 520px (original sizing). */}
-          <div className="relative mx-auto aspect-square w-full max-w-full lg:max-w-full dark:max-w-[520px] dark:lg:max-w-[520px]">
+          {/* Same size in light and dark so the layout doesn't shift on theme switch.
+              Column is capped at 560px by the grid, so 520px leaves breathing room
+              for the floating route chips. */}
+          <div className="relative mx-auto aspect-square w-full max-w-[520px]">
             <Globe />
           </div>
 
@@ -353,18 +289,5 @@ function pillStyle(token: PillToken): React.CSSProperties {
     color: `color-mix(in oklab, ${base} 75%, var(--color-hero-text) 25%)`,
     borderColor: `color-mix(in oklab, ${base} 20%, transparent)`,
     backgroundColor: `color-mix(in oklab, ${base} 5%, transparent)`,
-  };
-}
-
-function searchFieldStyle(): React.CSSProperties {
-  return {
-    borderColor: 'color-mix(in oklab, var(--color-hero-text) 10%, transparent)',
-    backgroundColor: 'color-mix(in oklab, var(--color-hero-text) 5%, transparent)',
-  };
-}
-
-function searchInputStyle(): React.CSSProperties {
-  return {
-    color: 'var(--color-hero-text)',
   };
 }

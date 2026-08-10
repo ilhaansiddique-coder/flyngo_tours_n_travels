@@ -40,6 +40,14 @@ export class PaymentsService {
     });
   }
 
+  async getMyPayments(tenantId: string, userId: string) {
+    return this.prisma.payment.findMany({
+      where: { tenantId, userId },
+      orderBy: { createdAt: 'desc' },
+      include: { booking: { select: { id: true, bookingCode: true, bookingType: true, totalAmount: true, currency: true } } },
+    });
+  }
+
   async handleStripeWebhook(signature: string, payload: Buffer) {
     // TODO: Implement Stripe webhook verification
     return { received: true };

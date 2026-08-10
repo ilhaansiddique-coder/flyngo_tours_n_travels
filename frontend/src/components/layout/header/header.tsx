@@ -5,11 +5,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Search, Menu, X, User, LogOut } from 'lucide-react';
+import { Menu, X, User, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
 import { useLocale } from '@/contexts/locale-context';
+import { useScrollReveal } from '@/lib/use-scroll-reveal';
 import logoImg from '@/images/flyngo_transparent.png';
 
 const navItems = [
@@ -28,21 +29,13 @@ export function Header() {
   const [authReady, setAuthReady] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
   const { t } = useLocale();
+  const { visible, compact } = useScrollReveal();
 
   useEffect(() => {
     // SSR hydration guard — render the same on server and first client render
     // then reveal the auth-dependent UI on the second render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAuthReady(true);
-  }, []);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const el = document.querySelector('header');
-      if (el) el.dataset.scrolled = String(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
@@ -54,13 +47,29 @@ export function Header() {
 
   return (
     <header
-      className="fixed top-0 w-full z-50 h-20 transition-all duration-300 backdrop-blur-xl border-b"
+      className={cn(
+        'fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b will-change-transform',
+        'transition-[transform,height,background-color,border-color,box-shadow,padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
+        visible ? 'translate-y-0' : '-translate-y-full',
+        compact
+          ? 'h-14 shadow-[0_8px_24px_-12px_rgba(7,86,184,0.25)]'
+          : 'h-20 shadow-none',
+      )}
       style={{
-        backgroundColor: 'var(--color-header-bg)',
-        borderColor: 'var(--color-header-border)',
+        backgroundColor: compact
+          ? 'color-mix(in oklab, var(--color-header-bg) 92%, transparent)'
+          : 'var(--color-header-bg)',
+        borderColor: compact
+          ? 'color-mix(in oklab, var(--color-header-border) 100%, transparent)'
+          : 'var(--color-header-border)',
       }}
     >
-      <div className="flex justify-between items-center px-16 max-w-[1600px] mx-auto h-full">
+      <div
+        className={cn(
+          'flex justify-between items-center max-w-[1600px] mx-auto h-full transition-[padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
+          compact ? 'px-8 lg:px-12' : 'px-16',
+        )}
+      >
         <div className="flex items-center gap-12">
           <Link href="/" className="flex flex-col items-start leading-tight">
             <Image
@@ -69,10 +78,18 @@ export function Header() {
               width={120}
               height={48}
               priority
-              className="rounded-xl object-cover w-auto h-auto"
+              className={cn(
+                'rounded-xl object-cover w-auto h-auto transition-[height,width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                compact ? 'h-8' : 'h-12',
+              )}
             />
             <span
-              className="mt-0.5 text-[7px] sm:text-[8px] tracking-[0.2em] uppercase font-medium opacity-70"
+              className={cn(
+                'mt-0.5 tracking-[0.2em] uppercase font-medium transition-[font-size,opacity,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden',
+                compact
+                  ? 'text-[0px] opacity-0 h-0 mt-0'
+                  : 'text-[7px] sm:text-[8px] opacity-70',
+              )}
               style={{ color: 'var(--color-nav-inactive)' }}
             >
               {t('slogan')}
@@ -112,50 +129,22 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-6">
-          <div
-            className="hidden lg:flex items-center px-4 py-2 rounded-full transition-all hover:opacity-80"
-            style={{
-              backgroundColor: 'var(--color-header-search-bg)',
-              border: '1px solid var(--color-header-search-border)',
-            }}
-          >
-            <Search className="mr-2 w-4 h-4" style={{ color: 'var(--color-header-text-muted)' }} />
-            <input
-              className="bg-transparent border-none outline-none text-sm w-32 focus:w-48 transition-all"
-              placeholder="Search..."
-              type="text"
-              style={{
-                color: 'var(--color-header-search-text)',
-              }}
-              onFocus={(e) => (e.target.style.setProperty('--tw-placeholder-color', 'transparent'))}
-            />
-            <style jsx>{`
-              input::placeholder {
-                color: var(--color-header-search-placeholder);
-              }
-            `}</style>
-          </div>
-
           {isAuthenticated() && user ? (
             <div className="flex items-center gap-3">
               <Link
-                href="/admin/dashboard"
-                className="hidden sm:flex items-center gap-2 text-sm transition-colors"
-                style={{ color: 'var(--color-header-text-muted)' }}
+                href={user.role === 'customer' ? '/dashboard' : '/admin/dashboard'}
+                className="hidden sm:flex flex-col leading-tight transition-colors"
+                style={{ color: 'var(--color-header-text)' }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-header-text)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-header-text-muted)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-header-text)')}
               >
+                <span className="hidden lg:inline text-sm font-semibold">{user.fullName}</span>
                 <span
-                  className="px-3 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase"
-                  style={{
-                    backgroundColor: 'var(--color-header-search-bg)',
-                    border: '1px solid var(--color-header-search-border)',
-                    color: 'var(--color-header-text)',
-                  }}
+                  className="hidden lg:inline text-[9px] font-bold tracking-[0.18em] uppercase"
+                  style={{ color: 'var(--color-header-text-muted)' }}
                 >
                   {user.role}
                 </span>
-                <span className="hidden lg:inline">{user.fullName}</span>
               </Link>
               <button
                 onClick={() => { logout(); window.location.href = '/'; }}
@@ -177,33 +166,27 @@ export function Header() {
               >
                 {t('nav_signin')}
               </Link>
-              <Link
-                href="/booking"
-                className="px-6 py-2.5 rounded-full text-sm font-bold tracking-wider transition-all duration-300 shadow-lg"
-                style={{
-                  backgroundColor: 'var(--color-header-btn-bg)',
-                  color: 'var(--color-header-btn-text)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--color-header-btn-hover-bg)';
-                  e.currentTarget.style.color = 'var(--color-header-btn-hover-text)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--color-header-btn-bg)';
-                  e.currentTarget.style.color = 'var(--color-header-btn-text)';
-                }}
-              >
-                {t('nav_book')}
-              </Link>
-              <Link
-                href="/auth/login"
-                className="transition-all hover:scale-110"
-                style={{ color: 'var(--color-header-text)' }}
-              >
-                <User className="w-8 h-8" />
-              </Link>
             </>
           )}
+
+          <Link
+            href="/booking"
+            className="px-6 py-2.5 rounded-full text-sm font-bold tracking-wider transition-all duration-300 shadow-lg"
+            style={{
+              backgroundColor: 'var(--color-header-btn-bg)',
+              color: 'var(--color-header-btn-text)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--color-header-btn-hover-bg)';
+              e.currentTarget.style.color = 'var(--color-header-btn-hover-text)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--color-header-btn-bg)';
+              e.currentTarget.style.color = 'var(--color-header-btn-text)';
+            }}
+          >
+            {t('nav_book')}
+          </Link>
 
           <ThemeToggle />
           <LanguageToggle />
@@ -269,7 +252,7 @@ export function Header() {
           ) : isAuthenticated() && user ? (
                 <>
                   <Link
-                    href="/admin/dashboard"
+                    href={user.role === 'customer' ? '/dashboard' : '/admin/dashboard'}
                     className="px-4 py-4 rounded-xl text-base font-medium transition-colors"
                     style={{ color: 'var(--color-mobile-nav-text)' }}
                     onMouseEnter={(e) => {

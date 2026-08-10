@@ -20,6 +20,9 @@ import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
 import { TransportModule } from './modules/transport/transport.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { HajjModule } from './modules/hajj/hajj.module';
+import { UmrahModule } from './modules/umrah/umrah.module';
+import { VisaCountriesModule } from './modules/visa-countries/visa-countries.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 
 @Module({
@@ -45,6 +48,9 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
     HealthModule,
     TransportModule,
     ReviewsModule,
+    HajjModule,
+    UmrahModule,
+    VisaCountriesModule,
   ],
 })
 export class AppModule implements NestModule {

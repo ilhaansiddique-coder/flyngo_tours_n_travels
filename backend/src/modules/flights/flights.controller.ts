@@ -20,8 +20,9 @@ export class FlightsController {
     @Query('origin') origin?: string,
     @Query('destination') destination?: string,
     @Query('date') date?: string,
+    @Query('q') q?: string,
   ) {
-    return this.flightsService.search(tenantId, { origin, destination, date }, pagination.page, pagination.limit);
+    return this.flightsService.search(tenantId, { origin, destination, date, q }, pagination.page, pagination.limit);
   }
 
   @Get(':id')

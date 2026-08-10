@@ -1,10 +1,17 @@
-import { IsEmail, IsString, MinLength, MaxLength, IsOptional, IsPhoneNumber } from 'class-validator';
+import { IsEmail, IsString, MinLength, MaxLength, IsOptional, ValidateIf } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail()
-  email: string;
+  @ApiPropertyOptional({ example: 'user@example.com' })
+  @ValidateIf((o) => o.email != null && o.email !== '')
+  @IsEmail({}, { message: 'Email must be a valid address' })
+  email?: string;
+
+  @ApiProperty({ example: '+8801712345678' })
+  @IsString()
+  @MinLength(7)
+  @MaxLength(20)
+  phone: string;
 
   @ApiProperty({ example: 'Password123!' })
   @IsString()
@@ -17,9 +24,4 @@ export class RegisterDto {
   @MinLength(2)
   @MaxLength(100)
   fullName: string;
-
-  @ApiPropertyOptional({ example: '+8801712345678' })
-  @IsOptional()
-  @IsString()
-  phone?: string;
 }

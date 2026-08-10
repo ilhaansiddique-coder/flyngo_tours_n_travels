@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useRef, useEffect, useState } from "react";
+import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { useTheme } from "next-themes";
 import {
   CITIES,
   ROUTES,
@@ -16,40 +15,25 @@ import Plane from "./Plane";
 
 const RADIUS = 1;
 
-/* Theme palette — the globe reads from a pair of color sets so it
-   looks correct on both the navy hero (dark) and the cream hero
-   (light). The dark theme keeps the neon-cyan accent and the deep
-   navy sphere; the light theme deepens the land-dot color to a
-   saturated blue and darkens the sphere so it still reads as a 3D
-   object against a cream surface. */
+/* Single palette used for both light and dark themes — the dark
+   globe reads well on both navy and cream hero backgrounds. */
 const PALETTE = {
-  dark: {
-    core: "#021935",
-    land: "#1881ff",
-    graticule: "#0c6fdf",
-    atmosphere: "#1881ff",
-    arcPrimary: "#f36523",
-    arcSecondary: "#5fa9ff",
-    planePrimary: "#f36523",
-    planeSecondary: "#ffffff",
-    marker: "#f36523",
-    arcBlending: THREE.AdditiveBlending as THREE.Blending,
-  },
-  light: {
-    core: "#0c6fdf",
-    land: "#0a1628",
-    graticule: "#0c6fdf",
-    atmosphere: "#0c6fdf",
-    arcPrimary: "#d54f15",
-    arcSecondary: "#0c6fdf",
-    planePrimary: "#d54f15",
-    planeSecondary: "#0a1628",
-    marker: "#d54f15",
-    arcBlending: THREE.NormalBlending as THREE.Blending,
-  },
+  core: "#021935",
+  land: "#1881ff",
+  landGlow: "#7fd0ff",
+  graticule: "#0c6fdf",
+  atmosphere: "#1881ff",
+  atmosphereScale: 1.06,
+  atmosphereIntensity: 0.9,
+  arcPrimary: "#f36523",
+  arcSecondary: "#5fa9ff",
+  planePrimary: "#f36523",
+  planeSecondary: "#ffffff",
+  marker: "#f36523",
+  arcBlending: THREE.AdditiveBlending as THREE.Blending,
 } as const;
 
-type Palette = (typeof PALETTE)[keyof typeof PALETTE];
+type Palette = typeof PALETTE;
 
 /* ------------------------------------------------------------------ dots -- */
 
@@ -71,14 +55,27 @@ const dotVertex = /* glsl */ `
 
 const dotFragment = /* glsl */ `
   uniform vec3 uColor;
+  uniform vec3 uGlow;
   varying float vTwinkle;
 
   void main() {
-    vec2 c = gl_PointCoord - vec2(0.5);
-    float d = dot(c, c);
-    if (d > 0.25) discard;
-    float edge = smoothstep(0.25, 0.04, d);
-    gl_FragColor = vec4(uColor * (0.9 + vTwinkle * 0.45), edge * (0.7 + vTwinkle * 0.3));
+    // p is in [-0.5, 0.5] across the point sprite.
+    vec2 p = gl_PointCoord - vec2(0.5);
+
+    // L1 norm (Manhattan distance) gives a diamond directly — no rotation
+    // needed. |x| + |y| <= 0.5 is the inscribed diamond of the unit quad.
+    float diamond = abs(p.x) + abs(p.y);
+    if (diamond > 0.5) discard;
+
+    // Soft edge falloff, then a brighter inner core.
+    float edge  = smoothstep(0.5, 0.28, diamond);
+    float core  = smoothstep(0.5, 0.0,  diamond);
+    float pulse = 0.7 + vTwinkle * 0.6;
+
+    vec3 col   = mix(uColor, uGlow, core * 0.6) * pulse;
+    float a    = edge * (0.85 + vTwinkle * 0.15);
+
+    gl_FragColor = vec4(col, a);
   }
 `;
 
@@ -102,6 +99,7 @@ function LandDots({ palette }: { palette: Palette }) {
       uSize: { value: 2.4 },
       uDpr: { value: 1 },
       uColor: { value: new THREE.Color(palette.land) },
+      uGlow: { value: new THREE.Color(palette.landGlow) },
     }),
     [palette],
   );
@@ -143,21 +141,25 @@ const glowVertex = /* glsl */ `
 
 const glowFragment = /* glsl */ `
   uniform vec3 uColor;
+  uniform float uIntensity;
   varying vec3 vNormal;
   void main() {
-    float intensity = pow(clamp(0.62 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 0.0, 1.0), 3.2);
-    gl_FragColor = vec4(uColor, 1.0) * intensity * 1.6;
+    float intensity = pow(clamp(0.72 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 0.0, 1.0), 4.0);
+    gl_FragColor = vec4(uColor, 1.0) * intensity * uIntensity;
   }
 `;
 
 function Atmosphere({ palette }: { palette: Palette }) {
   const uniforms = useMemo(
-    () => ({ uColor: { value: new THREE.Color(palette.atmosphere) } }),
+    () => ({
+      uColor: { value: new THREE.Color(palette.atmosphere) },
+      uIntensity: { value: palette.atmosphereIntensity },
+    }),
     [palette],
   );
 
   return (
-    <mesh scale={1.14}>
+    <mesh scale={palette.atmosphereScale}>
       <sphereGeometry args={[RADIUS, 64, 64]} />
       <shaderMaterial
         vertexShader={glowVertex}
@@ -291,7 +293,10 @@ function Marker({ position, delay, color }: { position: THREE.Vector3; delay: nu
   );
 }
 
+/* ------------------------------------------------------- surface shading -- */
+
 /* ---------------------------------------------------------------- scene -- */
+
 
 function GlobeScene({ withPlanes, palette }: { withPlanes: boolean; palette: Palette }) {
   const group = useRef<THREE.Group>(null);
@@ -316,7 +321,7 @@ function GlobeScene({ withPlanes, palette }: { withPlanes: boolean; palette: Pal
       {/* Faint graticule */}
       <lineSegments>
         <wireframeGeometry args={[new THREE.SphereGeometry(RADIUS * 0.997, 24, 16)]} />
-        <lineBasicMaterial color={palette.graticule} transparent opacity={0.3} />
+        <lineBasicMaterial color={palette.graticule} transparent opacity={0.18} />
       </lineSegments>
 
       <LandDots palette={palette} />
@@ -352,16 +357,7 @@ function GlobeScene({ withPlanes, palette }: { withPlanes: boolean; palette: Pal
 }
 
 export default function Globe({ withPlanes = true }: { withPlanes?: boolean }) {
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Until the theme is resolved we render the dark palette to avoid a
-  // flash of the wrong colors on first paint.
-  const palette: Palette = mounted && resolvedTheme === "light" ? PALETTE.light : PALETTE.dark;
+  const palette: Palette = PALETTE;
 
   return (
     <Canvas

@@ -23,6 +23,7 @@ describe('AuthService', () => {
 
   const mockJwtService = {
     signAsync: jest.fn().mockResolvedValue('mock-token'),
+    verifyAsync: jest.fn(),
   };
 
   const mockConfig = {
@@ -71,7 +72,7 @@ describe('AuthService', () => {
       });
 
       const result = await service.login(
-        { email: 'test@example.com', password: 'Password123!' },
+        { email: 'test@example.com', phone: '+8801712345678', password: 'Password123!' },
         'tenant-1',
       );
 
@@ -85,7 +86,7 @@ describe('AuthService', () => {
       mockPrisma.user.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.login({ email: 'wrong@example.com', password: 'Password123!' }, 'tenant-1'),
+        service.login({ email: 'wrong@example.com', phone: '+8801712345678', password: 'Password123!' }, 'tenant-1'),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -99,7 +100,7 @@ describe('AuthService', () => {
       });
 
       await expect(
-        service.login({ email: 'test@example.com', password: 'WrongPass1' }, 'tenant-1'),
+        service.login({ email: 'test@example.com', phone: '+8801712345678', password: 'WrongPass1' }, 'tenant-1'),
       ).rejects.toThrow(UnauthorizedException);
     });
   });
@@ -117,7 +118,7 @@ describe('AuthService', () => {
       });
 
       const result = await service.register(
-        { email: 'new@example.com', password: 'Password123!', fullName: 'New User' },
+        { email: 'new@example.com', phone: '+8801712345678', password: 'Password123!', fullName: 'New User' },
         'tenant-1',
       );
 
@@ -131,7 +132,7 @@ describe('AuthService', () => {
 
       await expect(
         service.register(
-          { email: 'existing@example.com', password: 'Password123!', fullName: 'Existing' },
+          { email: 'existing@example.com', phone: '+8801712345678', password: 'Password123!', fullName: 'Existing' },
           'tenant-1',
         ),
       ).rejects.toThrow(ConflictException);
@@ -140,7 +141,7 @@ describe('AuthService', () => {
 
   describe('refreshToken', () => {
     it('should return new tokens for valid refresh token', async () => {
-      jest.spyOn(jwtService, 'verifyAsync' as any).mockResolvedValue({
+      mockJwtService.verifyAsync.mockResolvedValue({
         sub: 'user-1',
         tenantId: 'tenant-1',
       });
@@ -148,6 +149,7 @@ describe('AuthService', () => {
         id: 'user-1',
         email: 'test@example.com',
         deletedAt: null,
+        passwordHash: 'hashed',
       });
 
       const result = await service.refreshToken('valid-refresh-token', 'tenant-1');
@@ -157,7 +159,7 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException for invalid token', async () => {
-      (jwtService.verifyAsync as jest.Mock).mockRejectedValue(new Error('Invalid'));
+      mockJwtService.verifyAsync.mockRejectedValue(new Error('Invalid'));
 
       await expect(
         service.refreshToken('invalid-token', 'tenant-1'),

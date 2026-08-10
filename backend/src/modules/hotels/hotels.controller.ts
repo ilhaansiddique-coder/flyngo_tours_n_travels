@@ -14,8 +14,12 @@ export class HotelsController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'List all hotels' })
-  async findAll(@CurrentTenantId() tenantId: string, @Query() pagination: PaginationDto) {
-    return this.hotelsService.findAll(tenantId, pagination.page, pagination.limit);
+  async findAll(
+    @CurrentTenantId() tenantId: string,
+    @Query() pagination: PaginationDto,
+    @Query('q') q?: string,
+  ) {
+    return this.hotelsService.findAll(tenantId, pagination.page, pagination.limit, q);
   }
 
   @Get(':id')

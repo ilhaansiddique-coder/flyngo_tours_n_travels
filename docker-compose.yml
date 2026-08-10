@@ -56,6 +56,8 @@ services:
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
     ports:
       - '4000:4000'
+    volumes:
+      - backend_uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -126,3 +128,4 @@ volumes:
   postgres_data:
   redis_data:
   meilisearch_data:
+  backend_uploads:

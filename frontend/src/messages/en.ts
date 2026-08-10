@@ -14,7 +14,7 @@ export const en = {
   hero_title_a: 'Discover',
   hero_title_b: 'the World',
   hero_title_c: 'Your Way',
-  hero_subtitle: 'Book extraordinary tours, flights, hotels, and visa services with AI-powered recommendations tailored just for you.',
+  hero_subtitle: 'Book extraordinary tours, flights, hotels, and visa services.',
   hero_cta_explore: 'Explore Tours',
   hero_cta_destinations: 'View Destinations',
   hero_visa_cta: 'Visa & Travel Processing',

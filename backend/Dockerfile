@@ -24,7 +24,9 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY docker-entrypoint.sh ./
 
-RUN chmod +x docker-entrypoint.sh
+RUN chmod +x docker-entrypoint.sh && \
+    mkdir -p /app/uploads && \
+    chown -R nestjs:nodejs /app
 
 USER nestjs
 

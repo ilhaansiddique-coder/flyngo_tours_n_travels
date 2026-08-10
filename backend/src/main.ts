@@ -33,7 +33,7 @@ async function bootstrap() {
     configService.get('ADMIN_URL') || 'http://localhost:3001',
   ];
   // Allow additional origins via comma-separated CORS_ORIGINS env var.
-  const extraOrigins = (configService.get('CORS_ORIGINS') || '')
+  const extraOrigins = (configService.getOrNull('CORS_ORIGINS') || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);

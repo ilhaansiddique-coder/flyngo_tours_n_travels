@@ -23,6 +23,9 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { HajjModule } from './modules/hajj/hajj.module';
 import { UmrahModule } from './modules/umrah/umrah.module';
 import { VisaCountriesModule } from './modules/visa-countries/visa-countries.module';
+import { MediaModule } from './modules/media/media.module';
+import { HeroModule } from './modules/hero/hero.module';
+import { GlobeModule } from './modules/globe/globe.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 
 @Module({
@@ -51,6 +54,9 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
     HajjModule,
     UmrahModule,
     VisaCountriesModule,
+    MediaModule,
+    HeroModule,
+    GlobeModule,
   ],
 })
 export class AppModule implements NestModule {

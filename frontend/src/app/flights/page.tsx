@@ -38,7 +38,7 @@ export default function FlightsPage() {
         <Container>
           {loading ? (
             <div className="text-center py-20">
-              <div className="inline-block w-8 h-8 border-2 border-[#00eefc] border-t-transparent rounded-full animate-spin" />
+              <div className="inline-block w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
               <p className="mt-4 text-white/60">Loading flights...</p>
             </div>
           ) : error ? (

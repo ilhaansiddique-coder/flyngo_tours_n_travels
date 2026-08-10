@@ -90,6 +90,72 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
+    // The frontend sends both keys with the unused one blank. These cover the
+    // email-only payload, which previously never reached the service at all.
+    it('should log in with an email-only payload', async () => {
+      const passwordHash = await bcryptjs.hash('Password123!', 12);
+      mockPrisma.user.findFirst.mockResolvedValue({
+        id: 'user-1',
+        email: 'admin@flyngo.com',
+        passwordHash,
+        deletedAt: null,
+      });
+
+      const result = await service.login(
+        { email: 'admin@flyngo.com', phone: '', password: 'Password123!' },
+        'tenant-1',
+      );
+
+      expect(result).toHaveProperty('accessToken');
+      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
+        where: { tenantId: 'tenant-1', OR: [{ email: 'admin@flyngo.com' }], deletedAt: null },
+      });
+    });
+
+    it('should not query by a blank phone when logging in by email', async () => {
+      const passwordHash = await bcryptjs.hash('Password123!', 12);
+      mockPrisma.user.findFirst.mockResolvedValue({
+        id: 'user-1',
+        email: 'admin@flyngo.com',
+        passwordHash,
+        deletedAt: null,
+      });
+
+      await service.login({ email: 'admin@flyngo.com', phone: '', password: 'Password123!' }, 'tenant-1');
+
+      const { OR } = mockPrisma.user.findFirst.mock.calls[0][0].where;
+      expect(OR).toHaveLength(1);
+      expect(OR[0]).not.toHaveProperty('phone');
+    });
+
+    it('should log in with a phone-only payload', async () => {
+      const passwordHash = await bcryptjs.hash('Password123!', 12);
+      mockPrisma.user.findFirst.mockResolvedValue({
+        id: 'user-2',
+        phone: '+8801712345678',
+        passwordHash,
+        deletedAt: null,
+      });
+
+      const result = await service.login(
+        { email: '', phone: '+8801712345678', password: 'Password123!' },
+        'tenant-1',
+      );
+
+      expect(result).toHaveProperty('accessToken');
+      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
+        where: { tenantId: 'tenant-1', OR: [{ phone: '+8801712345678' }], deletedAt: null },
+      });
+    });
+
+    it('should reject when neither identifier is supplied without querying', async () => {
+      await expect(
+        service.login({ email: '', phone: '', password: 'Password123!' }, 'tenant-1'),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(mockPrisma.user.findFirst).not.toHaveBeenCalled();
+    });
+
     it('should throw UnauthorizedException for wrong password', async () => {
       const passwordHash = await bcryptjs.hash('CorrectPass1', 12);
       mockPrisma.user.findFirst.mockResolvedValue({

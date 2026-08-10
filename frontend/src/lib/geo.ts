@@ -38,8 +38,13 @@ export function landPointCloud(radius = 1): Float32Array {
   return positions;
 }
 
-export type City = { name: string; nameBn: string; lat: number; lon: number };
+export type City = { id?: string; name: string; nameBn?: string; lat: number; lon: number };
 
+/**
+ * Static fallback cities used when the API is unreachable.
+ * The home page now sources its cities from {@link useGlobeData}; these are
+ * only here for tests and older code paths that import from `lib/geo`.
+ */
 export const CITIES: City[] = [
   { name: "New York", nameBn: "নিউ ইয়র্ক", lat: 40.71, lon: -74.01 },
   { name: "London", nameBn: "লন্ডন", lat: 51.51, lon: -0.13 },
@@ -57,7 +62,8 @@ export const CITIES: City[] = [
 
 export function cityName(c: City | undefined, locale: 'en' | 'bn'): string {
   if (!c) return '';
-  return locale === 'bn' ? c.nameBn : c.name;
+  if (locale === 'bn') return c.nameBn || c.name;
+  return c.name;
 }
 
 /** Index pairs into CITIES that get a flight arc. */

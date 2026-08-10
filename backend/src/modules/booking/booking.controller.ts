@@ -4,6 +4,7 @@ import { BookingService } from './booking.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CreateHotelBookingDto } from './dto/create-hotel-booking.dto';
 
 @ApiTags('Bookings')
 @ApiBearerAuth()
@@ -19,6 +20,16 @@ export class BookingController {
     @Body() body: { type: 'tour' | 'hotel' | 'flight' | 'visa' | 'package'; itemId: string; startDate: Date; endDate?: Date; guests?: number; notes?: string },
   ) {
     return this.bookingService.createBooking(tenantId, userId, body);
+  }
+
+  @Post('hotel')
+  @ApiOperation({ summary: 'Create a hotel booking with guest details' })
+  async createHotelBooking(
+    @CurrentTenantId() tenantId: string,
+    @CurrentUser('id') userId: string,
+    @Body() body: CreateHotelBookingDto,
+  ) {
+    return this.bookingService.createHotelBooking(tenantId, userId, body);
   }
 
   @Get()

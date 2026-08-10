@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
+import { ImageUploader } from '@/components/admin/image-uploader';
 import { useApi } from '@/hooks/use-api';
 import { formatCurrency } from '@/lib/utils';
 import { Globe, Plus, Pencil, Trash2, Search } from 'lucide-react';
@@ -16,6 +17,7 @@ interface VisaCountry {
   slug: string;
   flagUrl?: string;
   imageUrl?: string;
+  coverImageUrl?: string;
   region?: string;
   visaTypes: string[];
   processingTime?: string;
@@ -138,11 +140,12 @@ export default function AdminVisaCountriesPage() {
 }
 
 function VisaForm({ initial, onClose, onSaved }: { initial: VisaCountry | null; onClose: () => void; onSaved: () => void }) {
-  const { createVisaCountry, updateVisaCountry } = useApi();
+  const { createVisaCountry, updateVisaCountry, uploadMedia } = useApi();
   const [name, setName] = useState(initial?.name ?? '');
   const [region, setRegion] = useState(initial?.region ?? 'asia');
   const [flagUrl, setFlagUrl] = useState(initial?.flagUrl ?? '');
   const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? '');
+  const [coverImageUrl, setCoverImageUrl] = useState(initial?.coverImageUrl ?? '');
   const [processingTime, setProcessingTime] = useState(initial?.processingTime ?? '');
   const [fee, setFee] = useState(String(initial?.fee ?? 0));
   const [currency, setCurrency] = useState(initial?.currency ?? 'BDT');
@@ -162,6 +165,7 @@ function VisaForm({ initial, onClose, onSaved }: { initial: VisaCountry | null; 
       region,
       flagUrl: flagUrl || undefined,
       imageUrl: imageUrl || undefined,
+      coverImageUrl: coverImageUrl || undefined,
       processingTime: processingTime || undefined,
       fee: Number(fee) || 0,
       currency,
@@ -203,6 +207,17 @@ function VisaForm({ initial, onClose, onSaved }: { initial: VisaCountry | null; 
         <FormField label="Requirements (one per line)"><FormTextarea value={requirements} onChange={setRequirements} rows={6} /></FormField>
         <FormField label="Description"><FormTextarea value={description} onChange={setDescription} rows={3} /></FormField>
         <FormField label="Order"><FormInput value={order} onChange={setOrder} type="number" /></FormField>
+        <FormField label="Cover Image">
+          <ImageUploader
+            value={coverImageUrl}
+            onChange={setCoverImageUrl}
+            onUpload={async (file) => {
+              const res = await uploadMedia(file, { folder: 'visa-countries' });
+              return { url: (res as any).url };
+            }}
+            aspectRatio={1.7777}
+          />
+        </FormField>
         <div className="flex gap-4">
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} /> Active</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} /> Featured</label>

@@ -64,6 +64,7 @@ export class HotelsService {
         checkInTime: data.checkInTime || '14:00',
         checkOutTime: data.checkOutTime || '12:00',
         isActive: data.isActive ?? true,
+        coverImageUrl: data.coverImageUrl,
         rooms: data.rooms ? {
           create: data.rooms.map((r: any) => ({
             name: r.name,
@@ -107,6 +108,7 @@ export class HotelsService {
         checkInTime: data.checkInTime,
         checkOutTime: data.checkOutTime,
         isActive: data.isActive,
+        coverImageUrl: data.coverImageUrl,
       },
       include: { destination: true, images: true, rooms: true },
     });

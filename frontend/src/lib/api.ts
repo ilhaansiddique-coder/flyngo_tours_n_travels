@@ -80,6 +80,25 @@ class ApiClient {
   delete<T>(endpoint: string, options?: FetchOptions): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' });
   }
+
+  async upload<T>(endpoint: string, formData: FormData, options: FetchOptions = {}): Promise<T> {
+    const { token, ...fetchOptions } = options;
+    const headers: Record<string, string> = { ...(fetchOptions.headers as Record<string, string>) };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      ...fetchOptions,
+      method: 'POST',
+      body: formData,
+      headers,
+    });
+    if (!response.ok) {
+      if (response.status === 401) clearAuthAndRedirect();
+      const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+      throw new ApiError(response.status, error.message || 'Upload failed', error.errors);
+    }
+    const json = await response.json();
+    return (json.data ?? json) as T;
+  }
 }
 
 export class ApiError extends Error {

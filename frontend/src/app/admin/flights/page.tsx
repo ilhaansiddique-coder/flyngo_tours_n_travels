@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal, FormField, FormInput, FormSelect, ConfirmDialog } from '@/components/admin/ui';
+import { ImageUploader } from '@/components/admin/image-uploader';
 
 interface Flight {
   id: string;
@@ -23,6 +24,7 @@ interface Flight {
   price: number;
   availableSeats?: number;
   cabinClass?: string;
+  coverImageUrl?: string;
   isActive: boolean;
 }
 
@@ -46,11 +48,12 @@ const emptyForm = {
   price: '',
   availableSeats: '',
   cabinClass: 'economy',
+  coverImageUrl: '',
   isActive: true,
 };
 
 export default function AdminFlightsPage() {
-  const { getFlights, createFlight, updateFlight, deleteFlight } = useApi();
+  const { getFlights, createFlight, updateFlight, deleteFlight, uploadMedia } = useApi();
 
   const [flights, setFlights] = useState<Flight[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({ total: 0, page: 1, limit: 10, totalPages: 0 });
@@ -109,6 +112,7 @@ export default function AdminFlightsPage() {
       price: flight.price != null ? String(flight.price) : '',
       availableSeats: flight.availableSeats != null ? String(flight.availableSeats) : '',
       cabinClass: flight.cabinClass || 'economy',
+      coverImageUrl: flight.coverImageUrl || '',
       isActive: flight.isActive,
     });
     setModalOpen(true);
@@ -130,6 +134,7 @@ export default function AdminFlightsPage() {
         price: Number(formData.price),
         availableSeats: formData.availableSeats ? Number(formData.availableSeats) : undefined,
         cabinClass: formData.cabinClass,
+        coverImageUrl: formData.coverImageUrl || undefined,
         isActive: formData.isActive,
       };
 
@@ -179,7 +184,7 @@ export default function AdminFlightsPage() {
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>
           <h1 className="text-2xl font-bold">Flights</h1>
-          <p className="text-gray-500 text-sm mt-1">Manage flight schedules and pricing</p>
+          <p className="text-on-surface-variant text-sm mt-1">Manage flight schedules and pricing</p>
         </div>
         <Button size="md" onClick={openCreate} className="gap-2">
           <Plus className="w-4 h-4" /> Add Flight
@@ -187,20 +192,20 @@ export default function AdminFlightsPage() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 text-sm">{error}</div>
+        <div className="p-4 rounded-xl bg-error-container border border-error/30 text-on-error-container text-sm">{error}</div>
       )}
 
       <Card hover={false} padding="none">
         {loading ? (
-          <div className="flex items-center justify-center py-20 text-gray-400">
+          <div className="flex items-center justify-center py-20 text-on-surface-variant">
             <Plane className="w-6 h-6 animate-pulse mr-3" />
             Loading flights...
           </div>
         ) : flights.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant">
             <Plane className="w-10 h-10 mb-3" />
             <p className="text-sm">No flights found</p>
-            <button onClick={openCreate} className="mt-2 text-sm text-brand-600 hover:text-brand-700 font-medium">
+            <button onClick={openCreate} className="mt-2 text-sm text-primary hover:text-primary font-medium">
               Add your first flight
             </button>
           </div>
@@ -209,7 +214,7 @@ export default function AdminFlightsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
+                  <tr className="text-left text-on-surface-variant bg-surface-container-low">
                     <th className="p-4 font-medium">Airline</th>
                     <th className="p-4 font-medium">Flight No.</th>
                     <th className="p-4 font-medium">Route</th>
@@ -223,11 +228,11 @@ export default function AdminFlightsPage() {
                   {flights.map((f) => (
                     <tr
                       key={f.id}
-                      className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30"
+                      className="border-b border-outline-variant hover:bg-surface-container-high"
                     >
                       <td className="p-4 font-medium">{f.airline}</td>
                       <td className="p-4 font-mono text-xs">{f.flightNumber}</td>
-                      <td className="p-4 text-gray-500">
+                      <td className="p-4 text-on-surface-variant">
                         <span className="inline-flex items-center gap-1">
                           {f.originCode}
                           <ArrowRight className="w-3 h-3" />
@@ -245,13 +250,13 @@ export default function AdminFlightsPage() {
                         <div className="flex gap-1">
                           <button
                             onClick={() => openEdit(f)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"
+                            className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => openDelete(f)}
-                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
+                            className="p-1.5 rounded-lg hover:bg-danger-soft text-on-surface-variant hover:text-error"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -264,22 +269,22 @@ export default function AdminFlightsPage() {
             </div>
 
             {meta.totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-800">
-                <span className="text-sm text-gray-500">
+              <div className="flex items-center justify-between px-4 py-3 border-t border-outline-variant">
+                <span className="text-sm text-on-surface-variant">
                   Page {meta.page} of {meta.totalPages} ({meta.total} total)
                 </span>
                 <div className="flex gap-2">
                   <button
                     onClick={() => fetchFlights(meta.page - 1)}
                     disabled={meta.page <= 1}
-                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    className="px-3 py-1.5 text-sm rounded-lg border border-outline-variant disabled:opacity-50 hover:bg-surface-container-high text-on-surface"
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => fetchFlights(meta.page + 1)}
                     disabled={meta.page >= meta.totalPages}
-                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    className="px-3 py-1.5 text-sm rounded-lg border border-outline-variant disabled:opacity-50 hover:bg-surface-container-high text-on-surface"
                   >
                     Next
                   </button>
@@ -403,27 +408,39 @@ export default function AdminFlightsPage() {
           </FormField>
         </div>
 
+        <FormField label="Cover Image">
+          <ImageUploader
+            value={formData.coverImageUrl}
+            onChange={(url) => updateForm('coverImageUrl', url ?? '')}
+            onUpload={async (file) => {
+              const res = await uploadMedia(file, { folder: 'flights' });
+              return { url: (res as any).url };
+            }}
+            aspectRatio={1.7777}
+          />
+        </FormField>
+
         <label className="flex items-center gap-3 mb-4 cursor-pointer">
           <input
             type="checkbox"
             checked={formData.isActive}
             onChange={(e) => updateForm('isActive', e.target.checked)}
-            className="w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
+            className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary/50"
           />
           <span className="text-sm font-medium">Active</span>
         </label>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+        <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant">
           <button
             onClick={() => setModalOpen(false)}
-            className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+            className="px-4 py-2 text-sm rounded-lg border border-outline-variant hover:bg-surface-container-high text-on-surface"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={requiredFields || saving}
-            className="px-4 py-2 text-sm rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50"
+            className="px-4 py-2 text-sm rounded-lg bg-primary text-on-primary hover:bg-primary-fixed disabled:opacity-50"
           >
             {saving ? 'Saving...' : editingId ? 'Update Flight' : 'Create Flight'}
           </button>

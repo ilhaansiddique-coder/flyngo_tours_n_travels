@@ -108,6 +108,23 @@ button:disabled {
   --color-error: #d92626;
   --color-error-container: #fde0e0;
 
+  /* Success mirrors the error pair. Emerald-600 rather than the lighter
+     emerald-300/400 tints, which wash out on the cream surface. */
+  --color-success: #047857;
+  --color-success-container: #d1fae5;
+  --color-on-success: #ffffff;
+  --color-on-success-container: #022c22;
+
+  /* Warning — used for "configure R2 first" notes, amber stat cards,
+     and any non-error informational banner. */
+  --color-warning: #b45309;
+  --color-warning-container: #fef3c7;
+  --color-on-warning-container: #78350f;
+
+  /* Danger-soft — the soft red used for delete-button hover backgrounds.
+     Lighter than error-container so it reads as a hover, not an alert. */
+  --color-danger-soft: #fee2e2;
+
   --color-inverse-surface: #020617;
   --color-inverse-on-surface: #d3e4fe;
   --color-inverse-primary: #1881ff;
@@ -235,6 +252,20 @@ button:disabled {
   --color-error: #ff6b6b;
   --color-error-container: rgba(255, 107, 107, 0.12);
 
+  /* Emerald-300 on navy — the tone the auth success state already used. */
+  --color-success: #6ee7b7;
+  --color-success-container: rgba(110, 231, 183, 0.12);
+  --color-on-success: #022c22;
+  --color-on-success-container: #d1fae5;
+
+  /* Warning pair tuned for navy: amber-300 on a low-opacity amber wash. */
+  --color-warning: #fbbf24;
+  --color-warning-container: rgba(251, 191, 36, 0.12);
+  --color-on-warning-container: #fde68a;
+
+  /* Danger-soft — used for delete-button hover backgrounds. */
+  --color-danger-soft: rgba(255, 107, 107, 0.16);
+
   --color-inverse-surface: #d3e4fe;
   --color-inverse-on-surface: #020617;
   --color-inverse-primary: #0c6fdf;
@@ -306,6 +337,14 @@ button:disabled {
   --color-secondary-fixed: var(--color-secondary-fixed);
   --color-secondary: var(--color-secondary);
 
+  /* Accent (cyan) is the canonical name; `secondary` above is the legacy
+     mirror kept for older markup. Exported so `text-accent` / `bg-accent`
+     resolve per-theme instead of forcing a hardcoded #00eefc. */
+  --color-accent: var(--color-accent);
+  --color-accent-container: var(--color-accent-container);
+  --color-accent-fixed: var(--color-accent-fixed);
+  --color-accent-fixed-dim: var(--color-accent-fixed-dim);
+
   --color-on-surface: var(--color-on-surface);
   --color-on-surface-variant: var(--color-on-surface-variant);
   --color-on-background: var(--color-on-background);
@@ -329,6 +368,17 @@ button:disabled {
 
   --color-error: var(--color-error);
   --color-error-container: var(--color-error-container);
+
+  --color-success: var(--color-success);
+  --color-success-container: var(--color-success-container);
+  --color-on-success: var(--color-on-success);
+  --color-on-success-container: var(--color-on-success-container);
+
+  --color-warning: var(--color-warning);
+  --color-warning-container: var(--color-warning-container);
+  --color-on-warning-container: var(--color-on-warning-container);
+
+  --color-danger-soft: var(--color-danger-soft);
 
   --color-inverse-surface: var(--color-inverse-surface);
   --color-inverse-on-surface: var(--color-inverse-on-surface);
@@ -733,6 +783,11 @@ body {
 .bg-accent-firm       { background-color: color-mix(in oklab, var(--color-accent) 15%, transparent); }
 .bg-on-surface-soft   { background-color: color-mix(in oklab, var(--color-on-background) 6%, transparent); }
 .bg-on-surface-firm   { background-color: color-mix(in oklab, var(--color-on-background) 12%, transparent); }
+
+/* Danger-soft — used by destructive icon-button hovers so they read as a
+   warning without the full error tone. Adapts to either theme. */
+.hover\:bg-danger-soft:hover { background-color: var(--color-danger-soft); }
+.bg-danger-soft              { background-color: var(--color-danger-soft); }
 
 /* Composite "panel" — used for the dark glass cards and the light
    elevated cards. The card uses the surface-container for the

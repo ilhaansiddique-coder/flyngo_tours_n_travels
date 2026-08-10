@@ -3,11 +3,14 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ConfigService } from './config/config.service';
+import { existsSync, mkdirSync } from 'fs';
+import { resolve } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
   });
 
@@ -16,6 +19,14 @@ async function bootstrap() {
 
   app.use(helmet());
   app.use(cookieParser());
+
+  // Serve uploaded media from the local filesystem at /api/v1/uploads so the
+  // Next.js rewrite /api/v1/* -> BACKEND_URL/api/v1/* proxies them seamlessly.
+  const uploadsDir = resolve(process.cwd(), 'uploads');
+  if (!existsSync(uploadsDir)) {
+    mkdirSync(uploadsDir, { recursive: true });
+  }
+  app.useStaticAssets(uploadsDir, { prefix: '/api/v1/uploads/' });
 
   const corsOrigins = [
     configService.get('FRONTEND_URL') || 'http://localhost:3000',

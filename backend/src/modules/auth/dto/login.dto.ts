@@ -7,11 +7,15 @@ export class LoginDto {
   @IsEmail({}, { message: 'Email must be a valid address' })
   email?: string;
 
-  @ApiProperty({ description: 'Phone number in international format', example: '+8801712345678' })
+  // Mirrors `email`: the frontend sends both keys with the unused one blank.
+  // Phone is only validated when no email was supplied, so it stays required
+  // for phone logins while no longer rejecting every email login.
+  @ApiProperty({ description: 'Phone number (required if email not provided)', example: '+8801712345678', required: false })
+  @ValidateIf((o) => !o.email)
   @IsString()
   @MinLength(7)
   @MaxLength(20)
-  phone: string;
+  phone?: string;
 
   @ApiProperty({ example: 'Password123!' })
   @IsString()

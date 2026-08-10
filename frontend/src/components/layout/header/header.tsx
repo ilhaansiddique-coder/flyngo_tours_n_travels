@@ -21,6 +21,7 @@ const navItems = [
   { key: 'nav_hotels', href: '/hotels' },
   { key: 'nav_tickets', href: '/flights' },
   { key: 'nav_transport', href: '/transport' },
+  { key: 'nav_blog', href: '/blog' },
 ] as const;
 
 export function Header() {

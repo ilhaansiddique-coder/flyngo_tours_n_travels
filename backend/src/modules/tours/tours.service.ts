@@ -69,6 +69,7 @@ export class ToursService {
         endLocation: data.endLocation,
         isActive: data.isActive ?? true,
         isFeatured: data.isFeatured ?? false,
+        coverImageUrl: data.coverImageUrl,
       },
       include: { destination: true, images: true },
     });
@@ -105,6 +106,7 @@ export class ToursService {
         endLocation: data.endLocation,
         isActive: data.isActive,
         isFeatured: data.isFeatured,
+        coverImageUrl: data.coverImageUrl,
       },
       include: { destination: true, images: true },
     });

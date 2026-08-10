@@ -202,7 +202,7 @@ export default function CouponsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
           <Input
             placeholder="Search coupons..."
             className="pl-9 w-64"
@@ -220,14 +220,14 @@ export default function CouponsPage() {
 
       {loading && (
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin h-8 w-8 border-4 border-brand-600 border-t-transparent rounded-full" />
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
         </div>
       )}
 
       {error && !loading && (
         <Card hover={false}>
           <div className="text-center py-12">
-            <p className="text-red-500 mb-4">{error}</p>
+            <p className="text-error mb-4">{error}</p>
             <Button variant="outline" onClick={() => fetchCoupons()}>
               Retry
             </Button>
@@ -241,7 +241,7 @@ export default function CouponsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
+                  <tr className="text-left text-on-surface-variant bg-surface-container-low">
                     <th className="p-4 font-medium">Code</th>
                     <th className="p-4 font-medium">Type</th>
                     <th className="p-4 font-medium">Value</th>
@@ -256,8 +256,8 @@ export default function CouponsPage() {
                 <tbody>
                   {coupons.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="p-12 text-center text-gray-500">
-                        <Percent className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <td colSpan={9} className="p-12 text-center text-on-surface-variant">
+                        <Percent className="w-8 h-8 mx-auto mb-2 text-on-surface-variant/40" />
                         <p>No coupons found</p>
                       </td>
                     </tr>
@@ -265,7 +265,7 @@ export default function CouponsPage() {
                     coupons.map((c) => (
                       <tr
                         key={c.id}
-                        className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30"
+                        className="border-b border-outline-variant hover:bg-surface-container-high"
                       >
                         <td className="p-4 font-mono font-bold text-brand-600">{c.code}</td>
                         <td className="p-4">
@@ -282,10 +282,10 @@ export default function CouponsPage() {
                         <td className="p-4">
                           {c.usedCount ?? 0}/{c.maxUses && c.maxUses > 0 ? c.maxUses : '\u221E'}
                         </td>
-                        <td className="p-4 text-xs text-gray-500">
+                        <td className="p-4 text-xs text-on-surface-variant">
                           {c.startDate ? c.startDate.slice(0, 10) : '\u2014'}
                         </td>
-                        <td className="p-4 text-xs text-gray-500">
+                        <td className="p-4 text-xs text-on-surface-variant">
                           {c.endDate ? c.endDate.slice(0, 10) : '\u2014'}
                         </td>
                         <td className="p-4">
@@ -296,14 +296,14 @@ export default function CouponsPage() {
                         <td className="p-4">
                           <div className="flex gap-1">
                             <button
-                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"
+                              className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
                               title="Edit"
                               onClick={() => openEditModal(c)}
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
                             <button
-                              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
+                              className="p-1.5 rounded-lg hover:bg-danger-soft text-on-surface-variant hover:text-error"
                               title="Delete"
                               onClick={() => setConfirmDelete({ open: true, id: c.id })}
                             >
@@ -320,7 +320,7 @@ export default function CouponsPage() {
           </Card>
 
           {meta.totalPages > 1 && (
-            <div className="flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center justify-between text-sm text-on-surface-variant">
               <span>
                 Showing {coupons.length} of {meta.total} coupons
               </span>
@@ -441,7 +441,7 @@ export default function CouponsPage() {
                     type="checkbox"
                     checked={form.applicableTo.includes(opt.value)}
                     onChange={() => toggleApplicable(opt.value)}
-                    className="rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
+                    className="rounded border-outline-variant text-primary focus:ring-primary/50"
                   />
                   {opt.label}
                 </label>
@@ -461,7 +461,7 @@ export default function CouponsPage() {
             </label>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant">
             <Button variant="outline" type="button" onClick={() => setModalOpen(false)}>
               Cancel
             </Button>

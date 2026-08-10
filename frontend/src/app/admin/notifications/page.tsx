@@ -156,7 +156,7 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
           <Input
             placeholder="Search notifications..."
             className="pl-9 w-64"
@@ -172,14 +172,14 @@ export default function NotificationsPage() {
 
       {loading && (
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin h-8 w-8 border-4 border-brand-600 border-t-transparent rounded-full" />
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
         </div>
       )}
 
       {error && !loading && (
         <Card hover={false}>
           <div className="text-center py-12">
-            <p className="text-red-500 mb-4">{error}</p>
+            <p className="text-error mb-4">{error}</p>
             <Button variant="outline" onClick={() => fetchNotifications(page)}>Retry</Button>
           </div>
         </Card>
@@ -191,7 +191,7 @@ export default function NotificationsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
+                  <tr className="text-left text-on-surface-variant bg-surface-container-low">
                     <th className="p-4 font-medium">Type</th>
                     <th className="p-4 font-medium">Title</th>
                     <th className="p-4 font-medium">Body</th>
@@ -204,35 +204,35 @@ export default function NotificationsPage() {
                 <tbody>
                   {notifications.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-12 text-center text-gray-500">
-                        <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <td colSpan={7} className="p-12 text-center text-on-surface-variant">
+                        <Bell className="w-8 h-8 mx-auto mb-2 text-on-surface-variant/40" />
                         <p>No notifications yet</p>
                       </td>
                     </tr>
                   ) : (
                     notifications.map((n) => (
-                      <tr key={n.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                      <tr key={n.id} className="border-b border-outline-variant hover:bg-surface-container-high">
                         <td className="p-4">
                           <Badge variant="info">{n.type}</Badge>
                         </td>
                         <td className="p-4 font-medium">{n.title}</td>
                         <td className="p-4 max-w-xs">
-                          <p className="truncate text-gray-500">{n.body}</p>
+                          <p className="truncate text-on-surface-variant">{n.body}</p>
                         </td>
                         <td className="p-4 text-xs">
-                          {n.user ? `${n.user.fullName}` : <span className="text-gray-400">Broadcast</span>}
+                          {n.user ? `${n.user.fullName}` : <span className="text-on-surface-variant/40">Broadcast</span>}
                         </td>
                         <td className="p-4">
                           <Badge variant={n.readAt ? 'default' : 'warning'}>
                             {n.readAt ? 'Read' : 'Unread'}
                           </Badge>
                         </td>
-                        <td className="p-4 text-xs text-gray-500">
+                        <td className="p-4 text-xs text-on-surface-variant">
                           {n.sentAt ? formatDate(n.sentAt) : formatDate(n.createdAt)}
                         </td>
                         <td className="p-4">
                           <button
-                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
+                            className="p-1.5 rounded-lg hover:bg-danger-soft text-on-surface-variant hover:text-error"
                             title="Delete"
                             onClick={() => setConfirmDelete({ open: true, id: n.id })}
                           >
@@ -248,7 +248,7 @@ export default function NotificationsPage() {
           </Card>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center justify-between text-sm text-on-surface-variant">
               <span>Page {page} of {totalPages}</span>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => { setPage(page - 1); fetchNotifications(page - 1); }}>Previous</Button>
@@ -300,7 +300,7 @@ export default function NotificationsPage() {
                   name="audience"
                   checked={form.audience === 'all'}
                   onChange={() => setForm({ ...form, audience: 'all', userIds: [] })}
-                  className="text-brand-600 focus:ring-brand-500"
+                  className="text-primary focus:ring-primary/50"
                 />
                 All Users (broadcast)
               </label>
@@ -310,7 +310,7 @@ export default function NotificationsPage() {
                   name="audience"
                   checked={form.audience === 'specific'}
                   onChange={() => setForm({ ...form, audience: 'specific' })}
-                  className="text-brand-600 focus:ring-brand-500"
+                  className="text-primary focus:ring-primary/50"
                 />
                 Specific Users
               </label>
@@ -319,17 +319,17 @@ export default function NotificationsPage() {
 
           {form.audience === 'specific' && (
             <FormField label={`Select Recipients (${form.userIds.length} selected)`}>
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-2 max-h-48 overflow-y-auto space-y-1">
+                <div className="border border-outline-variant rounded-lg p-2 max-h-48 overflow-y-auto space-y-1">
                 {userOptions.length === 0 ? (
-                  <p className="text-xs text-gray-400 p-2">Loading users...</p>
+                  <p className="text-xs text-on-surface-variant p-2">Loading users...</p>
                 ) : (
                   userOptions.map((u) => (
-                    <label key={u.value} className="flex items-center gap-2 text-sm cursor-pointer p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded">
+                    <label key={u.value} className="flex items-center gap-2 text-sm cursor-pointer p-1 hover:bg-surface-container-high rounded">
                       <input
                         type="checkbox"
                         checked={form.userIds.includes(u.value)}
                         onChange={() => toggleUserId(u.value)}
-                        className="rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
+                        className="rounded border-outline-variant text-primary focus:ring-primary/50"
                       />
                       {u.label}
                     </label>
@@ -339,7 +339,7 @@ export default function NotificationsPage() {
             </FormField>
           )}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant">
             <Button variant="outline" type="button" onClick={() => setModalOpen(false)}>Cancel</Button>
             <Button type="submit" loading={submitting} className="gap-2">
               <Send className="w-4 h-4" /> Send

@@ -166,6 +166,7 @@ model Destination {
   continent   String?
   description String?  @db.Text
   imageUrl    String?  @map("image_url")
+  coverImageUrl String? @map("cover_image_url")
   latitude    Float?
   longitude   Float?
   isFeatured  Boolean  @default(false) @map("is_featured")
@@ -212,6 +213,8 @@ model Tour {
 
   isActive       Boolean @default(true) @map("is_active")
   isFeatured     Boolean @default(false) @map("is_featured")
+
+  coverImageUrl  String?  @map("cover_image_url")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -262,6 +265,8 @@ model Hotel {
   checkInTime   String?    @map("check_in_time") @default("14:00")
   checkOutTime  String?    @map("check_out_time") @default("12:00")
 
+  coverImageUrl String?   @map("cover_image_url")
+
   isActive   Boolean @default(true) @map("is_active")
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -308,6 +313,8 @@ model Flight {
   originCity      String?  @map("origin_city")
   destinationCode String   @map("destination_code")
   destinationCity String?  @map("destination_city")
+
+  coverImageUrl String?  @map("cover_image_url")
 
   departureTime DateTime @map("departure_time")
   arrivalTime   DateTime @map("arrival_time")
@@ -738,6 +745,8 @@ model Media {
   height   Int?
   size     Int?    // bytes
   mimeType String? @map("mime_type")
+  filename String? @map("filename")
+  folder   String? @map("folder")
 
   tourId  String? @map("tour_id")
   tour    Tour?   @relation(fields: [tourId], references: [id], onDelete: Cascade)
@@ -746,7 +755,93 @@ model Media {
 
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([tenantId])
+  @@index([tourId])
+  @@index([hotelId])
   @@map("media")
+}
+
+// =============================================================================
+// HOMEPAGE HERO SECTION (one per tenant)
+// =============================================================================
+
+model HeroSection {
+  id       String @id @default(uuid())
+  tenantId String @unique @map("tenant_id")
+
+  badgeTextEn        String? @map("badge_text_en")
+  badgeTextBn        String? @map("badge_text_bn")
+  titleLineAEn       String? @map("title_line_a_en")
+  titleLineABn       String? @map("title_line_a_bn")
+  titleLineBEn       String? @map("title_line_b_en")
+  titleLineBBn       String? @map("title_line_b_bn")
+  titleLineCEn       String? @map("title_line_c_en")
+  titleLineCBn       String? @map("title_line_c_bn")
+  subtitleEn         String? @db.Text @map("subtitle_en")
+  subtitleBn         String? @db.Text @map("subtitle_bn")
+  ctaExploreEn       String? @map("cta_explore_en")
+  ctaExploreBn       String? @map("cta_explore_bn")
+  ctaVisaEn          String? @map("cta_visa_en")
+  ctaVisaBn          String? @map("cta_visa_bn")
+  ctaDestinationsEn  String? @map("cta_destinations_en")
+  ctaDestinationsBn  String? @map("cta_destinations_bn")
+  stats              Json    @default("[]")
+  quickPlaces        String[] @default([]) @map("quick_places")
+  isActive           Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("hero_sections")
+}
+
+// =============================================================================
+// GLOBE CITIES + ROUTES (powers the home hero globe animation)
+// =============================================================================
+
+model GlobeCity {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+
+  nameEn String  @map("name_en")
+  nameBn String? @map("name_bn")
+  lat    Float
+  lon    Float
+
+  isActive  Boolean @default(true) @map("is_active")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  routesFrom GlobeRoute[] @relation("GlobeRouteFrom")
+  routesTo   GlobeRoute[] @relation("GlobeRouteTo")
+
+  @@index([tenantId])
+  @@map("globe_cities")
+}
+
+model GlobeRoute {
+  id         String @id @default(uuid())
+  tenantId   String @map("tenant_id")
+  fromCityId String @map("from_city_id")
+  toCityId   String @map("to_city_id")
+
+  fromCity GlobeCity @relation("GlobeRouteFrom", fields: [fromCityId], references: [id], onDelete: Cascade)
+  toCity   GlobeCity @relation("GlobeRouteTo",   fields: [toCityId],   references: [id], onDelete: Cascade)
+
+  isActive  Boolean @default(true) @map("is_active")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([tenantId])
+  @@index([fromCityId])
+  @@index([toCityId])
+  @@map("globe_routes")
 }
 
 // =============================================================================
@@ -761,6 +856,7 @@ model VisaCountry {
   slug        String
   flagUrl     String?  @map("flag_url")
   imageUrl    String?  @map("image_url")
+  coverImageUrl String? @map("cover_image_url")
   region      String?  // asia, europe, americas, oceania, africa, middle_east
   visaTypes   String[] @default([]) @map("visa_types") // tourist, business, student, work
   processingTime String? @map("processing_time")
@@ -799,6 +895,7 @@ model HajjPackage {
   inclusions   String[] @default([])
   highlights   String[] @default([])
   imageUrl     String?  @map("image_url")
+  coverImageUrl String? @map("cover_image_url")
   isActive     Boolean  @default(true) @map("is_active")
   isFeatured   Boolean  @default(false) @map("is_featured")
   order        Int      @default(0)
@@ -830,6 +927,7 @@ model UmrahPackage {
   inclusions   String[] @default([])
   highlights   String[] @default([])
   imageUrl     String?  @map("image_url")
+  coverImageUrl String? @map("cover_image_url")
   isActive     Boolean  @default(true) @map("is_active")
   isFeatured   Boolean  @default(false) @map("is_featured")
   order        Int      @default(0)

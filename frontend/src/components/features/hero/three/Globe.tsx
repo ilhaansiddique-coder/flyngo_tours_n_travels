@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -10,10 +10,21 @@ import {
   arcCurve,
   landPointCloud,
   latLonToVector3,
+  type City,
 } from "@/lib/geo";
 import Plane from "./Plane";
 
 const RADIUS = 1;
+
+export type GlobeRoute = {
+  id: string;
+  fromCityId: string;
+  toCityId: string;
+  fromCity?: City & { id: string };
+  toCity?: City & { id: string };
+  isActive: boolean;
+  sortOrder: number;
+};
 
 /* Single palette used for both light and dark themes — the dark
    globe reads well on both navy and cream hero backgrounds. */
@@ -298,13 +309,42 @@ function Marker({ position, delay, color }: { position: THREE.Vector3; delay: nu
 /* ---------------------------------------------------------------- scene -- */
 
 
-function GlobeScene({ withPlanes, palette }: { withPlanes: boolean; palette: Palette }) {
+function GlobeScene({
+  withPlanes,
+  palette,
+  cities,
+  routes,
+}: {
+  withPlanes: boolean;
+  palette: Palette;
+  cities: (City & { id?: string })[];
+  routes: { id?: string; fromCityId: string; toCityId: string }[];
+}) {
   const group = useRef<THREE.Group>(null);
 
   const cityPoints = useMemo(
-    () => CITIES.map((c) => latLonToVector3(c.lat, c.lon, RADIUS * 1.005)),
-    [],
+    () => cities.map((c) => latLonToVector3(c.lat, c.lon, RADIUS * 1.005)),
+    [cities],
   );
+
+  const cityIndex = useMemo(() => {
+    const map = new Map<string, number>();
+    cities.forEach((c, i) => {
+      if (c.id) map.set(c.id, i);
+    });
+    return map;
+  }, [cities]);
+
+  const routePairs = useMemo(() => {
+    return routes
+      .map((r) => {
+        const a = cityIndex.get(r.fromCityId);
+        const b = cityIndex.get(r.toCityId);
+        if (a == null || b == null) return null;
+        return { a, b, id: r.id ?? `${a}-${b}` };
+      })
+      .filter((r): r is { a: number; b: number; id: string } => r !== null);
+  }, [routes, cityIndex]);
 
   useFrame((_, delta) => {
     if (group.current) group.current.rotation.y += delta * 0.06;
@@ -327,37 +367,60 @@ function GlobeScene({ withPlanes, palette }: { withPlanes: boolean; palette: Pal
       <LandDots palette={palette} />
       <Atmosphere palette={palette} />
 
-      {ROUTES.map(([a, b], i) => (
+      {routePairs.map((r, i) => (
         <Arc
-          key={`${a}-${b}`}
-          from={cityPoints[a]}
-          to={cityPoints[b]}
-          offset={(i / ROUTES.length) * 0.9}
+          key={r.id}
+          from={cityPoints[r.a]}
+          to={cityPoints[r.b]}
+          offset={(i / Math.max(routePairs.length, 1)) * 0.9}
           color={i % 3 === 0 ? palette.arcPrimary : palette.arcSecondary}
           blending={palette.arcBlending}
         />
       ))}
 
       {withPlanes &&
-        ROUTES.map(([a, b], i) => (
+        routePairs.map((r, i) => (
           <Plane
-            key={`plane-${a}-${b}`}
-            from={cityPoints[a]}
-            to={cityPoints[b]}
-            offset={(i / ROUTES.length) * 1.4}
+            key={`plane-${r.id}`}
+            from={cityPoints[r.a]}
+            to={cityPoints[r.b]}
+            offset={(i / Math.max(routePairs.length, 1)) * 1.4}
             color={i % 3 === 0 ? palette.planePrimary : palette.planeSecondary}
           />
         ))}
 
       {cityPoints.map((p, i) => (
-        <Marker key={i} position={p} delay={i / cityPoints.length} color={palette.marker} />
+        <Marker key={i} position={p} delay={i / Math.max(cityPoints.length, 1)} color={palette.marker} />
       ))}
     </group>
   );
 }
 
-export default function Globe({ withPlanes = true }: { withPlanes?: boolean }) {
+export default function Globe({
+  withPlanes = true,
+  cities: citiesProp,
+  routes: routesProp,
+}: {
+  withPlanes?: boolean;
+  cities?: (City & { id?: string })[];
+  routes?: GlobeRoute[];
+}) {
   const palette: Palette = PALETTE;
+
+  const cities = citiesProp && citiesProp.length > 0 ? citiesProp : (CITIES as (City & { id?: string })[]);
+  const routesFromApi = routesProp && routesProp.length > 0 ? routesProp : null;
+  const staticRoutes = ROUTES.map(([a, b], i) => ({
+    id: `static-${i}`,
+    fromCityId: String(a),
+    toCityId: String(b),
+    isActive: true,
+    sortOrder: i,
+  }));
+  const routes = routesFromApi ?? staticRoutes;
+
+  // Memoize to avoid forcing R3F reconciliation on every render of the parent
+  const memoCities = useMemo(() => cities, [cities]);
+  const memoRoutes = useMemo(() => routes, [routes]);
 
   return (
     <Canvas
@@ -366,7 +429,12 @@ export default function Globe({ withPlanes = true }: { withPlanes?: boolean }) {
       gl={{ antialias: true, alpha: true }}
     >
       <ambientLight intensity={0.6} />
-      <GlobeScene withPlanes={withPlanes} palette={palette} />
+      <GlobeScene
+        withPlanes={withPlanes}
+        palette={palette}
+        cities={memoCities}
+        routes={memoRoutes as { id?: string; fromCityId: string; toCityId: string }[]}
+      />
       <OrbitControls
         enablePan={false}
         enableZoom={false}

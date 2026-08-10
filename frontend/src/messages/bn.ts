@@ -6,6 +6,7 @@ export const bn: Messages = {
   nav_hotels: 'হোটেল',
   nav_tickets: 'টিকিট',
   nav_transport: 'ট্রান্সপোর্ট',
+  nav_blog: 'ব্লগ',
   nav_visa: 'ভিসা',
   nav_hajj: 'হজ্জ ও ওমরাহ',
   nav_signin: 'সাইন ইন',

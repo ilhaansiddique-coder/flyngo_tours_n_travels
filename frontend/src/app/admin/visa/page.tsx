@@ -147,7 +147,7 @@ export default function AdminVisaPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
           <Input
             placeholder="Search visa services..."
             className="pl-9 w-64"
@@ -161,7 +161,7 @@ export default function AdminVisaPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm">
+        <div className="bg-error-container border border-error/30 text-on-error-container px-4 py-3 rounded-xl text-sm">
           {error}
           <button className="ml-2 underline" onClick={loadData}>Retry</button>
         </div>
@@ -169,7 +169,7 @@ export default function AdminVisaPage() {
 
       {loading ? (
         <Card hover={false} padding="md">
-          <div className="flex items-center justify-center py-12 text-gray-400">
+          <div className="flex items-center justify-center py-12 text-on-surface-variant">
             <svg className="animate-spin h-6 w-6 mr-3" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -179,7 +179,7 @@ export default function AdminVisaPage() {
         </Card>
       ) : filtered.length === 0 ? (
         <Card hover={false} padding="md">
-          <div className="text-center py-12 text-gray-400">
+          <div className="text-center py-12 text-on-surface-variant">
             <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p className="text-lg font-medium">No visa services found</p>
             <p className="text-sm mt-1">{search ? 'Try a different search term.' : 'Get started by adding a visa service.'}</p>
@@ -190,7 +190,7 @@ export default function AdminVisaPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
+                <tr className="text-left text-on-surface-variant bg-surface-container-low">
                   <th className="p-4 font-medium">Title</th>
                   <th className="p-4 font-medium">Country</th>
                   <th className="p-4 font-medium">Price</th>
@@ -201,9 +201,9 @@ export default function AdminVisaPage() {
               </thead>
               <tbody>
                 {filtered.map((v) => (
-                  <tr key={v.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                  <tr key={v.id} className="border-b border-outline-variant hover:bg-surface-container-high">
                     <td className="p-4 font-medium">{v.title}</td>
-                    <td className="p-4 text-gray-500">
+                    <td className="p-4 text-on-surface-variant">
                       {v.country?.name || v.destination?.name || '—'}
                     </td>
                     <td className="p-4 font-medium">{formatCurrency(v.price)}</td>
@@ -216,14 +216,14 @@ export default function AdminVisaPage() {
                     <td className="p-4">
                       <div className="flex gap-1">
                         <button
-                          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"
+                          className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
                           title="Edit"
                           onClick={() => openEditModal(v)}
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
-                          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
+                          className="p-1.5 rounded-lg hover:bg-danger-soft text-on-surface-variant hover:text-error"
                           title="Delete"
                           onClick={() => setDeleteItem(v)}
                         >
@@ -271,7 +271,7 @@ export default function AdminVisaPage() {
             onChange={(v) => setForm((f) => ({ ...f, requirements: v }))}
             placeholder="e.g. Passport, Photo, Bank Statement"
           />
-          <p className="text-xs text-gray-400 mt-1">Comma-separated list of requirements</p>
+          <p className="text-xs text-on-surface-variant mt-1">Comma-separated list of requirements</p>
         </FormField>
         <div className="mb-4">
           <label className="flex items-center gap-2 cursor-pointer">
@@ -279,7 +279,7 @@ export default function AdminVisaPage() {
               type="checkbox"
               checked={form.isActive}
               onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
-              className="w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
+              className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary/50"
             />
             <span className="text-sm font-medium">Active</span>
           </label>

@@ -30,7 +30,7 @@ interface DashboardData {
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const STAT_STYLES: Array<{ tint: string; icon: string }> = [
-  { tint: 'bg-[#00eefc]/10 border-[#00eefc]/30', icon: 'text-[#00eefc]' },
+  { tint: 'bg-accent/10 border-accent/30', icon: 'text-accent' },
   { tint: 'bg-emerald-500/10 border-emerald-400/30', icon: 'text-emerald-300' },
   { tint: 'bg-amber-500/10 border-amber-400/30', icon: 'text-amber-300' },
   { tint: 'bg-blue-500/10 border-blue-400/30', icon: 'text-blue-300' },
@@ -60,8 +60,8 @@ export default function AdminDashboard() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="inline-block w-8 h-8 border-2 border-[#00eefc] border-t-transparent rounded-full animate-spin" />
-          <p className="mt-4 text-white/60">Loading dashboard...</p>
+          <div className="inline-block w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          <p className="mt-4 text-on-surface-variant">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -95,8 +95,8 @@ export default function AdminDashboard() {
             <Card key={stat.label} hover={false}>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-white/50 uppercase tracking-wider font-semibold">{stat.label}</p>
-                  <p className="text-2xl font-bold mt-2 text-white">{stat.value}</p>
+                  <p className="text-sm text-on-surface-variant uppercase tracking-wider font-semibold">{stat.label}</p>
+                  <p className="text-2xl font-bold mt-2 text-on-surface">{stat.value}</p>
                 </div>
                 <div className={cn('w-10 h-10 rounded-xl border flex items-center justify-center', style.tint, style.icon)}>
                   <stat.icon className="w-5 h-5" />
@@ -109,8 +109,8 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card hover={false}>
-          <h3 className="font-display text-lg font-bold mb-4 flex items-center gap-2 text-white">
-            <Activity className="w-5 h-5 text-[#00eefc]" /> Revenue Overview
+          <h3 className="font-display text-lg font-bold mb-4 flex items-center gap-2 text-on-surface">
+            <Activity className="w-5 h-5 text-accent" /> Revenue Overview
           </h3>
           <div className="h-64 flex items-end gap-2">
             {MONTH_LABELS.map((_, i) => {
@@ -120,14 +120,14 @@ export default function AdminDashboard() {
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
                   <div
-                    className="w-full bg-gradient-to-t from-blue-600/40 to-[#00eefc] rounded-t-lg transition-all hover:from-blue-500/60 hover:to-[#00eefc]"
+                    className="w-full bg-gradient-to-t from-blue-600/40 to-accent rounded-t-lg transition-all hover:from-blue-500/60 hover:to-accent"
                     style={{ height: `${height}%`, minHeight: '4px' }}
                   />
                 </div>
               );
             })}
           </div>
-          <div className="flex justify-between mt-2 text-xs text-white/40">
+          <div className="flex justify-between mt-2 text-xs text-on-surface-variant">
             {MONTH_LABELS.map((m) => (
               <span key={m}>{m}</span>
             ))}
@@ -135,15 +135,15 @@ export default function AdminDashboard() {
         </Card>
 
         <Card hover={false}>
-          <h3 className="font-display text-lg font-bold mb-4 flex items-center gap-2 text-white">
-            <Calendar className="w-5 h-5 text-[#00eefc]" /> Upcoming Bookings
+          <h3 className="font-display text-lg font-bold mb-4 flex items-center gap-2 text-on-surface">
+            <Calendar className="w-5 h-5 text-accent" /> Upcoming Bookings
           </h3>
           <div className="space-y-3 max-h-64 overflow-y-auto">
             {data?.recentBookings.filter(b => b.status === 'pending' || b.status === 'confirmed').slice(0, 5).map((b) => (
-              <div key={b.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+              <div key={b.id} className="flex items-center justify-between p-3 rounded-xl bg-surface-container-high border border-outline-variant">
                 <div>
-                  <p className="font-medium text-sm text-white">{b.bookingCode}</p>
-                  <p className="text-xs text-white/50">{b.user?.fullName}</p>
+                  <p className="font-medium text-sm text-on-surface">{b.bookingCode}</p>
+                  <p className="text-xs text-on-surface-variant">{b.user?.fullName}</p>
                 </div>
                 <Badge variant={b.status === 'confirmed' ? 'success' : 'warning'}>
                   {b.status}
@@ -151,7 +151,7 @@ export default function AdminDashboard() {
               </div>
             ))}
             {(!data?.recentBookings?.length) && (
-              <p className="text-white/40 text-sm text-center py-8">No upcoming bookings</p>
+              <p className="text-on-surface-variant text-sm text-center py-8">No upcoming bookings</p>
             )}
           </div>
         </Card>
@@ -159,12 +159,12 @@ export default function AdminDashboard() {
 
       {data?.bookingsByStatus && Object.keys(data.bookingsByStatus).length > 0 && (
         <Card hover={false}>
-          <h3 className="font-display text-lg font-bold mb-4 flex items-center gap-2 text-white">
-            <PieChart className="w-5 h-5 text-[#00eefc]" /> Booking Status Distribution
+          <h3 className="font-display text-lg font-bold mb-4 flex items-center gap-2 text-on-surface">
+            <PieChart className="w-5 h-5 text-accent" /> Booking Status Distribution
           </h3>
           <div className="flex flex-wrap gap-3">
             {Object.entries(data.bookingsByStatus).map(([status, count]) => (
-              <div key={status} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+              <div key={status} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-container-high border border-outline-variant">
                 <Badge variant={
                   status === 'confirmed' ? 'success' :
                   status === 'pending' ? 'warning' :
@@ -173,7 +173,7 @@ export default function AdminDashboard() {
                 }>
                   {status}
                 </Badge>
-                <span className="font-bold text-lg text-white">{count}</span>
+                <span className="font-bold text-lg text-on-surface">{count}</span>
               </div>
             ))}
           </div>
@@ -182,13 +182,13 @@ export default function AdminDashboard() {
 
       <Card hover={false}>
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-display text-lg font-bold text-white">Recent Bookings</h3>
-          <Link href="/admin/bookings" className="text-sm text-[#00eefc] hover:underline font-medium">View All</Link>
+          <h3 className="font-display text-lg font-bold text-on-surface">Recent Bookings</h3>
+          <Link href="/admin/bookings" className="text-sm text-accent hover:underline font-medium">View All</Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-white/40 border-b border-white/10">
+              <tr className="text-left text-on-surface-variant border-b border-outline-variant">
                 <th className="pb-3 font-medium">Booking Code</th>
                 <th className="pb-3 font-medium">Customer</th>
                 <th className="pb-3 font-medium">Type</th>
@@ -198,11 +198,11 @@ export default function AdminDashboard() {
             </thead>
             <tbody>
               {data?.recentBookings.map((b) => (
-                <tr key={b.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="py-3 font-mono text-xs text-[#00eefc]">{b.bookingCode}</td>
-                  <td className="py-3 font-medium text-white">{b.user?.fullName}</td>
-                  <td className="py-3 capitalize text-white/70">{b.bookingType}</td>
-                  <td className="py-3 font-medium text-white">{formatCurrency(b.totalAmount)}</td>
+                <tr key={b.id} className="border-b border-outline-variant hover:bg-surface-container-high transition-colors">
+                  <td className="py-3 font-mono text-xs text-accent">{b.bookingCode}</td>
+                  <td className="py-3 font-medium text-on-surface">{b.user?.fullName}</td>
+                  <td className="py-3 capitalize text-on-surface-variant">{b.bookingType}</td>
+                  <td className="py-3 font-medium text-on-surface">{formatCurrency(b.totalAmount)}</td>
                   <td className="py-3">
                     <Badge variant={b.status === 'confirmed' ? 'success' : b.status === 'pending' ? 'warning' : b.status === 'completed' ? 'info' : b.status === 'cancelled' ? 'danger' : 'default'}>
                       {b.status}
@@ -212,7 +212,7 @@ export default function AdminDashboard() {
               ))}
               {(!data?.recentBookings?.length) && (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-white/40">No bookings yet</td>
+                  <td colSpan={5} className="py-8 text-center text-on-surface-variant">No bookings yet</td>
                 </tr>
               )}
             </tbody>

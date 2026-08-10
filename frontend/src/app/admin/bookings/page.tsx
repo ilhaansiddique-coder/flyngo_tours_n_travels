@@ -247,8 +247,8 @@ export default function BookingsPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="inline-block w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-          <p className="mt-4 text-gray-500">Loading bookings...</p>
+          <div className="inline-block w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="mt-4 text-on-surface-variant">Loading bookings...</p>
         </div>
       </div>
     );
@@ -257,7 +257,7 @@ export default function BookingsPage() {
   if (error) {
     return (
       <div className="text-center py-20">
-        <p className="text-red-500">{error}</p>
+        <p className="text-error">{error}</p>
       </div>
     );
   }
@@ -272,8 +272,8 @@ export default function BookingsPage() {
               onClick={() => { setStatusFilter(f); setPage(1); }}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${
                 statusFilter === f
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  ? 'bg-primary text-on-primary'
+                  : 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'
               }`}
             >
               {f.replace('_', ' ')}
@@ -282,7 +282,7 @@ export default function BookingsPage() {
         </div>
         <div className="flex gap-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
             <Input
               placeholder="Search bookings..."
               className="pl-9 w-64"
@@ -300,7 +300,7 @@ export default function BookingsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
+              <tr className="text-left text-on-surface-variant bg-surface-container-low">
                 <th className="p-4 font-medium">Code</th>
                 <th className="p-4 font-medium">Customer</th>
                 <th className="p-4 font-medium">Type</th>
@@ -314,24 +314,24 @@ export default function BookingsPage() {
               {filtered.map((b) => (
                 <tr
                   key={b.id}
-                  className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30"
+                  className="border-b border-outline-variant hover:bg-surface-container-high"
                 >
                   <td className="p-4 font-mono text-xs">{b.bookingCode}</td>
                   <td className="p-4">
                     <div>
                       <p className="font-medium">{b.user?.fullName}</p>
-                      <p className="text-xs text-gray-500">{b.user?.email}</p>
+                      <p className="text-xs text-on-surface-variant">{b.user?.email}</p>
                     </div>
                   </td>
                   <td className="p-4 capitalize">{b.bookingType}</td>
                   <td className="p-4 font-medium">{formatCurrency(Number(b.totalAmount), b.currency || 'BDT')}</td>
                   <td className="p-4">{statusBadge(b.status)}</td>
-                  <td className="p-4 text-gray-500">{formatDate(b.startDate)}</td>
+                  <td className="p-4 text-on-surface-variant">{formatDate(b.startDate)}</td>
                   <td className="p-4">
                     <div className="flex gap-2 items-center">
                       <button
                         onClick={() => setDetailTarget(b)}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"
+                        className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
                         title="View details"
                       >
                         <Eye className="w-4 h-4" />
@@ -339,7 +339,7 @@ export default function BookingsPage() {
                       <select
                         value={b.status}
                         onChange={(e) => handleStatusChange(b.id, e.target.value)}
-                        className="text-xs border border-gray-300 dark:border-gray-700 rounded-lg px-2 py-1 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+                        className="text-xs border border-outline-variant rounded-lg px-2 py-1 bg-surface-container text-on-surface focus:ring-2 focus:ring-primary/50 focus:border-transparent outline-none"
                       >
                         {AVAILABLE_STATUSES.map((s) => (
                           <option key={s.value} value={s.value}>
@@ -350,7 +350,7 @@ export default function BookingsPage() {
                       <button
                         onClick={() => setCancelTarget(b)}
                         disabled={b.status === 'cancelled'}
-                        className="px-2 py-1 text-xs font-medium rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-2 py-1 text-xs font-medium rounded-lg text-error hover:bg-danger-soft disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Cancel
                       </button>
@@ -360,7 +360,7 @@ export default function BookingsPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-gray-400">
+                  <td colSpan={7} className="p-8 text-center text-on-surface-variant">
                     No bookings found
                   </td>
                 </tr>
@@ -370,25 +370,25 @@ export default function BookingsPage() {
         </div>
 
         {meta && (
-          <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-800">
-            <p className="text-sm text-gray-500">
+          <div className="flex items-center justify-between p-4 border-t border-outline-variant">
+            <p className="text-sm text-on-surface-variant">
               Showing {bookings.length} of {meta.total} bookings
             </p>
             <div className="flex gap-1">
               <button
                 onClick={() => setPage((p) => Math.max(p - 1, 1))}
                 disabled={meta.current_page <= 1}
-                className="px-3 py-1 rounded-lg text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 rounded-lg text-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Prev
               </button>
-              <span className="px-3 py-1 rounded-lg text-sm bg-brand-600 text-white">
+              <span className="px-3 py-1 rounded-lg text-sm bg-primary text-on-primary">
                 {meta.current_page}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(p + 1, meta.last_page))}
                 disabled={meta.current_page >= meta.last_page}
-                className="px-3 py-1 rounded-lg text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 rounded-lg text-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -411,51 +411,51 @@ export default function BookingsPage() {
           <div className="space-y-3 text-sm">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-gray-500 text-xs">Status</p>
+                <p className="text-on-surface-variant text-xs">Status</p>
                 <div className="mt-1">{statusBadge(detailTarget.status)}</div>
               </div>
               <div>
-                <p className="text-gray-500 text-xs">Type</p>
+                <p className="text-on-surface-variant text-xs">Type</p>
                 <p className="font-medium capitalize">{detailTarget.bookingType}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs">Customer</p>
+                <p className="text-on-surface-variant text-xs">Customer</p>
                 <p className="font-medium">{detailTarget.user?.fullName}</p>
-                <p className="text-gray-500 text-xs">{detailTarget.user?.email}</p>
+                <p className="text-on-surface-variant text-xs">{detailTarget.user?.email}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs">Guests</p>
+                <p className="text-on-surface-variant text-xs">Guests</p>
                 <p className="font-medium">{detailTarget.guests}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs">Start Date</p>
+                <p className="text-on-surface-variant text-xs">Start Date</p>
                 <p className="font-medium">{formatDate(detailTarget.startDate)}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs">End Date</p>
+                <p className="text-on-surface-variant text-xs">End Date</p>
                 <p className="font-medium">{detailTarget.endDate ? formatDate(detailTarget.endDate) : '—'}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs">Total Amount</p>
+                <p className="text-on-surface-variant text-xs">Total Amount</p>
                 <p className="font-bold text-lg">{formatCurrency(Number(detailTarget.totalAmount), detailTarget.currency || 'BDT')}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs">Paid Amount</p>
+                <p className="text-on-surface-variant text-xs">Paid Amount</p>
                 <p className="font-medium">{formatCurrency(Number(detailTarget.paidAmount || 0), detailTarget.currency || 'BDT')}</p>
               </div>
             </div>
             {detailTarget.notes && (
               <div>
-                <p className="text-gray-500 text-xs">Notes</p>
-                <p className="text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded-lg mt-1">{detailTarget.notes}</p>
+                <p className="text-on-surface-variant text-xs">Notes</p>
+                <p className="text-sm bg-surface-container p-2 rounded-lg mt-1">{detailTarget.notes}</p>
               </div>
             )}
             {detailTarget.payments && detailTarget.payments.length > 0 && (
               <div>
-                <p className="text-gray-500 text-xs mb-1">Payments</p>
+                <p className="text-on-surface-variant text-xs mb-1">Payments</p>
                 <div className="space-y-1">
                   {detailTarget.payments.map((p: any) => (
-                    <div key={p.id} className="flex justify-between text-xs bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                    <div key={p.id} className="flex justify-between text-xs bg-surface-container p-2 rounded">
                       <span className="font-mono">{p.transactionId}</span>
                       <span className="capitalize">{p.method}</span>
                       <span>{formatCurrency(Number(p.amount), p.currency)}</span>
@@ -538,7 +538,7 @@ export default function BookingsPage() {
               rows={2}
             />
           </FormField>
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant">
             <Button variant="outline" type="button" onClick={() => setCreateOpen(false)}>Cancel</Button>
             <Button type="submit" loading={createSubmitting}>Create Booking</Button>
           </div>

@@ -4,6 +4,7 @@ export const en = {
   nav_hotels: 'Hotels',
   nav_tickets: 'Tickets',
   nav_transport: 'Transport',
+  nav_blog: 'Blog',
   nav_visa: 'Visa',
   nav_hajj: 'Hajj & Umrah',
   nav_signin: 'Sign In',

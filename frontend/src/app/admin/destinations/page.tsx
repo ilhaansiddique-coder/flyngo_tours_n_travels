@@ -6,6 +6,7 @@ import { useApi } from '@/hooks/use-api';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Modal, FormField, FormInput, FormSelect, ConfirmDialog } from '@/components/admin/ui';
+import { ImageUploader } from '@/components/admin/image-uploader';
 
 interface DestinationItem {
   id: string;
@@ -15,6 +16,7 @@ interface DestinationItem {
   continent?: string;
   description?: string;
   imageUrl?: string;
+  coverImageUrl?: string;
   latitude?: number;
   longitude?: number;
   isFeatured?: boolean;
@@ -34,13 +36,14 @@ const emptyForm = {
   continent: '',
   description: '',
   imageUrl: '',
+  coverImageUrl: '',
   latitude: '',
   longitude: '',
   isFeatured: false,
 };
 
 export default function AdminDestinationsPage() {
-  const { getDestinations, createDestination, updateDestination, deleteDestination } = useApi();
+  const { getDestinations, createDestination, updateDestination, deleteDestination, uploadMedia } = useApi();
 
   const [destinations, setDestinations] = useState<DestinationItem[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({ page: 1, limit: 10, total: 0, totalPages: 0 });
@@ -89,6 +92,7 @@ export default function AdminDestinationsPage() {
       continent: d.continent ?? '',
       description: d.description ?? '',
       imageUrl: d.imageUrl ?? '',
+      coverImageUrl: d.coverImageUrl ?? '',
       latitude: d.latitude != null ? String(d.latitude) : '',
       longitude: d.longitude != null ? String(d.longitude) : '',
       isFeatured: d.isFeatured ?? false,
@@ -106,6 +110,7 @@ export default function AdminDestinationsPage() {
         continent: form.continent.trim() || undefined,
         description: form.description.trim() || undefined,
         imageUrl: form.imageUrl.trim() || undefined,
+        coverImageUrl: form.coverImageUrl.trim() || undefined,
         latitude: form.latitude ? parseFloat(form.latitude) : undefined,
         longitude: form.longitude ? parseFloat(form.longitude) : undefined,
         isFeatured: form.isFeatured,
@@ -144,8 +149,8 @@ export default function AdminDestinationsPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="inline-block w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-          <p className="mt-4 text-gray-500 dark:text-gray-400">Loading destinations...</p>
+          <div className="inline-block w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="mt-4 text-on-surface-variant">Loading destinations...</p>
         </div>
       </div>
     );
@@ -154,7 +159,7 @@ export default function AdminDestinationsPage() {
   if (error) {
     return (
       <div className="text-center py-20">
-        <p className="text-red-500">{error}</p>
+        <p className="text-error">{error}</p>
       </div>
     );
   }
@@ -177,7 +182,7 @@ export default function AdminDestinationsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
+              <tr className="text-left text-on-surface-variant bg-surface-container-low">
                 <th className="p-4 font-medium">Name</th>
                 <th className="p-4 font-medium">Country</th>
                 <th className="p-4 font-medium">Continent</th>
@@ -190,18 +195,18 @@ export default function AdminDestinationsPage() {
             <tbody>
               {destinations.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-gray-400">
+                  <td colSpan={7} className="p-8 text-center text-on-surface-variant/40">
                     No destinations found
                   </td>
                 </tr>
               ) : (
                 destinations.map((d) => (
-                  <tr key={d.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                  <tr key={d.id} className="border-b border-outline-variant hover:bg-surface-container-high">
                     <td className="p-4 font-medium flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-gray-400" />
+                      <MapPin className="w-4 h-4 text-on-surface-variant/40" />
                       {d.name}
                     </td>
-                    <td className="p-4 text-gray-500">{d.country}</td>
+                    <td className="p-4 text-on-surface-variant">{d.country}</td>
                     <td className="p-4">{d.continent ?? '—'}</td>
                     <td className="p-4">{d._count?.tours ?? 0}</td>
                     <td className="p-4">{d._count?.hotels ?? 0}</td>
@@ -213,20 +218,20 @@ export default function AdminDestinationsPage() {
                           </span>
                         </Badge>
                       ) : (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-on-surface-variant/40">—</span>
                       )}
                     </td>
                     <td className="p-4">
                       <div className="flex gap-1">
                         <button
-                          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"
+                          className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
                           title="Edit"
                           onClick={() => openEditModal(d)}
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
-                          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
+                          className="p-1.5 rounded-lg hover:bg-danger-soft text-on-surface-variant hover:text-error"
                           title="Delete"
                           onClick={() => setDeleteId(d.id)}
                         >
@@ -242,15 +247,15 @@ export default function AdminDestinationsPage() {
         </div>
 
         {meta.totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-800">
-            <span className="text-sm text-gray-500">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-outline-variant">
+            <span className="text-sm text-on-surface-variant">
               Page {meta.page} of {meta.totalPages} ({meta.total} total)
             </span>
             <div className="flex gap-1">
               <button
                 onClick={() => goToPage(meta.page - 1)}
                 disabled={meta.page <= 1}
-                className="px-3 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 text-sm rounded-lg border border-outline-variant hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Prev
               </button>
@@ -261,7 +266,7 @@ export default function AdminDestinationsPage() {
                   className={
                     p === meta.page
                       ? 'px-3 py-1 text-sm rounded-lg bg-brand-600 text-white'
-                      : 'px-3 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      : 'px-3 py-1 text-sm rounded-lg border border-outline-variant hover:bg-surface-container-high'
                   }
                 >
                   {p}
@@ -270,7 +275,7 @@ export default function AdminDestinationsPage() {
               <button
                 onClick={() => goToPage(meta.page + 1)}
                 disabled={meta.page >= meta.totalPages}
-                className="px-3 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 text-sm rounded-lg border border-outline-variant hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -325,7 +330,7 @@ export default function AdminDestinationsPage() {
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             placeholder="Brief description..."
             rows={3}
-            className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none resize-none"
+            className="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm bg-surface-container text-on-surface focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none"
           />
         </FormField>
 
@@ -334,6 +339,18 @@ export default function AdminDestinationsPage() {
             value={form.imageUrl}
             onChange={(v) => setForm((f) => ({ ...f, imageUrl: v }))}
             placeholder="https://..."
+          />
+        </FormField>
+
+        <FormField label="Cover Image">
+          <ImageUploader
+            value={form.coverImageUrl}
+            onChange={(url) => setForm((f) => ({ ...f, coverImageUrl: url ?? '' }))}
+            onUpload={async (file) => {
+              const res = await uploadMedia(file, { folder: 'destinations' });
+              return { url: (res as any).url };
+            }}
+            aspectRatio={1.7777}
           />
         </FormField>
 
@@ -361,7 +378,7 @@ export default function AdminDestinationsPage() {
             type="checkbox"
             checked={form.isFeatured}
             onChange={(e) => setForm((f) => ({ ...f, isFeatured: e.target.checked }))}
-            className="w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
+            className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary/50"
           />
           <span className="text-sm font-medium">Featured destination</span>
         </label>
@@ -369,7 +386,7 @@ export default function AdminDestinationsPage() {
         <div className="flex justify-end gap-3">
           <button
             onClick={() => setModalOpen(false)}
-            className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+            className="px-4 py-2 text-sm rounded-lg border border-outline-variant hover:bg-surface-container-high"
           >
             Cancel
           </button>

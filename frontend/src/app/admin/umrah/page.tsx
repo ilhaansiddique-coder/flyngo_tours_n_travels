@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
+import { ImageUploader } from '@/components/admin/image-uploader';
 import { useApi } from '@/hooks/use-api';
 import { formatCurrency } from '@/lib/utils';
 import { Sparkles, Plus, Pencil, Trash2, Search } from 'lucide-react';
@@ -22,6 +23,7 @@ interface UmrahPackage {
   inclusions: string[];
   highlights: string[];
   imageUrl?: string;
+  coverImageUrl?: string;
   isActive: boolean;
   isFeatured: boolean;
   order: number;
@@ -120,7 +122,7 @@ export default function AdminUmrahPage() {
 }
 
 function UmrahForm({ initial, onClose, onSaved }: { initial: UmrahPackage | null; onClose: () => void; onSaved: () => void }) {
-  const { createUmrahPackage, updateUmrahPackage } = useApi();
+  const { createUmrahPackage, updateUmrahPackage, uploadMedia } = useApi();
   const [title, setTitle] = useState(initial?.title ?? '');
   const [durationDays, setDurationDays] = useState(String(initial?.durationDays ?? 14));
   const [price, setPrice] = useState(String(initial?.price ?? 0));
@@ -131,6 +133,7 @@ function UmrahForm({ initial, onClose, onSaved }: { initial: UmrahPackage | null
   const [highlights, setHighlights] = useState((initial?.highlights ?? []).join('\n'));
   const [inclusions, setInclusions] = useState((initial?.inclusions ?? []).join('\n'));
   const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? '');
+  const [coverImageUrl, setCoverImageUrl] = useState(initial?.coverImageUrl ?? '');
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
   const [isFeatured, setIsFeatured] = useState(initial?.isFeatured ?? false);
   const [order, setOrder] = useState(String(initial?.order ?? 0));
@@ -150,6 +153,7 @@ function UmrahForm({ initial, onClose, onSaved }: { initial: UmrahPackage | null
       highlights: highlights.split('\n').map((s) => s.trim()).filter(Boolean),
       inclusions: inclusions.split('\n').map((s) => s.trim()).filter(Boolean),
       imageUrl: imageUrl || undefined,
+      coverImageUrl: coverImageUrl || undefined,
       isActive,
       isFeatured,
       order: Number(order) || 0,
@@ -181,6 +185,17 @@ function UmrahForm({ initial, onClose, onSaved }: { initial: UmrahPackage | null
         <FormField label="Highlights (one per line)"><FormTextarea value={highlights} onChange={setHighlights} rows={4} /></FormField>
         <FormField label="Inclusions (one per line)"><FormTextarea value={inclusions} onChange={setInclusions} rows={4} /></FormField>
         <FormField label="Image URL"><FormInput value={imageUrl} onChange={setImageUrl} /></FormField>
+        <FormField label="Cover Image">
+          <ImageUploader
+            value={coverImageUrl}
+            onChange={setCoverImageUrl}
+            onUpload={async (file) => {
+              const res = await uploadMedia(file, { folder: 'umrah' });
+              return { url: (res as any).url };
+            }}
+            aspectRatio={1.7777}
+          />
+        </FormField>
         <div className="flex gap-4">
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} /> Active</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} /> Featured</label>

@@ -1,10 +1,10 @@
 'use client';
 
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/theme-provider';
 import { Sun, Moon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string } = {}) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -17,7 +17,7 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <button
-        className="p-2 rounded-full transition-colors"
+        className={className ?? 'p-2 rounded-full transition-colors'}
         aria-label="Toggle theme"
       >
         <div className="w-5 h-5" />
@@ -30,10 +30,12 @@ export function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="p-2 rounded-full transition-all hover:scale-110"
+      className={className ?? 'p-2 rounded-full transition-all hover:scale-110'}
       aria-label="Toggle theme"
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      style={{ color: 'var(--color-header-text)' }}
+      // Outside the public header the caller supplies its own colour via
+      // className; the header-scoped token only applies to the default.
+      style={className ? undefined : { color: 'var(--color-header-text)' }}
     >
       {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
     </button>

@@ -18,11 +18,17 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto, tenantId: string): Promise<TokenResponseDto> {
-    // Users can sign in by either email or phone. The frontend always sends
-    // both fields when one is empty so we can run a single query that
-    // matches either identifier.
-    const orFilters: any[] = [{ phone: dto.phone }];
+    // Users can sign in by either email or phone. The frontend sends both keys
+    // with the unused one blank, so only non-empty identifiers become filters:
+    // an `undefined` value would be dropped by Prisma and let the OR match an
+    // arbitrary user in the tenant.
+    const orFilters: any[] = [];
     if (dto.email) orFilters.push({ email: dto.email });
+    if (dto.phone) orFilters.push({ phone: dto.phone });
+
+    if (orFilters.length === 0) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
     const user = await this.prisma.user.findFirst({
       where: { tenantId, OR: orFilters, deletedAt: null },

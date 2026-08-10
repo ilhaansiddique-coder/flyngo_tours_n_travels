@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
+import { ImageUploader } from '@/components/admin/image-uploader';
 import { Building2, Plus, Pencil, Trash2, Star, Search } from 'lucide-react';
 
 const LIMIT = 10;
@@ -28,6 +29,7 @@ interface Hotel {
   amenities?: string[];
   checkInTime?: string;
   checkOutTime?: string;
+  coverImageUrl?: string;
   isActive: boolean;
 }
 
@@ -48,11 +50,12 @@ const defaultForm = {
   amenities: '',
   checkInTime: '',
   checkOutTime: '',
+  coverImageUrl: '',
   isActive: true,
 };
 
 export default function AdminHotelsPage() {
-  const { getHotels, createHotel, updateHotel, deleteHotel, getDestinations } = useApi();
+  const { getHotels, createHotel, updateHotel, deleteHotel, getDestinations, uploadMedia } = useApi();
 
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
@@ -131,6 +134,7 @@ export default function AdminHotelsPage() {
       amenities: Array.isArray(hotel.amenities) ? hotel.amenities.join(', ') : (hotel.amenities || ''),
       checkInTime: hotel.checkInTime || '',
       checkOutTime: hotel.checkOutTime || '',
+      coverImageUrl: hotel.coverImageUrl || '',
       isActive: hotel.isActive ?? true,
     });
     setFormError(null);
@@ -157,6 +161,7 @@ export default function AdminHotelsPage() {
           : [],
         checkInTime: form.checkInTime || undefined,
         checkOutTime: form.checkOutTime || undefined,
+        coverImageUrl: form.coverImageUrl || undefined,
         isActive: form.isActive,
       };
       if (editingHotel) {
@@ -194,10 +199,10 @@ export default function AdminHotelsPage() {
       {Array.from({ length: 5 }, (_, i) => (
         <Star
           key={i}
-          className={`w-3.5 h-3.5 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
+          className={`w-3.5 h-3.5 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-on-surface-variant/30'}`}
         />
       ))}
-      <span className="ml-1 text-xs text-gray-400">{rating}</span>
+      <span className="ml-1 text-xs text-on-surface-variant/40">{rating}</span>
     </div>
   );
 
@@ -206,14 +211,14 @@ export default function AdminHotelsPage() {
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div className="flex gap-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Search hotels..."
-              className="w-64 pl-9 px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+              className="w-64 pl-9 px-4 py-2.5 text-sm border border-outline-variant rounded-xl bg-surface-container text-on-surface focus:ring-2 focus:ring-primary/50 focus:border-transparent outline-none"
             />
           </div>
           <Button variant="outline" size="md" onClick={handleSearch}>Search</Button>
@@ -224,7 +229,7 @@ export default function AdminHotelsPage() {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-300 text-sm">
+        <div className="p-4 bg-error-container border border-error/30 rounded-xl text-on-error-container text-sm">
           {error}
           <button onClick={() => fetchHotels(page)} className="ml-4 underline">Retry</button>
         </div>
@@ -233,11 +238,11 @@ export default function AdminHotelsPage() {
       <Card hover={false} padding="none">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand-600 border-t-transparent" />
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
           </div>
         ) : hotels.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-            <Building2 className="w-12 h-12 mb-3 text-gray-300 dark:text-gray-700" />
+          <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant">
+            <Building2 className="w-12 h-12 mb-3 text-on-surface-variant/40" />
             <p className="text-sm">No hotels found.</p>
           </div>
         ) : (
@@ -245,7 +250,7 @@ export default function AdminHotelsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
+                  <tr className="text-left text-on-surface-variant bg-surface-container-low">
                     <th className="p-4 font-medium">Name</th>
                     <th className="p-4 font-medium">Destination</th>
                     <th className="p-4 font-medium">Price/Night</th>
@@ -256,9 +261,9 @@ export default function AdminHotelsPage() {
                 </thead>
                 <tbody>
                   {hotels.map((h) => (
-                    <tr key={h.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                      <tr key={h.id} className="border-b border-outline-variant hover:bg-surface-container-high">
                       <td className="p-4 font-medium">{h.name}</td>
-                      <td className="p-4 text-gray-500">{h.destination?.name ?? '—'}</td>
+                      <td className="p-4 text-on-surface-variant">{h.destination?.name ?? '—'}</td>
                       <td className="p-4 font-medium">{formatCurrency(h.pricePerNight)}</td>
                       <td className="p-4">{renderStarRating(h.starRating)}</td>
                       <td className="p-4">
@@ -269,14 +274,14 @@ export default function AdminHotelsPage() {
                       <td className="p-4">
                         <div className="flex gap-1">
                           <button
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"
+                            className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
                             title="Edit"
                             onClick={() => openEdit(h)}
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button
-                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
+                            className="p-1.5 rounded-lg hover:bg-danger-soft text-on-surface-variant hover:text-error"
                             title="Delete"
                             onClick={() => confirmDelete(h.id)}
                           >
@@ -291,8 +296,8 @@ export default function AdminHotelsPage() {
             </div>
 
             {meta.totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t border-gray-100 dark:border-gray-800">
-                <p className="text-sm text-gray-500">
+              <div className="flex items-center justify-between p-4 border-t border-outline-variant">
+                <p className="text-sm text-on-surface-variant">
                   Showing {((meta.page - 1) * meta.limit) + 1}–{Math.min(meta.page * meta.limit, meta.total)} of {meta.total}
                 </p>
                 <div className="flex gap-1">
@@ -332,7 +337,7 @@ export default function AdminHotelsPage() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingHotel ? 'Edit Hotel' : 'Add Hotel'}>
         <div className="space-y-1">
           {formError && (
-            <div className="p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm mb-2">
+            <div className="p-3 bg-error-container border border-error/30 rounded-lg text-on-error-container text-sm mb-2">
               {formError}
             </div>
           )}
@@ -356,6 +361,18 @@ export default function AdminHotelsPage() {
               onChange={(v) => setForm((f) => ({ ...f, description: v }))}
               placeholder="Hotel description"
               rows={3}
+            />
+          </FormField>
+
+          <FormField label="Cover Image">
+            <ImageUploader
+              value={form.coverImageUrl}
+              onChange={(url) => setForm((f) => ({ ...f, coverImageUrl: url ?? '' }))}
+              onUpload={async (file) => {
+                const res = await uploadMedia(file, { folder: 'hotels' });
+                return { url: (res as any).url };
+              }}
+              aspectRatio={1.7777}
             />
           </FormField>
 
@@ -424,7 +441,7 @@ export default function AdminHotelsPage() {
                 type="checkbox"
                 checked={form.isActive}
                 onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
-                className="rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
+                className="rounded border-outline-variant text-primary focus:ring-primary/50"
               />
               <span className="font-medium">Active</span>
             </label>

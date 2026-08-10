@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
+import { ImageUploader } from '@/components/admin/image-uploader';
 import { useEffect, useState } from 'react';
 import { Map, Search, Plus, Pencil, Trash2 } from 'lucide-react';
 
@@ -19,10 +20,12 @@ interface Tour {
   maxGuests?: number;
   difficulty?: string;
   tourType?: string;
+  coverImageUrl?: string;
   isFeatured?: boolean;
   isActive?: boolean;
   destinationId?: string;
   destination?: { id: string; name: string };
+  images?: { id: string; url: string; alt?: string }[];
 }
 
 interface Destination {
@@ -39,6 +42,7 @@ interface FormData {
   maxGuests: string;
   difficulty: string;
   tourType: string;
+  coverImageUrl: string;
   isFeatured: boolean;
   isActive: boolean;
 }
@@ -52,12 +56,13 @@ const initialForm: FormData = {
   maxGuests: '',
   difficulty: 'moderate',
   tourType: 'group',
+  coverImageUrl: '',
   isFeatured: false,
   isActive: true,
 };
 
 export default function AdminToursPage() {
-  const { getTours, createTour, updateTour, deleteTour, getDestinations } = useApi();
+  const { getTours, createTour, updateTour, deleteTour, getDestinations, uploadMedia } = useApi();
 
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,6 +136,7 @@ export default function AdminToursPage() {
       maxGuests: String(tour.maxGuests ?? ''),
       difficulty: tour.difficulty || 'moderate',
       tourType: tour.tourType || 'group',
+      coverImageUrl: tour.coverImageUrl || (tour.images?.[0]?.url ?? ''),
       isFeatured: tour.isFeatured ?? false,
       isActive: tour.isActive ?? true,
     });
@@ -150,6 +156,7 @@ export default function AdminToursPage() {
         maxGuests: form.maxGuests ? Number(form.maxGuests) : undefined,
         difficulty: form.difficulty,
         tourType: form.tourType,
+        coverImageUrl: form.coverImageUrl || undefined,
         isFeatured: form.isFeatured,
         isActive: form.isActive,
       };
@@ -202,7 +209,7 @@ export default function AdminToursPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
           <Input
             placeholder="Search tours..."
             className="pl-9 w-64"
@@ -220,14 +227,14 @@ export default function AdminToursPage() {
 
       {loading && (
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin h-8 w-8 border-4 border-brand-600 border-t-transparent rounded-full" />
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
         </div>
       )}
 
       {error && !loading && (
         <Card hover={false}>
           <div className="text-center py-12">
-            <p className="text-red-500 mb-4">{error}</p>
+            <p className="text-error mb-4">{error}</p>
             <Button variant="outline" onClick={() => fetchTours()}>
               Retry
             </Button>
@@ -241,7 +248,7 @@ export default function AdminToursPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 bg-gray-50 dark:bg-gray-800/50">
+                    <tr className="text-left text-on-surface-variant bg-surface-container-low">
                     <th className="p-4 font-medium">Title</th>
                     <th className="p-4 font-medium">Destination</th>
                     <th className="p-4 font-medium">Price</th>
@@ -253,8 +260,8 @@ export default function AdminToursPage() {
                 <tbody>
                   {tours.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-12 text-center text-gray-500">
-                        <Map className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <td colSpan={6} className="p-12 text-center text-on-surface-variant">
+                        <Map className="w-8 h-8 mx-auto mb-2 text-on-surface-variant/40" />
                         <p>No tours found</p>
                       </td>
                     </tr>
@@ -262,10 +269,10 @@ export default function AdminToursPage() {
                     tours.map((t) => (
                       <tr
                         key={t.id}
-                        className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30"
+                        className="border-b border-outline-variant hover:bg-surface-container-high"
                       >
                         <td className="p-4 font-medium">{t.title}</td>
-                        <td className="p-4 text-gray-500">{t.destination?.name || '\u2014'}</td>
+                        <td className="p-4 text-on-surface-variant">{t.destination?.name || '\u2014'}</td>
                         <td className="p-4 font-medium">{formatCurrency(t.price)}</td>
                         <td className="p-4">{t.duration} days</td>
                         <td className="p-4">
@@ -276,14 +283,14 @@ export default function AdminToursPage() {
                         <td className="p-4">
                           <div className="flex gap-1">
                             <button
-                              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-brand-600"
+                              className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
                               title="Edit"
                               onClick={() => openEditModal(t)}
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
                             <button
-                              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
+                              className="p-1.5 rounded-lg hover:bg-danger-soft text-on-surface-variant hover:text-error"
                               title="Delete"
                               onClick={() => setConfirmDelete({ open: true, id: t.id })}
                             >
@@ -300,7 +307,7 @@ export default function AdminToursPage() {
           </Card>
 
           {meta.totalPages > 1 && (
-            <div className="flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center justify-between text-sm text-on-surface-variant">
               <span>
                 Showing {tours.length} of {meta.total} tours
               </span>
@@ -357,6 +364,18 @@ export default function AdminToursPage() {
               onChange={(v) => setForm({ ...form, description: v })}
               placeholder="Tour description"
               rows={3}
+            />
+          </FormField>
+
+          <FormField label="Cover Image">
+            <ImageUploader
+              value={form.coverImageUrl}
+              onChange={(url) => setForm({ ...form, coverImageUrl: url ?? '' })}
+              onUpload={async (file) => {
+                const res = await uploadMedia(file, { folder: 'tours' });
+                return { url: (res as any).url };
+              }}
+              aspectRatio={1.7777}
             />
           </FormField>
 
@@ -422,7 +441,7 @@ export default function AdminToursPage() {
                 type="checkbox"
                 checked={form.isFeatured}
                 onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })}
-                className="rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
+                className="rounded border-outline-variant text-primary focus:ring-primary/50"
               />
               Featured
             </label>
@@ -431,13 +450,13 @@ export default function AdminToursPage() {
                 type="checkbox"
                 checked={form.isActive}
                 onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-                className="rounded border-gray-300 dark:border-gray-700 text-brand-600 focus:ring-brand-500"
+                className="rounded border-outline-variant text-primary focus:ring-primary/50"
               />
               Active
             </label>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant">
             <Button variant="outline" type="button" onClick={() => setModalOpen(false)}>
               Cancel
             </Button>

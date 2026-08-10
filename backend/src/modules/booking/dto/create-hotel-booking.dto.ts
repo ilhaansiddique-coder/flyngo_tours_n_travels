@@ -54,11 +54,11 @@ export class HotelAdditionalGuestDto {
   @Length(1, 120)
   fullName!: string;
 
-  @ApiPropertyOptional({ description: 'Required when type=child' })
+  @ApiPropertyOptional({ description: 'Required when type is child or infant' })
   @IsOptional()
   @IsInt()
   @Min(0)
-  @Max(17)
+  @Max(120)
   age?: number;
 
   @ApiPropertyOptional({ enum: ['adult', 'child', 'infant'], default: 'adult' })

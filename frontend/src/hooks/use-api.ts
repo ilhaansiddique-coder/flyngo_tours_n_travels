@@ -60,6 +60,12 @@ export function useApi() {
   const updateDestination = useCallback(async (id: string, body: any) => api.patch(`/destinations/${id}`, body, auth()), [auth]);
   const deleteDestination = useCallback(async (id: string) => api.delete(`/destinations/${id}`, auth()), [auth]);
 
+  const getBlogs = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/cms/blogs' + qs);
+  }, []);
+  const getBlogBySlug = useCallback(async (slug: string) => api.get(`/cms/blogs/${slug}`), []);
+
   const listBlogs = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/cms/admin/blogs' + qs, auth());
@@ -214,6 +220,37 @@ export function useApi() {
   const getTenantSettings = useCallback(async () => api.get('/tenant/settings', auth()), [auth]);
   const updateTenantSettings = useCallback(async (body: any) => api.patch('/tenant/settings', body, auth()), [auth]);
 
+  // Media library
+  const listMedia = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/media' + qs);
+  }, []);
+  const uploadMedia = useCallback(async (file: File, opts?: { folder?: string; alt?: string }) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const qs = new URLSearchParams();
+    if (opts?.folder) qs.set('folder', opts.folder);
+    if (opts?.alt) qs.set('alt', opts.alt);
+    const search = qs.toString();
+    return api.upload(`/media/upload${search ? `?${search}` : ''}`, formData, auth());
+  }, [auth]);
+  const deleteMedia = useCallback(async (id: string) => api.delete(`/media/${id}`, auth()), [auth]);
+
+  // Hero section
+  const getHero = useCallback(async () => api.get('/hero'), []);
+  const getHeroDefaults = useCallback(async () => api.get('/hero/defaults', auth()), [auth]);
+  const saveHero = useCallback(async (body: any) => api.post('/hero', body, auth()), [auth]);
+
+  // Globe cities + routes
+  const listGlobeCities = useCallback(async () => api.get('/globe/admin/cities', auth()), [auth]);
+  const createGlobeCity = useCallback(async (body: any) => api.post('/globe/admin/cities', body, auth()), [auth]);
+  const updateGlobeCity = useCallback(async (id: string, body: any) => api.patch(`/globe/admin/cities/${id}`, body, auth()), [auth]);
+  const deleteGlobeCity = useCallback(async (id: string) => api.delete(`/globe/admin/cities/${id}`, auth()), [auth]);
+  const listGlobeRoutes = useCallback(async () => api.get('/globe/admin/routes', auth()), [auth]);
+  const createGlobeRoute = useCallback(async (body: any) => api.post('/globe/admin/routes', body, auth()), [auth]);
+  const updateGlobeRoute = useCallback(async (id: string, body: any) => api.patch(`/globe/admin/routes/${id}`, body, auth()), [auth]);
+  const deleteGlobeRoute = useCallback(async (id: string) => api.delete(`/globe/admin/routes/${id}`, auth()), [auth]);
+
   const globalSearch = useCallback(async (q: string) => {
     const term = q.trim();
     if (!term) {
@@ -249,6 +286,7 @@ export function useApi() {
     getVisaServices, createVisaService, updateVisaService, deleteVisaService,
     globalSearch,
     getDestinations, createDestination, updateDestination, deleteDestination,
+    getBlogs, getBlogBySlug,
     listBlogs, createBlog, updateBlog, deleteBlog,
     listPages, createPage, updatePage, deletePage,
     listFaqs, createFaq, updateFaq, deleteFaq,
@@ -270,5 +308,9 @@ export function useApi() {
     getNotifications, sendNotification, deleteNotification,
     getMyProfile, updateMyProfile, getMyBookings, cancelMyBooking, getMyPayments,
     getTenantSettings, updateTenantSettings,
+    listMedia, uploadMedia, deleteMedia,
+    getHero, getHeroDefaults, saveHero,
+    listGlobeCities, createGlobeCity, updateGlobeCity, deleteGlobeCity,
+    listGlobeRoutes, createGlobeRoute, updateGlobeRoute, deleteGlobeRoute,
   };
 }

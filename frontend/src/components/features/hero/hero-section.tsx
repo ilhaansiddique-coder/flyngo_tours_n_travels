@@ -108,7 +108,7 @@ export function HeroSection() {
               className="text-4xl font-semibold tracking-[-0.01em] sm:text-5xl lg:text-6xl"
               style={{ color: 'var(--color-hero-text)', opacity: 0.9 }}
             >
-              {pickHeroText({ en: hero?.titleLineCEn, bn: hero?.titleLineCBn }, locale) || 'Discover the world with Fly&Go.'}
+              {pickHeroText({ en: hero?.titleLineCEn, bn: hero?.titleLineCBn }, locale) || 'Discover the world with FlynGo.'}
             </span>
           </h1>
 

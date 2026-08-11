@@ -54,7 +54,7 @@ export function Footer() {
             <Link href="/" className="inline-flex items-center gap-3">
               <Image
                 src={logoImg}
-                alt="Fly&Go"
+                alt="FlynGo"
                 width={140}
                 height={44}
                 className="rounded-lg object-cover w-auto h-auto"
@@ -129,7 +129,7 @@ export function Footer() {
 
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 gap-4">
           <p className="text-xs" style={{ color: 'var(--color-footer-text-muted)' }}>
-            &copy; {new Date().getFullYear()} Fly&Go Travel. All rights reserved.
+            &copy; {new Date().getFullYear()} FlynGo Travel. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <button

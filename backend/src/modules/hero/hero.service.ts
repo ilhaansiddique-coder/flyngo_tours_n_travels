@@ -36,8 +36,8 @@ const DEFAULT_HERO: HeroSectionInput = {
   titleLineABn: 'আপনার ছুটি,',
   titleLineBEn: 'purely refined.',
   titleLineBBn: 'সম্পূর্ণ পরিশীলিত।',
-  titleLineCEn: 'Discover the world with Fly&Go.',
-  titleLineCBn: 'Fly&Go এর সাথে বিশ্ব আবিষ্কার করুন।',
+  titleLineCEn: 'Discover the world with FlynGo.',
+  titleLineCBn: 'FlynGo এর সাথে বিশ্ব আবিষ্কার করুন।',
   subtitleEn:
     'White-glove travel concierge for flights, hotels, tours, visas, and Hajj & Umrah — managed by people who actually pick up the phone.',
   subtitleBn:
@@ -60,7 +60,7 @@ const DEFAULT_HERO: HeroSectionInput = {
 
 @Injectable()
 export class HeroService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async getForTenant(tenantId: string) {
     let section = await this.prisma.heroSection.findUnique({ where: { tenantId } });

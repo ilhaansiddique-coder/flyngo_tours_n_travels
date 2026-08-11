@@ -15,10 +15,10 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: { default: 'Fly&Go — Luxury Travel', template: '%s | Fly&Go' },
-  description: 'Your escape, purely refined. Discover the world with Fly&Go signature white-glove service.',
+  title: { default: 'FlynGo — Luxury Travel', template: '%s | FlynGo' },
+  description: 'Your escape, purely refined. Discover the world with FlynGo signature white-glove service.',
   keywords: ['travel', 'luxury', 'flights', 'hotels', 'tours', 'private jets'],
-  openGraph: { type: 'website', locale: 'en_US', siteName: 'Fly&Go' },
+  openGraph: { type: 'website', locale: 'en_US', siteName: 'FlynGo' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

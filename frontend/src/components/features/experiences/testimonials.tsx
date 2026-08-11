@@ -19,7 +19,7 @@ const TESTIMONIALS: Testimonial[] = [
   {
     id: '1',
     quote:
-      'The Santorini trip was flawless from the private jet pickup in London to the cliffside butler service. Fly&Go turned a holiday into a defining life memory.',
+      'The Santorini trip was flawless from the private jet pickup in London to the cliffside butler service. FlynGo turned a holiday into a defining life memory.',
     author: 'Isabella M.',
     role: 'Velocity Club Member',
     destination: 'Santorini, Greece',
@@ -30,7 +30,7 @@ const TESTIMONIALS: Testimonial[] = [
   {
     id: '2',
     quote:
-      'I needed a complex 4-country Asia itinerary for 12 executives on 3 weeks notice. The Fly&Go concierge delivered every transfer, translator, and dinner reservation perfectly.',
+      'I needed a complex 4-country Asia itinerary for 12 executives on 3 weeks notice. The FlynGo concierge delivered every transfer, translator, and dinner reservation perfectly.',
     author: 'Daniel K.',
     role: 'Managing Director',
     destination: 'Tokyo → Bali → Singapore → Hanoi',
@@ -52,7 +52,7 @@ const TESTIMONIALS: Testimonial[] = [
   {
     id: '4',
     quote:
-      'I have used Fly&Go for the last 9 trips and they consistently find flights and stays I cannot beat on any other platform — even with my own travel-agent friends.',
+      'I have used FlynGo for the last 9 trips and they consistently find flights and stays I cannot beat on any other platform — even with my own travel-agent friends.',
     author: 'Marcus T.',
     role: 'Founder & frequent flyer',
     destination: 'Worldwide',
@@ -103,9 +103,8 @@ export function Testimonials() {
             {TESTIMONIALS.map((t, i) => (
               <div
                 key={t.id}
-                className={`transition-all duration-500 ${
-                  i === active ? 'opacity-100 translate-x-0' : 'opacity-0 absolute inset-0 -translate-x-4 pointer-events-none'
-                }`}
+                className={`transition-all duration-500 ${i === active ? 'opacity-100 translate-x-0' : 'opacity-0 absolute inset-0 -translate-x-4 pointer-events-none'
+                  }`}
               >
                 <blockquote className="font-display text-2xl sm:text-3xl lg:text-4xl text-on-bg leading-[1.25] tracking-[-0.01em] mb-8 max-w-3xl">
                   &ldquo;{t.quote}&rdquo;
@@ -152,9 +151,8 @@ export function Testimonials() {
                 key={i}
                 onClick={() => setActive(i)}
                 aria-label={`Show testimonial ${i + 1}`}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === active ? 'w-8 bg-accent' : 'w-1.5 bg-on-surface-firm hover:bg-on-surface-firm'
-                }`}
+                className={`h-1.5 rounded-full transition-all ${i === active ? 'w-8 bg-accent' : 'w-1.5 bg-on-surface-firm hover:bg-on-surface-firm'
+                  }`}
               />
             ))}
           </div>

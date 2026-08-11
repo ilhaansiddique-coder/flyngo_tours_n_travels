@@ -3,7 +3,7 @@ import type { Config } from 'tailwindcss';
 /* Tailwind v4 is the source of truth for theme tokens (see `globals.css`
  * `@theme inline` block). The values below keep `bg-brand-*`, `bg-surface-*`
  * and the shared `on-*` / `outline-*` / `inverse-*` utility families
- * aligned with the Fly&Go Velocity theme — Fly blue + Go orange + cyan —
+ * aligned with the FlynGo Velocity theme — Fly blue + Go orange + cyan —
  * so admin pages that haven't migrated to CSS variables still render in
  * the same brand palette as the public site. */
 const config: Config = {
@@ -15,7 +15,7 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50:  '#e6f1ff',
+          50: '#e6f1ff',
           100: '#cce4ff',
           200: '#99c9ff',
           300: '#66adff',
@@ -28,53 +28,53 @@ const config: Config = {
           950: '#021935',
         },
         surface: {
-          DEFAULT:    '#020617',
-          'bright':   '#0b1c30',
-          'container':        '#0a1628',
-          'container-low':    '#07111f',
+          DEFAULT: '#020617',
+          'bright': '#0b1c30',
+          'container': '#0a1628',
+          'container-low': '#07111f',
           'container-lowest': '#010410',
-          'container-high':   '#102034',
-          'container-highest':'#1b2b3f',
-          'variant':          '#1b2b3f',
-          'dim':              '#010410',
+          'container-high': '#102034',
+          'container-highest': '#1b2b3f',
+          'variant': '#1b2b3f',
+          'dim': '#010410',
         },
         secondary: {
-          DEFAULT:       '#00eefc',
-          'fixed-dim':   '#00b8c4',
-          fixed:         '#7df4ff',
-          container:     '#cffafd',
+          DEFAULT: '#00eefc',
+          'fixed-dim': '#00b8c4',
+          fixed: '#7df4ff',
+          container: '#cffafd',
         },
         on: {
-          surface:                    '#d3e4fe',
-          'surface-variant':          '#9aa3b2',
-          background:                 '#d3e4fe',
-          primary:                    '#020617',
-          'primary-container':        '#00eefc',
-          'primary-fixed':            '#1a1c1c',
-          'primary-fixed-variant':    '#454747',
-          secondary:                  '#020617',
-          'secondary-container':      '#00eefc',
-          'secondary-fixed':          '#002022',
-          'secondary-fixed-variant':  '#004f54',
-          tertiary:                   '#020617',
-          'tertiary-container':       '#fde0d0',
-          'tertiary-fixed':           '#1c1b1b',
-          'tertiary-fixed-variant':   '#474646',
-          error:                      '#ffb4ab',
-          'error-container':          '#ffdad6',
+          surface: '#d3e4fe',
+          'surface-variant': '#9aa3b2',
+          background: '#d3e4fe',
+          primary: '#020617',
+          'primary-container': '#00eefc',
+          'primary-fixed': '#1a1c1c',
+          'primary-fixed-variant': '#454747',
+          secondary: '#020617',
+          'secondary-container': '#00eefc',
+          'secondary-fixed': '#002022',
+          'secondary-fixed-variant': '#004f54',
+          tertiary: '#020617',
+          'tertiary-container': '#fde0d0',
+          'tertiary-fixed': '#1c1b1b',
+          'tertiary-fixed-variant': '#474646',
+          error: '#ffb4ab',
+          'error-container': '#ffdad6',
         },
         outline: {
           DEFAULT: '#5fa9ff',
           variant: 'rgba(255, 255, 255, 0.12)',
         },
         error: {
-          DEFAULT:  '#ff6b6b',
-          container:'rgba(255, 107, 107, 0.12)',
+          DEFAULT: '#ff6b6b',
+          container: 'rgba(255, 107, 107, 0.12)',
         },
         inverse: {
-          surface:     '#d3e4fe',
-          primary:     '#5d5f5f',
-          'on-surface':'#020617',
+          surface: '#d3e4fe',
+          primary: '#5d5f5f',
+          'on-surface': '#020617',
         },
       },
       spacing: {

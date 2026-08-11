@@ -16,7 +16,7 @@ button:disabled {
 }
 
 /* ----------------------------------------------------------------
-   Fly&Go Velocity Theme — unified light + dark
+   FlynGo Velocity Theme — unified light + dark
    Inspired by the hero section. Two coordinated palettes that
    share a single visual language.
 
@@ -847,7 +847,7 @@ body {
 }
 
 /* Hero surface. Light mode uses a soft cream surface with a stronger
-   brand presence so the page reads as Fly&Go, not a generic site.
+   brand presence so the page reads as FlynGo, not a generic site.
    Dark mode keeps the deep-navy + saturated radial glow. */
 .hero-surface {
   background:

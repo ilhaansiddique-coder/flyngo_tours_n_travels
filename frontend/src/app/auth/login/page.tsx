@@ -35,7 +35,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center justify-center mb-6">
-            <Image src={logoImg} alt="Fly&Go" width={140} height={56} className="rounded-xl object-cover" />
+            <Image src={logoImg} alt="FlynGo" width={140} height={56} className="rounded-xl object-cover" />
           </Link>
           <span className="inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full text-[10px] tracking-widest uppercase font-bold text-accent border border-accent/30 bg-accent/5">
             <FileCheck className="w-3 h-3" />

@@ -84,7 +84,7 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
       <h1 className="text-3xl sm:text-4xl font-display font-bold text-on-surface">{post.title}</h1>
 
       <div className="flex items-center gap-3 mt-4 text-sm text-on-surface-variant">
-        <span>{post.author?.fullName ?? 'Fly&Go'}</span>
+        <span>{post.author?.fullName ?? 'FlynGo'}</span>
         {post.publishedAt && <span>· {formatDate(post.publishedAt)}</span>}
       </div>
 

@@ -142,7 +142,7 @@ export function ServicesGrid() {
             Everything you need, <span className="gradient-text-warm">in one place.</span>
           </>
         }
-        subtitle="From the first search to the final transfer, Fly&Go handles every detail of your journey with white-glove precision."
+        subtitle="From the first search to the final transfer, FlynGo handles every detail of your journey with white-glove precision."
         action={{ label: 'Browse all services', href: '/destinations' }}
       />
 

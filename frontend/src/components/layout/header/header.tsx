@@ -75,7 +75,7 @@ export function Header() {
           <Link href="/" className="flex flex-col items-start leading-tight">
             <Image
               src={logoImg}
-              alt="Fly&Go"
+              alt="FlynGo"
               width={120}
               height={48}
               priority
@@ -248,9 +248,9 @@ export function Header() {
                 className="my-4"
                 style={{ borderTop: '1px solid var(--color-mobile-divider)' }}
               />
-          {!authReady ? (
-            <div className="flex items-center gap-3" style={{ minWidth: 180, minHeight: 40 }} aria-hidden="true" />
-          ) : isAuthenticated() && user ? (
+              {!authReady ? (
+                <div className="flex items-center gap-3" style={{ minWidth: 180, minHeight: 40 }} aria-hidden="true" />
+              ) : isAuthenticated() && user ? (
                 <>
                   <Link
                     href={user.role === 'customer' ? '/dashboard' : '/admin/dashboard'}

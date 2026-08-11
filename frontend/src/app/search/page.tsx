@@ -146,7 +146,7 @@ function SearchPageInner() {
           Search results
         </div>
         <h1 className="text-3xl sm:text-4xl font-display font-bold" style={{ color: 'var(--color-on-background)' }}>
-          {q ? <>Results for &ldquo;{q}&rdquo;</> : 'Search Fly&Go'}
+          {q ? <>Results for &ldquo;{q}&rdquo;</> : 'Search FlynGo'}
         </h1>
         {(checkIn || adults || rooms) && (
           <div className="mt-3 flex flex-wrap gap-2 text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>

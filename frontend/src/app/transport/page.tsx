@@ -59,7 +59,7 @@ export default function TransportPage() {
 
       <Section background="subtle">
         <Container>
-          <SectionHeader eyebrow="Why Us" title="Why book transport with Fly&Go" subtitle="Pre-booked, transparent pricing and support in your language, around the clock." />
+          <SectionHeader eyebrow="Why Us" title="Why book transport with FlynGo" subtitle="Pre-booked, transparent pricing and support in your language, around the clock." />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {features.map((f) => (
               <div key={f.title} className="text-center rounded-2xl glass p-8 border-hairline">

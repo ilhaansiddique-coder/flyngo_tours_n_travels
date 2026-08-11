@@ -68,7 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           </div>
-          {!collapsed && <span className="font-display text-lg font-bold text-on-surface">Fly&Go Admin</span>}
+          {!collapsed && <span className="font-display text-lg font-bold text-on-surface">FlynGo Admin</span>}
         </div>
 
         {/* Nav */}

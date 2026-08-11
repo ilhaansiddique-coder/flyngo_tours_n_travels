@@ -15,7 +15,7 @@ export default function AboutPage() {
     <>
       <PageHero
         eyebrow="Our Story"
-        title={<>About <span className="gradient-text-warm">Fly&Go</span></>}
+        title={<>About <span className="gradient-text-warm">FlynGo</span></>}
         subtitle="Your trusted partner for extraordinary journeys since 2020."
       />
 
@@ -23,13 +23,13 @@ export default function AboutPage() {
         <Container size="narrow">
           <div className="prose prose-lg mx-auto">
             <p className="text-xl text-on-surface leading-relaxed">
-              Fly&Go is a full-service travel platform dedicated to making world exploration
+              FlynGo is a full-service travel platform dedicated to making world exploration
               accessible, seamless, and unforgettable. Whether you&apos;re planning a solo adventure,
               family vacation, or corporate retreat, we provide end-to-end solutions for tours,
               hotels, flights, and visa processing.
             </p>
             <p className="text-on-surface-variant leading-relaxed">
-              Founded with a vision to simplify travel planning, Fly&Go combines cutting-edge
+              Founded with a vision to simplify travel planning, FlynGo combines cutting-edge
               technology with expert human support. Our platform serves thousands of happy travelers,
               offering curated experiences in the world&apos;s most sought-after destinations.
             </p>

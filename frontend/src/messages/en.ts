@@ -27,7 +27,7 @@ export const en = {
   pkg_from: 'From',
   pkg_book: 'Book Now',
   pkg_details: 'View Details',
-  footer_rights: '© 2026 Fly&Go Travel. All rights reserved.',
+  footer_rights: '© 2026 FlynGo Travel. All rights reserved.',
   booking_type_label: 'Booking Type',
   booking_type_tour: 'Tour Package',
   booking_type_hotel: 'Hotel Stay',

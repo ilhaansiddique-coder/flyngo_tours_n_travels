@@ -59,7 +59,7 @@ export default function BlogPage() {
     <>
       <PageHero
         eyebrow="Stories & Guides"
-        title={<>The <span className="gradient-text-warm">Fly&Go</span> Journal</>}
+        title={<>The <span className="gradient-text-warm">FlynGo</span> Journal</>}
         subtitle="Travel stories, expert tips, and inspiration from around the world."
       />
       <Section>
@@ -82,44 +82,44 @@ export default function BlogPage() {
               {posts.map((post) => {
                 const cover = imageSrc(post.featuredImage);
                 return (
-                <Link key={post.id} href={`/blog/${post.slug}`} className="group block">
-                  <Card className="group h-full" hover={false}>
-                    <div className="relative h-48 rounded-xl overflow-hidden mb-4 bg-gradient-to-br from-primary to-tertiary">
-                      {cover ? (
-                        <Image
-                          src={cover}
-                          alt={post.title}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 100vw, 50vw"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 bg-grid opacity-40" />
+                  <Link key={post.id} href={`/blog/${post.slug}`} className="group block">
+                    <Card className="group h-full" hover={false}>
+                      <div className="relative h-48 rounded-xl overflow-hidden mb-4 bg-gradient-to-br from-primary to-tertiary">
+                        {cover ? (
+                          <Image
+                            src={cover}
+                            alt={post.title}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-grid opacity-40" />
+                        )}
+                        <div className="absolute inset-0 scrim-soft" />
+                        {post.tags && post.tags.length > 0 && (
+                          <div className="absolute top-3 left-3 flex gap-2">
+                            {post.tags.map((tag) => (
+                              <Badge key={tag} variant="cyan">{tag}</Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="font-display text-xl font-bold text-on-surface group-hover:text-accent transition-colors">
+                        {post.title}
+                      </h3>
+                      {post.excerpt && (
+                        <p className="mt-2 text-on-surface-variant text-sm line-clamp-2">{post.excerpt}</p>
                       )}
-                      <div className="absolute inset-0 scrim-soft" />
-                      {post.tags && post.tags.length > 0 && (
-                        <div className="absolute top-3 left-3 flex gap-2">
-                          {post.tags.map((tag) => (
-                            <Badge key={tag} variant="cyan">{tag}</Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <h3 className="font-display text-xl font-bold text-on-surface group-hover:text-accent transition-colors">
-                      {post.title}
-                    </h3>
-                    {post.excerpt && (
-                      <p className="mt-2 text-on-surface-variant text-sm line-clamp-2">{post.excerpt}</p>
-                    )}
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-hairline text-sm text-on-surface-variant">
-                      <span className="text-on-surface/80">{post.author?.fullName ?? 'Fly&Go'}</span>
-                      {post.publishedAt && <span>{formatDate(post.publishedAt)}</span>}
-                    </div>
-                    <div className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-accent group-hover:gap-2 transition-all">
-                      Read article <ArrowUpRight className="w-3.5 h-3.5" />
-                    </div>
-                  </Card>
-                </Link>
+                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-hairline text-sm text-on-surface-variant">
+                        <span className="text-on-surface/80">{post.author?.fullName ?? 'FlynGo'}</span>
+                        {post.publishedAt && <span>{formatDate(post.publishedAt)}</span>}
+                      </div>
+                      <div className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-accent group-hover:gap-2 transition-all">
+                        Read article <ArrowUpRight className="w-3.5 h-3.5" />
+                      </div>
+                    </Card>
+                  </Link>
                 );
               })}
             </div>

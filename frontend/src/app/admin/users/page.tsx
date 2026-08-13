@@ -6,9 +6,15 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
 import { useEffect, useState } from 'react';
 import { Shield, Users, Search, Pencil, Trash2, Plus, Key } from 'lucide-react';
+import {
+  COUNTRY_DIALS,
+  DEFAULT_COUNTRY_CODE,
+  findDialByCode,
+} from '@/lib/country-dial-codes';
 
 interface Role {
   id: string;
@@ -62,7 +68,7 @@ export default function UsersPage() {
 
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [userForm, setUserForm] = useState({ fullName: '', email: '', phone: '', password: '', roleId: '', isActive: true });
+  const [userForm, setUserForm] = useState({ fullName: '', email: '', phone: '', phoneCountry: DEFAULT_COUNTRY_CODE, password: '', roleId: '', isActive: true });
   const [userSubmitting, setUserSubmitting] = useState(false);
 
   const [roleModalOpen, setRoleModalOpen] = useState(false);
@@ -127,16 +133,19 @@ export default function UsersPage() {
 
   const openCreateUserModal = () => {
     setEditingUser(null);
-    setUserForm({ fullName: '', email: '', phone: '', password: '', roleId: roleOptions[0]?.value || '', isActive: true });
+    setUserForm({ fullName: '', email: '', phone: '', phoneCountry: DEFAULT_COUNTRY_CODE, password: '', roleId: roleOptions[0]?.value || '', isActive: true });
     setUserModalOpen(true);
   };
 
   const openEditUserModal = (user: User) => {
     setEditingUser(user);
+    const stored = user.phone || '';
+    const matched = COUNTRY_DIALS.find((c) => stored.startsWith(c.dial + ' ') || stored.startsWith(c.dial));
     setUserForm({
       fullName: user.fullName || '',
       email: user.email || '',
-      phone: user.phone || '',
+      phone: stored,
+      phoneCountry: matched?.code || DEFAULT_COUNTRY_CODE,
       password: '',
       roleId: user.role?.id || '',
       isActive: user.isActive,
@@ -607,10 +616,29 @@ export default function UsersPage() {
             />
           </FormField>
           <FormField label="Phone">
-            <FormInput
-              value={userForm.phone}
-              onChange={(v) => setUserForm({ ...userForm, phone: v })}
-              placeholder="+880 1XXX XXX XXX"
+            <PhoneInput
+              countryCode={userForm.phoneCountry}
+              number={(() => {
+                const m = COUNTRY_DIALS.find(
+                  (c) =>
+                    userForm.phone.startsWith(c.dial + ' ') ||
+                    userForm.phone.startsWith(c.dial),
+                );
+                if (!m) return userForm.phone;
+                return userForm.phone.startsWith(m.dial + ' ')
+                  ? userForm.phone.slice(m.dial.length + 1)
+                  : userForm.phone.slice(m.dial.length);
+              })()}
+              onCountryCodeChange={(c) => {
+                const dial = findDialByCode(c)?.dial ?? '';
+                const rest = userForm.phone.replace(/^\+\d+\s*/, '');
+                setUserForm({ ...userForm, phoneCountry: c, phone: rest ? `${dial} ${rest}` : '' });
+              }}
+              onNumberChange={(v) => {
+                const dial = findDialByCode(userForm.phoneCountry)?.dial ?? '';
+                setUserForm({ ...userForm, phone: v ? `${dial} ${v}` : '' });
+              }}
+              placeholder="1XXX XXX XXX"
             />
           </FormField>
           <FormField label="Role" required>

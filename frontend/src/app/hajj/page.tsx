@@ -6,6 +6,11 @@ import { useLocale } from '@/contexts/locale-context';
 import { useApi } from '@/hooks/use-api';
 import { useFormatCurrency } from '@/lib/utils';
 import { MapPin, Clock, Phone, FileCheck, ArrowRight, Shield, Users, Plane, Sparkles } from 'lucide-react';
+import {
+  COUNTRY_DIALS,
+  DEFAULT_COUNTRY_CODE,
+  findDialByCode,
+} from '@/lib/country-dial-codes';
 
 interface HajjPackage {
   id: string;
@@ -30,7 +35,7 @@ export default function HajjPage() {
   const [packages, setPackages] = useState<HajjPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPreReg, setShowPreReg] = useState(false);
-  const [preReg, setPreReg] = useState({ fullName: '', phone: '', email: '', district: '', travelers: 1, packageTier: '' });
+  const [preReg, setPreReg] = useState({ fullName: '', phone: '', phoneCountry: DEFAULT_COUNTRY_CODE, email: '', district: '', travelers: 1, packageTier: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -249,7 +254,43 @@ export default function HajjPage() {
                 <h3 className="font-display text-xl font-bold mb-1">Hajj Pre-Registration</h3>
                 <p className="text-xs text-muted mb-3">Reserve your slot for upcoming Hajj. We will contact you with package options.</p>
                 <input required placeholder="Full name" value={preReg.fullName} onChange={(e) => setPreReg({ ...preReg, fullName: e.target.value })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />
-                <input required placeholder="Phone" value={preReg.phone} onChange={(e) => setPreReg({ ...preReg, phone: e.target.value })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />
+                <div className="flex gap-2">
+                  <select
+                    value={preReg.phoneCountry}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      const dial = findDialByCode(next)?.dial ?? '';
+                      const raw = preReg.phone.replace(/^\+\d+\s*/, '');
+                      setPreReg({ ...preReg, phoneCountry: next, phone: raw ? `${dial} ${raw}` : '' });
+                    }}
+                    className="w-32 px-2 py-2 rounded-md border bg-surface text-sm"
+                    style={{ borderColor: 'var(--color-outline-variant)' }}
+                    aria-label="Country code"
+                  >
+                    {COUNTRY_DIALS.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.flag} {c.dial}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    required
+                    type="tel"
+                    placeholder="Phone"
+                    value={
+                      preReg.phone.startsWith('+')
+                        ? preReg.phone.replace(/^\+\d+\s*/, '')
+                        : preReg.phone
+                    }
+                    onChange={(e) => {
+                      const dial = findDialByCode(preReg.phoneCountry)?.dial ?? '';
+                      const num = e.target.value.replace(/^\s+/, '');
+                      setPreReg({ ...preReg, phone: num ? `${dial} ${num}` : '' });
+                    }}
+                    className="flex-1 px-3 py-2 rounded-md border bg-surface text-sm"
+                    style={{ borderColor: 'var(--color-outline-variant)' }}
+                  />
+                </div>
                 <input type="email" placeholder="Email (optional)" value={preReg.email} onChange={(e) => setPreReg({ ...preReg, email: e.target.value })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />
                 <input placeholder="District (optional)" value={preReg.district} onChange={(e) => setPreReg({ ...preReg, district: e.target.value })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />
                 <input required type="number" min="1" placeholder="Number of travelers" value={preReg.travelers} onChange={(e) => setPreReg({ ...preReg, travelers: Number(e.target.value) })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />

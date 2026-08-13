@@ -2,23 +2,31 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Mail, Lock, User, FileCheck, Phone } from 'lucide-react';
+import { Mail, Lock, User, FileCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
 import logoImg from '@/images/flyngo_transparent.png';
+import {
+  DEFAULT_COUNTRY_CODE,
+  findDialByCode,
+} from '@/lib/country-dial-codes';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState<string>(DEFAULT_COUNTRY_CODE);
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const { register, loading, error } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await register(name, email, phone, password);
+    const dial = findDialByCode(phoneCountry)?.dial ?? '';
+    const combined = phoneNumber.trim() ? `${dial} ${phoneNumber.trim()}` : '';
+    await register(name, email, combined, password);
   };
 
   return (
@@ -65,18 +73,15 @@ export default function RegisterPage() {
                 required
               />
             </div>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-accent z-10" />
-              <Input
-                type="tel"
-                placeholder="Phone number (e.g. +8801712345678)"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="pl-10"
-                required
-                autoComplete="tel"
-              />
-            </div>
+            <PhoneInput
+              label="Phone"
+              countryCode={phoneCountry}
+              number={phoneNumber}
+              onCountryCodeChange={setPhoneCountry}
+              onNumberChange={setPhoneNumber}
+              required
+              placeholder="e.g. 1712345678"
+            />
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-accent z-10" />
               <Input

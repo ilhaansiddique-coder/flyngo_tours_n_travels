@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useApi } from '@/hooks/use-api';
@@ -10,6 +10,11 @@ import {
   User, Mail, Phone, Calendar, MapPin, Heart, Receipt, CreditCard,
   CheckCircle2, Clock, XCircle, LogOut, Edit3, FileText, Plane, Building2, Compass,
 } from 'lucide-react';
+import {
+  COUNTRY_DIALS,
+  DEFAULT_COUNTRY_CODE,
+  findDialByCode,
+} from '@/lib/country-dial-codes';
 
 type Tab = 'bookings' | 'profile' | 'saved' | 'invoices';
 
@@ -64,6 +69,61 @@ const TYPE_ICONS: Record<string, typeof Compass> = {
   package: Heart,
 };
 
+function splitPhone(value: string): { code: string; number: string } {
+  const matched = COUNTRY_DIALS.find((c) => value.startsWith(c.dial + ' ') || value.startsWith(c.dial));
+  if (matched) {
+    const rest = value.startsWith(matched.dial + ' ')
+      ? value.slice(matched.dial.length + 1)
+      : value.slice(matched.dial.length);
+    return { code: matched.code, number: rest.trim() };
+  }
+  return { code: DEFAULT_COUNTRY_CODE, number: value };
+}
+
+function PhoneCountryRow({
+  defaultValue,
+  onChange,
+}: {
+  defaultValue: string;
+  onChange: (code: string, combined: string) => void;
+}) {
+  const initial = splitPhone(defaultValue);
+  const [code, setCode] = useState(initial.code);
+  const [number, setNumber] = useState(initial.number);
+
+  useEffect(() => {
+    const dial = findDialByCode(code)?.dial ?? '';
+    const combined = number.trim() ? `${dial} ${number.trim()}` : '';
+    onChange(code, combined);
+  }, [code, number, onChange]);
+
+  return (
+    <div className="flex gap-2">
+      <select
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        className="w-32 px-2 py-2 rounded-md border bg-surface text-sm"
+        style={{ borderColor: 'var(--color-outline-variant)' }}
+        aria-label="Country code"
+      >
+        {COUNTRY_DIALS.map((c) => (
+          <option key={c.code} value={c.code}>
+            {c.flag} {c.dial}
+          </option>
+        ))}
+      </select>
+      <input
+        type="tel"
+        placeholder="Phone number"
+        value={number}
+        onChange={(e) => setNumber(e.target.value)}
+        className="flex-1 px-3 py-2 rounded-md border bg-surface text-sm"
+        style={{ borderColor: 'var(--color-outline-variant)' }}
+      />
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
@@ -73,6 +133,8 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const phoneHiddenRef = useRef<HTMLInputElement | null>(null);
+  const phoneFormRef = useRef<string>('');
 
   useEffect(() => {
     if (!user) {
@@ -106,7 +168,8 @@ export default function DashboardPage() {
   const handleProfileSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const body = { fullName: String(fd.get('fullName') ?? ''), phone: String(fd.get('phone') ?? '') };
+    const phoneFromForm = phoneFormRef.current || String(fd.get('phone') ?? '');
+    const body = { fullName: String(fd.get('fullName') ?? ''), phone: phoneFromForm };
     const updated = await updateMyProfile(body);
     setProfile((p) => p ? { ...p, ...(updated as Profile) } : (updated as Profile));
     alert('Profile updated');
@@ -295,7 +358,20 @@ export default function DashboardPage() {
           </div>
           <div>
             <label className="block text-xs uppercase tracking-widest font-bold text-muted mb-1">Phone</label>
-            <input name="phone" defaultValue={profile?.phone ?? ''} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />
+            <PhoneCountryRow
+              defaultValue={profile?.phone ?? ''}
+              onChange={(_, combined) => {
+                phoneFormRef.current = combined;
+              }}
+            />
+            <input
+              ref={(el) => {
+                if (el) phoneHiddenRef.current = el;
+              }}
+              type="hidden"
+              name="phone"
+              defaultValue={profile?.phone ?? ''}
+            />
           </div>
           <div>
             <label className="block text-xs uppercase tracking-widest font-bold text-muted mb-1">Member since</label>

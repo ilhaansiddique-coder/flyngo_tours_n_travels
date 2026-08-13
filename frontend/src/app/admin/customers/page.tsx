@@ -6,9 +6,15 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Modal, FormField, FormInput, FormSelect, ConfirmDialog } from '@/components/admin/ui';
 import { useEffect, useState } from 'react';
 import { Users, Search, Pencil, Trash2, Plus } from 'lucide-react';
+import {
+  COUNTRY_DIALS,
+  DEFAULT_COUNTRY_CODE,
+  findDialByCode,
+} from '@/lib/country-dial-codes';
 
 interface Role {
   id: string;
@@ -30,6 +36,7 @@ interface FormData {
   fullName: string;
   email: string;
   phone: string;
+  phoneCountry: string;
   password: string;
   roleId: string;
   isActive: boolean;
@@ -39,6 +46,7 @@ const initialForm: FormData = {
   fullName: '',
   email: '',
   phone: '',
+  phoneCountry: DEFAULT_COUNTRY_CODE,
   password: '',
   roleId: '',
   isActive: true,
@@ -112,10 +120,13 @@ export default function CustomersPage() {
 
   const openEditModal = (user: User) => {
     setEditingUser(user);
+    const stored = user.phone || '';
+    const matched = COUNTRY_DIALS.find((c) => stored.startsWith(c.dial + ' ') || stored.startsWith(c.dial));
     setForm({
       fullName: user.fullName || '',
       email: user.email || '',
-      phone: user.phone || '',
+      phone: stored,
+      phoneCountry: matched?.code || DEFAULT_COUNTRY_CODE,
       password: '',
       roleId: user.role?.id || '',
       isActive: user.isActive,
@@ -358,10 +369,28 @@ export default function CustomersPage() {
           )}
 
           <FormField label="Phone">
-            <FormInput
-              value={form.phone}
-              onChange={(v) => setForm({ ...form, phone: v })}
-              placeholder="+880 1XXX XXX XXX"
+            <PhoneInput
+              countryCode={form.phoneCountry}
+              number={(() => {
+                const m = COUNTRY_DIALS.find(
+                  (c) =>
+                    form.phone.startsWith(c.dial + ' ') || form.phone.startsWith(c.dial),
+                );
+                if (!m) return form.phone;
+                return form.phone.startsWith(m.dial + ' ')
+                  ? form.phone.slice(m.dial.length + 1)
+                  : form.phone.slice(m.dial.length);
+              })()}
+              onCountryCodeChange={(c) => {
+                const dial = findDialByCode(c)?.dial ?? '';
+                const rest = form.phone.replace(/^\+\d+\s*/, '');
+                setForm({ ...form, phoneCountry: c, phone: rest ? `${dial} ${rest}` : '' });
+              }}
+              onNumberChange={(v) => {
+                const dial = findDialByCode(form.phoneCountry)?.dial ?? '';
+                setForm({ ...form, phone: v ? `${dial} ${v}` : '' });
+              }}
+              placeholder="1XXX XXX XXX"
             />
           </FormField>
 

@@ -2,10 +2,16 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { DestinationAutocomplete } from '@/components/ui/destination-autocomplete';
 import { formatCurrency } from '@/lib/utils';
 import { useBookingStore } from '@/stores/booking.store';
 import { useApi } from '@/hooks/use-api';
+import {
+  COUNTRY_DIALS,
+  DEFAULT_COUNTRY_CODE,
+  findDialByCode,
+} from '@/lib/country-dial-codes';
 import { useState } from 'react';
 import { Check, Loader2, Sparkles, MapPin, Wallet, Users as UsersIcon, Heart, ArrowRight, ArrowLeft, AlertCircle, Compass, Building2, Plane, Briefcase } from 'lucide-react';
 import Link from 'next/link';
@@ -183,6 +189,31 @@ export default function BookingPage() {
   function validatePhone(v: string) {
     const digits = v.replace(/\D/g, '');
     return digits.length >= 7 && digits.length <= 15;
+  }
+
+  function getStoredPhoneParts(): { code: string; number: string } {
+    const combined = formData.phone || '';
+    const matched = COUNTRY_DIALS.find((c) => combined.startsWith(c.dial + ' ') || combined.startsWith(c.dial));
+    if (matched) {
+      const rest = combined.startsWith(matched.dial + ' ')
+        ? combined.slice(matched.dial.length + 1)
+        : combined.slice(matched.dial.length);
+      return { code: matched.code, number: rest.trim() };
+    }
+    return { code: formData.phoneCountry || DEFAULT_COUNTRY_CODE, number: combined };
+  }
+
+  function setPhoneParts(code: string, number: string) {
+    const dial = findDialByCode(code)?.dial ?? '';
+    const trimmedNumber = number.replace(/^\s+/, '');
+    const combined = trimmedNumber ? `${dial} ${trimmedNumber}` : '';
+    setFormData({ ...formData, phoneCountry: code, phone: combined });
+    setFieldErrors((prev) => {
+      if (!prev.phone) return prev;
+      const next = { ...prev };
+      delete next.phone;
+      return next;
+    });
   }
 
   function validateCurrentStep(): { ok: boolean; errors: Record<string, string> } {
@@ -539,11 +570,18 @@ export default function BookingPage() {
                     required
                     error={fieldErrors.firstName}
                   />
-                  <Input
+                  <PhoneInput
                     label={isBn ? 'ফোন' : 'Phone'}
-                    type="tel"
-                    value={formData.phone || ''}
-                    onChange={(e) => updateForm('phone', e.target.value)}
+                    countryCode={getStoredPhoneParts().code}
+                    number={getStoredPhoneParts().number}
+                    onCountryCodeChange={(c) => {
+                      const parts = getStoredPhoneParts();
+                      setPhoneParts(c, parts.number);
+                    }}
+                    onNumberChange={(v) => {
+                      const parts = getStoredPhoneParts();
+                      setPhoneParts(parts.code, v);
+                    }}
                     required
                     error={fieldErrors.phone}
                   />
@@ -680,7 +718,21 @@ export default function BookingPage() {
                     <Input label={isBn ? 'জন্মস্থান' : 'Place of birth'} value={formData.placeOfBirth || ''} onChange={(e) => updateForm('placeOfBirth', e.target.value)} required error={fieldErrors.placeOfBirth} />
                   </div>
                   <Input label={t('booking_email')} type="email" value={formData.email || ''} onChange={(e) => updateForm('email', e.target.value)} required error={fieldErrors.email} />
-                  <Input label={t('booking_phone')} type="tel" value={formData.phone || ''} onChange={(e) => updateForm('phone', e.target.value)} required error={fieldErrors.phone} />
+                  <PhoneInput
+                    label={t('booking_phone')}
+                    countryCode={getStoredPhoneParts().code}
+                    number={getStoredPhoneParts().number}
+                    onCountryCodeChange={(c) => {
+                      const parts = getStoredPhoneParts();
+                      setPhoneParts(c, parts.number);
+                    }}
+                    onNumberChange={(v) => {
+                      const parts = getStoredPhoneParts();
+                      setPhoneParts(parts.code, v);
+                    }}
+                    required
+                    error={fieldErrors.phone}
+                  />
                 </div>
               )}
 
@@ -746,7 +798,21 @@ export default function BookingPage() {
                     <Input label={t('booking_last_name')} value={formData.lastName || ''} onChange={(e) => updateForm('lastName', e.target.value)} required error={fieldErrors.lastName} />
                   </div>
                   <Input label={t('booking_email')} type="email" value={formData.email || ''} onChange={(e) => updateForm('email', e.target.value)} required error={fieldErrors.email} />
-                  <Input label={t('booking_phone')} type="tel" value={formData.phone || ''} onChange={(e) => updateForm('phone', e.target.value)} required error={fieldErrors.phone} />
+                  <PhoneInput
+                    label={t('booking_phone')}
+                    countryCode={getStoredPhoneParts().code}
+                    number={getStoredPhoneParts().number}
+                    onCountryCodeChange={(c) => {
+                      const parts = getStoredPhoneParts();
+                      setPhoneParts(c, parts.number);
+                    }}
+                    onNumberChange={(v) => {
+                      const parts = getStoredPhoneParts();
+                      setPhoneParts(parts.code, v);
+                    }}
+                    required
+                    error={fieldErrors.phone}
+                  />
                 </div>
               )}
 

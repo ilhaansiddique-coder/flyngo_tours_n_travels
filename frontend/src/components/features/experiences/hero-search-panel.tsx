@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Compass, FileCheck, Plane, Search, Building2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { DestinationAutocomplete } from '@/components/ui/destination-autocomplete';
 import { NationalityAutocomplete } from '@/components/ui/nationality-autocomplete';
+import { DEFAULT_COUNTRY_CODE, findDialByCode } from '@/lib/country-dial-codes';
 
 type TabKey = 'tours' | 'visa' | 'hotels' | 'flights';
 
@@ -23,7 +25,8 @@ export function HeroSearchPanel() {
   const [tab, setTab] = useState<TabKey>('tours');
   const [destination, setDestination] = useState('');
   const [nationality, setNationality] = useState('');
-  const [contact, setContact] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
+  const [contactCountry, setContactCountry] = useState<string>(DEFAULT_COUNTRY_CODE);
   const [email, setEmail] = useState('');
   const [contactError, setContactError] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -60,10 +63,10 @@ export function HeroSearchPanel() {
       ok = false;
     }
 
-    if (!contact.trim()) {
+    if (!contactNumber.trim()) {
       setContactError('Contact number is required.');
       ok = false;
-    } else if (contact.trim().length < 6) {
+    } else if (contactNumber.trim().length < 6) {
       setContactError('Please enter a valid phone number.');
       ok = false;
     }
@@ -86,7 +89,11 @@ export function HeroSearchPanel() {
     const params = new URLSearchParams();
     params.set('q', destination.trim());
     if (nationality.trim()) params.set('nationality', nationality.trim());
-    params.set('contact', contact.trim());
+    {
+      const dial = findDialByCode(contactCountry)?.dial ?? '';
+      params.set('contactCountry', contactCountry);
+      params.set('contact', `${dial} ${contactNumber.trim()}`.trim());
+    }
     params.set('email', email.trim());
     if (tab === 'flights') {
       if (from.trim()) params.set('from', from.trim());
@@ -114,16 +121,20 @@ export function HeroSearchPanel() {
   }
 
   const contactField = (
-    <Input
+    <PhoneInput
       label="Contact number"
-      type="tel"
-      value={contact}
-      onChange={(e) => {
-        setContact(e.target.value);
+      countryCode={contactCountry}
+      number={contactNumber}
+      onCountryCodeChange={(c) => {
+        setContactCountry(c);
+        if (contactError) setContactError('');
+      }}
+      onNumberChange={(v) => {
+        setContactNumber(v);
         if (contactError) setContactError('');
       }}
       required
-      placeholder="e.g. +880 1XXX-XXXXXX"
+      placeholder="e.g. 1XXX-XXXXXX"
       error={contactError}
     />
   );

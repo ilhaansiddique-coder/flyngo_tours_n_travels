@@ -4,12 +4,16 @@ import { Section, Container } from '@/components/ui/section';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { PageHero } from '@/components/ui/page-hero';
 import { Mail, Phone, MapPin, Send, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
+import { DEFAULT_COUNTRY_CODE } from '@/lib/country-dial-codes';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [phoneCountry, setPhoneCountry] = useState<string>(DEFAULT_COUNTRY_CODE);
+  const [phoneNumber, setPhoneNumber] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +48,13 @@ export default function ContactPage() {
                     <Input label="Last Name" required />
                   </div>
                   <Input label="Email" type="email" required />
-                  <Input label="Phone" type="tel" />
+                  <PhoneInput
+                    label="Phone"
+                    countryCode={phoneCountry}
+                    number={phoneNumber}
+                    onCountryCodeChange={setPhoneCountry}
+                    onNumberChange={setPhoneNumber}
+                  />
                   <div className="w-full">
                     <label className="block text-sm font-medium text-on-surface mb-1.5">Message</label>
                     <textarea

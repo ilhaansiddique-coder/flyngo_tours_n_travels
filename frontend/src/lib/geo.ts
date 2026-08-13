@@ -44,20 +44,24 @@ export type City = { id?: string; name: string; nameBn?: string; lat: number; lo
  * Static fallback cities used when the API is unreachable.
  * The home page now sources its cities from {@link useGlobeData}; these are
  * only here for tests and older code paths that import from `lib/geo`.
+ *
+ * Each city carries a stable string `id` so the static `ROUTES` table below
+ * (and any code that matches routes by id) keeps working even when the API is
+ * offline.
  */
 export const CITIES: City[] = [
-  { name: "New York", nameBn: "নিউ ইয়র্ক", lat: 40.71, lon: -74.01 },
-  { name: "London", nameBn: "লন্ডন", lat: 51.51, lon: -0.13 },
-  { name: "Dubai", nameBn: "দুবাই", lat: 25.2, lon: 55.27 },
-  { name: "Singapore", nameBn: "সিঙ্গাপুর", lat: 1.35, lon: 103.82 },
-  { name: "Tokyo", nameBn: "টোকিও", lat: 35.68, lon: 139.69 },
-  { name: "São Paulo", nameBn: "সাও পাওলো", lat: -23.55, lon: -46.63 },
-  { name: "Lagos", nameBn: "লাগোস", lat: 6.52, lon: 3.38 },
-  { name: "Sydney", nameBn: "সিডনি", lat: -33.87, lon: 151.21 },
-  { name: "Mumbai", nameBn: "মুম্বাই", lat: 19.08, lon: 72.88 },
-  { name: "Frankfurt", nameBn: "ফ্রাঙ্কফুর্ট", lat: 50.11, lon: 8.68 },
-  { name: "San Francisco", nameBn: "সান ফ্রান্সিসকো", lat: 37.77, lon: -122.42 },
-  { name: "Nairobi", nameBn: "নাইরোবি", lat: -1.29, lon: 36.82 },
+  { id: "ny", name: "New York", nameBn: "নিউ ইয়র্ক", lat: 40.71, lon: -74.01 },
+  { id: "lon", name: "London", nameBn: "লন্ডন", lat: 51.51, lon: -0.13 },
+  { id: "dxb", name: "Dubai", nameBn: "দুবাই", lat: 25.2, lon: 55.27 },
+  { id: "sgp", name: "Singapore", nameBn: "সিঙ্গাপুর", lat: 1.35, lon: 103.82 },
+  { id: "tok", name: "Tokyo", nameBn: "টোকিও", lat: 35.68, lon: 139.69 },
+  { id: "sao", name: "São Paulo", nameBn: "সাও পাওলো", lat: -23.55, lon: -46.63 },
+  { id: "los", name: "Lagos", nameBn: "লাগোস", lat: 6.52, lon: 3.38 },
+  { id: "syd", name: "Sydney", nameBn: "সিডনি", lat: -33.87, lon: 151.21 },
+  { id: "bom", name: "Mumbai", nameBn: "মুম্বাই", lat: 19.08, lon: 72.88 },
+  { id: "fra", name: "Frankfurt", nameBn: "ফ্রাঙ্কফুর্ট", lat: 50.11, lon: 8.68 },
+  { id: "sfo", name: "San Francisco", nameBn: "সান ফ্রান্সিসকো", lat: 37.77, lon: -122.42 },
+  { id: "nbo", name: "Nairobi", nameBn: "নাইরোবি", lat: -1.29, lon: 36.82 },
 ];
 
 export function cityName(
@@ -74,6 +78,15 @@ export const ROUTES: [number, number][] = [
   [0, 1], [1, 2], [2, 3], [3, 4], [0, 10], [10, 4],
   [1, 6], [6, 11], [2, 8], [8, 3], [5, 1], [3, 7], [9, 2], [0, 5],
 ];
+
+/**
+ * Same routes, but keyed by city `id` so the static fallback is compatible
+ * with the API payload shape (`fromCityId`/`toCityId` are strings, not indices).
+ */
+export const ROUTES_BY_ID: [string, string][] = ROUTES.map(([a, b]) => [
+  CITIES[a].id as string,
+  CITIES[b].id as string,
+]);
 
 /**
  * Great-circle-ish arc between two surface points, bowed outward. Longer hops

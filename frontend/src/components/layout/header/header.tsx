@@ -5,7 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Menu, X, User, LogOut } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Menu, X, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
@@ -20,7 +21,6 @@ const navItems = [
   { key: 'nav_hajj', href: '/hajj' },
   { key: 'nav_hotels', href: '/hotels' },
   { key: 'nav_tickets', href: '/flights' },
-  { key: 'nav_transport', href: '/transport' },
   { key: 'nav_blog', href: '/blog' },
 ] as const;
 
@@ -28,11 +28,13 @@ export function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [authReady, setAuthReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
   const { t } = useLocale();
   const { visible, compact } = useScrollReveal();
 
   useEffect(() => {
+    setMounted(true);
     // SSR hydration guard — render the same on server and first client render
     // then reveal the auth-dependent UI on the second render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -42,6 +44,15 @@ export function Header() {
   useEffect(() => {
     document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsMobileMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [isMobileMenuOpen]);
 
   if (pathname.startsWith('/admin')) return null;
@@ -72,31 +83,20 @@ export function Header() {
         )}
       >
         <div className="flex items-center gap-12">
-          <Link href="/" className="flex flex-col items-start leading-tight">
+          <Link href="/" className="flex items-center leading-none pl-6 sm:pl-10 lg:pl-0">
             <Image
               src={logoImg}
               alt="FlynGo"
-              width={120}
-              height={48}
+              width={965}
+              height={344}
               priority
               className={cn(
-                'rounded-xl object-cover w-auto h-auto transition-[height,width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
-                compact ? 'h-8' : 'h-12',
+                'object-contain w-auto transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                compact ? 'h-7' : 'h-10',
               )}
             />
-            <span
-              className={cn(
-                'mt-0.5 tracking-[0.2em] uppercase font-medium transition-[font-size,opacity,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden',
-                compact
-                  ? 'text-[0px] opacity-0 h-0 mt-0'
-                  : 'text-[7px] sm:text-[8px] opacity-70',
-              )}
-              style={{ color: 'var(--color-nav-inactive)' }}
-            >
-              {t('slogan')}
-            </span>
           </Link>
-          <nav className="hidden md:flex gap-8">
+          <nav className="hidden lg:flex gap-8">
             {navItems.map((item) => {
               const active = item.href === '/'
                 ? pathname === '/'
@@ -129,19 +129,17 @@ export function Header() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center ml-auto">
           {isAuthenticated() && user ? (
-            <div className="flex items-center gap-3">
+            <div className="hidden lg:flex items-center gap-3 mr-4">
               <Link
                 href={user.role === 'customer' ? '/dashboard' : '/admin/dashboard'}
-                className="hidden sm:flex flex-col leading-tight transition-colors"
+                className="flex flex-col leading-tight transition-colors"
                 style={{ color: 'var(--color-header-text)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-header-text)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-header-text)')}
               >
-                <span className="hidden lg:inline text-sm font-semibold">{user.fullName}</span>
+                <span className="text-sm font-semibold">{user.fullName}</span>
                 <span
-                  className="hidden lg:inline text-[9px] font-bold tracking-[0.18em] uppercase"
+                  className="text-[9px] font-bold tracking-[0.18em] uppercase"
                   style={{ color: 'var(--color-header-text-muted)' }}
                 >
                   {user.role}
@@ -153,26 +151,22 @@ export function Header() {
                 style={{ color: 'var(--color-header-text-muted)' }}
                 title="Logout"
               >
-                <LogOut className="w-6 h-6" />
+                <LogOut className="w-5 h-5" />
               </button>
             </div>
           ) : (
-            <>
-              <Link
-                href="/auth/login"
-                className="hidden sm:inline-flex text-sm font-medium transition-colors"
-                style={{ color: 'var(--color-header-text-muted)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-header-text)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-header-text-muted)')}
-              >
-                {t('nav_signin')}
-              </Link>
-            </>
+            <Link
+              href="/auth/login"
+              className="hidden md:inline-flex text-sm font-medium mr-4 transition-colors"
+              style={{ color: 'var(--color-header-text-muted)' }}
+            >
+              {t('nav_signin')}
+            </Link>
           )}
 
           <Link
             href="/booking"
-            className="px-6 py-2.5 rounded-full text-sm font-bold tracking-wider transition-all duration-300 shadow-lg"
+            className="hidden lg:inline-flex mr-4 px-6 py-2.5 rounded-full text-sm font-bold tracking-wider transition-all duration-300 shadow-lg"
             style={{
               backgroundColor: 'var(--color-header-btn-bg)',
               color: 'var(--color-header-btn-text)',
@@ -189,27 +183,59 @@ export function Header() {
             {t('nav_book')}
           </Link>
 
-          <ThemeToggle />
-          <LanguageToggle />
-
-          <button
-            className="lg:hidden p-2 rounded-xl transition-colors hover:bg-surface-container-high"
-            style={{ color: 'var(--color-header-text)' }}
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <ThemeToggle />
+            <LanguageToggle />
+            <button
+              className="lg:hidden p-2 -mr-2 rounded-xl transition-colors hover:bg-surface-container-high"
+              style={{ color: 'var(--color-header-text)' }}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
       </div>
 
-      {isMobileMenuOpen && (
-        <div
-          className="lg:hidden fixed inset-0 top-20 z-40 animate-slide-up"
-          style={{ backgroundColor: 'var(--color-mobile-menu-bg)' }}
-        >
-          <div className="p-6 pt-8">
-            <nav className="flex flex-col gap-2">
+      {mounted && isMobileMenuOpen && createPortal(
+        <>
+          <div
+            className="lg:hidden fixed inset-0 z-[55] animate-fade-in"
+            style={{ backgroundColor: 'rgba(2, 6, 23, 0.55)', backdropFilter: 'blur(2px)' }}
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            className="lg:hidden fixed top-0 right-0 bottom-0 z-[60] w-[min(360px,85vw)] sm:w-[380px] shadow-2xl flex flex-col animate-slide-in-right"
+            style={{
+              backgroundColor: 'var(--color-mobile-menu-bg)',
+              borderLeft: '1px solid var(--color-mobile-divider)',
+            }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile menu"
+          >
+            <div className="flex items-center justify-between h-20 px-6 shrink-0"
+              style={{ borderBottom: '1px solid var(--color-mobile-divider)' }}
+            >
+              <span
+                className="text-sm font-bold uppercase tracking-[0.18em]"
+                style={{ color: 'var(--color-mobile-nav-text)' }}
+              >
+                Menu
+              </span>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 rounded-xl transition-colors hover:bg-surface-container-high"
+                style={{ color: 'var(--color-header-text)' }}
+                aria-label="Close menu"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <nav className="flex flex-col gap-1">
               {navItems.map((item) => {
                 const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
                 return (
@@ -217,7 +243,7 @@ export function Header() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'px-4 py-4 rounded-xl text-base font-semibold transition-colors',
+                      'px-4 py-2.5 rounded-xl text-base font-semibold transition-colors',
                       active
                         ? ''
                         : ''
@@ -244,8 +270,19 @@ export function Header() {
                   </Link>
                 );
               })}
+              <Link
+                href="/booking"
+                className="mt-1 px-4 py-2.5 rounded-xl text-base font-bold tracking-wider text-center transition-colors"
+                style={{
+                  backgroundColor: 'var(--color-header-btn-bg)',
+                  color: 'var(--color-header-btn-text)',
+                }}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {t('nav_book')}
+              </Link>
               <div
-                className="my-4"
+                className="my-2"
                 style={{ borderTop: '1px solid var(--color-mobile-divider)' }}
               />
               {!authReady ? (
@@ -254,7 +291,7 @@ export function Header() {
                 <>
                   <Link
                     href={user.role === 'customer' ? '/dashboard' : '/admin/dashboard'}
-                    className="px-4 py-4 rounded-xl text-base font-medium transition-colors"
+                    className="px-4 py-2.5 rounded-xl text-base font-medium transition-colors"
                     style={{ color: 'var(--color-mobile-nav-text)' }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = 'var(--color-nav-hover)';
@@ -270,7 +307,7 @@ export function Header() {
                   </Link>
                   <button
                     onClick={() => { logout(); setIsMobileMenuOpen(false); window.location.href = '/'; }}
-                    className="px-4 py-4 rounded-xl text-base font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left"
+                    className="px-4 py-2.5 rounded-xl text-base font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left"
                   >
                     Logout
                   </button>
@@ -279,7 +316,7 @@ export function Header() {
                 <>
                   <Link
                     href="/auth/login"
-                    className="px-4 py-4 rounded-xl text-base font-medium transition-colors"
+                    className="px-4 py-2.5 rounded-xl text-base font-medium transition-colors"
                     style={{ color: 'var(--color-mobile-nav-text)' }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = 'var(--color-nav-hover)';
@@ -295,7 +332,7 @@ export function Header() {
                   </Link>
                   <Link
                     href="/auth/register"
-                    className="px-4 py-4 rounded-xl text-base font-medium transition-colors"
+                    className="px-4 py-2.5 rounded-xl text-base font-medium transition-colors"
                     style={{ color: 'var(--color-mobile-nav-text)' }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = 'var(--color-nav-hover)';
@@ -312,8 +349,10 @@ export function Header() {
                 </>
               )}
             </nav>
+            </div>
           </div>
-        </div>
+        </>,
+        document.body
       )}
     </header>
   );

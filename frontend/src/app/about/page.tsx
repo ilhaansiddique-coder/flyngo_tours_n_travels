@@ -16,7 +16,7 @@ export default function AboutPage() {
       <PageHero
         eyebrow="Our Story"
         title={<>About <span className="gradient-text-warm">FlynGo</span></>}
-        subtitle="Your trusted partner for extraordinary journeys since 2020."
+        subtitle="Your Trusted Travel Partner for extraordinary journeys since 2020."
       />
 
       <Section>

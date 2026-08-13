@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useCallback } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import {
   CITIES,
-  ROUTES,
+  ROUTES_BY_ID,
   arcCurve,
   landPointCloud,
   latLonToVector3,
@@ -304,6 +304,11 @@ function Marker({ position, delay, color }: { position: THREE.Vector3; delay: nu
   );
 }
 
+/* --------------------------------------------------------------- labels -- */
+
+// City labels removed. The globe now relies on its pulsing markers alone.
+
+
 /* ------------------------------------------------------- surface shading -- */
 
 /* ---------------------------------------------------------------- scene -- */
@@ -317,7 +322,7 @@ function GlobeScene({
 }: {
   withPlanes: boolean;
   palette: Palette;
-  cities: { id?: string; lat: number; lon: number; name?: string }[];
+  cities: City[];
   routes: { id?: string; fromCityId: string; toCityId: string }[];
 }) {
   const group = useRef<THREE.Group>(null);
@@ -328,23 +333,42 @@ function GlobeScene({
   );
 
   const cityIndex = useMemo(() => {
-    const map = new Map<string, number>();
+    const byId = new Map<string, number>();
+    const byName = new Map<string, number>();
     cities.forEach((c, i) => {
-      if (c.id) map.set(c.id, i);
+      const anyC = c as City & { nameEn?: string };
+      if (c.id) byId.set(String(c.id), i);
+      if (anyC.name) byName.set(anyC.name.toLowerCase(), i);
+      if (anyC.nameEn) byName.set(anyC.nameEn.toLowerCase(), i);
     });
-    return map;
+    return { byId, byName };
   }, [cities]);
+
+  const resolveCity = useCallback(
+    (key: string | undefined): number | null => {
+      if (!key) return null;
+      const byId = cityIndex.byId.get(String(key));
+      if (byId != null) return byId;
+      const byName = cityIndex.byName.get(String(key).toLowerCase());
+      return byName ?? null;
+    },
+    [cityIndex],
+  );
 
   const routePairs = useMemo(() => {
     return routes
       .map((r) => {
-        const a = cityIndex.get(r.fromCityId);
-        const b = cityIndex.get(r.toCityId);
+        const fromKey =
+          r.fromCityId ?? (r as GlobeRoute).fromCity?.id ?? (r as GlobeRoute).fromCity?.name;
+        const toKey =
+          r.toCityId ?? (r as GlobeRoute).toCity?.id ?? (r as GlobeRoute).toCity?.name;
+        const a = resolveCity(fromKey);
+        const b = resolveCity(toKey);
         if (a == null || b == null) return null;
         return { a, b, id: r.id ?? `${a}-${b}` };
       })
       .filter((r): r is { a: number; b: number; id: string } => r !== null);
-  }, [routes, cityIndex]);
+  }, [routes, resolveCity]);
 
   useFrame((_, delta) => {
     if (group.current) group.current.rotation.y += delta * 0.06;
@@ -402,24 +426,38 @@ export default function Globe({
   routes: routesProp,
 }: {
   withPlanes?: boolean;
-  cities?: { id?: string; lat: number; lon: number; name?: string }[];
+  cities?: { id?: string; lat: number; lon: number; name?: string; nameEn?: string; nameBn?: string }[];
   routes?: GlobeRoute[];
 }) {
   const palette: Palette = PALETTE;
 
-  const cities = citiesProp && citiesProp.length > 0 ? citiesProp : (CITIES as (City & { id?: string })[]);
+  const normalizedCities: (City & { id?: string })[] = useMemo(() => {
+    if (!citiesProp || citiesProp.length === 0) return CITIES;
+    return citiesProp.map((c) => ({
+      id: c.id,
+      name: c.name ?? c.nameEn ?? "",
+      nameBn: c.nameBn,
+      lat: c.lat,
+      lon: c.lon,
+    }));
+  }, [citiesProp]);
+
+  const staticRoutes = useMemo(
+    () =>
+      ROUTES_BY_ID.map(([a, b], i) => ({
+        id: `static-${i}`,
+        fromCityId: a,
+        toCityId: b,
+        isActive: true,
+        sortOrder: i,
+      })),
+    [],
+  );
+
   const routesFromApi = routesProp && routesProp.length > 0 ? routesProp : null;
-  const staticRoutes = ROUTES.map(([a, b], i) => ({
-    id: `static-${i}`,
-    fromCityId: String(a),
-    toCityId: String(b),
-    isActive: true,
-    sortOrder: i,
-  }));
   const routes = routesFromApi ?? staticRoutes;
 
-  // Memoize to avoid forcing R3F reconciliation on every render of the parent
-  const memoCities = useMemo(() => cities, [cities]);
+  const memoCities = useMemo(() => normalizedCities, [normalizedCities]);
   const memoRoutes = useMemo(() => routes, [routes]);
 
   return (

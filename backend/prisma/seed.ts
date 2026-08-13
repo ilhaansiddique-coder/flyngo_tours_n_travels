@@ -297,7 +297,7 @@ async function main() {
       status: 'published',
       publishedAt: new Date(),
       metaTitle: 'About Flyngo — Your Trusted Travel Partner',
-      metaDescription: 'Learn about Flyngo Tours & Travels, your trusted partner for worldwide travel experiences.',
+      metaDescription: 'Learn about Flyngo Tours & Travels, Your Trusted Travel Partner for worldwide travel experiences.',
     },
   });
 

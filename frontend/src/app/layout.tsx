@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Montserrat } from 'next/font/google';
 import { Providers } from '@/components/providers';
 import { Header } from '@/components/layout/header/header';
-import { TopSearchBar } from '@/components/layout/header/top-search-bar';
 import { MainContent } from '@/components/layout/main-content';
 import { Footer } from '@/components/layout/footer/footer';
 import { cn } from '@/lib/utils';
@@ -40,7 +39,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <Providers>
           <Header />
-          <TopSearchBar />
           <MainContent>{children}</MainContent>
           <Footer />
         </Providers>

@@ -9,7 +9,7 @@ export const en = {
   nav_hajj: 'Hajj & Umrah',
   nav_signin: 'Sign In',
   nav_book: 'Book Now',
-  slogan: 'Your Trusted Partner',
+  slogan: 'Your Trusted Travel Partner',
   hero_badge: 'Tours · Visa · Hajj & Umrah',
   hero_title_a: 'Discover',
   hero_title_b: 'the World',

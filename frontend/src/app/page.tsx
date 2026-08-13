@@ -1,6 +1,7 @@
 'use client';
 
 import { HeroSection } from '@/components/features/hero/hero-section';
+import { WhyFlynGo } from '@/components/features/experiences/why-flyngo';
 import { CuratedExperiences } from '@/components/features/experiences/curated-experiences';
 import { StatsSection } from '@/components/features/experiences/stats-section';
 import { PopularPackages } from '@/components/features/packages/popular-packages';
@@ -14,6 +15,7 @@ export default function HomePage() {
   return (
     <main className="overflow-hidden">
       <HeroSection />
+      <WhyFlynGo />
       <CuratedExperiences />
       <StatsSection />
       <DestinationsShowcase />

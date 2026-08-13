@@ -6,6 +6,7 @@ import { useApi } from '@/hooks/use-api';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Modal, FormField, FormInput, ConfirmDialog } from '@/components/admin/ui';
+import { adminButtonStyle, adminButtonSmStyle } from '@/components/admin/button-styles';
 
 interface FaqItem {
   id: string;
@@ -139,7 +140,8 @@ export default function FaqsPage() {
         </h1>
         <button
           onClick={openAddModal}
-          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition-all duration-200"
+          style={adminButtonStyle}
+          className="hover:opacity-95 active:scale-[0.98] transition-all duration-200"
         >
           <Plus className="w-4 h-4" /> Add FAQ
         </button>
@@ -270,7 +272,8 @@ export default function FaqsPage() {
           <button
             onClick={handleSave}
             disabled={saving || !form.question.trim() || !form.answer.trim()}
-            className="px-4 py-2 text-sm rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={adminButtonSmStyle}
+            className="hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
           </button>

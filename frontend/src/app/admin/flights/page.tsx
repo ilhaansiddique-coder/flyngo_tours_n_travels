@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal, FormField, FormInput, FormSelect, ConfirmDialog } from '@/components/admin/ui';
+import { adminButtonSmStyle } from '@/components/admin/button-styles';
 import { ImageUploader } from '@/components/admin/image-uploader';
 
 interface Flight {
@@ -440,7 +441,8 @@ export default function AdminFlightsPage() {
           <button
             onClick={handleSave}
             disabled={requiredFields || saving}
-            className="px-4 py-2 text-sm rounded-lg bg-primary text-on-primary hover:bg-primary-fixed disabled:opacity-50"
+            style={adminButtonSmStyle}
+            className="hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Saving...' : editingId ? 'Update Flight' : 'Create Flight'}
           </button>

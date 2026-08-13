@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Modal, FormField, FormInput, FormSelect, ConfirmDialog } from '@/components/admin/ui';
 import { ImageUploader } from '@/components/admin/image-uploader';
+import { adminButtonStyle, adminButtonSmStyle } from '@/components/admin/button-styles';
 
 interface DestinationItem {
   id: string;
@@ -157,20 +158,8 @@ export default function AdminDestinationsPage() {
         <button
           onClick={openAddModal}
           type="button"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 20px',
-            fontSize: '14px',
-            fontWeight: 600,
-            borderRadius: '12px',
-            backgroundColor: '#0c6fdf',
-            color: '#ffffff',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-          className="hover:bg-brand-700 transition-all duration-200 shadow-md"
+          style={adminButtonStyle}
+          className="hover:opacity-95 active:scale-[0.98] transition-all duration-200"
         >
           <Plus className="w-4 h-4" /> Add Destination
         </button>
@@ -274,9 +263,10 @@ export default function AdminDestinationsPage() {
                 <button
                   key={p}
                   onClick={() => goToPage(p)}
+                  style={p === meta.page ? adminButtonSmStyle : undefined}
                   className={
                     p === meta.page
-                      ? 'px-3 py-1 text-sm rounded-lg bg-brand-600 text-white'
+                      ? 'hover:opacity-95'
                       : 'px-3 py-1 text-sm rounded-lg border border-outline-variant hover:bg-surface-container-high'
                   }
                 >
@@ -404,7 +394,8 @@ export default function AdminDestinationsPage() {
           <button
             onClick={handleSave}
             disabled={saving || !form.name.trim() || !form.country.trim()}
-            className="px-4 py-2 text-sm rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={adminButtonSmStyle}
+            className="hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
           </button>

@@ -150,7 +150,7 @@ export default function AdminDestinationsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <MapPin className="w-5 h-5 text-brand-600" /> Destinations

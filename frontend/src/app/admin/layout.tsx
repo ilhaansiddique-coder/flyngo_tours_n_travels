@@ -12,7 +12,6 @@ import {
   Languages
 } from 'lucide-react';
 import { useState } from 'react';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const navigation = [
   { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
@@ -121,29 +120,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main Content */}
       <main className={cn('flex-1 transition-all duration-300', collapsed ? 'ml-20' : 'ml-64')}>
-        {/* Top Bar */}
-        <div className="h-16 border-b border-outline-variant bg-surface-container-low/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-30">
-          <h1 className="font-display text-xl font-bold text-on-surface">
-            {navigation.find((n) => n.href === pathname)?.label || 'Dashboard'}
-          </h1>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
-              title="Go to Home Page"
-            >
-              <Home className="w-4 h-4" />
-              Home
-            </Link>
-            <ThemeToggle className="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" />
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-blue-500 flex items-center justify-center text-on-secondary font-bold">
-              <span className="text-sm font-bold">A</span>
-            </div>
-          </div>
-        </div>
-
         {/* Page Content */}
-        <div className="p-6">{children}</div>
+        <div className="px-6 py-4">{children}</div>
       </main>
     </div>
   );

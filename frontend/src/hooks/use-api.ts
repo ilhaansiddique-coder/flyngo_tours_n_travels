@@ -54,8 +54,8 @@ export function useApi() {
 
   const getDestinations = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-    return api.get('/destinations' + qs, auth());
-  }, [auth]);
+    return api.get('/destinations' + qs);
+  }, []);
   const createDestination = useCallback(async (body: any) => api.post('/destinations', body, auth()), [auth]);
   const updateDestination = useCallback(async (id: string, body: any) => api.patch(`/destinations/${id}`, body, auth()), [auth]);
   const deleteDestination = useCallback(async (id: string) => api.delete(`/destinations/${id}`, auth()), [auth]);

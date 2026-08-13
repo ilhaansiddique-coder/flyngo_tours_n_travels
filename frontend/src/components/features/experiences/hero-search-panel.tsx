@@ -16,6 +16,8 @@ const TABS: { key: TabKey; label: string; Icon: typeof Compass; href: string }[]
   { key: 'flights', label: 'Flight', Icon: Plane, href: '/flights' },
 ];
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function HeroSearchPanel() {
   const router = useRouter();
   const [tab, setTab] = useState<TabKey>('tours');
@@ -23,6 +25,9 @@ export function HeroSearchPanel() {
   const [nationality, setNationality] = useState('');
   const [contact, setContact] = useState('');
   const [email, setEmail] = useState('');
+  const [contactError, setContactError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [destinationError, setDestinationError] = useState('');
 
   // Flight-only fields
   const [tripType, setTripType] = useState<'one-way' | 'round-trip'>('round-trip');
@@ -40,13 +45,49 @@ export function HeroSearchPanel() {
   const [checkOut, setCheckOut] = useState('');
   const [rooms, setRooms] = useState('1');
 
+  function clearErrors() {
+    setContactError('');
+    setEmailError('');
+    setDestinationError('');
+  }
+
+  function validate(): boolean {
+    clearErrors();
+    let ok = true;
+
+    if (!destination.trim()) {
+      setDestinationError(tab === 'visa' ? 'Please choose a country.' : 'Please choose a destination.');
+      ok = false;
+    }
+
+    if (!contact.trim()) {
+      setContactError('Contact number is required.');
+      ok = false;
+    } else if (contact.trim().length < 6) {
+      setContactError('Please enter a valid phone number.');
+      ok = false;
+    }
+
+    if (!email.trim()) {
+      setEmailError('Email address is required.');
+      ok = false;
+    } else if (!EMAIL_RE.test(email.trim())) {
+      setEmailError('Please enter a valid email address.');
+      ok = false;
+    }
+
+    return ok;
+  }
+
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!validate()) return;
+
     const params = new URLSearchParams();
-    if (destination.trim()) params.set('q', destination.trim());
+    params.set('q', destination.trim());
     if (nationality.trim()) params.set('nationality', nationality.trim());
-    if (contact.trim()) params.set('contact', contact.trim());
-    if (email.trim()) params.set('email', email.trim());
+    params.set('contact', contact.trim());
+    params.set('email', email.trim());
     if (tab === 'flights') {
       if (from.trim()) params.set('from', from.trim());
       if (to.trim()) params.set('to', to.trim());
@@ -64,13 +105,63 @@ export function HeroSearchPanel() {
       params.set('rooms', rooms);
     }
     const tabHref = TABS.find((t) => t.key === tab)?.href ?? '/search';
-    const qs = params.toString();
-    router.push(qs ? `${tabHref}?${qs}` : tabHref);
+    router.push(`${tabHref}?${params.toString()}`);
   }
+
+  function handleTabChange(next: TabKey) {
+    setTab(next);
+    clearErrors();
+  }
+
+  const contactField = (
+    <Input
+      label="Contact number"
+      type="tel"
+      value={contact}
+      onChange={(e) => {
+        setContact(e.target.value);
+        if (contactError) setContactError('');
+      }}
+      required
+      placeholder="e.g. +880 1XXX-XXXXXX"
+      error={contactError}
+    />
+  );
+
+  const emailField = (
+    <Input
+      label="Email address"
+      type="email"
+      value={email}
+      onChange={(e) => {
+        setEmail(e.target.value);
+        if (emailError) setEmailError('');
+      }}
+      required
+      placeholder="you@example.com"
+      error={emailError}
+    />
+  );
+
+  const destinationField = (
+    <DestinationAutocomplete
+      label={tab === 'visa' ? 'Which country do you need a visa for?' : 'Where do you want to go?'}
+      value={destination}
+      onChange={(v) => {
+        setDestination(v);
+        if (destinationError) setDestinationError('');
+      }}
+      placeholder={tab === 'visa' ? 'Country' : 'Country or city'}
+      mode={tab === 'visa' ? 'country' : 'city'}
+      required
+      error={destinationError}
+    />
+  );
 
   return (
     <form
       onSubmit={onSubmit}
+      noValidate
       className="relative rounded-3xl p-3 sm:p-5 mb-8 overflow-hidden"
       style={{
         background:
@@ -90,7 +181,15 @@ export function HeroSearchPanel() {
             'radial-gradient(120% 80% at 0% 0%, color-mix(in oklab, var(--color-primary) 18%, transparent) 0%, transparent 55%), radial-gradient(120% 80% at 100% 100%, color-mix(in oklab, var(--color-tertiary) 14%, transparent) 0%, transparent 55%)',
         }}
       />
-      <div role="tablist" aria-label="Search category" className="flex flex-wrap gap-1 mb-4 p-1 rounded-xl" style={{ backgroundColor: 'color-mix(in oklab, var(--color-surface) 35%, transparent)', border: '1px solid color-mix(in oklab, var(--color-on-surface) 8%, transparent)' }}>
+      <div
+        role="tablist"
+        aria-label="Search category"
+        className="flex flex-wrap gap-1 mb-4 p-1 rounded-xl"
+        style={{
+          backgroundColor: 'color-mix(in oklab, var(--color-surface) 35%, transparent)',
+          border: '1px solid color-mix(in oklab, var(--color-on-surface) 8%, transparent)',
+        }}
+      >
         {TABS.map(({ key, label, Icon }) => {
           const active = tab === key;
           return (
@@ -99,7 +198,7 @@ export function HeroSearchPanel() {
               type="button"
               role="tab"
               aria-selected={active}
-              onClick={() => setTab(key)}
+              onClick={() => handleTabChange(key)}
               className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold transition-all ${
                 active
                   ? 'text-[var(--color-on-primary)] shadow-md'
@@ -153,12 +252,35 @@ export function HeroSearchPanel() {
             />
             <Input label="Departing" type="date" value={depart} onChange={(e) => setDepart(e.target.value)} />
             {tripType === 'round-trip' && (
-              <Input label="Returning" type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} />
+              <Input
+                label="Returning"
+                type="date"
+                value={returnDate}
+                onChange={(e) => setReturnDate(e.target.value)}
+              />
             )}
             <div className="grid grid-cols-3 gap-3">
-              <Input label="Adults (12+)" type="number" min={1} value={adults} onChange={(e) => setAdults(e.target.value)} />
-              <Input label="Children (3-11)" type="number" min={0} value={children} onChange={(e) => setChildren(e.target.value)} />
-              <Input label="Infants (0-2)" type="number" min={0} value={infants} onChange={(e) => setInfants(e.target.value)} />
+              <Input
+                label="Adults (12+)"
+                type="number"
+                min={1}
+                value={adults}
+                onChange={(e) => setAdults(e.target.value)}
+              />
+              <Input
+                label="Children (3-11)"
+                type="number"
+                min={0}
+                value={children}
+                onChange={(e) => setChildren(e.target.value)}
+              />
+              <Input
+                label="Infants (0-2)"
+                type="number"
+                min={0}
+                value={infants}
+                onChange={(e) => setInfants(e.target.value)}
+              />
             </div>
             <div className="self-end">
               <label className="block text-sm font-medium text-on-surface mb-1.5">Class</label>
@@ -173,37 +295,60 @@ export function HeroSearchPanel() {
                 <option>First</option>
               </select>
             </div>
+            {contactField}
+            {emailField}
           </>
         ) : tab === 'hotels' ? (
           <>
-            <DestinationAutocomplete
-              label="Where do you want to go?"
-              value={destination}
-              onChange={(v) => setDestination(v)}
-              placeholder="City or hotel"
-            />
-            <div /> {/* spacer */}
+            {destinationField}
+            <div />
             <Input label="Check-in" type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
-            <Input label="Check-out" type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
-            <Input label="Rooms" type="number" min={1} value={rooms} onChange={(e) => setRooms(e.target.value)} />
-            <Input label="Guests" type="number" min={1} value={adults} onChange={(e) => setAdults(e.target.value)} />
-          </>
-        ) : (
-          <>
-            <DestinationAutocomplete
-              label="Where do you want to go?"
-              value={destination}
-              onChange={(v) => setDestination(v)}
-              placeholder="Country or city"
+            <Input
+              label="Check-out"
+              type="date"
+              value={checkOut}
+              onChange={(e) => setCheckOut(e.target.value)}
             />
+            <Input
+              label="Rooms"
+              type="number"
+              min={1}
+              value={rooms}
+              onChange={(e) => setRooms(e.target.value)}
+            />
+            <Input
+              label="Guests"
+              type="number"
+              min={1}
+              value={adults}
+              onChange={(e) => setAdults(e.target.value)}
+            />
+            {contactField}
+            {emailField}
+          </>
+        ) : tab === 'visa' ? (
+          <>
+            {destinationField}
             <NationalityAutocomplete
               label="Your nationality"
               value={nationality}
               onChange={(v) => setNationality(v)}
               placeholder="e.g. Bangladeshi"
             />
-            <Input label="Contact number" type="tel" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Optional" />
-            <Input label="Email address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Optional" />
+            {contactField}
+            {emailField}
+          </>
+        ) : (
+          <>
+            {destinationField}
+            <NationalityAutocomplete
+              label="Your nationality"
+              value={nationality}
+              onChange={(v) => setNationality(v)}
+              placeholder="e.g. Bangladeshi"
+            />
+            {contactField}
+            {emailField}
           </>
         )}
       </div>
@@ -213,8 +358,10 @@ export function HeroSearchPanel() {
           type="submit"
           className="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-[var(--color-on-primary)] shadow-lg transition hover:opacity-95 active:scale-[0.98]"
           style={{
-            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-tertiary) 100%)',
-            boxShadow: '0 14px 30px -12px color-mix(in oklab, var(--color-primary) 60%, transparent), inset 0 1px 0 color-mix(in oklab, #fff 25%, transparent)',
+            background:
+              'linear-gradient(135deg, var(--color-primary) 0%, var(--color-tertiary) 100%)',
+            boxShadow:
+              '0 14px 30px -12px color-mix(in oklab, var(--color-primary) 60%, transparent), inset 0 1px 0 color-mix(in oklab, #fff 25%, transparent)',
           }}
         >
           <Search className="w-4 h-4" />

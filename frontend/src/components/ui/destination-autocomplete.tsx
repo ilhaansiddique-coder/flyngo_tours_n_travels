@@ -1,20 +1,29 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback, KeyboardEvent } from 'react';
-import { MapPin, Loader2 } from 'lucide-react';
+import { MapPin, Flag, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import type { Destination } from '@/types';
 
+export interface VisaCountryItem {
+  id: string;
+  name: string;
+  slug: string;
+  region?: string | null;
+  flagUrl?: string | null;
+}
+
 interface DestinationAutocompleteProps {
   label: string;
   value: string;
-  onChange: (value: string, destination?: Destination) => void;
+  onChange: (value: string, item?: Destination | VisaCountryItem) => void;
   placeholder?: string;
   required?: boolean;
   error?: string;
   disabled?: boolean;
   helperText?: string;
+  mode?: 'city' | 'country';
 }
 
 function formatDestination(d: Destination): string {
@@ -30,10 +39,11 @@ export function DestinationAutocomplete({
   error,
   disabled,
   helperText,
+  mode = 'city',
 }: DestinationAutocompleteProps) {
-  const { getDestinations } = useApi();
+  const { getDestinations, getVisaCountries } = useApi();
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<Destination[]>([]);
+  const [items, setItems] = useState<(Destination | VisaCountryItem)[]>([]);
   const [loading, setLoading] = useState(false);
   const [highlight, setHighlight] = useState<number>(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -57,9 +67,15 @@ export function DestinationAutocomplete({
       }
       setLoading(true);
       try {
-        const res: any = await getDestinations({ q: q.trim(), limit: '8' });
-        const list = res?.items ?? res?.data ?? res ?? [];
-        setItems(Array.isArray(list) ? list : []);
+        if (mode === 'country') {
+          const res: any = await getVisaCountries({ q: q.trim(), limit: '8' });
+          const list = res?.items ?? res?.data ?? res ?? [];
+          setItems(Array.isArray(list) ? list : []);
+        } else {
+          const res: any = await getDestinations({ q: q.trim(), limit: '8' });
+          const list = res?.items ?? res?.data ?? res ?? [];
+          setItems(Array.isArray(list) ? list : []);
+        }
         setOpen(true);
       } catch {
         setItems([]);
@@ -67,7 +83,7 @@ export function DestinationAutocomplete({
         setLoading(false);
       }
     },
-    [getDestinations],
+    [getDestinations, getVisaCountries, mode],
   );
 
   function handleInput(next: string) {
@@ -77,9 +93,15 @@ export function DestinationAutocomplete({
     debounceRef.current = setTimeout(() => fetchSuggestions(next), 250);
   }
 
-  function handlePick(d: Destination) {
-    const formatted = formatDestination(d);
-    onChange(formatted, d);
+  function handlePick(item: Destination | VisaCountryItem) {
+    if (mode === 'country') {
+      const country = item as VisaCountryItem;
+      onChange(country.name, country);
+    } else {
+      const dest = item as Destination;
+      const formatted = formatDestination(dest);
+      onChange(formatted, dest);
+    }
     setOpen(false);
     setHighlight(-1);
   }
@@ -106,6 +128,7 @@ export function DestinationAutocomplete({
     <div ref={wrapperRef} className="w-full relative">
       <label className="block text-sm font-medium text-on-surface mb-1.5">
         {label}
+        {required && <span className="text-error ml-0.5">*</span>}
       </label>
       <div className="relative">
         <input
@@ -133,7 +156,13 @@ export function DestinationAutocomplete({
           role="combobox"
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : mode === 'country' ? (
+            <Flag className="w-4 h-4" />
+          ) : (
+            <MapPin className="w-4 h-4" />
+          )}
         </div>
       </div>
 
@@ -144,35 +173,48 @@ export function DestinationAutocomplete({
           className="absolute z-50 mt-1 w-full max-h-64 overflow-auto rounded-xl border shadow-lg bg-surface-container text-on-surface"
           style={{ borderColor: 'var(--color-outline-variant)' }}
         >
-          {items.map((d, i) => (
-            <li
-              key={d.id}
-              role="option"
-              aria-selected={highlight === i}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                handlePick(d);
-              }}
-              onMouseEnter={() => setHighlight(i)}
-              className={cn(
-                'px-4 py-2.5 cursor-pointer text-sm flex items-center gap-2 transition-colors',
-                highlight === i
-                  ? 'bg-primary/15 text-on-surface'
-                  : 'hover:bg-surface-container-high',
-              )}
-            >
-              <MapPin className="w-3.5 h-3.5 shrink-0 text-muted" />
-              <span className="font-medium">{d.name}</span>
-              {d.country && d.country !== d.name && (
-                <span className="text-muted">, {d.country}</span>
-              )}
-              {d.continent && (
-                <span className="ml-auto text-[10px] uppercase tracking-widest text-muted">
-                  {d.continent}
-                </span>
-              )}
-            </li>
-          ))}
+          {items.map((item, i) => {
+            const isCountry = mode === 'country';
+            const name = (item as any).name;
+            const region =
+              isCountry ? ((item as VisaCountryItem).region ?? '') : ((item as Destination).continent ?? '');
+            const sub = isCountry
+              ? ''
+              : (item as Destination).country && (item as Destination).country !== (item as Destination).name
+                ? `, ${(item as Destination).country}`
+                : '';
+            return (
+              <li
+                key={(item as any).id}
+                role="option"
+                aria-selected={highlight === i}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handlePick(item);
+                }}
+                onMouseEnter={() => setHighlight(i)}
+                className={cn(
+                  'px-4 py-2.5 cursor-pointer text-sm flex items-center gap-2 transition-colors',
+                  highlight === i
+                    ? 'bg-primary/15 text-on-surface'
+                    : 'hover:bg-surface-container-high',
+                )}
+              >
+                {isCountry ? (
+                  <Flag className="w-3.5 h-3.5 shrink-0 text-muted" />
+                ) : (
+                  <MapPin className="w-3.5 h-3.5 shrink-0 text-muted" />
+                )}
+                <span className="font-medium">{name}</span>
+                {sub && <span className="text-muted">{sub}</span>}
+                {region && (
+                  <span className="ml-auto text-[10px] uppercase tracking-widest text-muted">
+                    {region}
+                  </span>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -181,7 +223,8 @@ export function DestinationAutocomplete({
           className="absolute z-50 mt-1 w-full rounded-xl border shadow-lg bg-surface-container text-muted text-sm px-4 py-3"
           style={{ borderColor: 'var(--color-outline-variant)' }}
         >
-          No destinations match &ldquo;{value || ''}&rdquo;. You can still type one manually.
+          No {mode === 'country' ? 'countries' : 'destinations'} match &ldquo;{value || ''}&rdquo;. You can
+          still type one manually.
         </div>
       )}
 

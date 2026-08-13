@@ -148,25 +148,6 @@ export default function AdminDestinationsPage() {
     fetchDestinations(p);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="inline-block w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="mt-4 text-on-surface-variant">Loading destinations...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-20">
-        <p className="text-error">{error}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
@@ -180,6 +161,12 @@ export default function AdminDestinationsPage() {
           <Plus className="w-4 h-4" /> Add Destination
         </button>
       </div>
+
+      {error && (
+        <div className="text-center py-8">
+          <p className="text-error">{error}</p>
+        </div>
+      )}
 
       <Card hover={false} padding="none">
         <div className="overflow-x-auto">
@@ -196,7 +183,14 @@ export default function AdminDestinationsPage() {
               </tr>
             </thead>
             <tbody>
-              {destinations.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-on-surface-variant">
+                    <div className="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2 align-middle" />
+                    Loading destinations...
+                  </td>
+                </tr>
+              ) : destinations.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-on-surface-variant/40">
                     No destinations found

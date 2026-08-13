@@ -79,11 +79,11 @@ export function Header() {
       <div
         className={cn(
           'flex justify-between items-center max-w-[1600px] mx-auto h-full transition-[padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
-          compact ? 'px-8 lg:px-12' : 'px-16',
+          compact ? 'px-4 sm:px-6 lg:px-12' : 'px-4 sm:px-6 lg:px-16',
         )}
       >
         <div className="flex items-center gap-12">
-          <Link href="/" className="flex items-center leading-none pl-6 sm:pl-10 lg:pl-0">
+          <Link href="/" className="flex items-center leading-none">
             <Image
               src={logoImg}
               alt="FlynGo"

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Compass, FileCheck, Plane, Search, Building2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { DestinationAutocomplete } from '@/components/ui/destination-autocomplete';
+import { NationalityAutocomplete } from '@/components/ui/nationality-autocomplete';
 
 type TabKey = 'tours' | 'visa' | 'hotels' | 'flights';
 
@@ -137,8 +139,18 @@ export function HeroSearchPanel() {
                 </label>
               ))}
             </div>
-            <Input label="Flying from" value={from} onChange={(e) => setFrom(e.target.value)} placeholder="City or airport" />
-            <Input label="Flying to" value={to} onChange={(e) => setTo(e.target.value)} placeholder="City or airport" />
+            <DestinationAutocomplete
+              label="Flying from"
+              value={from}
+              onChange={(v) => setFrom(v)}
+              placeholder="City or airport"
+            />
+            <DestinationAutocomplete
+              label="Flying to"
+              value={to}
+              onChange={(v) => setTo(v)}
+              placeholder="City or airport"
+            />
             <Input label="Departing" type="date" value={depart} onChange={(e) => setDepart(e.target.value)} />
             {tripType === 'round-trip' && (
               <Input label="Returning" type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} />
@@ -164,7 +176,12 @@ export function HeroSearchPanel() {
           </>
         ) : tab === 'hotels' ? (
           <>
-            <Input label="Where do you want to go?" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="City or hotel" />
+            <DestinationAutocomplete
+              label="Where do you want to go?"
+              value={destination}
+              onChange={(v) => setDestination(v)}
+              placeholder="City or hotel"
+            />
             <div /> {/* spacer */}
             <Input label="Check-in" type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
             <Input label="Check-out" type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
@@ -173,8 +190,18 @@ export function HeroSearchPanel() {
           </>
         ) : (
           <>
-            <Input label="Where do you want to go?" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Country or city" />
-            <Input label="Your nationality" value={nationality} onChange={(e) => setNationality(e.target.value)} placeholder="e.g. Bangladeshi" />
+            <DestinationAutocomplete
+              label="Where do you want to go?"
+              value={destination}
+              onChange={(v) => setDestination(v)}
+              placeholder="Country or city"
+            />
+            <NationalityAutocomplete
+              label="Your nationality"
+              value={nationality}
+              onChange={(v) => setNationality(v)}
+              placeholder="e.g. Bangladeshi"
+            />
             <Input label="Contact number" type="tel" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Optional" />
             <Input label="Email address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Optional" />
           </>

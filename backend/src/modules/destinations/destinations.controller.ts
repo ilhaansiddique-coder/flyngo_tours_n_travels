@@ -17,9 +17,8 @@ export class DestinationsController {
   async findAll(
     @CurrentTenantId() tenantId: string,
     @Query() pagination: PaginationDto,
-    @Query('q') q?: string,
   ) {
-    return this.destinationsService.findAll(tenantId, pagination.page, pagination.limit, q);
+    return this.destinationsService.findAll(tenantId, pagination.page, pagination.limit, pagination.q);
   }
 
   @Get(':id')

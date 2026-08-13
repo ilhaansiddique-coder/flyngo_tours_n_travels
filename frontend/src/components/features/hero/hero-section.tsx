@@ -40,12 +40,12 @@ export function HeroSection() {
         <div className="absolute inset-0 bg-grid opacity-70" />
       </div>
 
-      <div className="relative mx-auto grid w-full max-w-[1600px] grid-cols-1 items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)] lg:gap-16 lg:px-16 lg:py-24">
-        <div className="relative z-10">
+      <div className="relative mx-auto grid w-full max-w-[1600px] grid-cols-1 items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-16 lg:py-24">
+        <div className="relative z-10 order-1">
           <HeroSearchPanel />
         </div>
 
-        <div className="relative order-first lg:order-last">
+        <div className="relative order-2">
           <div className="relative mx-auto aspect-square w-full max-w-[520px]">
             <Globe cities={cities} routes={routes} />
           </div>

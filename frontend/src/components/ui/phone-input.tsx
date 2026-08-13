@@ -50,12 +50,19 @@ export function PhoneInput({
   const filtered: CountryDial[] = (() => {
     const term = query.trim().toLowerCase();
     if (!term) return COUNTRY_DIALS;
-    return COUNTRY_DIALS.filter(
-      (c) =>
-        c.name.toLowerCase().includes(term) ||
-        c.dial.includes(term) ||
-        c.code.toLowerCase().includes(term),
-    );
+    const startsWith: CountryDial[] = [];
+    const contains: CountryDial[] = [];
+    for (const c of COUNTRY_DIALS) {
+      const name = c.name.toLowerCase();
+      const code = c.code.toLowerCase();
+      const dial = c.dial;
+      if (name.startsWith(term) || code.startsWith(term) || dial.includes(term)) {
+        startsWith.push(c);
+      } else if (name.includes(term) || code.includes(term)) {
+        contains.push(c);
+      }
+    }
+    return [...startsWith, ...contains];
   })();
 
   useEffect(() => {

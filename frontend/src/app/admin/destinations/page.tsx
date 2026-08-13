@@ -156,7 +156,21 @@ export default function AdminDestinationsPage() {
         </h1>
         <button
           onClick={openAddModal}
-          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition-all duration-200"
+          type="button"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 20px',
+            fontSize: '14px',
+            fontWeight: 600,
+            borderRadius: '12px',
+            backgroundColor: '#0c6fdf',
+            color: '#ffffff',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+          className="hover:bg-brand-700 transition-all duration-200 shadow-md"
         >
           <Plus className="w-4 h-4" /> Add Destination
         </button>

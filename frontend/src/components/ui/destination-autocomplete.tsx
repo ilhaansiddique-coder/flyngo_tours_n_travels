@@ -5,6 +5,7 @@ import { MapPin, Flag, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import type { Destination } from '@/types';
+import { COUNTRY_DIALS, type CountryDial } from '@/lib/country-dial-codes';
 
 export interface VisaCountryItem {
   id: string;
@@ -30,6 +31,23 @@ function formatDestination(d: Destination): string {
   return d.country && d.country !== d.name ? `${d.name}, ${d.country}` : d.name;
 }
 
+function filterCountriesLocal(q: string): CountryDial[] {
+  const term = q.trim().toLowerCase();
+  if (!term) return COUNTRY_DIALS;
+  const startsWith: CountryDial[] = [];
+  const contains: CountryDial[] = [];
+  for (const c of COUNTRY_DIALS) {
+    const name = c.name.toLowerCase();
+    const code = c.code.toLowerCase();
+    if (name.startsWith(term) || code.startsWith(term)) {
+      startsWith.push(c);
+    } else if (name.includes(term) || code.includes(term)) {
+      contains.push(c);
+    }
+  }
+  return [...startsWith, ...contains];
+}
+
 export function DestinationAutocomplete({
   label,
   value,
@@ -43,7 +61,7 @@ export function DestinationAutocomplete({
 }: DestinationAutocompleteProps) {
   const { getDestinations, getVisaCountries } = useApi();
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<(Destination | VisaCountryItem)[]>([]);
+  const [items, setItems] = useState<(Destination | VisaCountryItem | CountryDial)[]>([]);
   const [loading, setLoading] = useState(false);
   const [highlight, setHighlight] = useState<number>(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -62,15 +80,34 @@ export function DestinationAutocomplete({
   const fetchSuggestions = useCallback(
     async (q: string) => {
       if (!q || q.trim().length < 1) {
-        setItems([]);
+        if (mode === 'country') {
+          setItems(COUNTRY_DIALS);
+        } else {
+          setItems([]);
+        }
         return;
       }
       setLoading(true);
       try {
         if (mode === 'country') {
-          const res: any = await getVisaCountries({ q: q.trim(), limit: '8' });
-          const list = res?.items ?? res?.data ?? res ?? [];
-          setItems(Array.isArray(list) ? list : []);
+          // Always include the full local country list so every country in the world
+          // shows up, regardless of what the admin has added to visa-countries.
+          const local = filterCountriesLocal(q);
+          let apiResults: VisaCountryItem[] = [];
+          try {
+            const res: any = await getVisaCountries({ q: q.trim(), limit: '8' });
+            const list = res?.items ?? res?.data ?? res ?? [];
+            apiResults = Array.isArray(list) ? list : [];
+          } catch {
+            // ignore — local list is the source of truth
+          }
+          // Merge: local first (prefix matches), then any extra API matches that
+          // aren't already in the local list by name.
+          const localNames = new Set(local.map((c) => c.name.toLowerCase()));
+          const extras = apiResults.filter(
+            (a) => !localNames.has(a.name.toLowerCase()),
+          );
+          setItems([...local, ...extras]);
         } else {
           const res: any = await getDestinations({ q: q.trim(), limit: '8' });
           const list = res?.items ?? res?.data ?? res ?? [];
@@ -78,7 +115,11 @@ export function DestinationAutocomplete({
         }
         setOpen(true);
       } catch {
-        setItems([]);
+        if (mode === 'country') {
+          setItems(filterCountriesLocal(q));
+        } else {
+          setItems([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -90,13 +131,24 @@ export function DestinationAutocomplete({
     onChange(next);
     setHighlight(-1);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchSuggestions(next), 250);
+    debounceRef.current = setTimeout(() => fetchSuggestions(next), 200);
   }
 
-  function handlePick(item: Destination | VisaCountryItem) {
+  function handlePick(item: Destination | VisaCountryItem | CountryDial) {
     if (mode === 'country') {
-      const country = item as VisaCountryItem;
-      onChange(country.name, country);
+      const c = item as CountryDial | VisaCountryItem;
+      if ('dial' in c) {
+        const visaLike: VisaCountryItem = {
+          id: (c as CountryDial).code,
+          name: (c as CountryDial).name,
+          slug: (c as CountryDial).code.toLowerCase(),
+          region: null,
+          flagUrl: null,
+        };
+        onChange(visaLike.name, visaLike);
+      } else {
+        onChange(c.name, c as VisaCountryItem);
+      }
     } else {
       const dest = item as Destination;
       const formatted = formatDestination(dest);
@@ -124,6 +176,18 @@ export function DestinationAutocomplete({
     }
   }
 
+  // Show the full local list as soon as the input is focused in country mode,
+  // before the user has typed anything — so they can scroll the whole world.
+  function handleFocus() {
+    if (mode === 'country') {
+      setItems(COUNTRY_DIALS);
+      setOpen(true);
+      setHighlight(-1);
+    } else if (items.length > 0) {
+      setOpen(true);
+    }
+  }
+
   return (
     <div ref={wrapperRef} className="w-full relative">
       <label className="block text-sm font-medium text-on-surface mb-1.5">
@@ -135,7 +199,7 @@ export function DestinationAutocomplete({
           type="text"
           value={value || ''}
           onChange={(e) => handleInput(e.target.value)}
-          onFocus={() => items.length > 0 && setOpen(true)}
+          onFocus={handleFocus}
           onKeyDown={handleKey}
           placeholder={placeholder}
           required={required}
@@ -170,22 +234,29 @@ export function DestinationAutocomplete({
         <ul
           id="destination-listbox"
           role="listbox"
-          className="absolute z-50 mt-1 w-full max-h-64 overflow-auto rounded-xl border shadow-lg bg-surface-container text-on-surface"
+          className="absolute z-50 mt-1 w-full max-h-72 overflow-auto rounded-xl border shadow-lg bg-surface-container text-on-surface"
           style={{ borderColor: 'var(--color-outline-variant)' }}
         >
           {items.map((item, i) => {
-            const isCountry = mode === 'country';
+            const isCountryMode = mode === 'country';
+            const isLocalCountry =
+              isCountryMode && (item as CountryDial).dial !== undefined;
             const name = (item as any).name;
             const region =
-              isCountry ? ((item as VisaCountryItem).region ?? '') : ((item as Destination).continent ?? '');
-            const sub = isCountry
+              isCountryMode && isLocalCountry
+                ? ((item as CountryDial).dial ?? '')
+                : isCountryMode
+                  ? ((item as VisaCountryItem).region ?? '')
+                  : ((item as Destination).continent ?? '');
+            const sub = isCountryMode
               ? ''
-              : (item as Destination).country && (item as Destination).country !== (item as Destination).name
+              : (item as Destination).country &&
+                  (item as Destination).country !== (item as Destination).name
                 ? `, ${(item as Destination).country}`
                 : '';
             return (
               <li
-                key={(item as any).id}
+                key={(item as any).id ?? (item as any).code ?? name}
                 role="option"
                 aria-selected={highlight === i}
                 onMouseDown={(e) => {
@@ -200,8 +271,14 @@ export function DestinationAutocomplete({
                     : 'hover:bg-surface-container-high',
                 )}
               >
-                {isCountry ? (
-                  <Flag className="w-3.5 h-3.5 shrink-0 text-muted" />
+                {isCountryMode ? (
+                  <span className="text-base leading-none w-5 shrink-0">
+                    {isLocalCountry ? (
+                      (item as CountryDial).flag
+                    ) : (
+                      <Flag className="w-3.5 h-3.5 text-muted" />
+                    )}
+                  </span>
                 ) : (
                   <MapPin className="w-3.5 h-3.5 shrink-0 text-muted" />
                 )}

@@ -105,7 +105,25 @@ export class AuthService {
       where: { email: profile.email, tenantId },
     });
 
-    if (!user) {
+    if (user) {
+      // Link the OAuth identity to the existing account so future logins can
+      // find it directly. Do not clobber a different provider on the same row.
+      if (!user.provider || !user.providerId) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            provider: profile.provider,
+            providerId: profile.providerId,
+            lastLoginAt: new Date(),
+          },
+        });
+      } else {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        });
+      }
+    } else {
       const customerRole = await this.prisma.role.findFirst({
         where: { code: 'customer', tenantId },
       });
@@ -116,6 +134,10 @@ export class AuthService {
           fullName: profile.fullName,
           tenantId,
           roleId: customerRole!.id,
+          provider: profile.provider,
+          providerId: profile.providerId,
+          emailVerifiedAt: new Date(),
+          lastLoginAt: new Date(),
         },
       });
     }

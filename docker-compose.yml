@@ -39,6 +39,11 @@ services:
       SSLC_STORE_PASSWORD: ${SSLC_STORE_PASSWORD:-}
       SSLC_BASE_URL: ${SSLC_BASE_URL:-https://sandbox.sslcommerz.com}
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-noreply@flyngo.world}
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
@@ -77,6 +82,8 @@ services:
     restart: always
     environment:
       BACKEND_URL: ${BACKEND_URL:-http://backend:4000}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+      NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-http://localhost:3000}
     ports:
       - '3000:3000'
     depends_on:

@@ -6,12 +6,17 @@ import { ConfigService } from '../../../config/config.service';
 @Injectable()
 export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
   constructor(config: ConfigService) {
+    const apiBase = config.getOrNull('API_PUBLIC_URL')
+      || config.getOrNull('BACKEND_PUBLIC_URL')
+      || config.get('FRONTEND_URL');
+
     super({
       clientID: config.getOrNull('FACEBOOK_APP_ID') || '',
       clientSecret: config.getOrNull('FACEBOOK_APP_SECRET') || '',
-      callbackURL: `${config.get('FRONTEND_URL')}/auth/facebook/callback`,
-      profileFields: ['id', 'emails', 'displayName'],
+      callbackURL: `${apiBase}/api/v1/auth/facebook/callback`,
+      profileFields: ['id', 'emails', 'displayName', 'name'],
       scope: ['email'],
+      enableProof: true,
     });
   }
 
@@ -21,13 +26,21 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     profile: any,
     done: (err: any, user: any) => void,
   ) {
-    const { emails, displayName } = profile;
-    const user = {
-      email: emails?.[0]?.value,
-      fullName: displayName,
+    const { emails, displayName, name } = profile;
+    const email = emails?.[0]?.value;
+    if (!email) {
+      done(new Error('Facebook account did not return an email address. Make sure your email is verified and the "email" permission is granted.'), undefined);
+      return;
+    }
+    const fallbackName =
+      displayName ||
+      [name?.givenName, name?.familyName].filter(Boolean).join(' ') ||
+      email.split('@')[0];
+    done(null, {
+      email,
+      fullName: fallbackName,
       provider: 'facebook',
       providerId: profile.id,
-    };
-    done(null, user);
+    });
   }
 }

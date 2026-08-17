@@ -85,6 +85,8 @@ model User {
   phone        String?
   avatarUrl    String?   @map("avatar_url")
   passwordHash String?   @map("password_hash")
+  provider     String?   @map("provider")
+  providerId   String?   @map("provider_id")
   roleId       String    @map("role_id")
   role         Role      @relation(fields: [roleId], references: [id])
 

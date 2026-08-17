@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, VerifyCallback } from 'passport-google-oauth20';
 import { ConfigService } from '../../../config/config.service';
@@ -13,9 +13,15 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       || config.getOrNull('BACKEND_PUBLIC_URL')
       || config.get('FRONTEND_URL');
 
+    if (!clientID || !clientSecret) {
+      throw new UnauthorizedException(
+        'Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.',
+      );
+    }
+
     super({
-      clientID: clientID || 'placeholder-client-id',
-      clientSecret: clientSecret || 'placeholder-client-secret',
+      clientID,
+      clientSecret,
       callbackURL: `${apiBase}/api/v1/auth/google/callback`,
       scope: ['email', 'profile'],
     });

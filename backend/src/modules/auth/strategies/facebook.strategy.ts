@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-facebook';
 import { ConfigService } from '../../../config/config.service';
@@ -6,13 +6,22 @@ import { ConfigService } from '../../../config/config.service';
 @Injectable()
 export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
   constructor(config: ConfigService) {
+    const clientID = config.getOrNull('FACEBOOK_APP_ID');
+    const clientSecret = config.getOrNull('FACEBOOK_APP_SECRET');
+
     const apiBase = config.getOrNull('API_PUBLIC_URL')
       || config.getOrNull('BACKEND_PUBLIC_URL')
       || config.get('FRONTEND_URL');
 
+    if (!clientID || !clientSecret) {
+      throw new UnauthorizedException(
+        'Facebook OAuth is not configured. Set FACEBOOK_APP_ID and FACEBOOK_APP_SECRET.',
+      );
+    }
+
     super({
-      clientID: config.getOrNull('FACEBOOK_APP_ID') || '',
-      clientSecret: config.getOrNull('FACEBOOK_APP_SECRET') || '',
+      clientID,
+      clientSecret,
       callbackURL: `${apiBase}/api/v1/auth/facebook/callback`,
       profileFields: ['id', 'emails', 'displayName', 'name'],
       scope: ['email'],

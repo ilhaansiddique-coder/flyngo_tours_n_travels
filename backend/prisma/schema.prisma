@@ -1151,3 +1151,83 @@ model CeoMessage {
   @@index([tenantId, isActive])
   @@map("ceo_messages")
 }
+
+// =============================================================================
+// SITE NAVIGATION (header / mega-menu)
+// Owner-controlled top-level menu + sub-items.
+// `translationKey` is optional: when present, the public site resolves it
+// through the i18n catalog (e.g. "nav_home"). Otherwise labelEn/labelBn are
+// shown directly. `href` is the destination URL/path (relative or absolute).
+// `linkType` lets owners mark links as "external" so the frontend opens them
+// in a new tab, or as "section" for in-page anchors.
+// =============================================================================
+
+enum NavLinkType {
+  INTERNAL
+  EXTERNAL
+  SECTION
+}
+
+model NavMenu {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  labelEn       String  @map("label_en")
+  labelBn       String? @map("label_bn")
+  translationKey String? @map("translation_key")
+  href          String  @map("href")
+  linkType      NavLinkType @default(INTERNAL) @map("link_type")
+
+  iconName      String? @map("icon_name")
+  isVisible     Boolean @default(true) @map("is_visible")
+  openInNewTab  Boolean @default(false) @map("open_in_new_tab")
+  highlight     Boolean @default(false) @map("highlight")
+  order         Int     @default(0)
+  parentId      String? @map("parent_id")
+  parent        NavMenu? @relation("NavMenuChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children      NavMenu[] @relation("NavMenuChildren")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([tenantId, parentId, order])
+  @@map("nav_menus")
+}
+
+// =============================================================================
+// SITE FOOTER (configurable columns + link columns + contact + socials)
+// A single row per tenant. `columns` is a JSON array of:
+//   { id, headingEn, headingBn, translationKey?, links: [{ id, labelEn,
+//     labelBn, translationKey?, href, linkType, openInNewTab }] }
+// `contact` and `social` are editable JSON blobs; `copyrightTextEn/Bn`
+// override the default "© YYYY Company. All rights reserved." line.
+// =============================================================================
+
+model FooterConfig {
+  id       String @id @default(uuid())
+  tenantId String @unique @map("tenant_id")
+
+  taglineEn     String? @db.Text @map("tagline_en")
+  taglineBn     String? @db.Text @map("tagline_bn")
+  accentLabelEn String? @map("accent_label_en")
+  accentLabelBn String? @map("accent_label_bn")
+
+  columns       Json    @default("[]")
+
+  contactEmail  String? @map("contact_email")
+  contactPhone  String? @map("contact_phone")
+  contactNoteEn String? @map("contact_note_en")
+  contactNoteBn String? @map("contact_note_bn")
+
+  copyrightTextEn String? @map("copyright_text_en")
+  copyrightTextBn String? @map("copyright_text_bn")
+
+  showLanguageToggle Boolean @default(true) @map("show_language_toggle")
+  showShareButton    Boolean @default(true) @map("show_share_button")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("footer_configs")
+}

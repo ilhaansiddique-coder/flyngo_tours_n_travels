@@ -9,7 +9,7 @@ import {
   Shield, FileText, ChevronLeft, Home,
   FileText as FileIcon, Image, Search as SearchIcon, Star, HelpCircle,
   Megaphone, Car, MessageSquare, Bell, CreditCard, Sparkles, Flag, FileCheck,
-  Languages, MessageCircle, Info
+  Languages, MessageCircle, Info, Menu as MenuIcon, LayoutGrid,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -48,6 +48,9 @@ const navigation = [
   { label: 'SEO Manager', href: '/admin/cms/seo', icon: SearchIcon },
   { label: 'Testimonials', href: '/admin/cms/testimonials', icon: Star },
   { label: 'FAQs', href: '/admin/cms/faqs', icon: HelpCircle },
+  // Site chrome (owner-controlled)
+  { label: 'Navbar', href: '/admin/site/navbar', icon: MenuIcon },
+  { label: 'Footer', href: '/admin/site/footer', icon: LayoutGrid },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

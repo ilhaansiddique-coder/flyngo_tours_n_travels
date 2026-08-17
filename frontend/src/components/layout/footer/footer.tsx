@@ -3,28 +3,134 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Globe, Share2, Plane, Mail, Phone } from 'lucide-react';
+import { api } from '@/lib/api';
+import { useLocale } from '@/contexts/locale-context';
 import logoImg from '@/images/flyngo_transparent.png';
 
-const footerNav = [
-  { label: 'Privacy Policy', href: '/privacy' },
-  { label: 'Terms of Service', href: '/terms' },
-  { label: 'Contact Support', href: '/contact' },
-  { label: 'Global Destinations', href: '/destinations' },
-];
+interface FooterLink {
+  id: string;
+  labelEn: string;
+  labelBn?: string | null;
+  translationKey?: string | null;
+  href: string;
+  linkType?: 'INTERNAL' | 'EXTERNAL' | 'SECTION';
+  openInNewTab?: boolean;
+}
 
-const serviceNav = [
-  { label: 'Tours', href: '/tours' },
-  { label: 'Hotels', href: '/hotels' },
-  { label: 'Flights', href: '/flights' },
-  { label: 'Visa', href: '/visa' },
-  { label: 'Hajj & Umrah', href: '/hajj' },
-  { label: 'Transport', href: '/transport' },
-];
+interface FooterColumn {
+  id: string;
+  headingEn: string;
+  headingBn?: string | null;
+  translationKey?: string | null;
+  order: number;
+  isVisible?: boolean;
+  links: FooterLink[];
+}
+
+interface FooterConfig {
+  taglineEn?: string | null;
+  taglineBn?: string | null;
+  accentLabelEn?: string | null;
+  accentLabelBn?: string | null;
+  columns?: FooterColumn[];
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  contactNoteEn?: string | null;
+  contactNoteBn?: string | null;
+  copyrightTextEn?: string | null;
+  copyrightTextBn?: string | null;
+  showLanguageToggle?: boolean;
+  showShareButton?: boolean;
+}
+
+const defaultFooter: FooterConfig = {
+  taglineEn:
+    'High-velocity luxury travel — tours, hotels, flights, visas, and Hajj packages designed for the discerning global traveller.',
+  accentLabelEn: 'High Velocity Luxury',
+  columns: [
+    {
+      id: 'd-services',
+      headingEn: 'Services',
+      order: 0,
+      isVisible: true,
+      links: [
+        { id: 'd-tours', labelEn: 'Tours', href: '/tours' },
+        { id: 'd-hotels', labelEn: 'Hotels', href: '/hotels' },
+        { id: 'd-flights', labelEn: 'Flights', href: '/flights' },
+        { id: 'd-visa', labelEn: 'Visa', href: '/visa' },
+        { id: 'd-hajj', labelEn: 'Hajj & Umrah', href: '/hajj' },
+        { id: 'd-transport', labelEn: 'Transport', href: '/transport' },
+      ],
+    },
+    {
+      id: 'd-company',
+      headingEn: 'Company',
+      order: 1,
+      isVisible: true,
+      links: [
+        { id: 'd-privacy', labelEn: 'Privacy Policy', href: '/privacy' },
+        { id: 'd-terms', labelEn: 'Terms of Service', href: '/terms' },
+        { id: 'd-contact', labelEn: 'Contact Support', href: '/contact' },
+        { id: 'd-dest', labelEn: 'Global Destinations', href: '/destinations' },
+      ],
+    },
+  ],
+  contactEmail: 'contact@flyngo.com',
+  contactPhone: '+1-800-FLYNGO',
+  contactNoteEn: '24/7 concierge · Multilingual support',
+  showLanguageToggle: true,
+  showShareButton: true,
+};
 
 export function Footer() {
   const pathname = usePathname();
+  const { t, locale } = useLocale();
+  const [config, setConfig] = useState<FooterConfig | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get<FooterConfig>('/site/footer')
+      .then((data) => {
+        if (cancelled) return;
+        if (data && typeof data === 'object') setConfig(data);
+      })
+      .catch(() => {
+        // Keep the default footer on failure.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (pathname.startsWith('/admin')) return null;
+
+  const footer: FooterConfig = config ?? defaultFooter;
+  const columns = (footer.columns ?? []).filter((c) => c.isVisible !== false);
+
+  const pickText = (en?: string | null, bn?: string | null): string => {
+    if (locale === 'bn' && bn) return bn;
+    return en || bn || '';
+  };
+  const pickTranslation = (key?: string | null, fallback?: string | null): string => {
+    if (!key) return fallback || '';
+    try {
+      return t(key as any) || fallback || '';
+    } catch {
+      return fallback || '';
+    }
+  };
+
+  const tagline = pickTranslation(undefined as any, footer.taglineEn || footer.taglineBn || '');
+  const accentLabel = footer.accentLabelEn || footer.accentLabelBn || '';
+
+  const copyrightDefault = `© ${new Date().getFullYear()} FlynGo Travel. All rights reserved.`;
+  const copyrightEn = footer.copyrightTextEn || copyrightDefault;
+  const copyrightBn = footer.copyrightTextBn || '';
+  const copyrightText = locale === 'bn' && copyrightBn ? copyrightBn : copyrightEn;
+
   return (
     <footer
       className="relative w-full pt-20 pb-10 border-t overflow-hidden"
@@ -60,100 +166,124 @@ export function Footer() {
                 className="rounded-lg object-cover w-auto h-auto"
               />
             </Link>
-            <p
-              className="mt-4 text-sm max-w-xs leading-relaxed"
-              style={{ color: 'var(--color-footer-text-muted)' }}
-            >
-              High-velocity luxury travel — tours, hotels, flights, visas, and Hajj packages
-              designed for the discerning global traveller.
-            </p>
-            <div
-              className="mt-5 flex items-center gap-2"
-              style={{ color: 'var(--color-footer-heading)' }}
-            >
-              <Plane className="w-4 h-4" />
-              <span className="text-xs font-semibold tracking-widest uppercase">High Velocity Luxury</span>
-            </div>
-          </div>
-
-          {[
-            { heading: 'Services', items: serviceNav },
-            { heading: 'Company', items: footerNav },
-          ].map((col) => (
-            <div key={col.heading}>
-              <h4
-                className="text-[10px] tracking-[0.25em] uppercase font-bold mb-4"
+            {tagline && (
+              <p
+                className="mt-4 text-sm max-w-xs leading-relaxed"
+                style={{ color: 'var(--color-footer-text-muted)' }}
+              >
+                {tagline}
+              </p>
+            )}
+            {accentLabel && (
+              <div
+                className="mt-5 flex items-center gap-2"
                 style={{ color: 'var(--color-footer-heading)' }}
               >
-                {col.heading}
-              </h4>
-              <nav className="flex flex-col gap-3">
-                {col.items.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="text-sm transition-colors"
-                    style={{ color: 'var(--color-footer-text-muted)' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-footer-text)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-footer-text-muted)')}
+                <Plane className="w-4 h-4" />
+                <span className="text-xs font-semibold tracking-widest uppercase">{accentLabel}</span>
+              </div>
+            )}
+          </div>
+
+          {columns
+            .sort((a, b) => a.order - b.order)
+            .map((col) => {
+              const heading = pickTranslation(col.translationKey, pickText(col.headingEn, col.headingBn));
+              return (
+                <div key={col.id}>
+                  <h4
+                    className="text-[10px] tracking-[0.25em] uppercase font-bold mb-4"
+                    style={{ color: 'var(--color-footer-heading)' }}
                   >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            </div>
-          ))}
+                    {heading}
+                  </h4>
+                  <nav className="flex flex-col gap-3">
+                    {col.links.map((link) => {
+                      const label = pickTranslation(link.translationKey, pickText(link.labelEn, link.labelBn));
+                      const target = link.openInNewTab || link.linkType === 'EXTERNAL' ? '_blank' : undefined;
+                      return (
+                        <Link
+                          key={link.id}
+                          href={link.href}
+                          target={target}
+                          rel={target ? 'noopener noreferrer' : undefined}
+                          className="text-sm transition-colors"
+                          style={{ color: 'var(--color-footer-text-muted)' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-footer-text)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-footer-text-muted)')}
+                        >
+                          {label}
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                </div>
+              );
+            })}
 
           <div>
             <h4
               className="text-[10px] tracking-[0.25em] uppercase font-bold mb-4"
               style={{ color: 'var(--color-footer-heading)' }}
             >
-              Get in touch
+              {locale === 'bn' ? 'যোগাযোগ করুন' : 'Get in touch'}
             </h4>
             <div className="flex flex-col gap-3 text-sm" style={{ color: 'var(--color-footer-text-muted)' }}>
-              <a href="mailto:contact@flyngo.com" className="inline-flex items-center gap-2 hover:text-white transition-colors">
-                <Mail className="w-4 h-4" style={{ color: 'var(--color-footer-heading)' }} />
-                contact@flyngo.com
-              </a>
-              <a href="tel:+1800FLYNGO" className="inline-flex items-center gap-2 hover:text-white transition-colors">
-                <Phone className="w-4 h-4" style={{ color: 'var(--color-footer-heading)' }} />
-                +1-800-FLYNGO
-              </a>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--color-footer-text-muted)' }}>
-                24/7 concierge · Multilingual support
-              </p>
+              {footer.contactEmail && (
+                <a href={`mailto:${footer.contactEmail}`} className="inline-flex items-center gap-2 hover:text-white transition-colors">
+                  <Mail className="w-4 h-4" style={{ color: 'var(--color-footer-heading)' }} />
+                  {footer.contactEmail}
+                </a>
+              )}
+              {footer.contactPhone && (
+                <a
+                  href={`tel:${footer.contactPhone.replace(/[^+\d]/g, '')}`}
+                  className="inline-flex items-center gap-2 hover:text-white transition-colors"
+                >
+                  <Phone className="w-4 h-4" style={{ color: 'var(--color-footer-heading)' }} />
+                  {footer.contactPhone}
+                </a>
+              )}
+              {(footer.contactNoteEn || footer.contactNoteBn) && (
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--color-footer-text-muted)' }}>
+                  {pickText(footer.contactNoteEn, footer.contactNoteBn)}
+                </p>
+              )}
             </div>
           </div>
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 gap-4">
           <p className="text-xs" style={{ color: 'var(--color-footer-text-muted)' }}>
-            &copy; {new Date().getFullYear()} FlynGo Travel. All rights reserved.
+            {copyrightText}
           </p>
           <div className="flex items-center gap-4">
-            <button
-              className="w-9 h-9 rounded-full border flex items-center justify-center transition-all"
-              style={{
-                borderColor: 'var(--color-footer-border)',
-                color: 'var(--color-footer-text-muted)',
-                backgroundColor: 'transparent',
-              }}
-              aria-label="Language"
-            >
-              <Globe className="w-4 h-4" />
-            </button>
-            <button
-              className="w-9 h-9 rounded-full border flex items-center justify-center transition-all"
-              style={{
-                borderColor: 'var(--color-footer-border)',
-                color: 'var(--color-footer-text-muted)',
-                backgroundColor: 'transparent',
-              }}
-              aria-label="Share"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
+            {footer.showLanguageToggle !== false && (
+              <button
+                className="w-9 h-9 rounded-full border flex items-center justify-center transition-all"
+                style={{
+                  borderColor: 'var(--color-footer-border)',
+                  color: 'var(--color-footer-text-muted)',
+                  backgroundColor: 'transparent',
+                }}
+                aria-label="Language"
+              >
+                <Globe className="w-4 h-4" />
+              </button>
+            )}
+            {footer.showShareButton !== false && (
+              <button
+                className="w-9 h-9 rounded-full border flex items-center justify-center transition-all"
+                style={{
+                  borderColor: 'var(--color-footer-border)',
+                  color: 'var(--color-footer-text-muted)',
+                  backgroundColor: 'transparent',
+                }}
+                aria-label="Share"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>

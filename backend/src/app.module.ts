@@ -27,6 +27,7 @@ import { MediaModule } from './modules/media/media.module';
 import { HeroModule } from './modules/hero/hero.module';
 import { GlobeModule } from './modules/globe/globe.module';
 import { AboutModule } from './modules/about/about.module';
+import { SiteModule } from './modules/site/site.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 
 @Module({
@@ -59,6 +60,7 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
     HeroModule,
     GlobeModule,
     AboutModule,
+    SiteModule,
   ],
 })
 export class AppModule implements NestModule {

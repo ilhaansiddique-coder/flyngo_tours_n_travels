@@ -269,6 +269,19 @@ export function useApi() {
   const upsertCeoMessage = useCallback(async (body: any) => api.post('/about/admin/ceo', body, auth()), [auth]);
   const deleteCeoMessage = useCallback(async (id: string) => api.delete(`/about/admin/ceo/${id}`, auth()), [auth]);
 
+  // Site nav + footer (owner-controlled site chrome)
+  const getNavMenu = useCallback(async () => api.get('/site/nav'), []);
+  const listNavMenuAdmin = useCallback(async () => api.get('/site/admin/nav', auth()), [auth]);
+  const createNavMenu = useCallback(async (body: any) => api.post('/site/admin/nav', body, auth()), [auth]);
+  const updateNavMenu = useCallback(async (id: string, body: any) => api.patch(`/site/admin/nav/${id}`, body, auth()), [auth]);
+  const deleteNavMenu = useCallback(async (id: string) => api.delete(`/site/admin/nav/${id}`, auth()), [auth]);
+  const reorderNavMenu = useCallback(async (items: { id: string; order: number; parentId?: string | null }[]) =>
+    api.post('/site/admin/nav/reorder', { items }, auth()), [auth]);
+
+  const getFooter = useCallback(async () => api.get('/site/footer'), []);
+  const getFooterAdmin = useCallback(async () => api.get('/site/admin/footer', auth()), [auth]);
+  const updateFooter = useCallback(async (body: any) => api.patch('/site/admin/footer', body, auth()), [auth]);
+
   const globalSearch = useCallback(async (q: string) => {
     const term = q.trim();
     if (!term) {
@@ -334,5 +347,7 @@ export function useApi() {
     listAboutSections, listAboutSectionsAdmin, createAboutSection,
     updateAboutSection, deleteAboutSection, reorderAboutSections, getAboutDefaults,
     getCeoMessage, listCeoMessagesAdmin, upsertCeoMessage, deleteCeoMessage,
+    getNavMenu, listNavMenuAdmin, createNavMenu, updateNavMenu, deleteNavMenu, reorderNavMenu,
+    getFooter, getFooterAdmin, updateFooter,
   };
 }

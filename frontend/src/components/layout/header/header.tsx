@@ -12,13 +12,14 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
 import { useLocale } from '@/contexts/locale-context';
 import { useScrollReveal } from '@/lib/use-scroll-reveal';
+import { api } from '@/lib/api';
 import logoImg from '@/images/flyngo_transparent.png';
 
-type NavItem =
+type StaticNavItem =
   | { key: string; href: string }
   | { key: string; submenu: { key: string; href: string }[] };
 
-const navItems: NavItem[] = [
+const defaultNavItems: StaticNavItem[] = [
   { key: 'nav_home', href: '/' },
   {
     key: 'nav_about',
@@ -35,6 +36,29 @@ const navItems: NavItem[] = [
   { key: 'nav_blog', href: '/blog' },
 ];
 
+interface ApiNavChild {
+  id: string;
+  labelEn: string;
+  labelBn?: string | null;
+  translationKey?: string | null;
+  href: string;
+  linkType: 'INTERNAL' | 'EXTERNAL' | 'SECTION';
+  openInNewTab?: boolean;
+  highlight?: boolean;
+  isVisible: boolean;
+  children?: ApiNavChild[];
+}
+
+type ResolvedItem =
+  | { kind: 'link'; key: string; label: string; href: string; target?: '_blank'; highlight?: boolean }
+  | { kind: 'submenu'; key: string; label: string; href: string; items: { key: string; label: string; href: string; target?: '_blank' }[] };
+
+function resolveLabel(item: ApiNavChild, locale: 'en' | 'bn'): string {
+  if (item.translationKey) return item.translationKey;
+  if (locale === 'bn' && item.labelBn) return item.labelBn;
+  return item.labelEn || item.labelBn || '';
+}
+
 export function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -42,8 +66,13 @@ export function Header() {
   const [authReady, setAuthReady] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { visible, compact } = useScrollReveal();
+
+  // Owner-managed nav tree from the CMS. Until it loads (or if the request
+  // fails), we keep the default static nav so SSR/SEO and the first paint
+  // stay intact.
+  const [apiNav, setApiNav] = useState<ApiNavChild[] | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -52,6 +81,90 @@ export function Header() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAuthReady(true);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get<ApiNavChild[]>('/site/nav')
+      .then((data) => {
+        if (cancelled) return;
+        if (Array.isArray(data) && data.length > 0) setApiNav(data);
+      })
+      .catch(() => {
+        // Network/backend error → keep the default navItems.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const navItems: ResolvedItem[] = (() => {
+    const tree = apiNav;
+    if (tree && tree.length > 0) {
+      const out: ResolvedItem[] = [];
+      for (const top of tree) {
+        if (!top.isVisible) continue;
+        const topLabel = resolveLabel(top, locale);
+        const children = (top.children || []).filter((c) => c.isVisible);
+        if (children.length > 0) {
+          out.push({
+            kind: 'submenu',
+            key: top.id,
+            label: topLabel,
+            href: top.href,
+            items: children.map((c) => ({
+              key: c.id,
+              label: resolveLabel(c, locale),
+              href: c.href,
+              target: c.openInNewTab || c.linkType === 'EXTERNAL' ? '_blank' : undefined,
+            })),
+          });
+        } else {
+          out.push({
+            kind: 'link',
+            key: top.id,
+            label: topLabel,
+            href: top.href,
+            target: top.openInNewTab || top.linkType === 'EXTERNAL' ? '_blank' : undefined,
+            highlight: top.highlight,
+          });
+        }
+      }
+      return out;
+    }
+    return defaultNavItems.map((it) => {
+      if ('submenu' in it) {
+        return {
+          kind: 'submenu' as const,
+          key: it.key,
+          label: it.key,
+          href: '#',
+          items: it.submenu.map((s) => ({
+            key: s.key,
+            label: s.key,
+            href: s.href,
+          })),
+        };
+      }
+      return {
+        kind: 'link' as const,
+        key: it.key,
+        label: it.key,
+        href: it.href,
+      };
+    });
+  })();
+
+  const labelOf = (item: ResolvedItem): string => {
+    if (apiNav && apiNav.length > 0) {
+      return item.label;
+    }
+    return t(item.label as any);
+  };
+  const subLabelOf = (s: { label: string }): string => {
+    if (apiNav && apiNav.length > 0) return s.label;
+    return t(s.label as any);
+  };
 
   useEffect(() => {
     document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
@@ -110,9 +223,9 @@ export function Header() {
           </Link>
           <nav className="hidden lg:flex gap-8 items-center">
             {navItems.map((item) => {
-              if ('submenu' in item) {
+              if (item.kind === 'submenu') {
                 const isOpen = openDropdown === item.key;
-                const anyActive = item.submenu.some((s) =>
+                const anyActive = item.items.some((s) =>
                   s.href === '/' ? pathname === '/' : pathname.startsWith(s.href)
                 );
                 return (
@@ -142,7 +255,7 @@ export function Header() {
                       aria-haspopup="menu"
                       aria-expanded={isOpen}
                     >
-                      {t(item.key as any)}
+                      {labelOf(item)}
                       <ChevronDown
                         className={cn(
                           'w-3.5 h-3.5 transition-transform duration-200',
@@ -167,14 +280,16 @@ export function Header() {
                           backdropFilter: 'blur(20px)',
                         }}
                       >
-                        {item.submenu.map((sub) => {
+                        {item.items.map((sub) => {
                           const subActive = sub.href === '/'
                             ? pathname === '/'
                             : pathname.startsWith(sub.href);
                           return (
                             <Link
-                              key={sub.href}
+                              key={sub.key}
                               href={sub.href}
+                              target={sub.target}
+                              rel={sub.target ? 'noopener noreferrer' : undefined}
                               role="menuitem"
                               className="block px-4 py-2.5 text-sm font-medium transition-colors"
                               style={{
@@ -199,7 +314,7 @@ export function Header() {
                                 }
                               }}
                             >
-                              {t(sub.key as any)}
+                              {subLabelOf(sub)}
                             </Link>
                           );
                         })}
@@ -213,8 +328,10 @@ export function Header() {
                 : pathname.startsWith(item.href);
               return (
                 <Link
-                  key={item.href}
+                  key={item.key}
                   href={item.href}
+                  target={item.target}
+                  rel={item.target ? 'noopener noreferrer' : undefined}
                   className={cn(
                     'text-sm tracking-[0.05em] font-semibold transition-colors',
                     active
@@ -232,7 +349,7 @@ export function Header() {
                     if (!active) (e.target as HTMLElement).style.color = 'var(--color-nav-inactive)';
                   }}
                 >
-                  {t(item.key as any)}
+                  {labelOf(item)}
                 </Link>
               );
             })}
@@ -347,9 +464,9 @@ export function Header() {
             <div className="flex-1 overflow-y-auto p-6">
               <nav className="flex flex-col gap-1">
               {navItems.map((item) => {
-                if ('submenu' in item) {
+                if (item.kind === 'submenu') {
                   const isOpen = openDropdown === item.key;
-                  const anyActive = item.submenu.some((s) =>
+                  const anyActive = item.items.some((s) =>
                     s.href === '/' ? pathname === '/' : pathname.startsWith(s.href)
                   );
                   return (
@@ -376,7 +493,7 @@ export function Header() {
                         onClick={() => setOpenDropdown(isOpen ? null : item.key)}
                         aria-expanded={isOpen}
                       >
-                        <span>{t(item.key as any)}</span>
+                        <span>{labelOf(item)}</span>
                         <ChevronDown
                           className={cn(
                             'w-4 h-4 transition-transform duration-200',
@@ -390,14 +507,16 @@ export function Header() {
                           isOpen ? 'max-h-96 mt-1' : 'max-h-0'
                         )}
                       >
-                        {item.submenu.map((sub) => {
+                        {item.items.map((sub) => {
                           const subActive = sub.href === '/'
                             ? pathname === '/'
                             : pathname.startsWith(sub.href);
                           return (
                             <Link
-                              key={sub.href}
+                              key={sub.key}
                               href={sub.href}
+                              target={sub.target}
+                              rel={sub.target ? 'noopener noreferrer' : undefined}
                               className="ml-4 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
                               style={{
                                 color: subActive
@@ -421,7 +540,7 @@ export function Header() {
                               }}
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
-                              {t(sub.key as any)}
+                              {subLabelOf(sub)}
                             </Link>
                           );
                         })}
@@ -432,8 +551,10 @@ export function Header() {
                 const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
                 return (
                   <Link
-                    key={item.href}
+                    key={item.key}
                     href={item.href}
+                    target={item.target}
+                    rel={item.target ? 'noopener noreferrer' : undefined}
                     className={cn(
                       'px-4 py-2.5 rounded-xl text-base font-semibold transition-colors',
                       active
@@ -458,7 +579,7 @@ export function Header() {
                     }}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    {t(item.key as any)}
+                    {labelOf(item)}
                   </Link>
                 );
               })}

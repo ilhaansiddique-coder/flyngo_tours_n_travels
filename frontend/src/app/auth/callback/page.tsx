@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { api } from '@/lib/api';
 
-export default function AuthCallbackPage() {
+function AuthCallbackInner() {
   const router = useRouter();
   const params = useSearchParams();
   const setTokens = useAuthStore((s) => s.setTokens);
@@ -69,5 +69,22 @@ export default function AuthCallbackPage() {
         <p className="text-on-surface-variant text-sm">{message}</p>
       </div>
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="relative min-h-screen bg-background flex items-center justify-center px-4">
+          <div className="text-center max-w-md">
+            <Loader2 className="w-10 h-10 mx-auto mb-4 animate-spin text-accent" />
+            <p className="text-on-surface-variant text-sm">Completing sign in...</p>
+          </div>
+        </div>
+      }
+    >
+      <AuthCallbackInner />
+    </Suspense>
   );
 }

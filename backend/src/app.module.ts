@@ -26,6 +26,7 @@ import { VisaCountriesModule } from './modules/visa-countries/visa-countries.mod
 import { MediaModule } from './modules/media/media.module';
 import { HeroModule } from './modules/hero/hero.module';
 import { GlobeModule } from './modules/globe/globe.module';
+import { AboutModule } from './modules/about/about.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 
 @Module({
@@ -57,6 +58,7 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
     MediaModule,
     HeroModule,
     GlobeModule,
+    AboutModule,
   ],
 })
 export class AppModule implements NestModule {

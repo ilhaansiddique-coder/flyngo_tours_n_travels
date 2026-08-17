@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Menu, X, LogOut } from 'lucide-react';
+import { Menu, X, LogOut, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
@@ -14,19 +14,31 @@ import { useLocale } from '@/contexts/locale-context';
 import { useScrollReveal } from '@/lib/use-scroll-reveal';
 import logoImg from '@/images/flyngo_transparent.png';
 
-const navItems = [
+type NavItem =
+  | { key: string; href: string }
+  | { key: string; submenu: { key: string; href: string }[] };
+
+const navItems: NavItem[] = [
   { key: 'nav_home', href: '/' },
+  {
+    key: 'nav_about',
+    submenu: [
+      { key: 'nav_about_company', href: '/about' },
+      { key: 'nav_about_ceo', href: '/about/ceo' },
+    ],
+  },
   { key: 'nav_tours', href: '/tours' },
   { key: 'nav_visa', href: '/visa' },
   { key: 'nav_hajj', href: '/hajj' },
   { key: 'nav_hotels', href: '/hotels' },
   { key: 'nav_tickets', href: '/flights' },
   { key: 'nav_blog', href: '/blog' },
-] as const;
+];
 
 export function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -96,8 +108,106 @@ export function Header() {
               )}
             />
           </Link>
-          <nav className="hidden lg:flex gap-8">
+          <nav className="hidden lg:flex gap-8 items-center">
             {navItems.map((item) => {
+              if ('submenu' in item) {
+                const isOpen = openDropdown === item.key;
+                const anyActive = item.submenu.some((s) =>
+                  s.href === '/' ? pathname === '/' : pathname.startsWith(s.href)
+                );
+                return (
+                  <div
+                    key={item.key}
+                    className="relative"
+                    onMouseEnter={() => setOpenDropdown(item.key)}
+                    onMouseLeave={() => setOpenDropdown(null)}
+                  >
+                    <button
+                      type="button"
+                      className={cn(
+                        'flex items-center gap-1 text-sm tracking-[0.05em] font-semibold transition-colors',
+                        anyActive ? 'font-bold border-b-2 pb-1' : ''
+                      )}
+                      style={{
+                        color: anyActive ? 'var(--color-nav-active)' : 'var(--color-nav-inactive)',
+                        borderColor: anyActive ? 'var(--color-nav-active)' : 'transparent',
+                      }}
+                      onClick={() => setOpenDropdown(isOpen ? null : item.key)}
+                      onMouseEnter={(e) => {
+                        if (!anyActive) (e.currentTarget as HTMLElement).style.color = 'var(--color-nav-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!anyActive) (e.currentTarget as HTMLElement).style.color = 'var(--color-nav-inactive)';
+                      }}
+                      aria-haspopup="menu"
+                      aria-expanded={isOpen}
+                    >
+                      {t(item.key as any)}
+                      <ChevronDown
+                        className={cn(
+                          'w-3.5 h-3.5 transition-transform duration-200',
+                          isOpen ? 'rotate-180' : ''
+                        )}
+                      />
+                    </button>
+                    <div
+                      className={cn(
+                        'absolute left-0 top-full pt-2 min-w-[220px] transition-all duration-200',
+                        isOpen
+                          ? 'opacity-100 translate-y-0 pointer-events-auto'
+                          : 'opacity-0 -translate-y-1 pointer-events-none'
+                      )}
+                      role="menu"
+                    >
+                      <div
+                        className="rounded-xl shadow-xl border overflow-hidden"
+                        style={{
+                          backgroundColor: 'var(--color-header-bg)',
+                          borderColor: 'var(--color-header-border)',
+                          backdropFilter: 'blur(20px)',
+                        }}
+                      >
+                        {item.submenu.map((sub) => {
+                          const subActive = sub.href === '/'
+                            ? pathname === '/'
+                            : pathname.startsWith(sub.href);
+                          return (
+                            <Link
+                              key={sub.href}
+                              href={sub.href}
+                              role="menuitem"
+                              className="block px-4 py-2.5 text-sm font-medium transition-colors"
+                              style={{
+                                color: subActive
+                                  ? 'var(--color-nav-active)'
+                                  : 'var(--color-nav-inactive)',
+                                backgroundColor: subActive
+                                  ? 'color-mix(in oklab, var(--color-nav-active) 10%, transparent)'
+                                  : 'transparent',
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!subActive) {
+                                  e.currentTarget.style.color = 'var(--color-nav-hover)';
+                                  e.currentTarget.style.backgroundColor =
+                                    'color-mix(in oklab, var(--color-nav-active) 8%, transparent)';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!subActive) {
+                                  e.currentTarget.style.color = 'var(--color-nav-inactive)';
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }
+                              }}
+                            >
+                              {t(sub.key as any)}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
               const active = item.href === '/'
                 ? pathname === '/'
                 : pathname.startsWith(item.href);
@@ -237,6 +347,88 @@ export function Header() {
             <div className="flex-1 overflow-y-auto p-6">
               <nav className="flex flex-col gap-1">
               {navItems.map((item) => {
+                if ('submenu' in item) {
+                  const isOpen = openDropdown === item.key;
+                  const anyActive = item.submenu.some((s) =>
+                    s.href === '/' ? pathname === '/' : pathname.startsWith(s.href)
+                  );
+                  return (
+                    <div key={item.key} className="flex flex-col">
+                      <button
+                        type="button"
+                        className="flex items-center justify-between px-4 py-2.5 rounded-xl text-base font-semibold transition-colors text-left"
+                        style={{
+                          color: anyActive ? 'var(--color-mobile-nav-active)' : 'var(--color-mobile-nav-text)',
+                          backgroundColor: anyActive ? 'var(--color-mobile-nav-bg)' : 'transparent',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!anyActive) {
+                            e.currentTarget.style.color = 'var(--color-nav-hover)';
+                            e.currentTarget.style.backgroundColor = 'var(--color-mobile-nav-hover-bg)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!anyActive) {
+                            e.currentTarget.style.color = 'var(--color-mobile-nav-text)';
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }
+                        }}
+                        onClick={() => setOpenDropdown(isOpen ? null : item.key)}
+                        aria-expanded={isOpen}
+                      >
+                        <span>{t(item.key as any)}</span>
+                        <ChevronDown
+                          className={cn(
+                            'w-4 h-4 transition-transform duration-200',
+                            isOpen ? 'rotate-180' : ''
+                          )}
+                        />
+                      </button>
+                      <div
+                        className={cn(
+                          'flex flex-col gap-1 overflow-hidden transition-all duration-200',
+                          isOpen ? 'max-h-96 mt-1' : 'max-h-0'
+                        )}
+                      >
+                        {item.submenu.map((sub) => {
+                          const subActive = sub.href === '/'
+                            ? pathname === '/'
+                            : pathname.startsWith(sub.href);
+                          return (
+                            <Link
+                              key={sub.href}
+                              href={sub.href}
+                              className="ml-4 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+                              style={{
+                                color: subActive
+                                  ? 'var(--color-mobile-nav-active)'
+                                  : 'var(--color-mobile-nav-text)',
+                                backgroundColor: subActive
+                                  ? 'var(--color-mobile-nav-bg)'
+                                  : 'transparent',
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!subActive) {
+                                  e.currentTarget.style.color = 'var(--color-nav-hover)';
+                                  e.currentTarget.style.backgroundColor = 'var(--color-mobile-nav-hover-bg)';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!subActive) {
+                                  e.currentTarget.style.color = 'var(--color-mobile-nav-text)';
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }
+                              }}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              {t(sub.key as any)}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
                 const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
                 return (
                   <Link

@@ -251,6 +251,24 @@ export function useApi() {
   const updateGlobeRoute = useCallback(async (id: string, body: any) => api.patch(`/globe/admin/routes/${id}`, body, auth()), [auth]);
   const deleteGlobeRoute = useCallback(async (id: string) => api.delete(`/globe/admin/routes/${id}`, auth()), [auth]);
 
+  // About page (CMS-driven)
+  const getAboutPage = useCallback(async () => api.get('/about'), []);
+  const getAboutMeta = useCallback(async () => api.get('/about/meta'), []);
+  const saveAboutMeta = useCallback(async (body: any) => api.post('/about/meta', body, auth()), [auth]);
+  const listAboutSections = useCallback(async () => api.get('/about/sections'), []);
+  const listAboutSectionsAdmin = useCallback(async () => api.get('/about/admin/sections', auth()), [auth]);
+  const createAboutSection = useCallback(async (body: any) => api.post('/about/admin/sections', body, auth()), [auth]);
+  const updateAboutSection = useCallback(async (id: string, body: any) => api.patch(`/about/admin/sections/${id}`, body, auth()), [auth]);
+  const deleteAboutSection = useCallback(async (id: string) => api.delete(`/about/admin/sections/${id}`, auth()), [auth]);
+  const reorderAboutSections = useCallback(async (ids: string[]) => api.post('/about/admin/sections/reorder', { ids }, auth()), [auth]);
+  const getAboutDefaults = useCallback(async () => api.get('/about/admin/defaults', auth()), [auth]);
+
+  // CEO message
+  const getCeoMessage = useCallback(async () => api.get('/about/ceo'), []);
+  const listCeoMessagesAdmin = useCallback(async () => api.get('/about/admin/ceo', auth()), [auth]);
+  const upsertCeoMessage = useCallback(async (body: any) => api.post('/about/admin/ceo', body, auth()), [auth]);
+  const deleteCeoMessage = useCallback(async (id: string) => api.delete(`/about/admin/ceo/${id}`, auth()), [auth]);
+
   const globalSearch = useCallback(async (q: string) => {
     const term = q.trim();
     if (!term) {
@@ -312,5 +330,9 @@ export function useApi() {
     getHero, getHeroDefaults, saveHero,
     listGlobeCities, createGlobeCity, updateGlobeCity, deleteGlobeCity,
     listGlobeRoutes, createGlobeRoute, updateGlobeRoute, deleteGlobeRoute,
+    getAboutPage, getAboutMeta, saveAboutMeta,
+    listAboutSections, listAboutSectionsAdmin, createAboutSection,
+    updateAboutSection, deleteAboutSection, reorderAboutSections, getAboutDefaults,
+    getCeoMessage, listCeoMessagesAdmin, upsertCeoMessage, deleteCeoMessage,
   };
 }

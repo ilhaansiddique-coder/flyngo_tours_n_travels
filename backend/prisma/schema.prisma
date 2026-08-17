@@ -1029,3 +1029,123 @@ model Review {
   @@index([tenantId, itemType, itemId])
   @@map("reviews")
 }
+
+// =============================================================================
+// ABOUT PAGE — ordered content blocks (story, vision, mission, values, etc.)
+// =============================================================================
+
+enum AboutSectionType {
+  STORY
+  VISION
+  MISSION
+  SERVICE
+  SERVICES
+  VALUES
+  STATS
+  ACHIEVEMENTS
+  TEAM
+  TRIPS
+  STRATEGIES
+  CONTACT
+  CUSTOM
+}
+
+model AboutPageSection {
+  id        String          @id @default(uuid())
+  tenantId  String          @map("tenant_id")
+  type      AboutSectionType
+  order     Int             @default(0)
+
+  titleEn       String? @map("title_en")
+  titleBn       String? @map("title_bn")
+  subtitleEn    String? @db.Text @map("subtitle_en")
+  subtitleBn    String? @db.Text @map("subtitle_bn")
+  bodyEn        String? @db.Text @map("body_en")
+  bodyBn        String? @db.Text @map("body_bn")
+
+  // Section payload — flexible JSON for type-specific content
+  // values:        [{ titleEn, titleBn, descriptionEn, descriptionBn, icon? }]
+  // services:      [{ titleEn, titleBn, descriptionEn, descriptionBn, icon? }]
+  // stats:         [{ value, labelEn, labelBn }]
+  // achievements:  [{ titleEn, titleBn, descriptionEn?, icon? }]
+  // strategies:    [{ titleEn, titleBn, descriptionEn, icon? }]
+  // trips:         free-form text in bodyEn/bodyBn
+  // team:          free-form text in bodyEn/bodyBn
+  // contact:       { address?, phone?, email?, hours? }
+  // custom:        free-form { html?, image?, ctaLabel?, ctaHref? }
+  payload       Json    @default("{}")
+
+  isActive      Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([tenantId, type, order])
+  @@map("about_page_sections")
+}
+
+// =============================================================================
+// ABOUT PAGE — singleton metadata (hero, banner image, slogan, SEO)
+// =============================================================================
+
+model AboutPageMeta {
+  id       String @id @default(uuid())
+  tenantId String @unique @map("tenant_id")
+
+  // Hero / banner
+  heroEyebrowEn  String? @map("hero_eyebrow_en")
+  heroEyebrowBn  String? @map("hero_eyebrow_bn")
+  heroTitleEn    String? @map("hero_title_en")
+  heroTitleBn    String? @map("hero_title_bn")
+  heroSubtitleEn String? @db.Text @map("hero_subtitle_en")
+  heroSubtitleBn String? @db.Text @map("hero_subtitle_bn")
+  heroImageUrl   String? @map("hero_image_url")
+
+  // Optional CTA under hero
+  ctaLabelEn     String? @map("cta_label_en")
+  ctaLabelBn     String? @map("cta_label_bn")
+  ctaHref        String? @map("cta_href")
+
+  // Office address block (separate from the dynamic CONTACT section)
+  officeAddress  String? @db.Text @map("office_address")
+  officePhone    String? @map("office_phone")
+  officeEmail    String? @map("office_email")
+
+  // Slogan / tagline
+  sloganEn       String? @map("slogan_en")
+  sloganBn       String? @map("slogan_bn")
+
+  isActive       Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("about_page_meta")
+}
+
+// =============================================================================
+// MESSAGE FROM CEO — one active per tenant, history preserved
+// =============================================================================
+
+model CeoMessage {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+
+  name        String  @map("name")
+  title       String  @map("title")
+  imageUrl    String? @map("image_url")
+  bodyEn      String  @db.Text @map("body_en")
+  bodyBn      String? @db.Text @map("body_bn")
+  signatureEn String? @map("signature_en")
+  signatureBn String? @map("signature_bn")
+
+  isActive    Boolean @default(true) @map("is_active")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([tenantId, isActive])
+  @@map("ceo_messages")
+}

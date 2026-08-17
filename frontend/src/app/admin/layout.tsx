@@ -9,7 +9,7 @@ import {
   Shield, FileText, ChevronLeft, Home,
   FileText as FileIcon, Image, Search as SearchIcon, Star, HelpCircle,
   Megaphone, Car, MessageSquare, Bell, CreditCard, Sparkles, Flag, FileCheck,
-  Languages
+  Languages, MessageCircle, Info
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -41,6 +41,8 @@ const navigation = [
   { label: 'CMS Pages', href: '/admin/cms/pages', icon: FileIcon },
   { label: 'CMS Blogs', href: '/admin/cms/blogs', icon: FileIcon },
   { label: 'Hero Section', href: '/admin/cms/hero', icon: Languages },
+  { label: 'About Us', href: '/admin/cms/about', icon: Info },
+  { label: 'CEO Message', href: '/admin/cms/ceo', icon: MessageCircle },
   { label: 'Globe Cities', href: '/admin/cms/globe', icon: Globe },
   { label: 'Media Library', href: '/admin/cms/media', icon: Image },
   { label: 'SEO Manager', href: '/admin/cms/seo', icon: SearchIcon },

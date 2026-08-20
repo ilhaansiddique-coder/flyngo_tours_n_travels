@@ -93,6 +93,13 @@ jobs:
             NEXT_PUBLIC_META_PIXEL_ID=${{ vars.NEXT_PUBLIC_META_PIXEL_ID }}
             NEXT_PUBLIC_TIKTOK_PIXEL_ID=${{ vars.NEXT_PUBLIC_TIKTOK_PIXEL_ID }}
             NEXT_PUBLIC_CLARITY_ID=${{ vars.NEXT_PUBLIC_CLARITY_ID }}
+            NEXT_PUBLIC_BUILD_SHA=${{ github.sha }}
+            GIT_SHA=${{ github.sha }}
+            GIT_COMMIT_MESSAGE=${{ github.event.head_commit.message }}
+            GIT_COMMIT_AUTHOR=${{ github.event.head_commit.author.name }}
+            GIT_COMMIT_DATE=${{ github.event.head_commit.timestamp }}
+            GIT_BRANCH=${{ github.ref_name }}
+            GIT_REPO=${{ github.repository }}
 
       - name: Trigger Coolify deploy
         if: vars.COOLIFY_DEPLOY_WEBHOOK != ''

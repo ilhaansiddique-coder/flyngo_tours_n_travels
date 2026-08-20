@@ -18,6 +18,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
+import { VersionModule } from './modules/version/version.module';
 import { TransportModule } from './modules/transport/transport.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { HajjModule } from './modules/hajj/hajj.module';
@@ -51,6 +52,7 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
     NotificationsModule,
     AdminModule,
     HealthModule,
+    VersionModule,
     TransportModule,
     ReviewsModule,
     HajjModule,

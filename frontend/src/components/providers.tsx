@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Toaster } from 'sonner';
 import { LocaleProvider } from '@/contexts/locale-context';
 import { CurrencyProvider } from '@/contexts/currency-context';
+import { UpdateNotifier } from '@/components/update-notifier';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -32,6 +33,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <CurrencyProvider>
             {children}
             <Toaster richColors position="top-right" />
+            <UpdateNotifier />
           </CurrencyProvider>
         </LocaleProvider>
       </ThemeProvider>

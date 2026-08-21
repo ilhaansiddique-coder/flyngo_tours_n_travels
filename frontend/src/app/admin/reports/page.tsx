@@ -12,11 +12,16 @@ interface DashboardData {
   totalRevenue: number;
   totalBookings: number;
   totalUsers: number;
-  conversionRate: number;
+  conversionRate: number | string;
   monthlyRevenue: Array<{ month: number; year: number; revenue: number }>;
   totalCustomers: number;
   bookingsByStatus: Record<string, number>;
   recentBookings: any[];
+}
+
+interface StatChange {
+  label: string;
+  up: boolean;
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -125,37 +130,43 @@ export default function ReportsPage() {
     );
   }
 
+  const monthly = data?.monthlyRevenue ?? [];
+  const currentMonthRevenue = monthly.length >= 2 ? Number(monthly[monthly.length - 1].revenue) : null;
+  const previousMonthRevenue = monthly.length >= 2 ? Number(monthly[monthly.length - 2].revenue) : null;
+
+  let revenueChange: StatChange | null = null;
+  if (currentMonthRevenue !== null && previousMonthRevenue !== null && previousMonthRevenue > 0) {
+    const pct = ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100;
+    revenueChange = { label: `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`, up: pct >= 0 };
+  }
+
   const stats = data
     ? [
         {
           label: 'Total Revenue',
           value: formatCurrency(Number(data.totalRevenue), 'BDT'),
-          change: '+23%',
-          trend: 'up' as const,
+          change: revenueChange,
           icon: DollarSign,
           color: 'text-amber-600 bg-amber-50 dark:bg-amber-950',
         },
         {
           label: 'Total Bookings',
           value: data.totalBookings.toLocaleString(),
-          change: '+12%',
-          trend: 'up' as const,
+          change: null,
           icon: BookOpen,
           color: 'text-brand-600 bg-brand-50 dark:bg-brand-950',
         },
         {
           label: 'Total Customers',
           value: (data.totalCustomers ?? data.totalUsers).toLocaleString(),
-          change: '+8%',
-          trend: 'up' as const,
+          change: null,
           icon: Users,
           color: 'text-green-600 bg-green-50 dark:bg-green-950',
         },
         {
           label: 'Conversion Rate',
-          value: `${data.conversionRate ?? '4.2'}%`,
-          change: '-0.8%',
-          trend: 'down' as const,
+          value: `${data.conversionRate}%`,
+          change: null,
           icon: TrendingUp,
           color: 'text-purple-600 bg-purple-50 dark:bg-purple-950',
         },
@@ -210,22 +221,28 @@ export default function ReportsPage() {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
                 <p className="text-2xl font-bold mt-1 dark:text-white">{stat.value}</p>
-                <div className="flex items-center gap-1 mt-1">
-                  {stat.trend === 'up' ? (
-                    <ArrowUpRight className="w-4 h-4 text-green-600 dark:text-green-400" />
-                  ) : (
-                    <ArrowUpRight className="w-4 h-4 text-red-600 dark:text-red-400 rotate-90" />
-                  )}
-                  <span
-                    className={
-                      stat.trend === 'up'
-                        ? 'text-green-600 dark:text-green-400 text-xs font-medium'
-                        : 'text-red-600 dark:text-red-400 text-xs font-medium'
-                    }
-                  >
-                    {stat.change}
-                  </span>
-                </div>
+                {stat.change ? (
+                  <div className="flex items-center gap-1 mt-1">
+                    <ArrowUpRight
+                      className={`w-4 h-4 ${
+                        stat.change.up
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-red-600 dark:text-red-400 rotate-90'
+                      }`}
+                    />
+                    <span
+                      className={
+                        stat.change.up
+                          ? 'text-green-600 dark:text-green-400 text-xs font-medium'
+                          : 'text-red-600 dark:text-red-400 text-xs font-medium'
+                      }
+                    >
+                      {stat.change.label}
+                    </span>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-xs font-medium text-on-surface-variant">—</p>
+                )}
               </div>
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.color}`}>
                 <stat.icon className="w-5 h-5" />

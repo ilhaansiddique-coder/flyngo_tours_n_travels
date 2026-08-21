@@ -9,15 +9,57 @@ import { PageHero } from '@/components/ui/page-hero';
 import { Mail, Phone, MapPin, Send, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 import { DEFAULT_COUNTRY_CODE } from '@/lib/country-dial-codes';
+import { submitLead } from '@/lib/tracking-client';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
   const [phoneCountry, setPhoneCountry] = useState<string>(DEFAULT_COUNTRY_CODE);
   const [phoneNumber, setPhoneNumber] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setError(null);
+
+    if (!firstName.trim() || !lastName.trim()) {
+      setError('Please enter your first and last name.');
+      return;
+    }
+    if (!EMAIL_RE.test(email.trim())) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!phoneNumber.trim()) {
+      setError('Please enter your phone number so we can reach you.');
+      return;
+    }
+    if (!message.trim()) {
+      setError('Please write us a short message.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await submitLead({
+        fullName: `${firstName.trim()} ${lastName.trim()}`,
+        email: email.trim(),
+        phone: `${phoneCountry}${phoneNumber.trim()}`,
+        message: message.trim(),
+        source: 'contact-page',
+      });
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(err?.message || 'Something went wrong while sending your message. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -44,12 +86,29 @@ export default function ContactPage() {
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <Input label="First Name" required />
-                    <Input label="Last Name" required />
+                    <Input
+                      label="First Name"
+                      required
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
+                    <Input
+                      label="Last Name"
+                      required
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
                   </div>
-                  <Input label="Email" type="email" required />
+                  <Input
+                    label="Email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                   <PhoneInput
                     label="Phone"
+                    required
                     countryCode={phoneCountry}
                     number={phoneNumber}
                     onCountryCodeChange={setPhoneCountry}
@@ -60,12 +119,19 @@ export default function ContactPage() {
                     <textarea
                       required
                       rows={5}
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
                       className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container/60 backdrop-blur-md text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50"
                     />
                   </div>
-                  <Button type="submit" size="lg" className="gap-2">
+                  {error && (
+                    <div className="p-3 rounded-xl bg-error/10 border border-error/30 text-error text-sm">
+                      {error}
+                    </div>
+                  )}
+                  <Button type="submit" size="lg" className="gap-2" loading={submitting}>
                     <Send className="w-5 h-5" />
-                    Send Message
+                    {submitting ? 'Sending…' : 'Send Message'}
                   </Button>
                 </form>
               )}

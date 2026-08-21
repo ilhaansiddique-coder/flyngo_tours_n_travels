@@ -34,9 +34,9 @@ export class DestinationsService {
     return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
-  async findById(id: string, tenantId: string) {
+  async findById(identifier: string, tenantId: string) {
     const dest = await this.prisma.destination.findFirst({
-      where: { id, tenantId },
+      where: { AND: [{ tenantId }, { OR: [{ id: identifier }, { slug: identifier }] }] },
       include: { _count: { select: { tours: true, hotels: true } } },
     });
     if (!dest) throw new NotFoundException('Destination not found');

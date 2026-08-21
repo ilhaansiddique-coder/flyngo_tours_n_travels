@@ -34,9 +34,9 @@ export class ToursService {
     return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
-  async findById(id: string, tenantId: string) {
+  async findById(identifier: string, tenantId: string) {
     const tour = await this.prisma.tour.findFirst({
-      where: { id, tenantId },
+      where: { AND: [{ tenantId }, { OR: [{ id: identifier }, { slug: identifier }] }] },
       include: { destination: true, images: true, itinerary: { orderBy: { day: 'asc' } } },
     });
     if (!tour) throw new NotFoundException('Tour not found');

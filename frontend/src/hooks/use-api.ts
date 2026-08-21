@@ -66,6 +66,9 @@ export function useApi() {
   }, []);
   const getBlogBySlug = useCallback(async (slug: string) => api.get(`/cms/blogs/${slug}`), []);
 
+  const getTestimonials = useCallback(async () => api.get('/cms/testimonials'), []);
+  const getFaqs = useCallback(async () => api.get('/cms/faqs'), []);
+
   const listBlogs = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/cms/admin/blogs' + qs, auth());
@@ -375,7 +378,7 @@ export function useApi() {
     getVisaServices, createVisaService, updateVisaService, deleteVisaService,
     globalSearch,
     getDestinations, createDestination, updateDestination, deleteDestination,
-    getBlogs, getBlogBySlug,
+    getBlogs, getBlogBySlug, getTestimonials, getFaqs,
     listBlogs, createBlog, updateBlog, deleteBlog,
     listPages, createPage, updatePage, deletePage,
     listFaqs, createFaq, updateFaq, deleteFaq,

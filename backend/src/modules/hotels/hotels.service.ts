@@ -33,9 +33,9 @@ export class HotelsService {
     return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
-  async findById(id: string, tenantId: string) {
+  async findById(identifier: string, tenantId: string) {
     const hotel = await this.prisma.hotel.findFirst({
-      where: { id, tenantId },
+      where: { AND: [{ tenantId }, { OR: [{ id: identifier }, { slug: identifier }] }] },
       include: { destination: true, images: true, rooms: true },
     });
     if (!hotel) throw new NotFoundException('Hotel not found');

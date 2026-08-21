@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useApi } from '@/hooks/use-api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import {
 } from '@/components/admin/ui';
 import {
   Trophy, Wallet, Users, TrendingUp, Loader2, Plus, Pencil, Trash2,
-  Save, Sparkles, Crown, Settings, Activity,
+  Save, Sparkles, Crown, Settings, Activity, Gift,
 } from 'lucide-react';
 
 interface Tier {
@@ -40,7 +41,7 @@ interface Transaction {
   account: { user: { id: string; fullName: string; email: string | null; phone: string | null } };
 }
 
-type Tab = 'overview' | 'tiers' | 'rules' | 'members' | 'transactions';
+type Tab = 'overview' | 'tiers' | 'rules' | 'members' | 'transactions' | 'refer';
 
 const TYPE_LABEL: Record<string, { label: string; cls: string }> = {
   referral_signup:        { label: 'Referral',        cls: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
@@ -57,9 +58,11 @@ const TABS: { key: Tab; label: string; Icon: any }[] = [
   { key: 'rules',        label: 'Product rules',    Icon: Settings },
   { key: 'members',      label: 'Members',          Icon: Users },
   { key: 'transactions', label: 'Transactions',     Icon: TrendingUp },
+  { key: 'refer',        label: 'Refer & Earn',     Icon: Gift },
 ];
 
 export default function AdminLoyaltyPage() {
+  const router = useRouter();
   const {
     getLoyaltyStats, getLoyaltyTiers, upsertLoyaltyTier, updateLoyaltyTier, deleteLoyaltyTier,
     getLoyaltyProductRules, upsertLoyaltyProductRule, deleteLoyaltyProductRule,
@@ -265,7 +268,7 @@ export default function AdminLoyaltyPage() {
         {TABS.map((t) => (
           <button
             key={t.key}
-            onClick={() => setTab(t.key)}
+            onClick={() => (t.key === 'refer' ? router.push('/admin/affiliates') : setTab(t.key))}
             className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
               tab === t.key ? 'border-accent text-accent' : 'border-transparent text-on-surface-variant hover:text-on-surface'
             }`}

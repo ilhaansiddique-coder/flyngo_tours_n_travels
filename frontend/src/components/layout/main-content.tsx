@@ -10,7 +10,9 @@ export function MainContent({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <main className={!isHome ? 'pt-16 lg:pt-20' : 'pt-20'}>{children}</main>
+      {/* Admin pages render their own full-height layout with no public
+          header above them, so the header-clearing padding must not apply. */}
+      <main className={isAdmin ? '' : !isHome ? 'pt-16 lg:pt-20' : 'pt-20'}>{children}</main>
       {!isAdmin && <ScrollToTop />}
     </>
   );

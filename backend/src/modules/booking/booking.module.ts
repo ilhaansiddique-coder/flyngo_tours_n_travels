@@ -3,9 +3,10 @@ import { BookingService } from './booking.service';
 import { BookingController } from './booking.controller';
 import { ReferralModule } from '../referral/referral.module';
 import { TrackingModule } from '../tracking/tracking.module';
+import { LoyaltyModule } from '../loyalty/loyalty.module';
 
 @Module({
-  imports: [ReferralModule, TrackingModule],
+  imports: [ReferralModule, TrackingModule, LoyaltyModule],
   controllers: [BookingController],
   providers: [BookingService],
   exports: [BookingService],

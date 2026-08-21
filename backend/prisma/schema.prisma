@@ -139,6 +139,17 @@ model ReferralSetting {
   referrerRewardValue Decimal  @default(5.0) @map("referrer_reward_value") @db.Decimal(10, 2)
   referrerMaxReward   Decimal? @map("referrer_max_reward") @db.Decimal(10, 2)
 
+  /// Default affiliate type assigned to newly enrolled referrers:
+  /// fixed_commission | commission_less
+  defaultAffiliateType String @default("fixed_commission") @map("default_affiliate_type")
+
+  /// Conditions for "fixed commission" affiliates
+  fixedCommissionType  String  @default("percentage") @map("fixed_commission_type") // percentage, fixed
+  fixedCommissionValue Decimal @default(5.0) @map("fixed_commission_value") @db.Decimal(10, 2)
+
+  /// Conditions for "commission-less" affiliates — loyalty points per signup
+  commissionlessSignupPoints Int @default(500) @map("commissionless_signup_points")
+
   // Referee (the person who was referred) reward
   refereeRewardType  String   @default("percentage") @map("referee_reward_type")
   refereeRewardValue Decimal  @default(5.0) @map("referee_reward_value") @db.Decimal(10, 2)
@@ -788,6 +799,10 @@ model Affiliate {
   user     User   @relation(fields: [userId], references: [id])
 
   referralCode   String  @unique @map("referral_code")
+
+  /// fixed_commission = earns cash commission per converted booking;
+  /// commission_less = points-only referrer (no cash commissions, no payouts)
+  affiliateType String  @default("fixed_commission") @map("affiliate_type")
   commissionRate Decimal @default(5.0) @map("commission_rate") @db.Decimal(5, 2)
   totalEarnings  Decimal @default(0) @map("total_earnings") @db.Decimal(10, 2)
 

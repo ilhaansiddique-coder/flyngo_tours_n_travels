@@ -12,7 +12,7 @@ import {
 } from '@/components/admin/ui';
 import {
   Gift, Users, Wallet, TrendingUp, Loader2, CheckCircle2, XCircle,
-  Search, Plus, Pencil, Trash2, UserPlus, Settings, ArrowUpRight, Save,
+  Search, UserPlus, Settings, ArrowUpRight, Save,
   DollarSign, Activity, Globe,
 } from 'lucide-react';
 
@@ -24,12 +24,14 @@ interface Affiliate {
   id: string;
   userId: string;
   referralCode: string;
+  affiliateType: string; // fixed_commission | commission_less
   commissionRate: number;
   totalEarnings: number;
   isActive: boolean;
   createdAt: string;
+  signups: number;
+  converted: number;
   user?: { id: string; fullName: string; email: string | null; phone: string | null };
-  referrals?: Referral[];
 }
 
 interface Referral {
@@ -43,16 +45,6 @@ interface Referral {
   convertedAt: string | null;
   referredUser: { id: string; fullName: string; email: string | null; createdAt: string } | null;
   affiliate?: { user: { fullName: string; email: string | null } };
-}
-
-interface Commission {
-  id: string;
-  bookingId: string;
-  amount: number;
-  currency: string;
-  rate: number | null;
-  status: string;
-  createdAt: string;
 }
 
 interface Payout {
@@ -91,6 +83,10 @@ interface Settings {
   referrerRewardType: string;
   referrerRewardValue: number;
   referrerMaxReward: number | null;
+  defaultAffiliateType?: string;
+  fixedCommissionType?: string;
+  fixedCommissionValue?: number;
+  commissionlessSignupPoints?: number;
   refereeRewardType: string;
   refereeRewardValue: number;
   refereeMaxReward: number | null;
@@ -129,17 +125,14 @@ const TABS: { key: Tab; label: string; Icon: typeof Users }[] = [
 
 export default function AdminAffiliatesPage() {
   const {
-    getAffiliates,
-    createAffiliate,
-    updateAffiliate,
-    deleteAffiliate,
+    getReferralAdminAffiliates,
+    updateReferralAdminAffiliate,
     getReferralOverview,
     getReferralSettings,
     updateReferralSettings,
     getReferralAdminReferrals,
     getReferralPayouts,
     updateReferralPayout,
-    getUsers,
   } = useApi();
 
   const [tab, setTab] = useState<Tab>('overview');
@@ -152,17 +145,15 @@ export default function AdminAffiliatesPage() {
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsSavedAt, setSettingsSavedAt] = useState<number | null>(null);
 
-  // Affiliates
+  // Affiliates (referrers) — type management
   const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
   const [affPage, setAffPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [affModalOpen, setAffModalOpen] = useState(false);
-  const [editingAffiliate, setEditingAffiliate] = useState<Affiliate | null>(null);
-  const [affForm, setAffForm] = useState({ userId: '', referralCode: '', commissionRate: '5', isActive: true });
-  const [submitting, setSubmitting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
-  const [userOptions, setUserOptions] = useState<{ label: string; value: string }[]>([]);
+  // per-row draft edits: affiliateId -> { affiliateType, commissionRate, isActive }
+  const [affEdits, setAffEdits] = useState<Record<string, { affiliateType: string; commissionRate: string; isActive: boolean }>>({});
+  const [savingAffId, setSavingAffId] = useState<string | null>(null);
 
   // Referrals
   const [referrals, setReferrals] = useState<Referral[]>([]);
@@ -188,18 +179,29 @@ export default function AdminAffiliatesPage() {
     try {
       const params: Record<string, string> = { page: String(p), limit: '20' };
       if (search) params.search = search;
-      const res = (await getAffiliates(params)) as any;
-      if (Array.isArray(res)) {
-        setAffiliates(res);
-        setTotalPages(1);
-      } else {
-        setAffiliates(res?.items ?? []);
-        setTotalPages(res?.meta?.totalPages ?? 1);
-      }
+      if (typeFilter) params.affiliateType = typeFilter;
+      const res = (await getReferralAdminAffiliates(params)) as any;
+      const items: Affiliate[] = Array.isArray(res) ? res : res?.items ?? [];
+      setAffiliates(items);
+      setTotalPages(Array.isArray(res) ? 1 : res?.meta?.totalPages ?? 1);
+      // seed per-row edit drafts from server state
+      setAffEdits((prev) => {
+        const next = { ...prev };
+        items.forEach((a) => {
+          if (!next[a.id]) {
+            next[a.id] = {
+              affiliateType: a.affiliateType || 'fixed_commission',
+              commissionRate: String(a.commissionRate ?? 0),
+              isActive: a.isActive,
+            };
+          }
+        });
+        return next;
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to load affiliates');
     }
-  }, [getAffiliates, search]);
+  }, [getReferralAdminAffiliates, search, typeFilter]);
 
   const fetchOverview = useCallback(async () => {
     try {
@@ -211,6 +213,10 @@ export default function AdminAffiliatesPage() {
         referrerRewardType: settings.referrerRewardType,
         referrerRewardValue: settings.referrerRewardValue,
         referrerMaxReward: settings.referrerMaxReward ?? '',
+        defaultAffiliateType: settings.defaultAffiliateType ?? 'fixed_commission',
+        fixedCommissionType: settings.fixedCommissionType ?? 'percentage',
+        fixedCommissionValue: settings.fixedCommissionValue ?? 5,
+        commissionlessSignupPoints: settings.commissionlessSignupPoints ?? 500,
         refereeRewardType: settings.refereeRewardType,
         refereeRewardValue: settings.refereeRewardValue,
         refereeMaxReward: settings.refereeMaxReward ?? '',
@@ -248,16 +254,6 @@ export default function AdminAffiliatesPage() {
     }
   }, [getReferralPayouts, payoutFilter]);
 
-  const fetchUserOptions = useCallback(async () => {
-    try {
-      const res = (await getUsers({ limit: '200' })) as any;
-      const users = Array.isArray(res) ? res : res?.items ?? res?.data ?? [];
-      setUserOptions(users.map((u: any) => ({ label: `${u.fullName} (${u.email ?? u.phone ?? ''})`, value: u.id })));
-    } catch {
-      // silent
-    }
-  }, [getUsers]);
-
   const fetchAll = useCallback(async () => {
     setLoading(true);
     await Promise.all([
@@ -266,74 +262,38 @@ export default function AdminAffiliatesPage() {
       fetchReferrals(1),
       fetchPayouts(),
     ]);
-    await fetchUserOptions();
     setLoading(false);
-  }, [fetchOverview, fetchAffiliates, fetchReferrals, fetchPayouts, fetchUserOptions]);
+  }, [fetchOverview, fetchAffiliates, fetchReferrals, fetchPayouts]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   // ---------------------------------------------------------------------------
-  // Affiliate CRUD
+  // Affiliate type management (per-row)
   // ---------------------------------------------------------------------------
 
-  const generateCode = () => {
-    const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-    let out = '';
-    for (let i = 0; i < 8; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
-    return out;
+  const editAff = (id: string, patch: Partial<{ affiliateType: string; commissionRate: string; isActive: boolean }>) => {
+    setAffEdits((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
   };
 
-  const openCreateModal = () => {
-    setEditingAffiliate(null);
-    setAffForm({ userId: '', referralCode: generateCode(), commissionRate: '5', isActive: true });
-    setAffModalOpen(true);
-  };
-
-  const openEditModal = (a: Affiliate) => {
-    setEditingAffiliate(a);
-    setAffForm({
-      userId: a.userId,
-      referralCode: a.referralCode,
-      commissionRate: String(a.commissionRate ?? 5),
-      isActive: a.isActive,
-    });
-    setAffModalOpen(true);
-  };
-
-  const submitAffiliate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
+  const saveAffiliateRow = async (a: Affiliate) => {
+    const draft = affEdits[a.id];
+    if (!draft) return;
+    setSavingAffId(a.id);
+    setError(null);
     try {
-      const body = {
-        userId: affForm.userId,
-        referralCode: affForm.referralCode.toUpperCase(),
-        commissionRate: Number(affForm.commissionRate),
-        isActive: affForm.isActive,
+      const body: any = {
+        affiliateType: draft.affiliateType,
+        isActive: draft.isActive,
       };
-      if (editingAffiliate) {
-        await updateAffiliate(editingAffiliate.id, body);
-      } else {
-        await createAffiliate(body);
+      if (draft.affiliateType === 'fixed_commission') {
+        body.commissionRate = Number(draft.commissionRate) || 0;
       }
-      setAffModalOpen(false);
-      await fetchAffiliates(affPage);
-      await fetchOverview();
+      await updateReferralAdminAffiliate(a.id, body);
+      await Promise.all([fetchAffiliates(affPage), fetchOverview()]);
     } catch (err: any) {
-      alert(err.message || 'Failed to save affiliate');
+      setError(err.message || 'Failed to update affiliate');
     } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!confirmDelete.id) return;
-    try {
-      await deleteAffiliate(confirmDelete.id);
-      setConfirmDelete({ open: false, id: null });
-      await fetchAffiliates(affPage);
-      await fetchOverview();
-    } catch (err: any) {
-      alert(err.message || 'Delete failed');
+      setSavingAffId(null);
     }
   };
 
@@ -349,6 +309,10 @@ export default function AdminAffiliatesPage() {
         isEnabled: !!settingsForm.isEnabled,
         referrerRewardType: settingsForm.referrerRewardType,
         referrerRewardValue: Number(settingsForm.referrerRewardValue),
+        defaultAffiliateType: settingsForm.defaultAffiliateType,
+        fixedCommissionType: settingsForm.fixedCommissionType,
+        fixedCommissionValue: Number(settingsForm.fixedCommissionValue),
+        commissionlessSignupPoints: Number(settingsForm.commissionlessSignupPoints),
         refereeRewardType: settingsForm.refereeRewardType,
         refereeRewardValue: Number(settingsForm.refereeRewardValue),
         cookieWindowDays: Number(settingsForm.cookieWindowDays),
@@ -479,7 +443,7 @@ export default function AdminAffiliatesPage() {
             <h3 className="font-bold mb-3">Quick actions</h3>
             <div className="grid sm:grid-cols-3 gap-3">
               <Button variant="outline" onClick={() => setTab('affiliates')}>
-                <UserPlus className="w-4 h-4 mr-2" /> Add affiliate
+                <UserPlus className="w-4 h-4 mr-2" /> Manage affiliates
               </Button>
               <Button variant="outline" onClick={() => setTab('payouts')}>
                 <Wallet className="w-4 h-4 mr-2" /> Process payouts ({overview.stats.pendingPayouts})
@@ -493,7 +457,7 @@ export default function AdminAffiliatesPage() {
       )}
 
       {/* ============================================================ */}
-      {/* AFFILIATES */}
+      {/* AFFILIATES — type & condition management */}
       {/* ============================================================ */}
       {tab === 'affiliates' && (
         <>
@@ -501,41 +465,62 @@ export default function AdminAffiliatesPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
               <Input
-                placeholder="Search affiliates..."
+                placeholder="Search name, email or code..."
                 className="pl-9 w-72"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') fetchAffiliates(1); }}
               />
             </div>
-            <Button onClick={openCreateModal}>
-              <Plus className="w-4 h-4 mr-2" /> Add affiliate
-            </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-widest text-on-surface-variant">Type:</span>
+              <FormSelect
+                value={typeFilter}
+                onChange={(v: string) => { setTypeFilter(v); setAffPage(1); }}
+                options={[
+                  { value: '', label: 'All' },
+                  { value: 'fixed_commission', label: 'Fixed commission' },
+                  { value: 'commission_less', label: 'Commission-less' },
+                ]}
+              />
+              <Button variant="outline" onClick={() => fetchAffiliates(1)}>Apply</Button>
+            </div>
           </div>
 
           <Card hover={false}>
             <div className="overflow-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm min-w-[860px]">
                 <thead className="text-xs uppercase tracking-widest text-on-surface-variant border-b border-outline-variant">
                   <tr>
                     <th className="text-left py-3 pr-4">User</th>
                     <th className="text-left py-3 pr-4">Code</th>
-                    <th className="text-left py-3 pr-4">Rate</th>
-                    <th className="text-left py-3 pr-4">Earnings</th>
-                    <th className="text-left py-3 pr-4">Status</th>
-                    <th className="text-right py-3">Actions</th>
+                    <th className="text-left py-3 pr-4">Affiliation type</th>
+                    <th className="text-left py-3 pr-4">Rate / value</th>
+                    <th className="text-left py-3 pr-4">Signups</th>
+                    <th className="text-left py-3 pr-4">Converted</th>
+                    <th className="text-left py-3 pr-4">Earned</th>
+                    <th className="text-left py-3 pr-4">Active</th>
+                    <th className="text-right py-3"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {affiliates.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="text-center py-12 text-on-surface-variant">
-                        No affiliates yet — click "Add affiliate" to create one.
+                      <td colSpan={9} className="text-center py-12 text-on-surface-variant">
+                        No referrers found. Every registered user is auto-enrolled on first signup.
                       </td>
                     </tr>
                   )}
                   {affiliates.map((a) => {
-                    const badge = a.isActive ? STATUS_BADGE.converted : STATUS_BADGE.cancelled;
+                    const draft = affEdits[a.id] ?? {
+                      affiliateType: a.affiliateType || 'fixed_commission',
+                      commissionRate: String(a.commissionRate ?? 0),
+                      isActive: a.isActive,
+                    };
+                    const dirty =
+                      draft.affiliateType !== (a.affiliateType || 'fixed_commission') ||
+                      draft.commissionRate !== String(a.commissionRate ?? 0) ||
+                      draft.isActive !== a.isActive;
                     return (
                       <tr key={a.id} className="border-b border-outline-variant/50">
                         <td className="py-3 pr-4">
@@ -543,22 +528,55 @@ export default function AdminAffiliatesPage() {
                           <p className="text-xs text-on-surface-variant">{a.user?.email ?? a.user?.phone}</p>
                         </td>
                         <td className="py-3 pr-4 font-mono font-bold tracking-wider">{a.referralCode}</td>
-                        <td className="py-3 pr-4">{Number(a.commissionRate).toFixed(1)}%</td>
+                        <td className="py-3 pr-4 w-52">
+                          <FormSelect
+                            value={draft.affiliateType}
+                            onChange={(v: string) => editAff(a.id, { affiliateType: v })}
+                            options={[
+                              { value: 'fixed_commission', label: '01 · Fixed commission' },
+                              { value: 'commission_less', label: '02 · Commission-less' },
+                            ]}
+                          />
+                        </td>
+                        <td className="py-3 pr-4 w-32">
+                          {draft.affiliateType === 'fixed_commission' ? (
+                            <FormInput
+                              type="number"
+                              value={draft.commissionRate}
+                              onChange={(v: string) => editAff(a.id, { commissionRate: v })}
+                            />
+                          ) : (
+                            <span className="text-xs text-on-surface-variant italic">points only</span>
+                          )}
+                        </td>
+                        <td className="py-3 pr-4">{a.signups}</td>
+                        <td className="py-3 pr-4">{a.converted}</td>
                         <td className="py-3 pr-4 font-bold">
-                          {formatCurrency(a.totalEarnings, overview?.settings.payoutCurrency ?? 'USD')}
+                          {draft.affiliateType === 'commission_less'
+                            ? '—'
+                            : formatCurrency(a.totalEarnings, overview?.settings.payoutCurrency ?? 'USD')}
                         </td>
                         <td className="py-3 pr-4">
-                          <Badge className={badge.cls}>{a.isActive ? 'Active' : 'Inactive'}</Badge>
+                          <input
+                            type="checkbox"
+                            className="rounded accent-accent w-4 h-4"
+                            checked={draft.isActive}
+                            onChange={(e) => editAff(a.id, { isActive: e.target.checked })}
+                          />
                         </td>
                         <td className="py-3 text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button size="sm" variant="outline" onClick={() => openEditModal(a)}>
-                              <Pencil className="w-3 h-3 mr-1" /> Edit
-                            </Button>
-                            <Button size="sm" variant="danger" onClick={() => setConfirmDelete({ open: true, id: a.id })}>
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
+                          <Button
+                            size="sm"
+                            disabled={!dirty || savingAffId === a.id}
+                            onClick={() => saveAffiliateRow(a)}
+                          >
+                            {savingAffId === a.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                            ) : (
+                              <Save className="w-3 h-3 mr-1" />
+                            )}
+                            Save
+                          </Button>
                         </td>
                       </tr>
                     );
@@ -581,6 +599,12 @@ export default function AdminAffiliatesPage() {
                 ))}
               </div>
             )}
+
+            <div className="mt-4 p-3 rounded-xl bg-surface-container/60 border border-outline-variant text-xs text-on-surface-variant space-y-1">
+              <p><strong>01 · Fixed commission</strong> — earns cash ({overview?.settings.referrerRewardType === 'percentage' ? '%' : 'flat amount'}) at their own rate on every converted booking; can request payouts.</p>
+              <p><strong>02 · Commission-less</strong> — earns loyalty points per signup ({overview?.settings.commissionlessSignupPoints ?? 500} pts default); no cash commissions, no payout requests.</p>
+              <p>New signups default to <strong>{settingsForm?.defaultAffiliateType === 'commission_less' ? 'Commission-less' : 'Fixed commission'}</strong> (set in Program settings).</p>
+            </div>
           </Card>
         </>
       )}
@@ -850,6 +874,57 @@ export default function AdminAffiliatesPage() {
                 />
               </FormField>
 
+              <h4 className="font-bold text-sm uppercase tracking-widest text-on-surface-variant pt-4">Affiliation types</h4>
+              <FormField label="Default type for new signups">
+                <FormSelect
+                  value={settingsForm.defaultAffiliateType}
+                  onChange={(v: string) => setSettingsForm({ ...settingsForm, defaultAffiliateType: v })}
+                  options={[
+                    { value: 'fixed_commission', label: '01 · Fixed commission' },
+                    { value: 'commission_less', label: '02 · Commission-less (points only)' },
+                  ]}
+                />
+              </FormField>
+              <div className="p-3 rounded-xl bg-surface-container/60 border border-outline-variant space-y-3">
+                <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+                  01 · Fixed commission conditions
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField label="Commission basis">
+                    <FormSelect
+                      value={settingsForm.fixedCommissionType}
+                      onChange={(v: string) => setSettingsForm({ ...settingsForm, fixedCommissionType: v })}
+                      options={[
+                        { value: 'percentage', label: '% of booking' },
+                        { value: 'fixed', label: 'Flat amount' },
+                      ]}
+                    />
+                  </FormField>
+                  <FormField label="Default rate / amount">
+                    <FormInput
+                      type="number"
+                      value={String(settingsForm.fixedCommissionValue)}
+                      onChange={(v: string) => setSettingsForm({ ...settingsForm, fixedCommissionValue: v })}
+                    />
+                  </FormField>
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-surface-container/60 border border-outline-variant">
+                <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-3">
+                  02 · Commission-less conditions
+                </p>
+                <FormField label="Loyalty points per signup">
+                  <FormInput
+                    type="number"
+                    value={String(settingsForm.commissionlessSignupPoints)}
+                    onChange={(v: string) => setSettingsForm({ ...settingsForm, commissionlessSignupPoints: v })}
+                  />
+                </FormField>
+                <p className="text-[11px] text-on-surface-variant mt-1">
+                  No cash commissions and no payout requests — these referrers earn loyalty points only.
+                </p>
+              </div>
+
               <h4 className="font-bold text-sm uppercase tracking-widest text-on-surface-variant pt-4">Referee reward</h4>
               <FormField label="Type">
                 <FormSelect
@@ -919,60 +994,6 @@ export default function AdminAffiliatesPage() {
       {/* ============================================================ */}
       {/* MODALS */}
       {/* ============================================================ */}
-
-      {/* Affiliate create/edit modal */}
-      <Modal
-        open={affModalOpen}
-        onClose={() => setAffModalOpen(false)}
-        title={editingAffiliate ? 'Edit affiliate' : 'Add affiliate'}
-      >
-        <form onSubmit={submitAffiliate} className="space-y-4">
-          <FormField label="User" required>
-            <FormSelect
-              value={affForm.userId}
-              onChange={(v: string) => setAffForm({ ...affForm, userId: v })}
-              options={[{ value: '', label: 'Select user...' }, ...userOptions]}
-            />
-          </FormField>
-          <FormField label="Referral code">
-            <FormInput
-              value={affForm.referralCode}
-              onChange={(v: string) => setAffForm({ ...affForm, referralCode: v })}
-            />
-          </FormField>
-          <FormField label="Commission rate (%)">
-            <FormInput
-              type="number"
-              value={affForm.commissionRate}
-              onChange={(v: string) => setAffForm({ ...affForm, commissionRate: v })}
-            />
-          </FormField>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              className="rounded accent-accent"
-              checked={affForm.isActive}
-              onChange={(e) => setAffForm({ ...affForm, isActive: e.target.checked })}
-            />
-            <span className="text-sm">Active</span>
-          </label>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setAffModalOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={submitting || !affForm.userId}>
-              {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              {editingAffiliate ? 'Save changes' : 'Create affiliate'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      <ConfirmDialog
-        open={confirmDelete.open}
-        onClose={() => setConfirmDelete({ open: false, id: null })}
-        onConfirm={handleDelete}
-        title="Delete affiliate?"
-        message="This will remove the affiliate and all their commission history. Pending payouts will be cancelled. This action cannot be undone."
-      />
 
       {/* Payout action modal */}
       <Modal

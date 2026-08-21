@@ -158,6 +158,12 @@ export function useApi() {
   }, [auth]);
   const updateReferralPayout = useCallback(async (id: string, body: { status: string; notes?: string }) =>
     api.patch(`/referrals/admin/payouts/${id}`, body, auth()), [auth]);
+  const getReferralAdminAffiliates = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/referrals/admin/affiliates' + qs, auth());
+  }, [auth]);
+  const updateReferralAdminAffiliate = useCallback(async (id: string, body: { affiliateType?: string; commissionRate?: number; isActive?: boolean }) =>
+    api.patch(`/referrals/admin/affiliates/${id}`, body, auth()), [auth]);
 
   // Tracking + ads
   const getTrackingSettings = useCallback(async () => api.get('/tracking/admin/settings', auth()), [auth]);
@@ -386,6 +392,7 @@ export function useApi() {
     getReferralProgram, lookupReferralCode, getMyReferralSummary, requestReferralPayout,
     getReferralSettings, updateReferralSettings, getReferralOverview,
     getReferralAdminReferrals, getReferralPayouts, updateReferralPayout,
+    getReferralAdminAffiliates, updateReferralAdminAffiliate,
     getTrackingSettings, updateTrackingSettings, getTrackingStats,
     getLeads, updateLead,
     getAdminLandingPages, createAdminLandingPage, updateAdminLandingPage, deleteAdminLandingPage,

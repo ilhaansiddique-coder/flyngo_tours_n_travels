@@ -47,6 +47,10 @@ export class ReferralService {
       referrerRewardType: body.referrerRewardType,
       referrerRewardValue: body.referrerRewardValue,
       referrerMaxReward: body.referrerMaxReward,
+      defaultAffiliateType: body.defaultAffiliateType,
+      fixedCommissionType: body.fixedCommissionType,
+      fixedCommissionValue: body.fixedCommissionValue,
+      commissionlessSignupPoints: body.commissionlessSignupPoints,
       refereeRewardType: body.refereeRewardType,
       refereeRewardValue: body.refereeRewardValue,
       refereeMaxReward: body.refereeMaxReward,
@@ -59,6 +63,18 @@ export class ReferralService {
       termsText: body.termsText,
     };
     Object.keys(data).forEach((k) => (data as any)[k] === undefined && delete (data as any)[k]);
+    if (
+      data.defaultAffiliateType !== undefined &&
+      !['fixed_commission', 'commission_less'].includes(data.defaultAffiliateType as string)
+    ) {
+      throw new BadRequestException('defaultAffiliateType must be fixed_commission or commission_less');
+    }
+    if (
+      data.fixedCommissionType !== undefined &&
+      !['percentage', 'fixed'].includes(data.fixedCommissionType as string)
+    ) {
+      throw new BadRequestException('fixedCommissionType must be percentage or fixed');
+    }
 
     return this.prisma.referralSetting.upsert({
       where: { tenantId },
@@ -180,6 +196,11 @@ export class ReferralService {
     });
 
     // 2) Ensure an Affiliate row exists for the new user
+    //    Type comes from program defaults:
+    //    - fixed_commission → rate = settings.fixedCommissionValue
+    //    - commission_less  → points-only, no cash commissions
+    const affiliateType =
+      settings.defaultAffiliateType === 'commission_less' ? 'commission_less' : 'fixed_commission';
     const affiliate = await this.prisma.affiliate.upsert({
       where: { userId: newUser.id },
       update: {},
@@ -187,7 +208,10 @@ export class ReferralService {
         tenantId,
         userId: newUser.id,
         referralCode: newUser.referralCode,
-        commissionRate: settings.referrerRewardValue,
+        affiliateType,
+        commissionRate: affiliateType === 'fixed_commission'
+          ? Number(settings.fixedCommissionValue)
+          : 0,
       },
     });
 
@@ -195,7 +219,7 @@ export class ReferralService {
     if (referredByCode && settings.isEnabled) {
       const referrer = await this.prisma.user.findFirst({
         where: { referralCode: referredByCode, deletedAt: null },
-        select: { id: true, affiliate: { select: { id: true } } },
+        select: { id: true, affiliate: { select: { id: true, affiliateType: true } } },
       });
       if (referrer?.affiliate && referrer.id !== newUser.id) {
         try {
@@ -210,9 +234,15 @@ export class ReferralService {
               registeredAt: new Date(),
             },
           });
-          // Award 500 loyalty points to the referrer for the new signup
+          // Award loyalty points to the referrer for the new signup.
+          // Commission-less affiliates earn their configured signup points;
+          // fixed-commission affiliates earn the standard 500.
+          const signupPoints =
+            referrer.affiliate.affiliateType === 'commission_less'
+              ? Number(settings.commissionlessSignupPoints)
+              : undefined;
           try {
-            await this.loyaltyService.awardReferralSignup(tenantId, referrer.id, newUser.id);
+            await this.loyaltyService.awardReferralSignup(tenantId, referrer.id, newUser.id, signupPoints);
           } catch (err: any) {
             this.logger.warn(`Loyalty award for referral signup failed: ${err.message}`);
           }
@@ -312,6 +342,29 @@ export class ReferralService {
         referralCode: aff.referralCode,
         referredByCode: user.referredByCode,
       },
+      // Affiliation type + effective earning conditions for this user
+      affiliate: {
+        id: aff.id,
+        affiliateType: (aff as any).affiliateType ?? 'fixed_commission',
+        commissionRate: Number((aff as any).commissionRate),
+        rewardBasis: settings.referrerRewardType,
+        isActive: (aff as any).isActive,
+      },
+      conditions:
+        ((aff as any).affiliateType ?? 'fixed_commission') === 'commission_less'
+          ? {
+              type: 'commission_less' as const,
+              label: `Earn ${Number(settings.commissionlessSignupPoints)} points per friend who signs up`,
+              payoutEligible: false,
+            }
+          : {
+              type: 'fixed_commission' as const,
+              label:
+                settings.referrerRewardType === 'percentage'
+                  ? `Earn ${Number((aff as any).commissionRate)}% commission on every booking your friends make`
+                  : `Earn ${settings.payoutCurrency} ${Number((aff as any).commissionRate)} per booking your friends make`,
+              payoutEligible: true,
+            },
       settings: {
         referrerRewardType: settings.referrerRewardType,
         referrerRewardValue: Number(settings.referrerRewardValue),
@@ -408,9 +461,10 @@ export class ReferralService {
   /**
    * Apply referral attribution to a booking. Called from BookingService.
    *  - marks the AffiliateReferral as converted
-   *  - creates an AffiliateCommission for the referrer
-   *  - writes ledger entries
-   *  - bumps affiliate totalEarnings
+   *  - for fixed_commission referrers: creates an AffiliateCommission at the
+   *    affiliate's own rate, writes a ledger entry and bumps totalEarnings
+   *  - for commission_less referrers: conversion is recorded but NO cash
+   *    commission is generated (they earn loyalty points on signup instead)
    */
   async recordBookingConversion(
     tenantId: string,
@@ -438,22 +492,34 @@ export class ReferralService {
 
     const referrer = await this.prisma.user.findFirst({
       where: { referralCode: user.referredByCode, deletedAt: null },
-      select: { id: true, affiliate: { select: { id: true, isActive: true } } },
+      select: {
+        id: true,
+        affiliate: { select: { id: true, isActive: true, affiliateType: true, commissionRate: true } },
+      },
     });
     if (!referrer?.affiliate?.isActive) return null;
 
-    const referrerReward = this.computeReward(
-      args.bookingTotal,
-      settings.referrerRewardType,
-      Number(settings.referrerRewardValue),
-      settings.referrerMaxReward ? Number(settings.referrerMaxReward) : null,
-    );
+    const isCommissionLess = referrer.affiliate.affiliateType === 'commission_less';
+
+    // Referee reward (friend's discount) always follows program settings.
     const refereeReward = this.computeReward(
       args.bookingTotal,
       settings.refereeRewardType,
       Number(settings.refereeRewardValue),
       settings.refereeMaxReward ? Number(settings.refereeMaxReward) : null,
     );
+
+    // Referrer cash reward:
+    //  - fixed_commission → the affiliate's own rate (admin-managed per user)
+    //  - commission_less  → 0
+    const referrerReward = isCommissionLess
+      ? 0
+      : this.computeReward(
+          args.bookingTotal,
+          settings.referrerRewardType,
+          Number(referrer.affiliate.commissionRate),
+          settings.referrerMaxReward ? Number(settings.referrerMaxReward) : null,
+        );
 
     // Mark the referral as converted (idempotent)
     const referral = await this.prisma.affiliateReferral.upsert({
@@ -477,43 +543,48 @@ export class ReferralService {
       },
     });
 
-    // Create commission for the referrer
-    const commission = await this.prisma.affiliateCommission.create({
-      data: {
-        tenantId,
-        affiliateId: referrer.affiliate.id,
-        bookingId: args.bookingId,
-        amount: referrerReward,
-        currency: args.bookingCurrency,
-        rate: Number(settings.referrerRewardValue),
-        status: 'pending',
-      },
-    });
+    let commission: Prisma.AffiliateCommissionGetPayload<object> | null = null;
 
-    // Ledger entries
-    await this.prisma.referralLedger.createMany({
-      data: [
-        {
+    if (!isCommissionLess) {
+      // Create commission for the referrer
+      commission = await this.prisma.affiliateCommission.create({
+        data: {
           tenantId,
           affiliateId: referrer.affiliate.id,
-          type: 'conversion',
+          bookingId: args.bookingId,
           amount: referrerReward,
           currency: args.bookingCurrency,
-          bookingId: args.bookingId,
-          referredUserId: args.userId,
-          description: `Conversion from booking ${args.bookingId} (${referrerReward} ${args.bookingCurrency})`,
+          rate: Number(referrer.affiliate.commissionRate),
+          status: 'pending',
         },
-      ],
-    });
+      });
 
-    // Bump affiliate totalEarnings
-    await this.prisma.affiliate.update({
-      where: { id: referrer.affiliate.id },
-      data: { totalEarnings: { increment: referrerReward } },
-    });
+      // Ledger entries
+      await this.prisma.referralLedger.createMany({
+        data: [
+          {
+            tenantId,
+            affiliateId: referrer.affiliate.id,
+            type: 'conversion',
+            amount: referrerReward,
+            currency: args.bookingCurrency,
+            bookingId: args.bookingId,
+            referredUserId: args.userId,
+            description: `Conversion from booking ${args.bookingId} (${referrerReward} ${args.bookingCurrency})`,
+          },
+        ],
+      });
+
+      // Bump affiliate totalEarnings
+      await this.prisma.affiliate.update({
+        where: { id: referrer.affiliate.id },
+        data: { totalEarnings: { increment: referrerReward } },
+      });
+    }
 
     this.logger.log(
-      `Referral conversion: referrer=${referrer.id} earned ${referrerReward} ${args.bookingCurrency} from booking ${args.bookingId}`,
+      `Referral conversion: referrer=${referrer.id} (${referrer.affiliate.affiliateType}) ` +
+        `earned ${referrerReward} ${args.bookingCurrency} from booking ${args.bookingId}`,
     );
 
     return { referral, commission, referrerReward, refereeReward };
@@ -527,6 +598,11 @@ export class ReferralService {
     const affiliate = await this.prisma.affiliate.findUnique({ where: { userId } });
     if (!affiliate) throw new NotFoundException('No affiliate account for this user');
     if (!affiliate.isActive) throw new BadRequestException('Affiliate account is inactive');
+    if (affiliate.affiliateType === 'commission_less') {
+      throw new BadRequestException(
+        'Your affiliation is points-only — cash payouts are not available. Redeem points at checkout instead.',
+      );
+    }
 
     const settings = await this.getSettings(tenantId);
     if (body.amount < Number(settings.minPayoutAmount)) {
@@ -681,6 +757,115 @@ export class ReferralService {
       })),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Admin — affiliate (referrer) management
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List referrers with their affiliation type and live performance stats.
+   * Admin can then PATCH each row's type / rate / active flag.
+   */
+  async adminListAffiliates(
+    tenantId: string,
+    page = 1,
+    limit = 20,
+    search?: string,
+    affiliateType?: string,
+  ) {
+    const where: Prisma.AffiliateWhereInput = { tenantId };
+    if (search) {
+      where.OR = [
+        { referralCode: { contains: search, mode: 'insensitive' } },
+        { user: { fullName: { contains: search, mode: 'insensitive' } } },
+        { user: { email: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+    if (affiliateType && ['fixed_commission', 'commission_less'].includes(affiliateType)) {
+      where.affiliateType = affiliateType;
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.affiliate.findMany({
+        where,
+        include: {
+          user: { select: { id: true, fullName: true, email: true, phone: true, isActive: true } },
+        },
+        orderBy: [{ totalEarnings: 'desc' }, { createdAt: 'desc' }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.affiliate.count({ where }),
+    ]);
+
+    const affIds = items.map((a) => a.id);
+    const [signupCounts, convertedCounts] = affIds.length
+      ? await Promise.all([
+          this.prisma.affiliateReferral.groupBy({
+            by: ['affiliateId'],
+            where: { tenantId, affiliateId: { in: affIds } },
+            _count: { _all: true },
+          }),
+          this.prisma.affiliateReferral.groupBy({
+            by: ['affiliateId'],
+            where: { tenantId, affiliateId: { in: affIds }, status: 'converted' },
+            _count: { _all: true },
+          }),
+        ])
+      : [[], []];
+
+    const signupMap = new Map(signupCounts.map((g) => [g.affiliateId, g._count._all]));
+    const convertedMap = new Map(convertedCounts.map((g) => [g.affiliateId, g._count._all]));
+
+    return {
+      items: items.map((a) => ({
+        id: a.id,
+        userId: a.userId,
+        referralCode: a.referralCode,
+        affiliateType: a.affiliateType,
+        commissionRate: Number(a.commissionRate),
+        totalEarnings: Number(a.totalEarnings),
+        isActive: a.isActive,
+        createdAt: a.createdAt,
+        signups: signupMap.get(a.id) ?? 0,
+        converted: convertedMap.get(a.id) ?? 0,
+        user: a.user,
+      })),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  /** Set an individual referrer's affiliation type + conditions. */
+  async adminUpdateAffiliate(
+    tenantId: string,
+    affiliateId: string,
+    body: { affiliateType?: string; commissionRate?: number; isActive?: boolean },
+  ) {
+    const affiliate = await this.prisma.affiliate.findFirst({
+      where: { id: affiliateId, tenantId },
+    });
+    if (!affiliate) throw new NotFoundException('Affiliate not found');
+
+    if (
+      body.affiliateType !== undefined &&
+      !['fixed_commission', 'commission_less'].includes(body.affiliateType)
+    ) {
+      throw new BadRequestException('affiliateType must be fixed_commission or commission_less');
+    }
+
+    const data: Prisma.AffiliateUpdateInput = {};
+    if (body.affiliateType !== undefined) data.affiliateType = body.affiliateType;
+    if (body.commissionRate !== undefined) {
+      data.commissionRate = Math.max(0, Number(body.commissionRate));
+    }
+    if (body.isActive !== undefined) data.isActive = !!body.isActive;
+
+    return this.prisma.affiliate.update({
+      where: { id: affiliateId },
+      data,
+      include: { user: { select: { id: true, fullName: true, email: true, phone: true } } },
+    });
   }
 
   // ---------------------------------------------------------------------------

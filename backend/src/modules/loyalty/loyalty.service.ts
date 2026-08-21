@@ -138,16 +138,18 @@ export class LoyaltyService {
   // Public — referral signup hook
   // ===========================================================================
 
-  /** Award 500 points to a referrer when a new user signs up via their code. */
-  async awardReferralSignup(tenantId: string, referrerUserId: string, referredUserId: string) {
+  /** Award points to a referrer when a new user signs up via their code. */
+  async awardReferralSignup(tenantId: string, referrerUserId: string, referredUserId: string, pointsOverride?: number) {
     const referrerAccount = await this.ensureAccount(tenantId, referrerUserId);
+    const points = Math.max(0, Math.floor(pointsOverride ?? REFERRAL_SIGNUP_POINTS));
+    if (points <= 0) return null;
     return this.credit({
       tenantId,
       accountId: referrerAccount.id,
       type: 'referral_signup',
-      points: REFERRAL_SIGNUP_POINTS,
+      points,
       referredUserId,
-      description: `+${REFERRAL_SIGNUP_POINTS} pts for referring a new signup`,
+      description: `+${points} pts for referring a new signup`,
     });
   }
 

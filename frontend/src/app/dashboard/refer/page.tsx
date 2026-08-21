@@ -19,6 +19,7 @@ import { buildReferralShareLink, formatRewardText } from '@/lib/referral';
 interface ReferralSettings {
   referrerRewardType: string;
   referrerRewardValue: number;
+  commissionlessSignupPoints?: number;
   refereeRewardType: string;
   refereeRewardValue: number;
   payoutCurrency: string;
@@ -82,8 +83,24 @@ interface LedgerEntry {
   createdAt: string;
 }
 
+interface AffiliateInfo {
+  id: string;
+  affiliateType: string; // fixed_commission | commission_less
+  commissionRate: number;
+  rewardBasis: string;
+  isActive: boolean;
+}
+
+interface Conditions {
+  type: 'fixed_commission' | 'commission_less';
+  label: string;
+  payoutEligible: boolean;
+}
+
 interface Summary {
   user: { id: string; fullName: string; referralCode: string; referredByCode: string | null };
+  affiliate?: AffiliateInfo;
+  conditions?: Conditions;
   settings: ReferralSettings;
   totals: ReferralTotals;
   referrals: Referral[];
@@ -160,11 +177,14 @@ export default function ReferDashboardPage() {
     ? buildReferralShareLink(window.location.origin, summary.user.referralCode)
     : `https://example.com/?ref=${summary.user.referralCode}`;
 
-  const referrerText = formatRewardText(
-    summary.settings.referrerRewardType,
-    summary.settings.referrerRewardValue,
-    summary.settings.payoutCurrency,
-  );
+  // Fixed-commission affiliates earn at their own rate; commission-less earn points
+  const referrerText = summary.conditions?.type === 'commission_less'
+    ? `${summary.settings.commissionlessSignupPoints ?? 500} pts per signup`
+    : formatRewardText(
+        summary.settings.referrerRewardType,
+        summary.affiliate?.commissionRate ?? summary.settings.referrerRewardValue,
+        summary.settings.payoutCurrency,
+      );
   const refereeText = formatRewardText(
     summary.settings.refereeRewardType,
     summary.settings.refereeRewardValue,
@@ -308,6 +328,33 @@ export default function ReferDashboardPage() {
           </div>
         </div>
 
+        {/* My affiliation type */}
+        {summary.conditions && (
+          <Card className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" hover={false}>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge
+                  className={
+                    summary.conditions.type === 'fixed_commission'
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+                      : 'bg-blue-500/10 text-blue-600 border-blue-500/30'
+                  }
+                >
+                  {summary.conditions.type === 'fixed_commission' ? '01 · Fixed commission' : '02 · Commission-less'}
+                </Badge>
+                {(summary.affiliate?.isActive === false) && <Badge>Account inactive</Badge>}
+              </div>
+              <p className="text-sm text-on-surface-variant">{summary.conditions.label}.</p>
+              {!summary.conditions.payoutEligible && (
+                <p className="text-xs text-on-surface-variant mt-1">
+                  Points-only program — track your points on the{' '}
+                  <a href="/dashboard/loyalty" className="text-accent font-semibold hover:underline">Loyalty page</a>.
+                </p>
+              )}
+            </div>
+          </Card>
+        )}
+
         {/* KPI cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card hover={false}>
@@ -352,24 +399,26 @@ export default function ReferDashboardPage() {
           </Card>
         </div>
 
-        {/* Payout CTA */}
-        <Card className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" hover={false}>
-          <div>
-            <h3 className="font-bold mb-1">Cash out your earnings</h3>
-            <p className="text-sm text-on-surface-variant">
-              Minimum payout is {formatCurrency(summary.settings.minPayoutAmount, summary.settings.payoutCurrency)}.
-              You currently have <span className="font-bold text-accent">
-                {formatCurrency(summary.totals.availableBalance, summary.settings.payoutCurrency)}
-              </span> available.
-            </p>
-          </div>
-          <Button
-            onClick={() => setPayoutOpen(true)}
-            disabled={summary.totals.availableBalance < summary.settings.minPayoutAmount}
-          >
-            <ArrowUpRight className="w-4 h-4 mr-2" /> Request payout
-          </Button>
-        </Card>
+        {/* Payout CTA — only for fixed-commission affiliates */}
+        {(!summary.conditions || summary.conditions.payoutEligible) && (
+          <Card className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" hover={false}>
+            <div>
+              <h3 className="font-bold mb-1">Cash out your earnings</h3>
+              <p className="text-sm text-on-surface-variant">
+                Minimum payout is {formatCurrency(summary.settings.minPayoutAmount, summary.settings.payoutCurrency)}.
+                You currently have <span className="font-bold text-accent">
+                  {formatCurrency(summary.totals.availableBalance, summary.settings.payoutCurrency)}
+                </span> available.
+              </p>
+            </div>
+            <Button
+              onClick={() => setPayoutOpen(true)}
+              disabled={summary.totals.availableBalance < summary.settings.minPayoutAmount}
+            >
+              <ArrowUpRight className="w-4 h-4 mr-2" /> Request payout
+            </Button>
+          </Card>
+        )}
 
         {/* Tabs: Referrals / Commissions / Ledger / Payouts */}
         <div className="grid lg:grid-cols-2 gap-6">

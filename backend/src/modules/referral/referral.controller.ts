@@ -109,6 +109,38 @@ export class ReferralController {
     );
   }
 
+  @Get('admin/affiliates')
+  @ApiBearerAuth()
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: 'List referrers with affiliation type + performance (admin)' })
+  async listAffiliates(
+    @CurrentTenantId() tenantId: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+    @Query('search') search?: string,
+    @Query('affiliateType') affiliateType?: string,
+  ) {
+    return this.referralService.adminListAffiliates(
+      tenantId,
+      Math.max(parseInt(page, 10) || 1, 1),
+      Math.min(Math.max(parseInt(limit, 10) || 20, 1), 200),
+      search || undefined,
+      affiliateType || undefined,
+    );
+  }
+
+  @Patch('admin/affiliates/:id')
+  @ApiBearerAuth()
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: 'Set a referrer affiliation type / commission rate / active flag' })
+  async updateAffiliate(
+    @CurrentTenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() body: { affiliateType?: string; commissionRate?: number; isActive?: boolean },
+  ) {
+    return this.referralService.adminUpdateAffiliate(tenantId, id, body);
+  }
+
   @Get('admin/payouts')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

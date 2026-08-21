@@ -109,9 +109,50 @@ export class AuthController {
 
   @Get('facebook/delete')
   @Public()
-  @ApiOperation({ summary: 'Facebook Data Deletion Callback (GET form)' })
-  async facebookDataDeletionGet(@Query('signed_request') signedRequest: string) {
-    return this.handleFacebookDataDeletion(signedRequest);
+  @ApiOperation({ summary: 'Facebook Data Deletion Instructions page / callback (GET form)' })
+  async facebookDataDeletionGet(
+    @Query('signed_request') signedRequest: string,
+    @Res() res: Response,
+  ) {
+    // Without a signed_request this is a human visit (or Meta's URL validator).
+    // Serve the public data-deletion instructions page instead of an API error.
+    if (!signedRequest || typeof signedRequest !== 'string') {
+      return res.status(HttpStatus.OK).type('html').send(this.dataDeletionInstructionsHtml());
+    }
+    const result = await this.handleFacebookDataDeletion(signedRequest);
+    return res.status(HttpStatus.OK).json(result);
+  }
+
+  private dataDeletionInstructionsHtml(): string {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlyNGo — Facebook Data Deletion Instructions</title>
+<style>
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#eef3fb;color:#0f172a;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+  .card{max-width:640px;background:#fff;border-radius:16px;box-shadow:0 8px 30px rgba(2,6,23,.08);padding:40px}
+  h1{font-size:24px;margin:0 0 8px}
+  p{line-height:1.6;color:#334155;margin:12px 0}
+  ol{line-height:1.8;color:#334155;padding-left:22px;margin:12px 0}
+  .muted{color:#64748b;font-size:14px}
+  a{color:#0c6fdf}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>Delete your FlyNGo data</h1>
+<p>If you signed up to FlyNGo using Facebook, you can remove your account and personal data at any time using either method below.</p>
+<ol>
+<li><strong>From Facebook:</strong> open Facebook &rarr; <em>Settings &amp; privacy &rarr; Settings &rarr; Apps and websites</em> &rarr; select <strong>FlyNGo</strong> &rarr; <strong>Remove</strong>. Choose “Delete” to also erase the data we received from Facebook. Facebook will notify us automatically and we will delete your account within 30 days.</li>
+<li><strong>Direct request:</strong> email us at <a href="mailto:support@flyngo.world">support@flyngo.world</a> with the subject “Delete my account”. We will verify your identity and permanently delete your profile and associated bookings data.</li>
+</ol>
+<p>When a deletion is processed you receive a confirmation code you can track on our <a href="/auth/facebook-data-deletion">data deletion status page</a>.</p>
+<p class="muted">Deletion removes your name, email address and Facebook ID from our systems. Records required by law (e.g. completed invoices) are retained in anonymised form only.</p>
+</div>
+</body>
+</html>`;
   }
 
   private async handleFacebookDataDeletion(signedRequest: string | undefined) {

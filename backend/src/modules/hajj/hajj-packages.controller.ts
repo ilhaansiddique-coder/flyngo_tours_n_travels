@@ -36,6 +36,20 @@ export class HajjPackagesController {
     return this.service.findById(id, tenantId);
   }
 
+  @Get(':id/availability')
+  @Public()
+  @ApiOperation({ summary: 'Get live seat availability + deposit + dates' })
+  async availability(@Param('id') id: string, @CurrentTenantId() tenantId: string) {
+    return this.service.getAvailability(id, tenantId);
+  }
+
+  @Get('slug/:slug')
+  @Public()
+  @ApiOperation({ summary: 'Get hajj package by slug (for /hajj/[slug] pages)' })
+  async findBySlug(@Param('slug') slug: string, @CurrentTenantId() tenantId: string) {
+    return this.service.findBySlug(slug, tenantId);
+  }
+
   @Post()
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

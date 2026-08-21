@@ -6,6 +6,8 @@ import { ConfigService } from '../../config/config.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { TokenResponseDto } from './dto/token-response.dto';
+import { ReferralService } from '../referral/referral.service';
+import { TrackingService } from '../tracking/tracking.service';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +17,8 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly referralService: ReferralService,
+    private readonly trackingService: TrackingService,
   ) {}
 
   async login(dto: LoginDto, tenantId: string): Promise<TokenResponseDto> {
@@ -46,7 +50,7 @@ export class AuthService {
     return this.generateTokens(user.id, tenantId);
   }
 
-  async register(dto: RegisterDto, tenantId: string): Promise<TokenResponseDto> {
+  async register(dto: RegisterDto, tenantId: string, refCode?: string | null): Promise<TokenResponseDto> {
     // Uniqueness check — at least one of (email, phone) must be present
     // and neither can already be registered for this tenant.
     const orFilters: any[] = [];
@@ -66,6 +70,9 @@ export class AuthService {
       where: { code: 'customer', tenantId },
     });
 
+    // Pre-compute a referral code so we can store it on the user in one shot
+    const prep = await this.referralService.prepareRegistration(tenantId, refCode || null);
+
     const user = await this.prisma.user.create({
       data: {
         email: dto.email || null,
@@ -74,7 +81,27 @@ export class AuthService {
         phone: dto.phone,
         tenantId,
         roleId: customerRole!.id,
+        referralCode: prep.referralCode,
+        referredByCode: refCode ? refCode.trim().toUpperCase() : null,
       },
+    });
+
+    // Fire-and-forget: bootstrap affiliate row + create pending referral entry
+    try {
+      await this.referralService.finalizeRegistration(
+        tenantId,
+        { id: user.id, fullName: user.fullName, referralCode: prep.referralCode },
+        refCode || null,
+      );
+    } catch (err: any) {
+      this.logger.warn(`Referral bootstrap failed (non-blocking): ${err.message}`);
+    }
+
+    // Emit server CompleteRegistration so Meta CAPI can dedupe against Pixel
+    void this.trackingService.emitServerEvent(tenantId, 'complete_registration', {
+      userId: user.id,
+      value: 0,
+      contentName: 'signup',
     });
 
     return this.generateTokens(user.id, tenantId);

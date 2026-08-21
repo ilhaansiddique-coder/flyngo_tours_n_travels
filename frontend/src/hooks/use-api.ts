@@ -122,6 +122,42 @@ export function useApi() {
   const updateAffiliate = useCallback(async (id: string, body: any) => api.patch(`/marketing/admin/affiliates/${id}`, body, auth()), [auth]);
   const deleteAffiliate = useCallback(async (id: string) => api.delete(`/marketing/admin/affiliates/${id}`, auth()), [auth]);
 
+  // Refer & Earn
+  const getReferralProgram = useCallback(async () => api.get('/referrals/program', auth()), [auth]);
+  const lookupReferralCode = useCallback(async (code: string) =>
+    api.get(`/referrals/lookup?code=${encodeURIComponent(code)}`, auth()), [auth]);
+  const getMyReferralSummary = useCallback(async () => api.get('/referrals/me', auth()), [auth]);
+  const requestReferralPayout = useCallback(async (body: { amount: number; method: string; details?: any }) =>
+    api.post('/referrals/me/payouts', body, auth()), [auth]);
+  const getReferralSettings = useCallback(async () => api.get('/referrals/admin/settings', auth()), [auth]);
+  const updateReferralSettings = useCallback(async (body: any) => api.patch('/referrals/admin/settings', body, auth()), [auth]);
+  const getReferralOverview = useCallback(async () => api.get('/referrals/admin/overview', auth()), [auth]);
+  const getReferralAdminReferrals = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/referrals/admin/referrals' + qs, auth());
+  }, [auth]);
+  const getReferralPayouts = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/referrals/admin/payouts' + qs, auth());
+  }, [auth]);
+  const updateReferralPayout = useCallback(async (id: string, body: { status: string; notes?: string }) =>
+    api.patch(`/referrals/admin/payouts/${id}`, body, auth()), [auth]);
+
+  // Tracking + ads
+  const getTrackingSettings = useCallback(async () => api.get('/tracking/admin/settings', auth()), [auth]);
+  const updateTrackingSettings = useCallback(async (body: any) => api.patch('/tracking/admin/settings', body, auth()), [auth]);
+  const getTrackingStats = useCallback(async (days = 30) => api.get(`/tracking/admin/stats?days=${days}`, auth()), [auth]);
+  const getLeads = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/tracking/admin/leads' + qs, auth());
+  }, [auth]);
+  const updateLead = useCallback(async (id: string, body: any) =>
+    api.patch(`/tracking/admin/leads/${id}`, body, auth()), [auth]);
+  const getAdminLandingPages = useCallback(async () => api.get('/tracking/admin/landing-pages', auth()), [auth]);
+  const createAdminLandingPage = useCallback(async (body: any) => api.post('/tracking/admin/landing-pages', body, auth()), [auth]);
+  const updateAdminLandingPage = useCallback(async (id: string, body: any) => api.patch(`/tracking/admin/landing-pages/${id}`, body, auth()), [auth]);
+  const deleteAdminLandingPage = useCallback(async (id: string) => api.delete(`/tracking/admin/landing-pages/${id}`, auth()), [auth]);
+
   const getUsers = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/users' + qs, auth());
@@ -327,6 +363,12 @@ export function useApi() {
     getPermissions, createPermission, updatePermission, deletePermission,
     getCoupons, createCoupon, updateCoupon, deleteCoupon,
     getAffiliates, createAffiliate, updateAffiliate, deleteAffiliate,
+    getReferralProgram, lookupReferralCode, getMyReferralSummary, requestReferralPayout,
+    getReferralSettings, updateReferralSettings, getReferralOverview,
+    getReferralAdminReferrals, getReferralPayouts, updateReferralPayout,
+    getTrackingSettings, updateTrackingSettings, getTrackingStats,
+    getLeads, updateLead,
+    getAdminLandingPages, createAdminLandingPage, updateAdminLandingPage, deleteAdminLandingPage,
     getUsers, createUser, updateUser, deleteUser,
     getBookings, createBooking, adminCreateBooking, cancelBooking, updateBookingStatus,
     getPayments, getPaymentStats, updatePaymentStatus,

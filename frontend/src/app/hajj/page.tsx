@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import Script from 'next/script';
 import { useLocale } from '@/contexts/locale-context';
 import { useApi } from '@/hooks/use-api';
 import { useFormatCurrency } from '@/lib/utils';
@@ -11,10 +12,15 @@ import {
   DEFAULT_COUNTRY_CODE,
   findDialByCode,
 } from '@/lib/country-dial-codes';
+import { SeatCounter } from '@/components/marketing/seat-counter';
+import { TrustBadges } from '@/components/marketing/trust-badges';
+import { touristTripJsonLd, breadcrumbJsonLd, travelAgencyJsonLd } from '@/lib/seo-schema';
+import { captureUtmFromUrl, trackEvent } from '@/lib/tracking-client';
 
 interface HajjPackage {
   id: string;
   title: string;
+  slug: string;
   tier: string;
   durationDays: number;
   price: number;
@@ -25,6 +31,14 @@ interface HajjPackage {
   inclusions: string[];
   isFeatured: boolean;
   order: number;
+  totalSeats?: number;
+  seatsBooked?: number;
+  departureDate?: string | null;
+  returnDate?: string | null;
+  departureCities?: string[];
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaImage?: string | null;
 }
 
 export default function HajjPage() {
@@ -49,7 +63,14 @@ export default function HajjPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await submitHajjPreRegistration({ ...preReg, travelers: Number(preReg.travelers) || 1, year: new Date().getFullYear() + 1 });
+      const utm = captureUtmFromUrl();
+      await submitHajjPreRegistration({
+        ...preReg,
+        travelers: Number(preReg.travelers) || 1,
+        year: new Date().getFullYear() + 1,
+        ...utm,
+      });
+      await trackEvent('submit_application', { contentName: 'hajj_pre_registration', value: 0 });
       setSubmitted(true);
     } finally {
       setSubmitting(false);
@@ -58,6 +79,38 @@ export default function HajjPage() {
 
   return (
     <main className="min-h-screen surface-page pt-24">
+      {/* Structured data — JSON-LD for SEO + AI search engines */}
+      <Script id="ld-tourist-trip" type="application/ld+json" strategy="beforeInteractive">
+        {JSON.stringify([
+          travelAgencyJsonLd({
+            name: 'FlynGo',
+            url: typeof window !== 'undefined' ? window.location.origin : 'https://flyngo.com',
+            logo: '/icon.png',
+            priceRange: '$$-$$$$',
+          }),
+          breadcrumbJsonLd([
+            { name: 'Home', url: '/' },
+            { name: 'Hajj', url: '/hajj' },
+          ]),
+          ...packages.map((p) => touristTripJsonLd({
+            name: p.title,
+            description: p.metaDescription || `${p.durationDays}-day Hajj package with ${p.makkahNights} Makkah nights and ${p.madinahNights} Madinah nights`,
+            url: (typeof window !== 'undefined' ? window.location.origin : '') + `/hajj`,
+            image: p.metaImage || undefined,
+            price: Number(p.price),
+            priceCurrency: p.currency,
+            durationDays: p.durationDays,
+            destination: 'Makkah, Saudi Arabia',
+            departureCity: Array.isArray(p.departureCities) && p.departureCities.length ? p.departureCities.join(', ') : undefined,
+            availability: p.totalSeats && p.totalSeats > 0 && (p.totalSeats - (p.seatsBooked ?? 0)) <= 0
+              ? 'https://schema.org/SoldOut'
+              : p.totalSeats && p.totalSeats > 0 && (p.totalSeats - (p.seatsBooked ?? 0)) <= 10
+                ? 'https://schema.org/LimitedAvailability'
+                : 'https://schema.org/InStock',
+          })),
+        ])}
+      </Script>
+
       <section className="relative isolate overflow-hidden">
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-grid opacity-50" />
@@ -143,6 +196,8 @@ export default function HajjPage() {
         </div>
       </section>
 
+      <TrustBadges />
+
       <section id="packages" className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-20">
         <h2 className="font-display text-3xl sm:text-4xl font-semibold text-on-surface mb-10">
           {isBn ? 'আমাদের প্যাকেজ' : 'Our Packages'}
@@ -196,6 +251,10 @@ export default function HajjPage() {
                       </li>
                     ))}
                   </ul>
+
+                  <div className="mb-3">
+                    <SeatCounter packageId={pkg.id} currency={pkg.currency} />
+                  </div>
 
                   <div className="pt-4 border-t border-hairline flex items-center justify-between">
                     <div>

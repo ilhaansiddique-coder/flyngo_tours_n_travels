@@ -1,0 +1,28 @@
+{
+  "name": "FlynGo — Tours & Travels",
+  "short_name": "FlynGo",
+  "description": "Hajj, Umrah, tours, hotels, flights and visa — all in one place.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B0B0F",
+  "theme_color": "#0B0B0F",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "lifestyle", "shopping"],
+  "lang": "en",
+  "dir": "ltr"
+}

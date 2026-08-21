@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BookingService } from './booking.service';
 import { PrismaService } from '../../database/prisma.service';
+import { ReferralService } from '../referral/referral.service';
+import { TrackingService } from '../tracking/tracking.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
@@ -15,11 +17,27 @@ describe('BookingService', () => {
       findFirst: jest.fn(),
       count: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       aggregate: jest.fn(),
     },
     room: {
       findFirst: jest.fn(),
     },
+    affiliateCommission: {
+      updateMany: jest.fn(),
+    },
+    affiliateReferral: {
+      updateMany: jest.fn(),
+    },
+  };
+
+  const mockReferral = {
+    resolveDiscountForUser: jest.fn().mockResolvedValue({ discount: 0, code: null }),
+    recordBookingConversion: jest.fn().mockResolvedValue(null),
+  };
+
+  const mockTracking = {
+    emitServerEvent: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -27,6 +45,8 @@ describe('BookingService', () => {
       providers: [
         BookingService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: ReferralService, useValue: mockReferral },
+        { provide: TrackingService, useValue: mockTracking },
       ],
     }).compile();
 

@@ -1,10 +1,13 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import { Gift } from 'lucide-react';
 import { useLocale } from '@/contexts/locale-context';
 import { useGlobeData } from '@/hooks/use-homepage-data';
 import { cityName } from '@/lib/geo';
 import { HeroSearchPanel } from '@/components/features/experiences/hero-search-panel';
+import { trackEvent } from '@/lib/tracking-client';
 
 const Globe = dynamic(() => import('./three/Globe').then((m) => m.default), {
   ssr: false,
@@ -40,7 +43,30 @@ export function HeroSection() {
         <div className="absolute inset-0 bg-grid opacity-70" />
       </div>
 
-      <div className="relative mx-auto grid w-full max-w-[1600px] grid-cols-1 items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-16 lg:py-24">
+      {/* Refer & Earn — themed CTA in hero top-right */}
+      <Link
+        href="/refer"
+        onClick={() => trackEvent('lead', { contentName: 'home_hero_refer_cta' })}
+        aria-label="Refer and earn rewards"
+        className="absolute right-4 top-4 z-20 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold tracking-wider transition-all duration-300 shadow-lg sm:right-6 sm:top-6 sm:px-5 sm:py-3 sm:text-sm"
+        style={{
+          backgroundColor: 'var(--color-header-btn-bg)',
+          color: 'var(--color-header-btn-text)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'var(--color-header-btn-hover-bg)';
+          e.currentTarget.style.color = 'var(--color-header-btn-hover-text)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'var(--color-header-btn-bg)';
+          e.currentTarget.style.color = 'var(--color-header-btn-text)';
+        }}
+      >
+        <Gift className="h-4 w-4" />
+        Refer &amp; Earn
+      </Link>
+
+      <div className="relative mx-auto grid w-full max-w-[1600px] grid-cols-1 items-center gap-12 px-4 py-16 pt-20 sm:px-6 sm:pt-24 lg:grid-cols-2 lg:gap-16 lg:px-16 lg:py-24">
         <div className="relative z-10 order-1">
           <HeroSearchPanel />
         </div>

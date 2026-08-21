@@ -1,13 +1,15 @@
-import { Controller, Get, Post, Body, HttpCode, HttpStatus, Req, Res, UseGuards, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, Req, Res, UseGuards, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
+import * as crypto from 'crypto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { TokenResponseDto } from './dto/token-response.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { ConfigService } from '../../config/config.service';
+import { PrismaService } from '../../database/prisma.service';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -17,6 +19,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post('login')
@@ -38,7 +41,12 @@ export class AuthController {
   @ApiResponse({ status: 201, type: TokenResponseDto })
   async register(@Body() dto: RegisterDto, @Req() req: Request) {
     const tenantId = this.getTenantId(req);
-    return this.authService.register(dto, tenantId);
+    const refCode =
+      dto.referralCode ||
+      ((req.headers['x-referral-code'] as string) || '').trim() ||
+      ((req.cookies as any)?.ref_code || '').trim() ||
+      null;
+    return this.authService.register(dto, tenantId, refCode);
   }
 
   @Post('refresh')
@@ -80,6 +88,112 @@ export class AuthController {
   @ApiOperation({ summary: 'Facebook OAuth callback' })
   async facebookAuthCallback(@Req() req: Request, @Res() res: Response) {
     return this.handleOAuthCallback(req, res, 'facebook');
+  }
+
+  @Post('facebook/delete')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Facebook Data Deletion Callback' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { signed_request: { type: 'string' } },
+      required: ['signed_request'],
+    },
+  })
+  async facebookDataDeletion(@Body('signed_request') signedRequest: string) {
+    return this.handleFacebookDataDeletion(signedRequest);
+  }
+
+  @Get('facebook/delete')
+  @Public()
+  @ApiOperation({ summary: 'Facebook Data Deletion Callback (GET form)' })
+  async facebookDataDeletionGet(@Query('signed_request') signedRequest: string) {
+    return this.handleFacebookDataDeletion(signedRequest);
+  }
+
+  private async handleFacebookDataDeletion(signedRequest: string | undefined) {
+    if (!signedRequest || typeof signedRequest !== 'string') {
+      throw new BadRequestException('signed_request is required');
+    }
+
+    const appSecret = this.configService.getOrNull('FACEBOOK_APP_SECRET');
+    if (!appSecret) {
+      throw new InternalServerErrorException('Facebook app secret is not configured');
+    }
+
+    const payload = this.verifyFacebookSignedRequest(signedRequest, appSecret);
+    if (!payload) {
+      throw new BadRequestException('Invalid signed_request signature');
+    }
+
+    const fbUserId = (payload as { user_id?: string }).user_id;
+    if (!fbUserId) {
+      throw new BadRequestException('signed_request payload missing user_id');
+    }
+
+    const tenantId = (payload as { tenant_id?: string }).tenant_id
+      || '00000000-0000-0000-0000-000000000001';
+
+    const user = await this.prisma.user.findFirst({
+      where: { provider: 'facebook', providerId: fbUserId, tenantId, deletedAt: null },
+    });
+
+    const confirmationCode = crypto.randomBytes(16).toString('hex');
+
+    if (user) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          deletedAt: new Date(),
+          providerId: null,
+        },
+      });
+      this.logger.log(`Facebook data deletion processed for user ${user.id} (fb:${fbUserId})`);
+    } else {
+      this.logger.warn(`Facebook data deletion: no matching user for fb:${fbUserId}`);
+    }
+
+    const frontendUrl = this.configService.get('FRONTEND_URL');
+    const statusUrl = `${frontendUrl}/auth/facebook-data-deletion?code=${confirmationCode}`;
+
+    return {
+      url: statusUrl,
+      confirmation_code: confirmationCode,
+    };
+  }
+
+  private verifyFacebookSignedRequest(
+    signedRequest: string,
+    appSecret: string,
+  ): Record<string, unknown> | null {
+    const parts = signedRequest.split('.');
+    if (parts.length !== 2) return null;
+
+    const [encodedSig, encodedPayload] = parts;
+    try {
+      const sig = this.base64UrlDecode(encodedSig);
+      const payload = this.base64UrlDecode(encodedPayload);
+      const expectedSig = crypto
+        .createHmac('sha256', appSecret)
+        .update(encodedPayload)
+        .digest();
+
+      if (sig.length !== expectedSig.length) return null;
+      if (!crypto.timingSafeEqual(sig, expectedSig)) return null;
+
+      const payloadJson = JSON.parse(payload.toString('utf8'));
+      if (payloadJson.algorithm && payloadJson.algorithm !== 'HMAC-SHA256') return null;
+      return payloadJson;
+    } catch {
+      return null;
+    }
+  }
+
+  private base64UrlDecode(input: string): Buffer {
+    const padded = input.replace(/-/g, '+').replace(/_/g, '/');
+    const padding = padded.length % 4 === 0 ? '' : '='.repeat(4 - (padded.length % 4));
+    return Buffer.from(padded + padding, 'base64');
   }
 
   private async handleOAuthCallback(req: Request, res: Response, provider: 'google' | 'facebook') {

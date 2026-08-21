@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Globe, Share2, Plane, Mail, Phone } from 'lucide-react';
+import { Globe, Share2, Plane, Mail, Phone, Gift } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useLocale } from '@/contexts/locale-context';
 import logoImg from '@/images/flyngo_transparent.png';
@@ -74,6 +74,7 @@ const defaultFooter: FooterConfig = {
         { id: 'd-terms', labelEn: 'Terms of Service', href: '/terms' },
         { id: 'd-contact', labelEn: 'Contact Support', href: '/contact' },
         { id: 'd-dest', labelEn: 'Global Destinations', href: '/destinations' },
+        { id: 'd-refer', labelEn: 'Refer & Earn', href: '/refer' },
       ],
     },
   ],
@@ -251,6 +252,42 @@ export function Footer() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Refer & Earn CTA — always visible, independent of CMS footer config */}
+        <div
+          className="mt-8 mb-8 p-4 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border"
+          style={{
+            backgroundColor: 'color-mix(in oklab, var(--color-primary) 14%, transparent)',
+            borderColor: 'color-mix(in oklab, var(--color-primary) 30%, transparent)',
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+              style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-on-primary)' }}
+            >
+              <Gift className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold" style={{ color: 'var(--color-footer-text)' }}>
+                Refer friends, earn travel rewards
+              </p>
+              <p className="text-xs" style={{ color: 'var(--color-footer-text-muted)' }}>
+                Share your link. Friends get a discount. You earn on every booking they make.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/refer"
+            className="px-5 py-2.5 rounded-full text-xs font-bold tracking-wider transition-all shadow-lg whitespace-nowrap"
+            style={{
+              backgroundColor: 'var(--color-primary)',
+              color: 'var(--color-on-primary)',
+            }}
+          >
+            Earn now →
+          </Link>
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 gap-4">

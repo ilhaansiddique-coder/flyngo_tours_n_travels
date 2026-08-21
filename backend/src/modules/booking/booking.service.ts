@@ -1,22 +1,64 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateHotelBookingDto } from './dto/create-hotel-booking.dto';
+import { ReferralService } from '../referral/referral.service';
+import { TrackingService } from '../tracking/tracking.service';
 
 @Injectable()
 export class BookingService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(BookingService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly referralService: ReferralService,
+    private readonly trackingService: TrackingService,
+  ) {}
 
   async createBooking(tenantId: string, userId: string, data: {
     type: 'tour' | 'hotel' | 'flight' | 'visa' | 'package';
     itemId: string; startDate: Date; endDate?: Date; guests?: number; notes?: string;
+    utm?: { utmSource?: string; utmMedium?: string; utmCampaign?: string; utmContent?: string; utmTerm?: string; gclid?: string; fbclid?: string; msclkid?: string; landingPath?: string };
   }) {
-    return this.prisma.booking.create({
+    const booking = await this.prisma.booking.create({
       data: {
         tenantId, userId, bookingType: data.type, itemId: data.itemId,
         startDate: data.startDate, endDate: data.endDate, guests: data.guests || 1,
         notes: data.notes, status: 'pending', bookingCode: this.generateBookingCode(),
+        utmSource: data.utm?.utmSource,
+        utmMedium: data.utm?.utmMedium,
+        utmCampaign: data.utm?.utmCampaign,
+        utmContent: data.utm?.utmContent,
+        utmTerm: data.utm?.utmTerm,
+        gclid: data.utm?.gclid,
+        fbclid: data.utm?.fbclid,
+        msclkid: data.utm?.msclkid,
+        landingPath: data.utm?.landingPath,
       },
     });
+
+    // Emit server-side tracking events
+    void this.trackingService.emitServerEvent(tenantId, 'initiate_checkout', {
+      userId,
+      value: Number(booking.totalAmount || 0),
+      currency: booking.currency,
+      contentName: `${booking.bookingType}:${booking.itemId}`,
+      contentIds: [booking.itemId],
+    });
+
+    // Attempt referral conversion if this booking's pending status is in the conversion list
+    try {
+      await this.referralService.recordBookingConversion(tenantId, {
+        bookingId: booking.id,
+        userId,
+        bookingTotal: Number(booking.totalAmount || 0),
+        bookingCurrency: booking.currency,
+        status: booking.status,
+      });
+    } catch (err: any) {
+      this.logger.warn(`Referral conversion (createBooking) failed: ${err.message}`);
+    }
+
+    return booking;
   }
 
   async getUserBookings(tenantId: string, userId: string, page = 1, limit = 20) {
@@ -54,17 +96,66 @@ export class BookingService {
   async updateStatus(id: string, tenantId: string, status: string) {
     const booking = await this.prisma.booking.findFirst({ where: { id, tenantId } });
     if (!booking) throw new NotFoundException('Booking not found');
-    return this.prisma.booking.update({
+    const updated = await this.prisma.booking.update({
       where: { id },
       data: { status, cancelledAt: status === 'cancelled' ? new Date() : null },
     });
+
+    // Re-evaluate referral conversion with the new status (idempotent inside the service)
+    try {
+      await this.referralService.recordBookingConversion(tenantId, {
+        bookingId: id,
+        userId: booking.userId,
+        bookingTotal: Number(updated.totalAmount || 0),
+        bookingCurrency: updated.currency,
+        status,
+      });
+    } catch (err: any) {
+      this.logger.warn(`Referral conversion (updateStatus) failed: ${err.message}`);
+    }
+
+    // Emit purchase event when status becomes "confirmed" — fires Meta CAPI + GA4
+    if (status === 'confirmed' || status === 'completed') {
+      void this.trackingService.emitServerEvent(tenantId, 'purchase', {
+        userId: booking.userId,
+        value: Number(updated.totalAmount || 0),
+        currency: updated.currency,
+        contentName: `${updated.bookingType}:${updated.itemId}`,
+        contentIds: [updated.itemId],
+        utmSource: updated.utmSource ?? undefined,
+        utmMedium: updated.utmMedium ?? undefined,
+        utmCampaign: updated.utmCampaign ?? undefined,
+        utmContent: updated.utmContent ?? undefined,
+        utmTerm: updated.utmTerm ?? undefined,
+        gclid: updated.gclid ?? undefined,
+        fbclid: updated.fbclid ?? undefined,
+      });
+    }
+
+    return updated;
   }
 
   async cancelBooking(id: string, tenantId: string, userId: string) {
     const booking = await this.getBookingById(id, tenantId, userId);
     if (booking.status === 'cancelled') throw new BadRequestException('Booking is already cancelled');
     if (booking.status === 'completed') throw new BadRequestException('Cannot cancel a completed booking');
-    return this.prisma.booking.update({ where: { id }, data: { status: 'cancelled', cancelledAt: new Date() } });
+    const updated = await this.prisma.booking.update({ where: { id }, data: { status: 'cancelled', cancelledAt: new Date() } });
+
+    // Cancel any pending referral commission tied to this booking
+    try {
+      await this.prisma.affiliateCommission.updateMany({
+        where: { tenantId, bookingId: id, status: 'pending' },
+        data: { status: 'cancelled' },
+      });
+      await this.prisma.affiliateReferral.updateMany({
+        where: { tenantId, referredUserId: userId, status: 'converted' },
+        data: { status: 'cancelled', cancelledAt: new Date() },
+      });
+    } catch (err: any) {
+      this.logger.warn(`Could not cancel referral commission: ${err.message}`);
+    }
+
+    return updated;
   }
 
   async adminCreateBooking(tenantId: string, data: {
@@ -159,6 +250,16 @@ export class BookingService {
     const pricePerNight = room.pricePerNight;
     const totalAmount = pricePerNight.mul(nights).mul(roomsCount);
 
+    // Apply referral referee discount if this user signed up via a referral link
+    // (and the cookie window hasn't expired).
+    const referralDiscountInfo = await this.referralService.resolveDiscountForUser(
+      tenantId,
+      userId,
+      Number(totalAmount),
+    );
+    const referralDiscount = referralDiscountInfo.discount;
+    const referredByCode = referralDiscountInfo.code;
+
     const { leadGuest } = dto;
     const travelers = [
       {
@@ -178,7 +279,7 @@ export class BookingService {
       })),
     ];
 
-    return this.prisma.booking.create({
+    const booking = await this.prisma.booking.create({
       data: {
         tenantId,
         userId,
@@ -206,9 +307,36 @@ export class BookingService {
         pricePerNight,
         arrivalTime: dto.arrivalTime,
         flightNumber: dto.flightNumber,
+        referredByCode,
+        referralDiscount,
         travelers: { create: travelers },
       },
       include: { travelers: true },
     });
+
+    // Emit server initiate_checkout event
+    void this.trackingService.emitServerEvent(tenantId, 'initiate_checkout', {
+      userId,
+      value: Number(totalAmount),
+      currency: room.currency,
+      contentName: `hotel:${room.hotel.name}`,
+      contentIds: [dto.hotelId, dto.roomId].filter(Boolean),
+    });
+
+    // Record referral conversion (idempotent — pending status usually not in conversion list,
+    // so this is a no-op here and will fire when admin confirms the booking).
+    try {
+      await this.referralService.recordBookingConversion(tenantId, {
+        bookingId: booking.id,
+        userId,
+        bookingTotal: Number(totalAmount),
+        bookingCurrency: room.currency,
+        status: booking.status,
+      });
+    } catch (err: any) {
+      this.logger.warn(`Referral conversion (createHotelBooking) failed: ${err.message}`);
+    }
+
+    return booking;
   }
 }

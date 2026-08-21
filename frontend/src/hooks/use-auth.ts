@@ -60,7 +60,7 @@ export function useAuth() {
     }
   };
 
-  const register = async (fullName: string, email: string, phone: string, password: string) => {
+  const register = async (fullName: string, email: string, phone: string, password: string, referralCode?: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -69,6 +69,7 @@ export function useAuth() {
         email: email.trim() || undefined,
         phone: phone.trim(),
         password,
+        referralCode: referralCode || undefined,
       };
       const tokens = await api.post<TokenResponse>('/auth/register', body);
       setTokens(tokens.accessToken, tokens.refreshToken);

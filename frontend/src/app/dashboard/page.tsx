@@ -9,6 +9,7 @@ import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import {
   User, Mail, Phone, Calendar, MapPin, Heart, Receipt, CreditCard,
   CheckCircle2, Clock, XCircle, LogOut, Edit3, FileText, Plane, Building2, Compass,
+  Gift,
 } from 'lucide-react';
 import {
   COUNTRY_DIALS,
@@ -200,13 +201,22 @@ export default function DashboardPage() {
               <p className="text-xs text-muted mt-1 capitalize">Role: {user.role}</p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border"
-            style={{ borderColor: 'var(--color-outline-variant)', color: 'var(--color-on-surface)' }}
-          >
-            <LogOut className="w-4 h-4" /> Logout
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/dashboard/refer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-accent text-on-primary hover:opacity-90"
+              style={{ background: 'var(--color-accent)', color: 'var(--color-on-primary)' }}
+            >
+              <Gift className="w-4 h-4" /> Refer & Earn
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border"
+              style={{ borderColor: 'var(--color-outline-variant)', color: 'var(--color-on-surface)' }}
+            >
+              <LogOut className="w-4 h-4" /> Logout
+            </button>
+          </div>
         </div>
       </div>
 

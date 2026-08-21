@@ -38,4 +38,23 @@ export class AiController {
   }) {
     return this.aiService.planItinerary(body);
   }
+
+  @Post('umrah-itinerary')
+  @Public()
+  @ApiOperation({ summary: 'AI-built Umrah itinerary honoring Makkah/Madinah-first route, walking distance, elderly/children' })
+  async umrahItinerary(@Body() body: {
+    nights: number;
+    makkahNights: number;
+    madinahNights: number;
+    startDate?: string;
+    route: 'makkah_first' | 'madinah_first' | 'combined';
+    travelers: number;
+    hasChildren?: boolean;
+    hasElderly?: boolean;
+    budgetTier?: 'economy' | 'standard' | 'premium' | 'vip';
+    walkingMax?: number;
+    language?: 'en' | 'bn' | 'ur' | 'ar';
+  }) {
+    return this.aiService.planUmrahItinerary(body);
+  }
 }

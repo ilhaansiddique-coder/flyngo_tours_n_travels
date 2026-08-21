@@ -96,6 +96,10 @@ model User {
   refreshToken     String?   @map("refresh_token")
   phoneVerifiedAt  DateTime? @map("phone_verified_at")
 
+  // Refer & Earn attribution (set when the user signs up via ?ref=CODE)
+  referredByCode  String?  @map("referred_by_code")
+  referralCode    String?  @unique @map("referral_code")
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
@@ -106,10 +110,98 @@ model User {
   auditLogs     AuditLog[]
   blogPosts     BlogPost[]
   reviews       Review[]
+  affiliate     Affiliate?
 
   @@index([tenantId, email])
   @@index([tenantId, phone])
   @@map("users")
+}
+
+// =============================================================================
+// REFERRALS (Refer & Earn)
+// =============================================================================
+
+model ReferralSetting {
+  id        String   @id @default(uuid())
+  tenantId  String   @unique @map("tenant_id")
+
+  isEnabled        Boolean   @default(true)  @map("is_enabled")
+
+  // Referrer (the person who refers) reward
+  referrerRewardType   String  @default("percentage") @map("referrer_reward_type") // percentage, fixed
+  referrerRewardValue  Decimal @default(5.0)            @map("referrer_reward_value") @db.Decimal(10, 2)
+  referrerMaxReward    Decimal? @map("referrer_max_reward") @db.Decimal(10, 2)
+
+  // Referee (the person who was referred) reward
+  refereeRewardType   String  @default("percentage") @map("referee_reward_type")
+  refereeRewardValue  Decimal @default(5.0)            @map("referee_reward_value") @db.Decimal(10, 2)
+  refereeMaxReward    Decimal? @map("referee_max_reward") @db.Decimal(10, 2)
+
+  // Cookie window — days the referral attribution is valid after the link is clicked
+  cookieWindowDays Int     @default(30) @map("cookie_window_days")
+
+  // Payout settings
+  minPayoutAmount Decimal @default(20.0) @map("min_payout_amount") @db.Decimal(10, 2)
+  payoutCurrency  String  @default("USD") @map("payout_currency")
+
+  // Conversion triggers: which booking statuses count as a "conversion"
+  conversionStatuses String[] @default(["confirmed", "in_progress", "completed"]) @map("conversion_statuses")
+
+  // Branding for the referral landing page
+  heroTitle       String? @map("hero_title")
+  heroSubtitle    String? @map("hero_subtitle") @db.Text
+  termsText       String? @map("terms_text") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("referral_settings")
+}
+
+model ReferralPayout {
+  id          String @id @default(uuid())
+  tenantId    String @map("tenant_id")
+  affiliateId String @map("affiliate_id")
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id])
+
+  amount    Decimal @db.Decimal(10, 2)
+  currency  String  @default("USD")
+  method    String  // bank_transfer, bkash, nagad, paypal, stripe, manual
+  details   Json?
+
+  status    String  @default("pending") // pending, processing, paid, rejected, cancelled
+  notes     String? @db.Text
+  processedBy String? @map("processed_by") // admin user id
+  processedAt DateTime? @map("processed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, affiliateId])
+  @@index([tenantId, status])
+  @@map("referral_payouts")
+}
+
+model ReferralLedger {
+  id          String @id @default(uuid())
+  tenantId    String @map("tenant_id")
+  affiliateId String @map("affiliate_id")
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id])
+
+  type     String  // signup, conversion, refund, adjustment, payout_debit
+  amount   Decimal @db.Decimal(10, 2) // positive = credit to affiliate, negative = debit
+  currency String  @default("USD")
+
+  bookingId      String? @map("booking_id")
+  referredUserId String? @map("referred_user_id")
+  payoutId       String? @map("payout_id")
+  description    String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, affiliateId])
+  @@index([tenantId, createdAt])
+  @@map("referral_ledger")
 }
 
 model Role {
@@ -389,6 +481,27 @@ model Booking {
   couponCode String? @map("coupon_code")
   notes      String?
 
+  // Referral attribution — set if this booking originated from a Refer & Earn link
+  referredByCode        String? @map("referred_by_code")
+  referralDiscount      Decimal @default(0) @map("referral_discount") @db.Decimal(10, 2)
+  referralProcessedAt   DateTime? @map("referral_processed_at")
+
+  // Ad-attribution (UTM + click ids)
+  utmSource     String? @map("utm_source")
+  utmMedium     String? @map("utm_medium")
+  utmCampaign   String? @map("utm_campaign")
+  utmContent    String? @map("utm_content")
+  utmTerm       String? @map("utm_term")
+  gclid         String? @map("gclid")        // Google Ads click id
+  fbclid        String? @map("fbclid")       // Meta Ads click id
+  msclkid       String? @map("msclkid")      // Bing click id
+  landingPath   String? @map("landing_path") // first page they touched
+
+  // Hajj-specific
+  departureCity      String? @map("departure_city")
+  groupType          String? @map("group_type")  // group, private, vip
+  packageSlug        String? @map("package_slug") // hajj-package or umrah-package slug
+
   // Hotel-specific fields
   hotelId       String? @map("hotel_id")
   roomId        String? @map("room_id")
@@ -412,6 +525,7 @@ model Booking {
 
   payments  Payment[]
   travelers BookingTraveler[]
+  paymentMilestones PaymentMilestone[]
 
   @@index([tenantId, userId])
   @@index([hotelId])
@@ -431,6 +545,14 @@ model BookingTraveler {
   phone     String?
   age       Int?
   type      String  @default("adult") // adult, child, infant
+
+  // Shariah fields (Hajj/Umrah — important)
+  passportNumber String? @map("passport_number")
+  nationality    String?
+  dateOfBirth    DateTime? @map("date_of_birth")
+  gender         String?  // male, female
+  mahramFullName  String? @map("mahram_full_name")
+  mahramRelation  String? @map("mahram_relation") // husband, father, son, brother, father_in_law, son_in_law, nephew
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -638,6 +760,7 @@ model Affiliate {
   id        String   @id @default(uuid())
   tenantId  String   @map("tenant_id")
   userId    String   @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
 
   referralCode String  @unique @map("referral_code")
   commissionRate Decimal @default(5.0) @map("commission_rate") @db.Decimal(5, 2)
@@ -650,6 +773,8 @@ model Affiliate {
 
   referrals   AffiliateReferral[]
   commissions AffiliateCommission[]
+  payouts     ReferralPayout[]
+  ledger      ReferralLedger[]
 
   @@map("affiliates")
 }
@@ -660,11 +785,22 @@ model AffiliateReferral {
   affiliateId String    @map("affiliate_id")
   affiliate   Affiliate @relation(fields: [affiliateId], references: [id])
 
-  referredUserId String @map("referred_user_id")
-  status         String @default("pending") // pending, registered, converted
+  referredUserId String  @map("referred_user_id")
+  status         String  @default("pending") // pending, registered, converted, cancelled
+
+  registeredAt DateTime? @map("registered_at")
+  convertedAt  DateTime? @map("converted_at")
+  cancelledAt  DateTime? @map("cancelled_at")
+
+  // Reward snapshot captured at conversion time so future config changes don't retroactively change it
+  referrerReward Decimal? @map("referrer_reward") @db.Decimal(10, 2)
+  refereeReward  Decimal? @map("referee_reward")  @db.Decimal(10, 2)
 
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@unique([tenantId, referredUserId])
+  @@index([tenantId, affiliateId])
   @@map("affiliate_referrals")
 }
 
@@ -676,11 +812,14 @@ model AffiliateCommission {
 
   bookingId String  @map("booking_id")
   amount    Decimal @db.Decimal(10, 2)
+  currency  String  @default("USD")
+  rate      Decimal? @db.Decimal(5, 2) // snapshot of commissionRate used at conversion time
   status    String  @default("pending") // pending, paid, cancelled
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId, affiliateId])
   @@map("affiliate_commissions")
 }
 
@@ -902,6 +1041,23 @@ model HajjPackage {
   isFeatured   Boolean  @default(false) @map("is_featured")
   order        Int      @default(0)
 
+  // Inventory + deposit
+  totalSeats      Int     @default(0) @map("total_seats")
+  seatsBooked     Int     @default(0) @map("seats_booked")
+  depositAmount   Decimal @default(0) @map("deposit_amount") @db.Decimal(10, 2)
+  visaAmount      Decimal @default(0) @map("visa_amount")     @db.Decimal(10, 2)
+  finalAmount     Decimal @default(0) @map("final_amount")    @db.Decimal(10, 2)
+  departureDate   DateTime? @map("departure_date")
+  returnDate      DateTime? @map("return_date")
+
+  // Departure airports (multiple origin support)
+  departureCities String[] @default([]) @map("departure_cities")
+
+  // Marketing-friendly metadata
+  metaTitle       String? @map("meta_title")
+  metaDescription String? @map("meta_description") @db.Text
+  metaImage       String? @map("meta_image")
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
@@ -933,6 +1089,30 @@ model UmrahPackage {
   isActive     Boolean  @default(true) @map("is_active")
   isFeatured   Boolean  @default(false) @map("is_featured")
   order        Int      @default(0)
+
+  // Inventory + deposit
+  totalSeats      Int     @default(0) @map("total_seats")
+  seatsBooked     Int     @default(0) @map("seats_booked")
+  depositAmount   Decimal @default(0) @map("deposit_amount") @db.Decimal(10, 2)
+  visaAmount      Decimal @default(0) @map("visa_amount")     @db.Decimal(10, 2)
+  finalAmount     Decimal @default(0) @map("final_amount")    @db.Decimal(10, 2)
+  departureDate   DateTime? @map("departure_date")
+  returnDate      DateTime? @map("return_date")
+
+  // Departure airports
+  departureCities String[] @default([]) @map("departure_cities")
+
+  // Marketing-friendly metadata
+  metaTitle       String? @map("meta_title")
+  metaDescription String? @map("meta_description") @db.Text
+  metaImage       String? @map("meta_image")
+
+  // Walking-distance hint (meters to Haram / Prophet's Mosque) — surfaced for SEO + UI badges
+  walkingDistanceToHaram    Int? @map("walking_distance_to_haram")
+  walkingDistanceToProphet  Int? @map("walking_distance_to_prophet")
+
+  // Trip-style preference for AI itineraries
+  preferredRoute String? @map("preferred_route") // makkah_first, madinah_first, combined
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -1230,4 +1410,202 @@ model FooterConfig {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("footer_configs")
+}
+
+// =============================================================================
+// TRACKING + ADS (Meta CAPI, GA4, GTM, lead capture)
+// =============================================================================
+
+model TrackingEvent {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+
+  eventName String   @map("event_name")           // page_view, view_item, add_to_cart, initiate_checkout, purchase, lead, search
+  source    String   @default("web")              // web, server, meta_capi, ga4
+  eventId   String?  @map("event_id")             // dedup key (e.g. Meta event_id)
+  userId    String?  @map("user_id")
+  sessionId String?  @map("session_id")
+  url       String?
+  referrer  String?
+  userAgent String?  @map("user_agent")
+
+  // Ad attribution
+  utmSource   String? @map("utm_source")
+  utmMedium   String? @map("utm_medium")
+  utmCampaign String? @map("utm_campaign")
+  utmContent  String? @map("utm_content")
+  utmTerm     String? @map("utm_term")
+  gclid       String? @map("gclid")
+  fbclid      String? @map("fbclid")
+  msclkid     String? @map("msclkid")
+
+  // E-commerce / lead payload
+  value        Decimal? @db.Decimal(10, 2)
+  currency     String?  @default("USD")
+  items        Json?
+  contentName  String?  @map("content_name")
+  contentIds   String[] @default([]) @map("content_ids")
+
+  payload      Json?
+
+  // Forwarding status (so we can retry on failure)
+  forwardedAt DateTime? @map("forwarded_at")
+  failedAt    DateTime? @map("failed_at")
+  errorMsg    String?   @map("error_msg")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([tenantId, eventName])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, utmCampaign])
+  @@map("tracking_events")
+}
+
+model Lead {
+  id        String  @id @default(uuid())
+  tenantId  String  @map("tenant_id")
+
+  fullName  String  @map("full_name")
+  phone     String
+  email     String?
+  message   String? @db.Text
+
+  source    String  @default("website")  // website, meta_lead_ads, google_ads, whatsapp, hajj_pre_reg
+  campaign  String?  // utm_campaign / ad campaign name
+  formSlug  String? @map("form_slug")    // which form captured it (e.g. hajj-2026)
+
+  // Optional context
+  packageSlug  String? @map("package_slug")
+  travelers    Int?    @default(1)
+  departureCity String? @map("departure_city")
+  budget       String?
+
+  // Funnel state
+  status      String  @default("new")    // new, contacted, qualified, converted, lost
+  assignedTo  String? @map("assigned_to")
+  notes       String? @db.Text
+
+  // Meta Lead Ads sync
+  metaLeadId  String? @map("meta_lead_id")
+  metaSyncedAt DateTime? @map("meta_synced_at")
+
+  // Ad attribution
+  utmSource   String? @map("utm_source")
+  utmMedium   String? @map("utm_medium")
+  utmCampaign String? @map("utm_campaign")
+  utmContent  String? @map("utm_content")
+  utmTerm     String? @map("utm_term")
+  fbclid      String? @map("fbclid")
+  gclid       String? @map("gclid")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@map("leads")
+}
+
+model LandingPage {
+  id        String  @id @default(uuid())
+  tenantId  String  @map("tenant_id")
+
+  slug      String
+  title     String
+  subtitle  String? @db.Text
+  heroImage String? @map("hero_image")
+  body      Json?
+  ctaLabel  String? @map("cta_label")
+  ctaHref   String? @map("cta_href")
+  formSlug  String? @map("form_slug") // ties to Lead.formSlug
+  metaTitle String? @map("meta_title")
+  metaDescription String? @map("meta_description") @db.Text
+  metaImage String? @map("meta_image")
+
+  // Campaign association
+  campaign  String?
+  utmSource String? @map("utm_source")
+
+  visits    Int     @default(0)
+  leads     Int     @default(0)
+  bookings  Int     @default(0)
+  revenue   Decimal @default(0) @db.Decimal(12, 2)
+
+  isActive Boolean @default(true) @map("is_active")
+  startsAt DateTime? @map("starts_at")
+  endsAt   DateTime? @map("ends_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, slug])
+  @@map("landing_pages")
+}
+
+model TrackingSettings {
+  id        String  @id @default(uuid())
+  tenantId  String  @unique @map("tenant_id")
+
+  // Meta Pixel + Conversions API
+  metaPixelId        String? @map("meta_pixel_id")
+  metaCapiToken      String? @map("meta_capi_token")
+  metaCapiTestCode   String? @map("meta_capi_test_code")
+  metaCapiEnabled    Boolean @default(false) @map("meta_capi_enabled")
+
+  // GA4 + GTM
+  ga4MeasurementId   String? @map("ga4_measurement_id")
+  ga4ApiSecret       String? @map("ga4_api_secret")
+  gtmContainerId     String? @map("gtm_container_id")
+
+  // Google Ads
+  googleAdsConversionId  String? @map("google_ads_conversion_id")
+  googleAdsConversionLabel String? @map("google_ads_conversion_label")
+
+  // TikTok / Snap / X
+  tiktokPixelId     String? @map("tiktok_pixel_id")
+  snapchatPixelId   String? @map("snapchat_pixel_id")
+  xPixelId          String? @map("x_pixel_id")
+
+  // WhatsApp Business
+  whatsappNumber    String? @map("whatsapp_number")
+  whatsappGreeting  String? @map("whatsapp_greeting") @db.Text
+
+  // Trust badges
+  trustBadges       Json  @default("[]")  // [{label, icon, url}]
+  customerCount     Int   @default(0)    @map("customer_count")
+  yearsInBusiness   Int   @default(0)    @map("years_in_business")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tracking_settings")
+}
+
+// =============================================================================
+// PAYMENT MILESTONES (Hajj/Umrah multi-stage installments)
+// =============================================================================
+
+model PaymentMilestone {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  bookingId String   @map("booking_id")
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  stage       String  // deposit, visa, balance, full
+  label       String
+  amount      Decimal @db.Decimal(10, 2)
+  currency    String  @default("USD")
+  dueDate     DateTime @map("due_date")
+  paidAmount  Decimal @default(0) @map("paid_amount") @db.Decimal(10, 2)
+  status      String  @default("pending") // pending, paid, overdue, cancelled
+  paidAt      DateTime? @map("paid_at")
+  paymentId   String? @map("payment_id")
+  notes       String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, bookingId])
+  @@index([tenantId, status])
+  @@map("payment_milestones")
 }

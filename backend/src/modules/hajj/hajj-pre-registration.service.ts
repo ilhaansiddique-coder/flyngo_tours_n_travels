@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { TrackingService } from '../tracking/tracking.service';
 
 @Injectable()
 export class HajjPreRegistrationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly trackingService: TrackingService,
+  ) {}
 
   async submit(tenantId: string, data: any) {
-    return this.prisma.hajjPreRegistration.create({
+    const preReg = await this.prisma.hajjPreRegistration.create({
       data: {
         tenantId,
         fullName: data.fullName,
@@ -21,6 +25,28 @@ export class HajjPreRegistrationService {
         status: 'new',
       },
     });
+
+    // Mirror into the unified Lead funnel so ad dashboards see it
+    void this.trackingService.createLead(tenantId, {
+      fullName: data.fullName,
+      phone: data.phone,
+      email: data.email,
+      message: data.notes,
+      source: 'hajj_pre_reg',
+      formSlug: 'hajj-pre-registration',
+      packageSlug: data.packageTier,
+      travelers: data.travelers,
+      departureCity: data.district,
+      utmSource: data.utmSource,
+      utmMedium: data.utmMedium,
+      utmCampaign: data.utmCampaign,
+      utmContent: data.utmContent,
+      utmTerm: data.utmTerm,
+      fbclid: data.fbclid,
+      gclid: data.gclid,
+    }).catch(() => { /* non-blocking */ });
+
+    return preReg;
   }
 
   async findAll(tenantId: string, page = 1, limit = 50) {

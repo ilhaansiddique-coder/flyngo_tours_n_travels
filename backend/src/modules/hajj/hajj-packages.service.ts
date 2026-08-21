@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 
 function slugify(text: string): string {
@@ -37,16 +37,62 @@ export class HajjPackagesService {
     });
   }
 
+  async findBySlug(slug: string, tenantId: string) {
+    const pkg = await this.prisma.hajjPackage.findFirst({
+      where: { slug, tenantId, deletedAt: null },
+    });
+    if (!pkg) throw new NotFoundException('Hajj package not found');
+    return pkg;
+  }
+
   async findById(id: string, tenantId: string) {
     const pkg = await this.prisma.hajjPackage.findFirst({ where: { id, tenantId } });
     if (!pkg) throw new NotFoundException('Hajj package not found');
     return pkg;
   }
 
+  /** Public-facing availability summary for a package. */
+  async getAvailability(id: string, tenantId: string) {
+    const pkg = await this.findById(id, tenantId);
+    const remaining = Math.max(0, (pkg.totalSeats ?? 0) - (pkg.seatsBooked ?? 0));
+    return {
+      packageId: pkg.id,
+      totalSeats: pkg.totalSeats,
+      seatsBooked: pkg.seatsBooked,
+      seatsRemaining: remaining,
+      isSoldOut: remaining === 0 && pkg.totalSeats > 0,
+      isLowStock: remaining > 0 && remaining <= 10,
+      departureDate: pkg.departureDate,
+      returnDate: pkg.returnDate,
+      departureCities: pkg.departureCities,
+      depositAmount: pkg.depositAmount,
+      visaAmount: pkg.visaAmount,
+      finalAmount: pkg.finalAmount,
+    };
+  }
+
+  /** Reserve N seats; throws when sold out. */
+  async reserveSeats(id: string, tenantId: string, seats: number) {
+    if (seats <= 0) return;
+    const pkg = await this.findById(id, tenantId);
+    if (pkg.totalSeats > 0) {
+      const remaining = Math.max(0, pkg.totalSeats - pkg.seatsBooked);
+      if (seats > remaining) {
+        throw new BadRequestException(
+          `Only ${remaining} seat(s) remaining for this Hajj package`,
+        );
+      }
+    }
+    await this.prisma.hajjPackage.update({
+      where: { id },
+      data: { seatsBooked: { increment: seats } },
+    });
+  }
+
   async create(tenantId: string, data: any) {
-    const slug = slugify(data.title);
+    const slug = data.slug || slugify(data.title);
     const existing = await this.prisma.hajjPackage.findFirst({ where: { tenantId, slug } });
-    if (existing) throw new ConflictException('A hajj package with this title already exists');
+    if (existing) throw new ConflictException('A hajj package with this slug already exists');
     return this.prisma.hajjPackage.create({
       data: {
         tenantId,
@@ -65,6 +111,17 @@ export class HajjPackagesService {
         isActive: data.isActive ?? true,
         isFeatured: data.isFeatured ?? false,
         order: data.order ?? 0,
+        totalSeats: data.totalSeats ?? 0,
+        seatsBooked: 0,
+        depositAmount: data.depositAmount ?? 0,
+        visaAmount: data.visaAmount ?? 0,
+        finalAmount: data.finalAmount ?? 0,
+        departureDate: data.departureDate ? new Date(data.departureDate) : null,
+        returnDate: data.returnDate ? new Date(data.returnDate) : null,
+        departureCities: data.departureCities ?? [],
+        metaTitle: data.metaTitle,
+        metaDescription: data.metaDescription,
+        metaImage: data.metaImage,
       },
     });
   }
@@ -75,6 +132,7 @@ export class HajjPackagesService {
       where: { id },
       data: {
         title: data.title,
+        slug: data.slug,
         tier: data.tier,
         durationDays: data.durationDays,
         price: data.price,
@@ -88,6 +146,16 @@ export class HajjPackagesService {
         isActive: data.isActive,
         isFeatured: data.isFeatured,
         order: data.order,
+        totalSeats: data.totalSeats,
+        depositAmount: data.depositAmount,
+        visaAmount: data.visaAmount,
+        finalAmount: data.finalAmount,
+        departureDate: data.departureDate ? new Date(data.departureDate) : undefined,
+        returnDate: data.returnDate ? new Date(data.returnDate) : undefined,
+        departureCities: data.departureCities,
+        metaTitle: data.metaTitle,
+        metaDescription: data.metaDescription,
+        metaImage: data.metaImage,
       },
     });
   }

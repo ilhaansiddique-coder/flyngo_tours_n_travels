@@ -24,4 +24,11 @@ export class RegisterDto {
   @MinLength(2)
   @MaxLength(100)
   fullName: string;
+
+  @ApiPropertyOptional({ description: 'Referral code from ?ref=...' })
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @MaxLength(32)
+  referralCode?: string;
 }

@@ -9,7 +9,7 @@ import {
   Shield, FileText, ChevronLeft, Home,
   FileText as FileIcon, Image, Search as SearchIcon, Star, HelpCircle,
   Megaphone, Car, MessageSquare, Bell, CreditCard, Sparkles, Flag, FileCheck,
-  Languages, MessageCircle, Info, Menu as MenuIcon, LayoutGrid,
+  Languages, MessageCircle, Info, Menu as MenuIcon, LayoutGrid, Gift, Target,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -31,6 +31,8 @@ const navigation = [
   { label: 'Payments', href: '/admin/payments', icon: CreditCard },
   { label: 'Coupons', href: '/admin/coupons', icon: Percent },
   { label: 'Affiliates', href: '/admin/affiliates', icon: UserPlus },
+  { label: 'Refer & Earn', href: '/admin/affiliates', icon: Gift },
+  { label: 'Tracking & Ads', href: '/admin/tracking', icon: Target },
   { label: 'Campaigns', href: '/admin/marketing', icon: Megaphone },
   { label: 'Reports', href: '/admin/reports', icon: BarChart3 },
   { label: 'Settings', href: '/admin/settings', icon: Settings },

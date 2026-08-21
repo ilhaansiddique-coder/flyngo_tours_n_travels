@@ -1,0 +1,698 @@
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  Logger,
+} from '@nestjs/common';
+import { PrismaService } from '../../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { Prisma } from '@prisma/client';
+
+export interface ReferralRewardBreakdown {
+  referrerRewardType: string;
+  referrerRewardValue: number;
+  referrerMaxReward: number | null;
+  refereeRewardType: string;
+  refereeRewardValue: number;
+  refereeMaxReward: number | null;
+}
+
+@Injectable()
+export class ReferralService {
+  private readonly logger = new Logger(ReferralService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
+
+  // ---------------------------------------------------------------------------
+  // Settings
+  // ---------------------------------------------------------------------------
+
+  async getSettings(tenantId: string) {
+    let settings = await this.prisma.referralSetting.findUnique({ where: { tenantId } });
+    if (!settings) {
+      settings = await this.prisma.referralSetting.create({ data: { tenantId } });
+    }
+    return settings;
+  }
+
+  async updateSettings(tenantId: string, body: any) {
+    const data: Prisma.ReferralSettingUpdateInput = {
+      isEnabled: body.isEnabled,
+      referrerRewardType: body.referrerRewardType,
+      referrerRewardValue: body.referrerRewardValue,
+      referrerMaxReward: body.referrerMaxReward,
+      refereeRewardType: body.refereeRewardType,
+      refereeRewardValue: body.refereeRewardValue,
+      refereeMaxReward: body.refereeMaxReward,
+      cookieWindowDays: body.cookieWindowDays,
+      minPayoutAmount: body.minPayoutAmount,
+      payoutCurrency: body.payoutCurrency,
+      conversionStatuses: body.conversionStatuses,
+      heroTitle: body.heroTitle,
+      heroSubtitle: body.heroSubtitle,
+      termsText: body.termsText,
+    };
+    Object.keys(data).forEach((k) => (data as any)[k] === undefined && delete (data as any)[k]);
+
+    return this.prisma.referralSetting.upsert({
+      where: { tenantId },
+      update: data,
+      create: { tenantId, ...(data as any) },
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Code generation
+  // ---------------------------------------------------------------------------
+
+  private generateCode(): string {
+    // 8-char alphanumeric, uppercase, no ambiguous chars (0/O, 1/I/L)
+    const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    let out = '';
+    for (let i = 0; i < 8; i++) {
+      out += alphabet[Math.floor(Math.random() * alphabet.length)];
+    }
+    return out;
+  }
+
+  async generateUniqueCode(): Promise<string> {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const code = this.generateCode();
+      const exists = await this.prisma.user.findFirst({ where: { referralCode: code } });
+      if (!exists) return code;
+    }
+    // Fallback with timestamp suffix if we somehow kept colliding
+    return `${this.generateCode()}${Date.now().toString(36).slice(-3).toUpperCase()}`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Public endpoints
+  // ---------------------------------------------------------------------------
+
+  /** Look up a referral code — used by the signup form to preview the referrer. */
+  async lookupCode(code: string) {
+    if (!code || typeof code !== 'string') return { valid: false };
+    const normalized = code.trim().toUpperCase();
+    const user = await this.prisma.user.findFirst({
+      where: { referralCode: normalized, deletedAt: null, isActive: true },
+      select: { fullName: true },
+    });
+    return user
+      ? { valid: true, code: normalized, referrerName: user.fullName.split(' ')[0] }
+      : { valid: false };
+  }
+
+  /** Public landing page — branding copy + program summary. */
+  async getPublicProgram(tenantId: string) {
+    const settings = await this.getSettings(tenantId);
+    return {
+      isEnabled: settings.isEnabled,
+      referrerRewardType: settings.referrerRewardType,
+      referrerRewardValue: Number(settings.referrerRewardValue),
+      refereeRewardType: settings.refereeRewardType,
+      refereeRewardValue: Number(settings.refereeRewardValue),
+      payoutCurrency: settings.payoutCurrency,
+      heroTitle: settings.heroTitle || 'Refer friends, earn rewards',
+      heroSubtitle:
+        settings.heroSubtitle ||
+        'Share your link. Friends get a discount. You earn cash or credit on every booking they make.',
+      termsText: settings.termsText,
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Auth integration — called by AuthService.register
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns:
+   *  - referralCode to assign to the new user
+   *  - referrerAffiliateId to attribute the signup to (may be null)
+   *  - referrerReward snapshot
+   */
+  async prepareRegistration(tenantId: string, refCodeFromCookie: string | null) {
+    const settings = await this.getSettings(tenantId);
+    if (!settings.isEnabled) {
+      return { referralCode: await this.generateUniqueCode(), referrerAffiliateId: null };
+    }
+
+    let referrerAffiliateId: string | null = null;
+    if (refCodeFromCookie) {
+      const code = refCodeFromCookie.trim().toUpperCase();
+      const referrer = await this.prisma.user.findFirst({
+        where: { referralCode: code, deletedAt: null, isActive: true },
+        select: { id: true, affiliate: { select: { id: true, isActive: true } } },
+      });
+      if (referrer?.affiliate?.isActive) {
+        referrerAffiliateId = referrer.affiliate.id;
+      }
+    }
+
+    return {
+      referralCode: await this.generateUniqueCode(),
+      referrerAffiliateId,
+    };
+  }
+
+  /**
+   * Called right after a user is created. Sets `referralCode` + `referredByCode`
+   * on the user, ensures an Affiliate row exists, and registers the pending
+   * referral (if any) so we can track conversion later.
+   */
+  async finalizeRegistration(
+    tenantId: string,
+    newUser: { id: string; fullName: string; referralCode: string },
+    refCodeFromCookie: string | null,
+  ) {
+    const settings = await this.getSettings(tenantId);
+
+    // 1) Persist referralCode + referredByCode on the user
+    const referredByCode = refCodeFromCookie ? refCodeFromCookie.trim().toUpperCase() : null;
+    await this.prisma.user.update({
+      where: { id: newUser.id },
+      data: { referralCode: newUser.referralCode, referredByCode },
+    });
+
+    // 2) Ensure an Affiliate row exists for the new user
+    const affiliate = await this.prisma.affiliate.upsert({
+      where: { userId: newUser.id },
+      update: {},
+      create: {
+        tenantId,
+        userId: newUser.id,
+        referralCode: newUser.referralCode,
+        commissionRate: settings.referrerRewardValue,
+      },
+    });
+
+    // 3) Track the referral relationship if a referrer code was supplied
+    if (referredByCode && settings.isEnabled) {
+      const referrer = await this.prisma.user.findFirst({
+        where: { referralCode: referredByCode, deletedAt: null },
+        select: { id: true, affiliate: { select: { id: true } } },
+      });
+      if (referrer?.affiliate && referrer.id !== newUser.id) {
+        try {
+          await this.prisma.affiliateReferral.upsert({
+            where: { tenantId_referredUserId: { tenantId, referredUserId: newUser.id } },
+            update: { status: 'registered', registeredAt: new Date(), affiliateId: referrer.affiliate.id },
+            create: {
+              tenantId,
+              affiliateId: referrer.affiliate.id,
+              referredUserId: newUser.id,
+              status: 'registered',
+              registeredAt: new Date(),
+            },
+          });
+          await this.notifications.sendEmail(
+            // We don't have email here reliably — log instead
+            '',
+            'You just referred a new member!',
+            'referral_signup',
+            { referrerName: referrer.id, referredName: newUser.fullName },
+          );
+          this.logger.log(
+            `Referral signup: referrer=${referrer.id} (aff=${referrer.affiliate.id}) -> referred=${newUser.id}`,
+          );
+        } catch (err: any) {
+          this.logger.warn(`Could not record referral relationship: ${err.message}`);
+        }
+      }
+    }
+
+    return { affiliateId: affiliate.id, referralCode: newUser.referralCode };
+  }
+
+  // ---------------------------------------------------------------------------
+  // User self-service
+  // ---------------------------------------------------------------------------
+
+  async getMyReferralSummary(tenantId: string, userId: string) {
+    const [user, affiliate, settings] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, fullName: true, referralCode: true, referredByCode: true },
+      }),
+      this.prisma.affiliate.findUnique({
+        where: { userId },
+        include: {
+          referrals: {
+            orderBy: { createdAt: 'desc' },
+            take: 25,
+            include: {
+              // We have to look up the referred user's name through a join
+            },
+          },
+          commissions: { orderBy: { createdAt: 'desc' }, take: 25 },
+          payouts: { orderBy: { createdAt: 'desc' }, take: 10 },
+          ledger: { orderBy: { createdAt: 'desc' }, take: 25 },
+        },
+      }),
+      this.getSettings(tenantId),
+    ]);
+
+    if (!user) throw new NotFoundException('User not found');
+
+    // If user has no affiliate yet (legacy users) — bootstrap one
+    let aff = affiliate;
+    if (!aff) {
+      const code = user.referralCode || (await this.generateUniqueCode());
+      aff = await this.prisma.affiliate.upsert({
+        where: { userId },
+        update: {},
+        create: {
+          tenantId,
+          userId,
+          referralCode: code,
+          commissionRate: Number(settings.referrerRewardValue),
+        },
+        include: {
+          referrals: { orderBy: { createdAt: 'desc' }, take: 25 },
+          commissions: { orderBy: { createdAt: 'desc' }, take: 25 },
+          payouts: { orderBy: { createdAt: 'desc' }, take: 10 },
+          ledger: { orderBy: { createdAt: 'desc' }, take: 25 },
+        },
+      });
+      if (!user.referralCode) {
+        await this.prisma.user.update({ where: { id: userId }, data: { referralCode: code } });
+      }
+    }
+
+    // Hydrate referred user names
+    const referredUserIds = (aff.referrals || []).map((r) => r.referredUserId);
+    const referredUsers = referredUserIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: referredUserIds } },
+          select: { id: true, fullName: true, createdAt: true },
+        })
+      : [];
+    const userMap = new Map(referredUsers.map((u) => [u.id, u]));
+
+    const referralsHydrated = (aff.referrals || []).map((r) => ({
+      ...r,
+      referredUser: userMap.get(r.referredUserId) || null,
+    }));
+
+    const summary = {
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        referralCode: aff.referralCode,
+        referredByCode: user.referredByCode,
+      },
+      settings: {
+        referrerRewardType: settings.referrerRewardType,
+        referrerRewardValue: Number(settings.referrerRewardValue),
+        refereeRewardType: settings.refereeRewardType,
+        refereeRewardValue: Number(settings.refereeRewardValue),
+        payoutCurrency: settings.payoutCurrency,
+        minPayoutAmount: Number(settings.minPayoutAmount),
+        cookieWindowDays: settings.cookieWindowDays,
+        isEnabled: settings.isEnabled,
+      },
+      totals: {
+        referrals: await this.prisma.affiliateReferral.count({
+          where: { tenantId, affiliateId: aff.id },
+        }),
+        converted: await this.prisma.affiliateReferral.count({
+          where: { tenantId, affiliateId: aff.id, status: 'converted' },
+        }),
+        pendingCommission: (
+          await this.prisma.affiliateCommission.aggregate({
+            where: { tenantId, affiliateId: aff.id, status: 'pending' },
+            _sum: { amount: true },
+          })
+        )._sum.amount
+          ? Number((await this.prisma.affiliateCommission.aggregate({
+              where: { tenantId, affiliateId: aff.id, status: 'pending' },
+              _sum: { amount: true },
+            }))._sum.amount)
+          : 0,
+        paidCommission: (
+          await this.prisma.affiliateCommission.aggregate({
+            where: { tenantId, affiliateId: aff.id, status: 'paid' },
+            _sum: { amount: true },
+          })
+        )._sum.amount
+          ? Number((await this.prisma.affiliateCommission.aggregate({
+              where: { tenantId, affiliateId: aff.id, status: 'paid' },
+              _sum: { amount: true },
+            }))._sum.amount)
+          : 0,
+        totalEarnings: Number(aff.totalEarnings),
+        availableBalance:
+          Number(aff.totalEarnings) -
+          ((await this.prisma.referralPayout.aggregate({
+            where: { tenantId, affiliateId: aff.id, status: { in: ['pending', 'processing', 'paid'] } },
+            _sum: { amount: true },
+          }))._sum.amount
+            ? Number((await this.prisma.referralPayout.aggregate({
+                where: { tenantId, affiliateId: aff.id, status: { in: ['pending', 'processing', 'paid'] } },
+                _sum: { amount: true },
+              }))._sum.amount)
+            : 0),
+      },
+      referrals: referralsHydrated,
+      commissions: aff.commissions,
+      payouts: aff.payouts,
+      ledger: aff.ledger,
+    };
+
+    return summary;
+  }
+
+  /** Resolve an active referral discount for a user at booking time. */
+  async resolveDiscountForUser(tenantId: string, userId: string, bookingSubtotal: number) {
+    const settings = await this.getSettings(tenantId);
+    if (!settings.isEnabled) return { discount: 0, code: null };
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { referredByCode: true, createdAt: true },
+    });
+    if (!user?.referredByCode) return { discount: 0, code: null };
+
+    // Cookie window — only count referrals that converted within N days of signup
+    const ageDays = (Date.now() - new Date(user.createdAt).getTime()) / 86_400_000;
+    if (ageDays > settings.cookieWindowDays) {
+      // Stale referral — auto-clear so we don't keep applying it forever
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { referredByCode: null },
+      });
+      return { discount: 0, code: null };
+    }
+
+    const reward = this.computeReward(
+      bookingSubtotal,
+      settings.refereeRewardType,
+      Number(settings.refereeRewardValue),
+      settings.refereeMaxReward ? Number(settings.refereeMaxReward) : null,
+    );
+
+    return { discount: reward, code: user.referredByCode };
+  }
+
+  /**
+   * Apply referral attribution to a booking. Called from BookingService.
+   *  - marks the AffiliateReferral as converted
+   *  - creates an AffiliateCommission for the referrer
+   *  - writes ledger entries
+   *  - bumps affiliate totalEarnings
+   */
+  async recordBookingConversion(
+    tenantId: string,
+    args: {
+      bookingId: string;
+      userId: string;
+      bookingTotal: number;
+      bookingCurrency: string;
+      status: string;
+    },
+  ) {
+    const settings = await this.getSettings(tenantId);
+    if (!settings.isEnabled) return null;
+    if (!settings.conversionStatuses.includes(args.status)) return null;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: args.userId },
+      select: { referredByCode: true, createdAt: true },
+    });
+    if (!user?.referredByCode) return null;
+
+    // Cookie-window guard
+    const ageDays = (Date.now() - new Date(user.createdAt).getTime()) / 86_400_000;
+    if (ageDays > settings.cookieWindowDays) return null;
+
+    const referrer = await this.prisma.user.findFirst({
+      where: { referralCode: user.referredByCode, deletedAt: null },
+      select: { id: true, affiliate: { select: { id: true, isActive: true } } },
+    });
+    if (!referrer?.affiliate?.isActive) return null;
+
+    const referrerReward = this.computeReward(
+      args.bookingTotal,
+      settings.referrerRewardType,
+      Number(settings.referrerRewardValue),
+      settings.referrerMaxReward ? Number(settings.referrerMaxReward) : null,
+    );
+    const refereeReward = this.computeReward(
+      args.bookingTotal,
+      settings.refereeRewardType,
+      Number(settings.refereeRewardValue),
+      settings.refereeMaxReward ? Number(settings.refereeMaxReward) : null,
+    );
+
+    // Mark the referral as converted (idempotent)
+    const referral = await this.prisma.affiliateReferral.upsert({
+      where: { tenantId_referredUserId: { tenantId, referredUserId: args.userId } },
+      update: {
+        status: 'converted',
+        convertedAt: new Date(),
+        affiliateId: referrer.affiliate.id,
+        referrerReward,
+        refereeReward,
+      },
+      create: {
+        tenantId,
+        affiliateId: referrer.affiliate.id,
+        referredUserId: args.userId,
+        status: 'converted',
+        convertedAt: new Date(),
+        registeredAt: new Date(),
+        referrerReward,
+        refereeReward,
+      },
+    });
+
+    // Create commission for the referrer
+    const commission = await this.prisma.affiliateCommission.create({
+      data: {
+        tenantId,
+        affiliateId: referrer.affiliate.id,
+        bookingId: args.bookingId,
+        amount: referrerReward,
+        currency: args.bookingCurrency,
+        rate: Number(settings.referrerRewardValue),
+        status: 'pending',
+      },
+    });
+
+    // Ledger entries
+    await this.prisma.referralLedger.createMany({
+      data: [
+        {
+          tenantId,
+          affiliateId: referrer.affiliate.id,
+          type: 'conversion',
+          amount: referrerReward,
+          currency: args.bookingCurrency,
+          bookingId: args.bookingId,
+          referredUserId: args.userId,
+          description: `Conversion from booking ${args.bookingId} (${referrerReward} ${args.bookingCurrency})`,
+        },
+      ],
+    });
+
+    // Bump affiliate totalEarnings
+    await this.prisma.affiliate.update({
+      where: { id: referrer.affiliate.id },
+      data: { totalEarnings: { increment: referrerReward } },
+    });
+
+    this.logger.log(
+      `Referral conversion: referrer=${referrer.id} earned ${referrerReward} ${args.bookingCurrency} from booking ${args.bookingId}`,
+    );
+
+    return { referral, commission, referrerReward, refereeReward };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Payouts
+  // ---------------------------------------------------------------------------
+
+  async requestPayout(tenantId: string, userId: string, body: { amount: number; method: string; details?: any }) {
+    const affiliate = await this.prisma.affiliate.findUnique({ where: { userId } });
+    if (!affiliate) throw new NotFoundException('No affiliate account for this user');
+    if (!affiliate.isActive) throw new BadRequestException('Affiliate account is inactive');
+
+    const settings = await this.getSettings(tenantId);
+    if (body.amount < Number(settings.minPayoutAmount)) {
+      throw new BadRequestException(
+        `Minimum payout is ${settings.minPayoutAmount} ${settings.payoutCurrency}`,
+      );
+    }
+
+    // Available balance = totalEarnings - sum(paid|processing|pending payouts)
+    const reserved = (
+      await this.prisma.referralPayout.aggregate({
+        where: { tenantId, affiliateId: affiliate.id, status: { in: ['pending', 'processing', 'paid'] } },
+        _sum: { amount: true },
+      })
+    )._sum.amount ?? 0;
+    const available = Number(affiliate.totalEarnings) - Number(reserved);
+    if (body.amount > available) {
+      throw new BadRequestException(
+        `Requested ${body.amount} exceeds available balance ${available.toFixed(2)}`,
+      );
+    }
+
+    const payout = await this.prisma.referralPayout.create({
+      data: {
+        tenantId,
+        affiliateId: affiliate.id,
+        amount: body.amount,
+        currency: settings.payoutCurrency,
+        method: body.method,
+        details: body.details ?? {},
+        status: 'pending',
+      },
+    });
+
+    await this.prisma.referralLedger.create({
+      data: {
+        tenantId,
+        affiliateId: affiliate.id,
+        type: 'payout_debit',
+        amount: -body.amount,
+        currency: settings.payoutCurrency,
+        payoutId: payout.id,
+        description: `Payout request #${payout.id}`,
+      },
+    });
+
+    return payout;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Admin
+  // ---------------------------------------------------------------------------
+
+  async listPayoutsAdmin(tenantId: string, status?: string) {
+    return this.prisma.referralPayout.findMany({
+      where: { tenantId, ...(status ? { status } : {}) },
+      include: { affiliate: { include: { user: { select: { id: true, fullName: true, email: true, phone: true } } } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async updatePayoutAdmin(tenantId: string, id: string, body: { status: string; notes?: string; processedBy?: string }) {
+    const payout = await this.prisma.referralPayout.findFirst({ where: { id, tenantId } });
+    if (!payout) throw new NotFoundException('Payout not found');
+
+    const data: Prisma.ReferralPayoutUpdateInput = {
+      status: body.status,
+      notes: body.notes,
+      processedBy: body.processedBy,
+    };
+    if (['paid', 'cancelled', 'rejected'].includes(body.status)) {
+      data.processedAt = new Date();
+    }
+
+    const updated = await this.prisma.referralPayout.update({ where: { id }, data });
+
+    // If a payout was rejected/cancelled, refund the ledger entry by deleting it
+    if (['rejected', 'cancelled'].includes(body.status)) {
+      await this.prisma.referralLedger.deleteMany({ where: { tenantId, payoutId: id } });
+    }
+
+    return updated;
+  }
+
+  async getAdminOverview(tenantId: string) {
+    const [settings, totals] = await Promise.all([
+      this.getSettings(tenantId),
+      Promise.all([
+        this.prisma.affiliate.count({ where: { tenantId } }),
+        this.prisma.affiliateReferral.count({ where: { tenantId } }),
+        this.prisma.affiliateReferral.count({ where: { tenantId, status: 'converted' } }),
+        this.prisma.affiliateCommission.aggregate({
+          where: { tenantId },
+          _sum: { amount: true },
+        }),
+        this.prisma.referralPayout.count({ where: { tenantId, status: 'pending' } }),
+        this.prisma.referralPayout.aggregate({
+          where: { tenantId, status: 'paid' },
+          _sum: { amount: true },
+        }),
+      ]),
+    ]);
+
+    const [
+      affiliates,
+      referrals,
+      converted,
+      commissionSum,
+      pendingPayouts,
+      paidPayouts,
+    ] = totals;
+
+    return {
+      settings,
+      stats: {
+        affiliates,
+        referrals,
+        converted,
+        conversionRate: referrals ? (converted / referrals) * 100 : 0,
+        totalCommissions: commissionSum._sum.amount ? Number(commissionSum._sum.amount) : 0,
+        pendingPayouts,
+        totalPaidOut: paidPayouts._sum.amount ? Number(paidPayouts._sum.amount) : 0,
+      },
+    };
+  }
+
+  async adminListReferrals(tenantId: string, page = 1, limit = 20) {
+    const [items, total] = await Promise.all([
+      this.prisma.affiliateReferral.findMany({
+        where: { tenantId },
+        include: { affiliate: { include: { user: { select: { fullName: true, email: true } } } } },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.affiliateReferral.count({ where: { tenantId } }),
+    ]);
+
+    const referredIds = items.map((i) => i.referredUserId);
+    const users = referredIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: referredIds } },
+          select: { id: true, fullName: true, email: true, phone: true, createdAt: true },
+        })
+      : [];
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    return {
+      items: items.map((r) => ({
+        ...r,
+        referredUser: userMap.get(r.referredUserId) || null,
+      })),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  private computeReward(
+    baseAmount: number,
+    type: string,
+    value: number,
+    maxReward: number | null,
+  ): number {
+    let reward = 0;
+    if (type === 'percentage') {
+      reward = (baseAmount * value) / 100;
+    } else if (type === 'fixed') {
+      reward = value;
+    }
+    if (maxReward !== null && reward > maxReward) reward = maxReward;
+    if (reward < 0) reward = 0;
+    return Math.round(reward * 100) / 100;
+  }
+}

@@ -1,6 +1,5 @@
-import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, Req, Res, UseGuards, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, Req, Res, UseGuards, UseFilters, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
 import * as crypto from 'crypto';
 import { AuthService } from './auth.service';
@@ -10,8 +9,11 @@ import { TokenResponseDto } from './dto/token-response.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { ConfigService } from '../../config/config.service';
 import { PrismaService } from '../../database/prisma.service';
+import { GoogleOAuthGuard, FacebookOAuthGuard } from './guards/oauth.guards';
+import { OAuthRedirectFilter } from './filters/oauth-redirect.filter';
 
 @ApiTags('Authentication')
+@UseFilters(OAuthRedirectFilter)
 @Controller('auth')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
@@ -60,7 +62,7 @@ export class AuthController {
 
   @Get('google')
   @Public()
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(GoogleOAuthGuard)
   @ApiOperation({ summary: 'Start Google OAuth flow' })
   async googleAuth() {
     // Passport redirects to Google — handler never runs.
@@ -68,7 +70,7 @@ export class AuthController {
 
   @Get('google/callback')
   @Public()
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(GoogleOAuthGuard)
   @ApiOperation({ summary: 'Google OAuth callback' })
   async googleAuthCallback(@Req() req: Request, @Res() res: Response) {
     return this.handleOAuthCallback(req, res, 'google');
@@ -76,7 +78,7 @@ export class AuthController {
 
   @Get('facebook')
   @Public()
-  @UseGuards(AuthGuard('facebook'))
+  @UseGuards(FacebookOAuthGuard)
   @ApiOperation({ summary: 'Start Facebook OAuth flow' })
   async facebookAuth() {
     // Passport redirects to Facebook — handler never runs.
@@ -84,7 +86,7 @@ export class AuthController {
 
   @Get('facebook/callback')
   @Public()
-  @UseGuards(AuthGuard('facebook'))
+  @UseGuards(FacebookOAuthGuard)
   @ApiOperation({ summary: 'Facebook OAuth callback' })
   async facebookAuthCallback(@Req() req: Request, @Res() res: Response) {
     return this.handleOAuthCallback(req, res, 'facebook');

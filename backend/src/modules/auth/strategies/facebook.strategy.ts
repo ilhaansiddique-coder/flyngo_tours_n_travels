@@ -26,6 +26,9 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
       profileFields: ['id', 'emails', 'displayName', 'name'],
       scope: ['email'],
       enableProof: true,
+      // passport-facebook defaults to Graph API v3.2 (deprecated since 2022),
+      // which breaks OAuth for newly created Meta apps. Pin a current version.
+      graphAPIVersion: 'v21.0',
     });
   }
 

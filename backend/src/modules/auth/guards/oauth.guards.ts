@@ -14,12 +14,14 @@ function createOAuthGuard(strategyName: 'google' | 'facebook'): Type<IAuthGuard>
     handleRequest<TUser = any>(
       err: any,
       user: any,
-      _info: unknown,
+      info: any,
       _context: ExecutionContext,
       _status?: number,
     ): TUser {
       if (err || !user) {
-        throw new OAuthRedirectException(resolveOAuthFailureReason(err));
+        // Passport delivers consent-screen denials via `info` (strategy .fail()),
+        // hard errors via `err`. Inspect both to classify the reason.
+        throw new OAuthRedirectException(resolveOAuthFailureReason(err ?? info));
       }
       return user as TUser;
     }

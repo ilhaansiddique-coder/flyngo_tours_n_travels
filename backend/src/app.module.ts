@@ -16,6 +16,7 @@ import { CmsModule } from './modules/cms/cms.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { ReferralModule } from './modules/referral/referral.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
+import { LoyaltyModule } from './modules/loyalty/loyalty.module';
 import { AiModule } from './modules/ai/ai.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
@@ -52,6 +53,7 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
     MarketingModule,
     ReferralModule,
     TrackingModule,
+    LoyaltyModule,
     AiModule,
     NotificationsModule,
     AdminModule,

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
 import { Prisma } from '@prisma/client';
 
 export interface ReferralRewardBreakdown {
@@ -25,6 +26,7 @@ export class ReferralService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly loyaltyService: LoyaltyService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -208,6 +210,12 @@ export class ReferralService {
               registeredAt: new Date(),
             },
           });
+          // Award 500 loyalty points to the referrer for the new signup
+          try {
+            await this.loyaltyService.awardReferralSignup(tenantId, referrer.id, newUser.id);
+          } catch (err: any) {
+            this.logger.warn(`Loyalty award for referral signup failed: ${err.message}`);
+          }
           await this.notifications.sendEmail(
             // We don't have email here reliably — log instead
             '',

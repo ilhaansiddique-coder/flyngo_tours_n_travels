@@ -56,39 +56,4 @@ export class MarketingController {
   async removeCoupon(@Param('id') id: string, @CurrentTenantId() tenantId: string) {
     return this.marketingService.removeCoupon(id, tenantId);
   }
-
-  @Get('admin/affiliates')
-  @ApiBearerAuth()
-  @Roles('admin', 'super_admin')
-  @ApiOperation({ summary: 'List all affiliates (admin)' })
-  async listAffiliates(
-    @CurrentTenantId() tenantId: string,
-    @Query() pagination: PaginationDto,
-  ) {
-    return this.marketingService.listAllAffiliates(tenantId, pagination.page, pagination.limit);
-  }
-
-  @Post('admin/affiliates')
-  @ApiBearerAuth()
-  @Roles('admin', 'super_admin')
-  @ApiOperation({ summary: 'Create an affiliate (admin)' })
-  async createAffiliate(@CurrentTenantId() tenantId: string, @Body() body: any) {
-    return this.marketingService.createAffiliate(tenantId, body);
-  }
-
-  @Patch('admin/affiliates/:id')
-  @ApiBearerAuth()
-  @Roles('admin', 'super_admin')
-  @ApiOperation({ summary: 'Update an affiliate (admin)' })
-  async updateAffiliate(@Param('id') id: string, @CurrentTenantId() tenantId: string, @Body() body: any) {
-    return this.marketingService.updateAffiliate(id, tenantId, body);
-  }
-
-  @Delete('admin/affiliates/:id')
-  @ApiBearerAuth()
-  @Roles('admin', 'super_admin')
-  @ApiOperation({ summary: 'Delete an affiliate (admin)' })
-  async removeAffiliate(@Param('id') id: string, @CurrentTenantId() tenantId: string) {
-    return this.marketingService.removeAffiliate(id, tenantId);
-  }
 }

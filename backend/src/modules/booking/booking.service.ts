@@ -3,6 +3,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { CreateHotelBookingDto } from './dto/create-hotel-booking.dto';
 import { ReferralService } from '../referral/referral.service';
 import { TrackingService } from '../tracking/tracking.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
 
 @Injectable()
 export class BookingService {
@@ -12,6 +13,7 @@ export class BookingService {
     private readonly prisma: PrismaService,
     private readonly referralService: ReferralService,
     private readonly trackingService: TrackingService,
+    private readonly loyaltyService: LoyaltyService,
   ) {}
 
   async createBooking(tenantId: string, userId: string, data: {
@@ -116,6 +118,17 @@ export class BookingService {
 
     // Emit purchase event when status becomes "confirmed" — fires Meta CAPI + GA4
     if (status === 'confirmed' || status === 'completed') {
+      // Loyalty points: 50% on confirmation, remaining 50% on completion (Q4)
+      try {
+        const productPoints = await this.loyaltyService.getProductPoints(tenantId, booking.bookingType, booking.itemId);
+        if (status === 'confirmed') {
+          await this.loyaltyService.awardBookingConfirmation(tenantId, id, booking.userId, booking.bookingType, productPoints);
+        } else if (status === 'completed') {
+          await this.loyaltyService.awardBookingCompletion(tenantId, id, booking.userId, booking.bookingType, productPoints);
+        }
+      } catch (err: any) {
+        this.logger.warn(`Loyalty award (${status}) failed: ${err.message}`);
+      }
       void this.trackingService.emitServerEvent(tenantId, 'purchase', {
         userId: booking.userId,
         value: Number(updated.totalAmount || 0),

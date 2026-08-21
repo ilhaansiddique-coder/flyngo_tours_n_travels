@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
 import { ImageUploader } from '@/components/admin/image-uploader';
 import { useEffect, useState } from 'react';
-import { Map, Search, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Map, Search, Plus, Pencil, Trash2, Image as ImageIcon } from 'lucide-react';
 
 interface Tour {
   id: string;
@@ -249,6 +249,7 @@ export default function AdminToursPage() {
               <table className="w-full text-sm">
                 <thead>
                     <tr className="text-left text-on-surface-variant bg-surface-container-low">
+                    <th className="p-4 font-medium">Image</th>
                     <th className="p-4 font-medium">Title</th>
                     <th className="p-4 font-medium">Destination</th>
                     <th className="p-4 font-medium">Price</th>
@@ -260,7 +261,7 @@ export default function AdminToursPage() {
                 <tbody>
                   {tours.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-12 text-center text-on-surface-variant">
+                      <td colSpan={7} className="p-12 text-center text-on-surface-variant">
                         <Map className="w-8 h-8 mx-auto mb-2 text-on-surface-variant/40" />
                         <p>No tours found</p>
                       </td>
@@ -271,6 +272,24 @@ export default function AdminToursPage() {
                         key={t.id}
                         className="border-b border-outline-variant hover:bg-surface-container-high"
                       >
+                        <td className="p-4">
+                          {(() => {
+                            const url = t.coverImageUrl || t.images?.[0]?.url;
+                            return url ? (
+                              <a href={url} target="_blank" rel="noreferrer">
+                                <img
+                                  src={url}
+                                  alt={t.title}
+                                  className="w-14 h-10 object-cover rounded-lg border border-outline-variant"
+                                />
+                              </a>
+                            ) : (
+                              <div className="w-14 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-surface-container-high text-on-surface-variant/40">
+                                <ImageIcon className="w-4 h-4" />
+                              </div>
+                            );
+                          })()}
+                        </td>
                         <td className="p-4 font-medium">{t.title}</td>
                         <td className="p-4 text-on-surface-variant">{t.destination?.name || '\u2014'}</td>
                         <td className="p-4 font-medium">{formatCurrency(t.price)}</td>

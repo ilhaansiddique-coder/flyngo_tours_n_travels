@@ -9,7 +9,7 @@ import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } 
 import { ImageUploader } from '@/components/admin/image-uploader';
 import { useApi } from '@/hooks/use-api';
 import { formatCurrency } from '@/lib/utils';
-import { Sparkles, Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Sparkles, Plus, Pencil, Trash2, Search, Image as ImageIcon } from 'lucide-react';
 
 interface HajjPackage {
   id: string;
@@ -85,16 +85,34 @@ export default function AdminHajjPage() {
           {filtered.map((p) => (
             <Card key={p.id} className="p-5">
               <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <Badge variant={p.isActive ? 'success' : 'default'}>{p.tier.replace(/_/g, ' ')}</Badge>
-                    {p.isFeatured && <Badge variant="warning">Featured</Badge>}
+                <div className="flex items-start gap-3 min-w-0">
+                  {(() => {
+                    const url = p.coverImageUrl || p.imageUrl;
+                    return url ? (
+                      <a href={url} target="_blank" rel="noreferrer" className="shrink-0">
+                        <img
+                          src={url}
+                          alt={p.title}
+                          className="w-14 h-14 rounded-lg object-cover border border-outline-variant"
+                        />
+                      </a>
+                    ) : (
+                      <div className="w-14 h-14 shrink-0 flex items-center justify-center rounded-lg border border-outline-variant bg-surface-container-high text-on-surface-variant/40">
+                        <ImageIcon className="w-5 h-5" />
+                      </div>
+                    );
+                  })()}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <Badge variant={p.isActive ? 'success' : 'default'}>{p.tier.replace(/_/g, ' ')}</Badge>
+                      {p.isFeatured && <Badge variant="warning">Featured</Badge>}
+                    </div>
+                    <h3 className="font-semibold truncate">{p.title}</h3>
+                    <p className="text-xs text-muted mt-1">
+                      {p.durationDays} days · {p.makkahNights}N Makkah · {p.madinahNights}N Madinah
+                    </p>
                   </div>
-                  <h3 className="font-semibold truncate">{p.title}</h3>
-                  <p className="text-xs text-muted mt-1">
-                    {p.durationDays} days · {p.makkahNights}N Makkah · {p.madinahNights}N Madinah
-                  </p>
                 </div>
                 <div className="text-right shrink-0">
                   <div className="font-bold text-lg">{formatCurrency(p.price, p.currency)}</div>

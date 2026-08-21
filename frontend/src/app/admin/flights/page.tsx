@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plane, Plus, Pencil, Trash2, ArrowRight } from 'lucide-react';
+import { Plane, Plus, Pencil, Trash2, ArrowRight, Image as ImageIcon } from 'lucide-react';
 import { useApi } from '@/hooks/use-api';
 import { formatCurrency } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -216,6 +216,7 @@ export default function AdminFlightsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-on-surface-variant bg-surface-container-low">
+                    <th className="p-4 font-medium">Image</th>
                     <th className="p-4 font-medium">Airline</th>
                     <th className="p-4 font-medium">Flight No.</th>
                     <th className="p-4 font-medium">Route</th>
@@ -231,6 +232,21 @@ export default function AdminFlightsPage() {
                       key={f.id}
                       className="border-b border-outline-variant hover:bg-surface-container-high"
                     >
+                      <td className="p-4">
+                        {f.coverImageUrl ? (
+                          <a href={f.coverImageUrl} target="_blank" rel="noreferrer">
+                            <img
+                              src={f.coverImageUrl}
+                              alt={f.airline}
+                              className="w-14 h-10 object-cover rounded-lg border border-outline-variant"
+                            />
+                          </a>
+                        ) : (
+                          <div className="w-14 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-surface-container-high text-on-surface-variant/40">
+                            <ImageIcon className="w-4 h-4" />
+                          </div>
+                        )}
+                      </td>
                       <td className="p-4 font-medium">{f.airline}</td>
                       <td className="p-4 font-mono text-xs">{f.flightNumber}</td>
                       <td className="p-4 text-on-surface-variant">

@@ -8,7 +8,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
 import { ImageUploader } from '@/components/admin/image-uploader';
-import { Building2, Plus, Pencil, Trash2, Star, Search } from 'lucide-react';
+import { Building2, Plus, Pencil, Trash2, Star, Search, Image as ImageIcon } from 'lucide-react';
 
 const LIMIT = 10;
 
@@ -251,6 +251,7 @@ export default function AdminHotelsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-on-surface-variant bg-surface-container-low">
+                    <th className="p-4 font-medium">Image</th>
                     <th className="p-4 font-medium">Name</th>
                     <th className="p-4 font-medium">Destination</th>
                     <th className="p-4 font-medium">Price/Night</th>
@@ -262,6 +263,21 @@ export default function AdminHotelsPage() {
                 <tbody>
                   {hotels.map((h) => (
                       <tr key={h.id} className="border-b border-outline-variant hover:bg-surface-container-high">
+                      <td className="p-4">
+                        {h.coverImageUrl ? (
+                          <a href={h.coverImageUrl} target="_blank" rel="noreferrer">
+                            <img
+                              src={h.coverImageUrl}
+                              alt={h.name}
+                              className="w-14 h-10 object-cover rounded-lg border border-outline-variant"
+                            />
+                          </a>
+                        ) : (
+                          <div className="w-14 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-surface-container-high text-on-surface-variant/40">
+                            <ImageIcon className="w-4 h-4" />
+                          </div>
+                        )}
+                      </td>
                       <td className="p-4 font-medium">{h.name}</td>
                       <td className="p-4 text-on-surface-variant">{h.destination?.name ?? '—'}</td>
                       <td className="p-4 font-medium">{formatCurrency(h.pricePerNight)}</td>

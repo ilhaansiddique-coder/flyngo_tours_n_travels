@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapPin, Plus, Pencil, Trash2, Star } from 'lucide-react';
+import { MapPin, Plus, Pencil, Trash2, Star, Image as ImageIcon } from 'lucide-react';
 import { useApi } from '@/hooks/use-api';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -176,6 +176,7 @@ export default function AdminDestinationsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-on-surface-variant bg-surface-container-low">
+                <th className="p-4 font-medium">Image</th>
                 <th className="p-4 font-medium">Name</th>
                 <th className="p-4 font-medium">Country</th>
                 <th className="p-4 font-medium">Continent</th>
@@ -188,20 +189,38 @@ export default function AdminDestinationsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-on-surface-variant">
+                  <td colSpan={8} className="p-8 text-center text-on-surface-variant">
                     <div className="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2 align-middle" />
                     Loading destinations...
                   </td>
                 </tr>
               ) : destinations.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-on-surface-variant/40">
+                  <td colSpan={8} className="p-8 text-center text-on-surface-variant/40">
                     No destinations found
                   </td>
                 </tr>
               ) : (
                 destinations.map((d) => (
                   <tr key={d.id} className="border-b border-outline-variant hover:bg-surface-container-high">
+                    <td className="p-4">
+                      {(() => {
+                        const url = d.coverImageUrl || d.imageUrl;
+                        return url ? (
+                          <a href={url} target="_blank" rel="noreferrer">
+                            <img
+                              src={url}
+                              alt={d.name}
+                              className="w-14 h-10 object-cover rounded-lg border border-outline-variant"
+                            />
+                          </a>
+                        ) : (
+                          <div className="w-14 h-10 flex items-center justify-center rounded-lg border border-outline-variant bg-surface-container-high text-on-surface-variant/40">
+                            <ImageIcon className="w-4 h-4" />
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="p-4 font-medium flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-on-surface-variant/40" />
                       {d.name}

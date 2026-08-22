@@ -54,6 +54,9 @@ export function UpdateNotifier() {
         const res = await fetch('/api/v1/version', { cache: 'no-store' });
         if (!res.ok) return;
         const data: VersionInfo = await res.json();
+        const isDevPlaceholder =
+          data.sha === 'dev' || data.message === 'local development' || data.author === 'unknown';
+        if (isDevPlaceholder) return;
         if (data.sha && data.sha !== lastSeenRef.current && data.sha !== CURRENT_SHA) {
           setVersion(data);
           setOpen(true);

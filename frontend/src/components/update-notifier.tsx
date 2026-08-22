@@ -32,6 +32,11 @@ export function UpdateNotifier() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // Suppress the notifier entirely in local dev. The backend's /version
+    // endpoint returns { sha: 'dev', message: 'local development', author:
+    // 'unknown' } in dev, and we never want that surfaced to the user.
+    if (CURRENT_SHA === 'dev') return;
+
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored && stored !== CURRENT_SHA) {
       try {

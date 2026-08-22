@@ -7,6 +7,7 @@ import { Toaster } from 'sonner';
 import { LocaleProvider } from '@/contexts/locale-context';
 import { CurrencyProvider } from '@/contexts/currency-context';
 import { UpdateNotifier } from '@/components/update-notifier';
+import { ReferEarnPopover } from '@/components/refer-earn-popover';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -34,6 +35,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             {children}
             <Toaster richColors position="top-right" />
             <UpdateNotifier />
+            <ReferEarnPopover />
           </CurrencyProvider>
         </LocaleProvider>
       </ThemeProvider>

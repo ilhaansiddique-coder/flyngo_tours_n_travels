@@ -1785,3 +1785,49 @@ model ProductPointsRule {
   @@index([tenantId, productType])
   @@map("product_points_rules")
 }
+
+// =============================================================================
+// REFER & EARN POPOVER
+// Singleton per tenant. Drives the floating "Refer & Earn" popover shown
+// to customers (similar to the deploy-update notifier). Fully admin-editable.
+// =============================================================================
+
+model ReferEarnPopover {
+  id       String @id @default(uuid())
+  tenantId String @unique @map("tenant_id")
+
+  // Visible content (bilingual)
+  badgeTextEn String? @map("badge_text_en")
+  badgeTextBn String? @map("badge_text_bn")
+  titleEn     String? @map("title_en")
+  titleBn     String? @map("title_bn")
+  bodyEn      String? @db.Text @map("body_en")
+  bodyBn      String? @db.Text @map("body_bn")
+
+  // Reward / earning numbers shown inside the popover
+  rewardAmountEn String? @map("reward_amount_en")
+  rewardAmountBn String? @map("reward_amount_bn")
+  rewardLabelEn  String? @map("reward_label_en")
+  rewardLabelBn  String? @map("reward_label_bn")
+  currencyCode   String  @default("BDT") @map("currency_code")
+
+  // Call to action
+  ctaTextEn String? @map("cta_text_en")
+  ctaTextBn String? @map("cta_text_bn")
+  ctaHref   String? @map("cta_href")
+
+  // Optional illustration (used as decorative image inside the popover)
+  imageUrl  String? @map("image_url")
+  iconName  String? @map("icon_name")
+
+  // Behaviour
+  isActive     Boolean @default(true) @map("is_active")
+  delaySeconds Int     @default(8) @map("delay_seconds")
+  dismissDays  Int     @default(7) @map("dismiss_days")
+  showOnPaths  String  @default("/") @map("show_on_paths")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("refer_earn_popovers")
+}

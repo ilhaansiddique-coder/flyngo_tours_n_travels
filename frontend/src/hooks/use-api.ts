@@ -141,7 +141,7 @@ export function useApi() {
   const getLoyaltyStats = useCallback(async () => api.get('/loyalty/admin/stats', auth()), [auth]);
   const adjustLoyaltyPoints = useCallback(async (userId: string, body: { points: number; reason: string; reference?: string }) => api.post(`/loyalty/admin/adjust/${userId}`, body, auth()), [auth]);
 
-  // Refer & Earn
+  // Refer & Earn (referrals/loyalty program)
   const getReferralProgram = useCallback(async () => api.get('/referrals/program', auth()), [auth]);
   const lookupReferralCode = useCallback(async (code: string) =>
     api.get(`/referrals/lookup?code=${encodeURIComponent(code)}`, auth()), [auth]);
@@ -182,6 +182,13 @@ export function useApi() {
   const createAdminLandingPage = useCallback(async (body: any) => api.post('/tracking/admin/landing-pages', body, auth()), [auth]);
   const updateAdminLandingPage = useCallback(async (id: string, body: any) => api.patch(`/tracking/admin/landing-pages/${id}`, body, auth()), [auth]);
   const deleteAdminLandingPage = useCallback(async (id: string) => api.delete(`/tracking/admin/landing-pages/${id}`, auth()), [auth]);
+
+  // Refer & Earn (popover config — separate singleton)
+  const getReferEarn = useCallback(async () => api.get('/refer-earn'), []);
+  const getReferEarnAdmin = useCallback(async () => api.get('/refer-earn/admin', auth()), [auth]);
+  const getReferEarnDefaults = useCallback(async () => api.get('/refer-earn/admin/defaults', auth()), [auth]);
+  const saveReferEarn = useCallback(async (body: any) => api.post('/refer-earn/admin', body, auth()), [auth]);
+  const deleteReferEarn = useCallback(async () => api.delete('/refer-earn/admin', auth()), [auth]);
 
   const getUsers = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
@@ -421,5 +428,6 @@ export function useApi() {
     getCeoMessage, listCeoMessagesAdmin, upsertCeoMessage, deleteCeoMessage,
     getNavMenu, listNavMenuAdmin, createNavMenu, updateNavMenu, deleteNavMenu, reorderNavMenu,
     getFooter, getFooterAdmin, updateFooter,
+    getReferEarn, getReferEarnAdmin, getReferEarnDefaults, saveReferEarn, deleteReferEarn,
   };
 }

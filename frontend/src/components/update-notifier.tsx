@@ -18,7 +18,7 @@ interface VersionInfo {
   deployedAt: string;
 }
 
-const CURRENT_SHA = process.env.NEXT_PUBLIC_BUILD_SHA || 'dev';
+const CURRENT_SHA = process.env.NEXT_PUBLIC_BUILD_SHA || '';
 
 export function UpdateNotifier() {
   const [open, setOpen] = useState(false);
@@ -32,10 +32,8 @@ export function UpdateNotifier() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Suppress the notifier entirely in local dev. The backend's /version
-    // endpoint returns { sha: 'dev', message: 'local development', author:
-    // 'unknown' } in dev, and we never want that surfaced to the user.
-    if (CURRENT_SHA === 'dev') return;
+    // Suppress the notifier entirely in local dev, where the build has no SHA.
+    if (!CURRENT_SHA) return;
 
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored && stored !== CURRENT_SHA) {
@@ -54,10 +52,8 @@ export function UpdateNotifier() {
         const res = await fetch('/api/v1/version', { cache: 'no-store' });
         if (!res.ok) return;
         const data: VersionInfo = await res.json();
-        const isDevPlaceholder =
-          data.sha === 'dev' || data.message === 'local development' || data.author === 'unknown';
-        if (isDevPlaceholder) return;
-        if (data.sha && data.sha !== lastSeenRef.current && data.sha !== CURRENT_SHA) {
+        if (!data.sha) return;
+        if (data.sha !== lastSeenRef.current && data.sha !== CURRENT_SHA) {
           setVersion(data);
           setOpen(true);
         }
@@ -136,13 +132,19 @@ export function UpdateNotifier() {
           <div className="flex items-start gap-2.5 mb-3 rounded-lg bg-surface-container/40 p-2.5 border border-outline-variant/50">
             <GitCommit className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-on-surface break-words line-clamp-2">{message}</p>
+              {message && (
+                <p className="text-sm text-on-surface break-words line-clamp-2">{message}</p>
+              )}
               <div className="mt-1.5 flex items-center gap-2 text-xs text-on-surface-variant">
                 <code className="font-mono px-1.5 py-0.5 rounded bg-surface-container-high">
                   {version.shortSha}
                 </code>
-                <span>·</span>
-                <span className="truncate">{version.author}</span>
+                {version.author && (
+                  <>
+                    <span>·</span>
+                    <span className="truncate">{version.author}</span>
+                  </>
+                )}
                 <span>·</span>
                 <span className="shrink-0">{date}</span>
               </div>

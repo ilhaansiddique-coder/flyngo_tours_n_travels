@@ -1275,6 +1275,10 @@ model VisaCountry {
   currency       String   @default("BDT")
   requirements   String[] @default([])
   description    String?  @db.Text
+  // Flexible marketing content for the rich country-page layout. Stores the
+  // structured sections (intro, pricing tiers, process, terms, facts, FAQ,
+  // key destinations / points of interest) so the page is 100% data-driven.
+  content        Json?
   isActive       Boolean  @default(true) @map("is_active")
   isFeatured     Boolean  @default(false) @map("is_featured")
   order          Int      @default(0)

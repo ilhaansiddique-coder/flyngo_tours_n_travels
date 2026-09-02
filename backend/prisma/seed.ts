@@ -633,9 +633,205 @@ async function main() {
   console.log(`✅ Umrah packages: ${umrahPackages.length} created`);
 
   // ===========================================================================
-  // 13. VISA COUNTRIES (4 BD-market staples, easy to extend)
+  // 13. VISA COUNTRIES (BD-market staples, easy to extend)
+  // ---------------------------------------------------------------------------
+  // Each country carries an optional `content` JSON block that drives the rich,
+  // fully-dynamic country detail page (pricing tiers, process, terms, facts,
+  // FAQ, key destinations). Nothing on that page is hard-coded.
   // ===========================================================================
   const visaCountries = [
+    {
+      name: 'United Arab Emirates (Dubai)',
+      flagUrl: 'https://flagcdn.com/w320/ae.png',
+      imageUrl: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1600&q=80',
+      coverImageUrl: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1600&q=80',
+      region: 'middle_east',
+      visaTypes: ['tourist', 'transit', 'residence'],
+      processingTime: '3-15 working days',
+      fee: 17500,
+      description: 'Dubai visa from Bangladesh — tourist, transit and residence visas processed by our certified team with transparent pricing and insurance included.',
+      isFeatured: true,
+      isActive: true,
+      order: 1,
+      content: {
+        intro:
+          'Dubai has become one of the most popular destinations for Bangladeshi travellers, whether for tourism, transit or long-term residence. This comprehensive guide covers all the visa options, requirements, fees and processing times so you can apply with confidence.',
+        pricingTiers: [
+          {
+            id: 'tourist-30',
+            title: 'Dubai Tourist Visa 30 days',
+            subtitle: 'Ideal for short-term visits, shopping and sightseeing.',
+            stay: '30 days',
+            entry: 'Single Entry',
+            validity: '60 days',
+            male: 17500,
+            female: 17500,
+            child: 6500,
+            processingTime: '3-7 working days',
+            documents: [
+              'Scan of bio page of current passport (min 6 months validity) + all old passports + visa pages',
+              'Scan of minimum 3 country visa stickers (excluding SAARC countries and e-visas)',
+              'One recent colour passport-size photo (white background, ears visible, no cap/sunglasses)',
+              'One visiting card',
+            ],
+            notes: [
+              'Fee includes service charge + insurance.',
+              'Official passport holders must apply at the UAE Embassy-Dhaka with a valid Government Order (GO).',
+            ],
+          },
+          {
+            id: 'tourist-60',
+            title: 'Dubai Tourist Visa 60 days',
+            subtitle: 'Extra time to explore, visit family or handle business.',
+            stay: '60 days',
+            entry: 'Single Entry',
+            validity: '60 days',
+            male: 24500,
+            female: 24500,
+            child: 8500,
+            processingTime: '3-7 working days',
+            documents: [
+              'Scan of bio page of current passport (min 6 months validity) + all old passports + visa pages',
+              'Scan of minimum 3 country visa stickers (excluding SAARC countries and e-visas)',
+              'One recent colour passport-size photo (white background, ears visible, no cap/sunglasses)',
+              'One visiting card',
+            ],
+            notes: ['Fee includes service charge + insurance.'],
+          },
+          {
+            id: 'tourist-60-mult',
+            title: 'Dubai Tourist Visa 60 days (Multiple Entry)',
+            subtitle: 'Multiple entries within the validity period.',
+            stay: '60 days',
+            entry: 'Multiple Entry',
+            validity: '60 days',
+            flatFee: 38000,
+            processingTime: '3-7 working days',
+            documents: [
+              'Scan of bio page of current passport (min 6 months validity) + all old passports + visa pages',
+              'Scan of minimum 3 country visa stickers',
+              'One recent colour passport-size photo',
+              'One visiting card',
+            ],
+            notes: ['Single flat fee applies to male, female and children under 12.'],
+          },
+          {
+            id: 'tourist-5yr',
+            title: 'Dubai Tourist Visa — 5 Years Multiple Entry',
+            subtitle: 'For frequent travellers; each stay up to 30 days.',
+            stay: '90 days per year (30 days per visit)',
+            entry: 'Multiple Entry',
+            validity: '5 years',
+            flatFee: 145000,
+            processingTime: '10-15 working days',
+            documents: [
+              'Clear scan of all passport pages',
+              '2 copies of passport-size photos (white background)',
+              'Visiting card',
+              'Bank statement for last 6 months with balance of USD 4,000 (or equivalent)',
+              'Months-coverage travel insurance copy (provided by us)',
+              'Full mailing address',
+            ],
+            notes: [
+              'Includes security deposit. AED 3,025 (approx. BDT 90,750) is refunded by Dubai Immigration after visa expiry within 05-07 working days.',
+              'Full advance payment required. If rejected, BDT 15,000 is deducted by Dubai Immigration; remainder refunded within 05-07 working days.',
+              'Overstay fine: Tk. 80,000.',
+            ],
+          },
+          {
+            id: 'resident',
+            title: 'Dubai Resident Visa',
+            subtitle: 'Sponsorship by a Dubai employer or UAE-resident family member.',
+            stay: '3 years',
+            entry: 'Residence',
+            validity: '3 years',
+            flatFee: 230000,
+            processingTime: '8-10 working days',
+            documents: [
+              'Scan of bio page of current passport (min 6 months validity) + all old passports',
+              'Two recent colour passport-size photos (white background, ears visible)',
+            ],
+            notes: [
+              'Fee includes service charge.',
+              'File processing starts from Dubai; you must travel on a tourist visa first and stay 08-10 working days at your own expense.',
+            ],
+          },
+          {
+            id: 'transit',
+            title: 'Dubai Transit Visa',
+            subtitle: 'Valid for 96 hours for layover travellers.',
+            stay: '96 hours',
+            entry: 'Transit',
+            validity: '96 hours',
+            flatFee: 8000,
+            processingTime: '5-7 working days',
+            documents: [
+              'Scan of bio page of current passport + all old passports (min 6 months validity)',
+              'Scan of visa pages',
+              'Scan of third country valid visa',
+              'Confirmed air tickets of Emirates Airlines',
+              'Two recent colour passport-size photos',
+              'Two visiting cards',
+              'Forwarding letter on company pad',
+            ],
+            notes: [
+              'Fee includes service charge.',
+              'Individual applicants under 40 not allowed unless applying with family or holding a valid/used 1st-world country visa.',
+            ],
+          },
+        ],
+        processSteps: [
+          'Submit your details and we email a full document checklist.',
+          'Share scanned documents — we review and advise on any gaps.',
+          'We prepare and submit your application to the embassy / immigration.',
+          'Receive your visa and any required passport delivery.',
+        ],
+        terms: [
+          'We provide consultancy services only — no guarantee for visa approval.',
+          'File processing starts only after receiving all necessary documents.',
+          'Processing time, requirements and fees are subject to change by the Embassy without prior notice.',
+          'The Embassy reserves the right to ask for additional documents.',
+          'All Bangla documents must be translated into English and attested.',
+          'Emergency modification fee: Tk. 4,000 (tourists).',
+          'Emergency visa cancellation fee: Tk. 4,000 (tourists).',
+          'We are not responsible for any overstay penalties (overstay fine: Tk. 80,000).',
+        ],
+        facts: [
+          { label: 'Continent', value: 'Asia' },
+          { label: 'Capital', value: 'Abu Dhabi' },
+          { label: 'Official Language', value: 'Arabic' },
+          { label: 'Currency', value: 'UAE Dirham (AED)' },
+          { label: 'Local Time', value: 'GMT +4' },
+          { label: 'Exchange Rate', value: '21.9708 BDT per AED' },
+          { label: 'Dialing Code', value: '+971' },
+          { label: 'Weekend Days', value: 'Friday' },
+          { label: 'Population', value: '5.9 million' },
+          { label: 'Area', value: '83,600 km²' },
+          { label: 'Climate', value: 'Tropical desert; summers ~41°C, winters ~23°C' },
+          { label: 'Key Destinations', value: 'Burj Khalifa, Sheikh Zayed Mosque, Palm Jumeirah, Dubai Creek, The Desert, Souks' },
+        ],
+        faq: [
+          { question: 'How many countries should I visit before applying?', answer: 'There is no restriction, but visiting 2-3 countries beforehand is recommended.' },
+          { question: 'How much balance should I have in my bank account?', answer: 'For tourist visas a bank statement and bank solvency are not required (except for the 5-year visa, which needs a USD 4,000 balance).' },
+          { question: 'My education qualification is low, can I apply?', answer: 'There is no education requirement for tourist visas. Anyone may apply.' },
+          { question: 'My visa was recently refused. When can I reapply?', answer: 'There is no restriction or time limit on reapplying, though waiting a short period is recommended.' },
+          { question: 'Can you arrange an invitation? Would it help?', answer: 'An invitation is not needed for a Dubai tourist visa.' },
+          { question: 'Do you provide any guarantee for visa approval?', answer: 'No. Approval depends on the applicant profile. We prepare files professionally.' },
+          { question: 'Are embassy fees or service charges refundable?', answer: 'No. Both the embassy fee and service charge are non-refundable.' },
+          { question: 'How long does Dubai visa processing take?', answer: 'Tourist visas take 3-7 working days, the 5-year visa 10-15 days, resident visas 8-10 days, and transit visas 5-7 working days.' },
+        ],
+        keyDestinations: [
+          'Burj Khalifa',
+          'Sheikh Zayed Grand Mosque',
+          'Palm Jumeirah',
+          'Dubai Creek',
+          'The Desert',
+          'Souks',
+          'Jumeirah Beach',
+          'The Dubai Mall',
+        ],
+      },
+    },
     {
       name: 'Malaysia',
       flagUrl: 'https://flagcdn.com/w320/my.png',
@@ -646,7 +842,32 @@ async function main() {
       requirements: ['Valid passport (min 6 months validity)', '2 copies of passport-size photo', 'Bank statement (last 6 months)', 'Confirmed return ticket', 'Hotel booking or invitation letter'],
       description: 'Malaysia e-Visa and eNTRI processing for Bangladeshi citizens. Fast turnaround, transparent pricing.',
       isFeatured: true,
-      order: 1,
+      order: 2,
+      content: {
+        intro:
+          'Malaysia is a favourite of Bangladeshi travellers for its affordability, culture and food. We process e-Visa and eNTRI applications quickly and transparently.',
+        pricingTiers: [
+          {
+            id: 'tourist-ev',
+            title: 'Malaysia Tourist e-Visa',
+            stay: '30 days',
+            entry: 'Single Entry',
+            validity: '3 months',
+            flatFee: 4500,
+            processingTime: '5-7 working days',
+            documents: [
+              'Valid passport (min 6 months validity)',
+              '2 copies of passport-size photo',
+              'Bank statement (last 6 months)',
+              'Confirmed return ticket',
+              'Hotel booking or invitation letter',
+            ],
+          },
+        ],
+        faq: [
+          { question: 'Is Malaysia visa-on-arrival available for Bangladeshis?', answer: 'Conditions apply. Contact us to confirm your eligibility.' },
+        ],
+      },
     },
     {
       name: 'Thailand',
@@ -658,7 +879,32 @@ async function main() {
       requirements: ['Valid passport', 'Photos', 'Bank statement', 'Return ticket', 'Hotel booking'],
       description: 'Thailand tourist visa processing. Visa-on-arrival assistance also available.',
       isFeatured: true,
-      order: 2,
+      order: 3,
+      content: {
+        intro:
+          'From Bangkok to Phuket, Thailand is a top destination for Bangladeshi travellers. We handle tourist visa processing and visa-on-arrival assistance.',
+        pricingTiers: [
+          {
+            id: 'tourist',
+            title: 'Thailand Tourist Visa',
+            stay: '60 days',
+            entry: 'Single Entry',
+            validity: '3 months',
+            flatFee: 4000,
+            processingTime: '5-7 working days',
+            documents: [
+              'Valid passport',
+              'Photos',
+              'Bank statement',
+              'Return ticket',
+              'Hotel booking',
+            ],
+          },
+        ],
+        faq: [
+          { question: 'Can Bangladeshis get visa on arrival in Thailand?', answer: 'Visa-on-arrival is available under conditions; we can prepare the documents in advance.' },
+        ],
+      },
     },
     {
       name: 'Australia',
@@ -670,7 +916,34 @@ async function main() {
       requirements: ['Valid passport', 'Photos', 'Bank statement', 'Employment letter', 'Travel itinerary', 'Cover letter'],
       description: 'Australia visitor visa (subclass 600) processing. Document review and interview prep included.',
       isFeatured: true,
-      order: 3,
+      order: 4,
+      content: {
+        intro:
+          'Applying for an Australian visa is a detailed process. We help Bangladeshi applicants prepare strong, complete applications for the Visitor visa (subclass 600).',
+        pricingTiers: [
+          {
+            id: 'visitor-600',
+            title: 'Australia Visitor Visa (subclass 600)',
+            stay: 'Up to 12 months',
+            entry: 'Single / Multiple Entry',
+            validity: '12 months',
+            flatFee: 18500,
+            processingTime: '15-25 working days',
+            documents: [
+              'Valid passport',
+              'Photos',
+              'Bank statement',
+              'Employment letter',
+              'Travel itinerary',
+              'Cover letter',
+            ],
+            notes: ['Service charge is additional to the government visa fee.'],
+          },
+        ],
+        faq: [
+          { question: 'Do I need an interview for an Australian visa?', answer: 'Usually biometrics are required; we help you schedule and prepare.' },
+        ],
+      },
     },
     {
       name: 'United Kingdom (UK)',
@@ -682,7 +955,35 @@ async function main() {
       requirements: ['Valid passport', 'Photos', 'Bank statement (6 months)', 'Employment / leave letter', 'Accommodation proof', 'Travel history', 'Cover letter'],
       description: 'UK Standard Visitor Visa processing. Document review, appointment scheduling, and submission support.',
       isFeatured: true,
-      order: 4,
+      order: 5,
+      content: {
+        intro:
+          'The UK Standard Visitor Visa is popular with Bangladeshi travellers. We review documents, book appointments and support your submission.',
+        pricingTiers: [
+          {
+            id: 'visitor-standard',
+            title: 'UK Standard Visitor Visa',
+            stay: 'Up to 6 months',
+            entry: 'Single / Multiple Entry',
+            validity: '6 months',
+            flatFee: 22000,
+            processingTime: '15-30 working days',
+            documents: [
+              'Valid passport',
+              'Photos',
+              'Bank statement (6 months)',
+              'Employment / leave letter',
+              'Accommodation proof',
+              'Travel history',
+              'Cover letter',
+            ],
+            notes: ['Service charge is additional to the UK government visa fee.'],
+          },
+        ],
+        faq: [
+          { question: 'Do UK visa fees vary with processing time?', answer: 'Priority and super-priority services cost more; we can advise the fastest option.' },
+        ],
+      },
     },
   ];
 
@@ -690,11 +991,11 @@ async function main() {
     const slug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     await prisma.visaCountry.upsert({
       where: { tenantId_slug: { tenantId: TENANT_ID, slug } },
-      update: {},
+      update: { content: c.content ?? undefined },
       create: { ...c, slug, tenantId: TENANT_ID, currency: 'BDT', isActive: true },
     });
   }
-  console.log(`✅ Visa countries: ${visaCountries.length} created`);
+  console.log(`✅ Visa countries: ${visaCountries.length} created/updated`);
 
   // ===========================================================================
   // 14. SAMPLE FLIGHTS

@@ -16,8 +16,8 @@ export function ToursPageClient() {
   useEffect(() => {
     const fetchTours = async () => {
       try {
-        const data: any = await getTours();
-        setTours(data.data ?? data ?? []);
+        const data = (await getTours()) as { data?: Tour[] } & { items?: Tour[] };
+        setTours(data.data ?? data.items ?? []);
       } catch (err: any) {
         setError(err.message || 'Failed to load tours');
       } finally {

@@ -4,9 +4,19 @@ export interface Tour {
   slug: string;
   description: string;
   price: number;
+  salePrice?: number | null;
   duration: number;
   maxGuests: number;
   destinationId: string;
+  coverImageUrl?: string | null;
+  imageUrl?: string | null;
+  images?: Array<{ id?: string; url: string; alt?: string | null }>;
+  destination?: { id?: string; name: string; country: string; slug?: string } | null;
+  additionalDestinations?: Array<{ destination?: { id?: string; name: string; country?: string } }>;
+  highlights?: string[];
+  inclusions?: string[];
+  exclusions?: string[];
+  itinerary?: Array<{ id: string; day: number; title: string; description: string; activities: string[] }>;
 }
 
 export interface Hotel {

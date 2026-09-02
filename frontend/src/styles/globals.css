@@ -937,14 +937,14 @@ body {
    Dark mode keeps the deep-navy + saturated radial glow. */
 .hero-surface {
   background:
-    radial-gradient(ellipse 60% 55% at 72% 38%, color-mix(in oklab, var(--color-primary) 14%, transparent), transparent 70%),
-    radial-gradient(ellipse 40% 35% at 18% 65%, color-mix(in oklab, var(--color-tertiary) 10%, transparent), transparent 70%),
+    radial-gradient(ellipse 55% 50% at 72% 38%, color-mix(in oklab, var(--color-primary) 12%, transparent), transparent 65%),
+    radial-gradient(ellipse 55% 50% at 18% 65%, color-mix(in oklab, var(--color-tertiary) 10%, transparent), transparent 65%),
     var(--color-hero-bg);
 }
 .dark .hero-surface {
   background:
-    radial-gradient(ellipse 60% 50% at 72% 38%, color-mix(in oklab, var(--color-primary) 22%, transparent), transparent 70%),
-    radial-gradient(ellipse 40% 35% at 18% 65%, color-mix(in oklab, var(--color-tertiary) 16%, transparent), transparent 70%),
+    radial-gradient(ellipse 55% 50% at 72% 38%, color-mix(in oklab, var(--color-primary) 20%, transparent), transparent 65%),
+    radial-gradient(ellipse 55% 50% at 18% 65%, color-mix(in oklab, var(--color-tertiary) 16%, transparent), transparent 65%),
     var(--color-hero-bg);
 }
 

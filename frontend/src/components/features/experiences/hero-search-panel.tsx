@@ -215,7 +215,7 @@ export function HeroSearchPanel() {
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           background:
-            'radial-gradient(120% 80% at 0% 0%, color-mix(in oklab, var(--color-primary) 18%, transparent) 0%, transparent 55%), radial-gradient(120% 80% at 100% 100%, color-mix(in oklab, var(--color-tertiary) 14%, transparent) 0%, transparent 55%)',
+            'radial-gradient(ellipse 80% 80% at 0% 0%, color-mix(in oklab, var(--color-primary) 15%, transparent) 0%, transparent 60%), radial-gradient(ellipse 80% 80% at 100% 100%, color-mix(in oklab, var(--color-tertiary) 12%, transparent) 0%, transparent 60%)',
         }}
       />
       <div

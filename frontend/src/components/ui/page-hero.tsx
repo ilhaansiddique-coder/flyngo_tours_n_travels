@@ -31,7 +31,7 @@ export function PageHero({
         <div
           className="absolute inset-0"
           style={{
-            background: `radial-gradient(ellipse 60% 50% at 72% 38%, ${VARIANT_WASH[variant].split(',')[0]}, transparent 70%), radial-gradient(ellipse 40% 35% at 18% 65%, ${VARIANT_WASH[variant].split(',')[1]}, transparent 70%)`,
+            background: `radial-gradient(ellipse 55% 50% at 72% 38%, ${VARIANT_WASH[variant].split(',')[0]}, transparent 65%), radial-gradient(ellipse 55% 50% at 18% 65%, ${VARIANT_WASH[variant].split(',')[1]}, transparent 65%)`,
           }}
         />
       </div>

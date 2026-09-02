@@ -138,7 +138,7 @@ export function DestinationsShowcase() {
                 <a
                   key={d.id}
                   href={`/destinations/${d.slug}`}
-                  className="group relative overflow-hidden rounded-2xl border border-hairline surface-card card-elevated hover-accent-ring transition-all duration-500 hover:-translate-y-1"
+                  className="group relative overflow-hidden rounded-2xl border border-hairline surface-card card-elevated card-glow card-premium-border hover-accent-ring transition-all duration-500 hover:-translate-y-1"
                 >
                   <div className="relative h-72 overflow-hidden bg-gradient-to-br from-primary to-tertiary">
                     {image ? (

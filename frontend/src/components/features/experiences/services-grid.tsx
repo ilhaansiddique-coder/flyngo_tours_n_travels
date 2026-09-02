@@ -153,7 +153,7 @@ export function ServicesGrid() {
             <Link
               key={s.title}
               href={s.href}
-              className="group relative overflow-hidden rounded-2xl border border-hairline surface-card card-elevated p-7 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl"
+              className="group relative overflow-hidden rounded-2xl border border-hairline surface-card card-elevated card-glow card-premium-border p-7 transition-all duration-500 hover:-translate-y-1"
               style={{ '--tone': tone.ring, '--tone-glow': tone.glow, '--tone-border': tone.borderHover } as React.CSSProperties}
             >
               <div

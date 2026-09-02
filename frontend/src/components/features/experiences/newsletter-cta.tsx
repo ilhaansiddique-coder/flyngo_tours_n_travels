@@ -16,7 +16,7 @@ export function NewsletterCTA() {
 
   return (
     <section className="relative px-4 sm:px-6 lg:px-16 max-w-[1600px] mx-auto mb-24">
-      <div className="relative overflow-hidden rounded-3xl border border-hairline card-elevated">
+      <div className="relative overflow-hidden rounded-3xl border border-hairline card-elevated card-glow">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute inset-0 bg-grid opacity-50" />
           <div

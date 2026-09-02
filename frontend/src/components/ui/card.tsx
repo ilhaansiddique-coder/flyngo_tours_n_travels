@@ -5,14 +5,16 @@ interface CardProps {
   children: React.ReactNode;
   hover?: boolean;
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  premium?: boolean;
 }
 
-export function Card({ className, children, hover = true, padding = 'md' }: CardProps) {
+export function Card({ className, children, hover = true, padding = 'md', premium = false }: CardProps) {
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-2xl border border-outline-variant bg-surface-container/60 backdrop-blur-md text-on-surface card-elevated',
-        hover && 'transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl dark:hover:shadow-primary/10',
+        'relative overflow-hidden rounded-2xl border border-outline-variant/70 bg-surface-container/70 backdrop-blur-xl text-on-surface card-elevated card-glow',
+        hover && 'transition-all duration-500 hover:-translate-y-1.5 hover:border-accent/30',
+        premium && 'card-premium-border card-top-accent',
         {
           'p-0': padding === 'none',
           'p-4': padding === 'sm',

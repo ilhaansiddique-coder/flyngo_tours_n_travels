@@ -6,7 +6,7 @@ export function WhyFlynGo() {
       <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,520px)] lg:gap-16">
         <HeroIntro surface="page" />
         <aside className="hidden lg:block">
-          <div className="rounded-3xl border border-hairline surface-card p-8 card-elevated">
+          <div className="rounded-3xl border border-hairline surface-card p-8 card-elevated card-glow card-premium-border">
             <div className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary mb-4">
               Why FlynGo
             </div>

@@ -70,7 +70,7 @@ export function Testimonials() {
 
       <div className="relative max-w-5xl mx-auto">
         <div
-          className="relative overflow-hidden rounded-3xl border border-hairline card-elevated p-8 sm:p-12"
+          className="relative overflow-hidden rounded-3xl border border-hairline card-elevated card-glow p-8 sm:p-12"
           style={{
             background: 'linear-gradient(180deg, var(--color-surface-container) 0%, var(--color-background) 100%)',
             boxShadow: '0 24px 48px -16px color-mix(in oklab, var(--color-primary) 18%, transparent)',

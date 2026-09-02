@@ -948,6 +948,185 @@ body {
     var(--color-hero-bg);
 }
 
+/* ----------------------------------------------------------------
+   Premium Card Enhancements
+   ---------------------------------------------------------------- */
+
+/* Gradient border shimmer — animates a soft gradient around the card
+   border on hover for a luxurious feel. */
+.card-premium-border {
+  position: relative;
+}
+.card-premium-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    color-mix(in oklab, var(--color-accent) 0%, transparent) 25%,
+    color-mix(in oklab, var(--color-accent) 40%, transparent) 50%,
+    color-mix(in oklab, var(--color-primary) 30%, transparent) 75%,
+    transparent 100%
+  );
+  background-size: 200% 200%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+.card-premium-border:hover::before {
+  opacity: 1;
+  animation: borderShimmer 3s ease infinite;
+}
+
+@keyframes borderShimmer {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* Card glow on hover — soft radial glow behind the card */
+.card-glow {
+  transition: box-shadow 0.5s ease, transform 0.4s ease;
+}
+.card-glow:hover {
+  box-shadow:
+    0 4px 6px rgba(12, 22, 40, 0.04),
+    0 10px 30px -8px rgba(12, 22, 40, 0.12),
+    0 0 40px -12px var(--accent-glow-strong);
+}
+.dark .card-glow:hover {
+  box-shadow:
+    0 8px 32px -12px var(--accent-glow-strong),
+    0 0 60px -16px var(--accent-glow);
+}
+
+/* Price tag — bold accent pill for prices */
+.price-tag {
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--color-accent) 10%, transparent),
+    color-mix(in oklab, var(--color-accent) 5%, transparent)
+  );
+  border: 1px solid color-mix(in oklab, var(--color-accent) 20%, transparent);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+}
+.dark .price-tag {
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--color-accent) 15%, transparent),
+    color-mix(in oklab, var(--color-accent) 8%, transparent)
+  );
+  border-color: color-mix(in oklab, var(--color-accent) 25%, transparent);
+}
+
+/* Image card overlay — richer gradient for text legibility */
+.card-image-overlay {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 40%,
+    color-mix(in oklab, var(--color-background) 55%, transparent) 75%,
+    color-mix(in oklab, var(--color-background) 85%, transparent) 100%
+  );
+}
+.dark .card-image-overlay {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 40%,
+    color-mix(in oklab, var(--color-background) 65%, transparent) 75%,
+    color-mix(in oklab, var(--color-background) 90%, transparent) 100%
+  );
+}
+
+/* Top-edge gradient line — a thin accent line at the top of a card
+   that fades in on hover. */
+.card-top-accent {
+  position: relative;
+}
+.card-top-accent::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-accent),
+    var(--color-primary),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  border-radius: inherit;
+}
+.card-top-accent:hover::after {
+  opacity: 1;
+}
+
+/* Star rating glow */
+.star-glow {
+  filter: drop-shadow(0 0 3px rgba(245, 158, 11, 0.4));
+}
+.dark .star-glow {
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));
+}
+
+/* Flight path animated line */
+@keyframes flightPathDash {
+  to { stroke-dashoffset: -20; }
+}
+
+.flight-path-animated {
+  stroke-dasharray: 6 4;
+  animation: flightPathDash 1s linear infinite;
+}
+
+/* CTA button hover glow */
+.cta-glow {
+  transition: all 0.3s ease;
+}
+.cta-glow:hover {
+  box-shadow: 0 4px 20px -4px var(--accent-glow-strong);
+}
+
+/* Amenity pill — refined glass pill */
+.amenity-pill {
+  background: color-mix(in oklab, var(--color-accent) 6%, transparent);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 15%, transparent);
+  color: var(--color-accent);
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+.amenity-pill:hover {
+  background: color-mix(in oklab, var(--color-accent) 12%, transparent);
+  border-color: color-mix(in oklab, var(--color-accent) 30%, transparent);
+}
+
+/* Sale badge pulse */
+@keyframes saleGlow {
+  0%, 100% { box-shadow: 0 0 12px var(--accent-glow-strong); }
+  50% { box-shadow: 0 0 24px var(--accent-glow-strong), 0 0 48px var(--accent-glow); }
+}
+.sale-badge-glow {
+  animation: saleGlow 2s ease-in-out infinite;
+}
+
 /* Hide scrollbars on horizontally-scrollable strips (e.g. the hero tab row). */
 .scrollbar-none {
   scrollbar-width: none;

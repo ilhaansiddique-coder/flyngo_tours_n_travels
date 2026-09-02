@@ -375,7 +375,7 @@ export default function AdminHotelsPage() {
                 setDestName(opt.name);
                 setForm((f) => ({ ...f, destinationId: opt.id || '' }));
               }}
-              placeholder="Select or type a destination…"
+              placeholder="Select or type a destination/Country…"
             />
           </FormField>
 

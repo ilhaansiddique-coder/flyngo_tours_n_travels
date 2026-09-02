@@ -364,7 +364,7 @@ export default function AdminToursPage() {
                 setDestName(opt.name);
                 setForm({ ...form, destinationId: opt.id || '' });
               }}
-              placeholder="Select or type a destination…"
+              placeholder="Select or type a destination/Country…"
             />
           </FormField>
 

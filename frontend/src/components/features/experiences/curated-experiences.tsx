@@ -123,7 +123,7 @@ export function CuratedExperiences() {
             key={exp.id}
             onMouseEnter={() => setHovered(exp.id)}
             onMouseLeave={() => setHovered(null)}
-            className={`group relative overflow-hidden rounded-2xl border border-hairline surface-card card-elevated cursor-pointer transition-all duration-500 hover:-translate-y-1 hover:border-accent-soft hover:shadow-2xl dark:hover:shadow-[var(--accent-glow-strong)] ${
+            className={`group relative overflow-hidden rounded-2xl border border-hairline surface-card card-elevated card-glow card-premium-border cursor-pointer transition-all duration-500 hover:-translate-y-1 hover:border-accent-soft ${
               exp.size === 'lg' ? 'md:col-span-2 h-[520px]' : 'h-[520px]'
             }`}
           >
@@ -165,10 +165,10 @@ export function CuratedExperiences() {
               <div className="flex items-center justify-between">
                 <Link
                   href={exp.href}
-                  className="group/btn inline-flex items-center gap-2 text-sm font-bold text-on-bg hover:text-accent transition-colors"
+                  className="group/btn inline-flex items-center gap-2 text-sm font-bold text-on-bg hover:text-accent transition-colors duration-300"
                 >
                   {exp.cta}
-                  <span className="w-7 h-7 rounded-full border border-soft group-hover/btn:border-accent group-hover/btn:bg-accent group-hover/btn:text-[var(--color-on-accent)] flex items-center justify-center transition-all">
+                  <span className="w-7 h-7 rounded-full border border-soft group-hover/btn:border-accent group-hover/btn:bg-accent group-hover/btn:text-[var(--color-on-accent)] flex items-center justify-center transition-all duration-300 group-hover/btn:scale-110">
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </span>
                 </Link>

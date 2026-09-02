@@ -71,7 +71,7 @@ function StatCard({ stat, index }: { stat: StatItem; index: number }) {
   return (
     <div
       ref={ref}
-      className="group relative flex flex-col items-center text-center p-6 sm:p-8 rounded-2xl border border-hairline hover:border-soft transition-all duration-300"
+      className="group relative flex flex-col items-center text-center p-6 sm:p-8 rounded-2xl border border-hairline surface-card card-glow transition-all duration-500 hover:-translate-y-0.5"
     >
       <div
         className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
@@ -99,7 +99,7 @@ export function StatsSection() {
   return (
     <section className="relative my-24 sm:my-32">
       <div className="px-4 sm:px-6 lg:px-16 max-w-[1600px] mx-auto">
-        <div className="relative overflow-hidden rounded-3xl border border-hairline card-elevated p-8 sm:p-12" style={{ background: 'linear-gradient(180deg, var(--color-surface-container-low) 0%, var(--color-background) 100%)' }}>
+        <div className="relative overflow-hidden rounded-3xl border border-hairline card-elevated card-glow p-8 sm:p-12" style={{ background: 'linear-gradient(180deg, var(--color-surface-container-low) 0%, var(--color-background) 100%)' }}>
           <div className="pointer-events-none absolute inset-0">
             <div className="absolute inset-0 bg-grid opacity-50" />
             <div

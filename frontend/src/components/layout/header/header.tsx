@@ -384,8 +384,19 @@ export function Header() {
           ) : (
             <Link
               href="/auth/login"
-              className="hidden xl:inline-flex text-sm font-medium mr-3 transition-colors"
-              style={{ color: 'var(--color-header-text-muted)' }}
+              className="hidden xl:inline-flex mr-3 px-5 py-2.5 rounded-full text-sm font-bold tracking-wider transition-all duration-300 shadow-lg whitespace-nowrap"
+              style={{
+                backgroundColor: 'var(--color-header-btn-bg)',
+                color: 'var(--color-header-btn-text)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-header-btn-hover-bg)';
+                e.currentTarget.style.color = 'var(--color-header-btn-hover-text)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-header-btn-bg)';
+                e.currentTarget.style.color = 'var(--color-header-btn-text)';
+              }}
             >
               {t('nav_signin')}
             </Link>

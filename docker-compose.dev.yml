@@ -1,0 +1,15 @@
+# Override for local development — build from source instead of pulling ghcr.io images.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: flyngo-backend:dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: flyngo-frontend:dev

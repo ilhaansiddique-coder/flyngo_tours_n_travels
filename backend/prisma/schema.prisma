@@ -1,0 +1,2206 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// TENANT & MULTI-TENANCY
+// =============================================================================
+
+model Tenant {
+  id        String    @id @default(uuid())
+  name      String
+  slug      String    @unique
+  domain    String?   @unique
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  settings TenantSettings?
+  users    User[]
+  roles    Role[]
+
+  @@map("tenants")
+}
+
+model TenantSettings {
+  id       String @id @default(uuid())
+  tenantId String @unique @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  logoUrl        String? @map("logo_url")
+  faviconUrl     String? @map("favicon_url")
+  primaryColor   String? @default("#2563eb") @map("primary_color")
+  secondaryColor String? @default("#1e40af") @map("secondary_color")
+
+  companyName    String? @map("company_name")
+  companyEmail   String? @map("company_email")
+  companyPhone   String? @map("company_phone")
+  companyAddress String? @map("company_address")
+
+  defaultCurrency String? @default("USD") @map("default_currency")
+  defaultLanguage String? @default("en") @map("default_language")
+  timezone        String? @default("UTC")
+
+  // Payment gateway keys (encrypted at rest)
+  stripePublicKey String? @map("stripe_public_key")
+  stripeSecretKey String? @map("stripe_secret_key")
+  bkashApiKey     String? @map("bkash_api_key")
+  nagadMerchantId String? @map("nagad_merchant_id")
+  sslcStoreId     String? @map("sslc_store_id")
+
+  // Offline payment details shown at checkout (no gateway)
+  bkashWalletNumber   String? @map("bkash_wallet_number")
+  bkashMerchantName   String? @map("bkash_merchant_name")
+  paymentInstructions String? @map("payment_instructions") @db.Text
+
+  // Analytics
+  ga4Id       String? @map("ga4_id")
+  gtmId       String? @map("gtm_id")
+  metaPixelId String? @map("meta_pixel_id")
+
+  // Social
+  facebookUrl  String? @map("facebook_url")
+  instagramUrl String? @map("instagram_url")
+  twitterUrl   String? @map("twitter_url")
+  youtubeUrl   String? @map("youtube_url")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tenant_settings")
+}
+
+// =============================================================================
+// AUTH & USERS
+// =============================================================================
+
+model User {
+  id           String  @id @default(uuid())
+  tenantId     String  @map("tenant_id")
+  tenant       Tenant  @relation(fields: [tenantId], references: [id])
+  email        String?
+  fullName     String  @map("full_name")
+  phone        String?
+  address      String? @map("address")
+  avatarUrl    String? @map("avatar_url")
+
+  // Identity / travel documents (admin-managed on the customer record)
+  nationalId        String? @map("national_id")
+  nationalIdFrontUrl String? @map("national_id_front_url")
+  nationalIdBackUrl  String? @map("national_id_back_url")
+  passportNumber    String? @map("passport_number")
+  passportUrl       String? @map("passport_url")
+
+  passwordHash String? @map("password_hash")
+  provider     String? @map("provider")
+  providerId   String? @map("provider_id")
+  roleId       String  @map("role_id")
+  role         Role    @relation(fields: [roleId], references: [id])
+
+  isActive        Boolean   @default(true) @map("is_active")
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  lastLoginAt     DateTime? @map("last_login_at")
+  refreshToken    String?   @map("refresh_token")
+  phoneVerifiedAt DateTime? @map("phone_verified_at")
+
+  // ---------------------------------------------------------------------------
+  // Capture-first accounts
+  // ---------------------------------------------------------------------------
+  // Booking no longer requires an account. A booking creates a PROVISIONAL user
+  // (passwordHash null → cannot authenticate by any route), staff then issue a
+  // one-time temporary password over WhatsApp, and the customer sets their own
+  // on first login. States: provisional → invited → active.
+  accountStatus String @default("active") @map("account_status")
+
+  // Canonical phone match key (last 10 digits) — the same rule login already
+  // used, so "+880 1712345678", "01712345678" and "8801712345678" resolve to one
+  // account instead of three. Unique per tenant; this is what makes the upsert
+  // on a booking safe.
+  phoneKey String? @map("phone_key")
+
+  mustChangePassword    Boolean   @default(false) @map("must_change_password")
+  tempPasswordExpiresAt DateTime? @map("temp_password_expires_at")
+  credentialsSentAt     DateTime? @map("credentials_sent_at")
+  claimedAt             DateTime? @map("claimed_at")
+
+  // Refer & Earn attribution (set when the user signs up via ?ref=CODE)
+  referredByCode String? @map("referred_by_code")
+  referralCode   String? @unique @map("referral_code")
+
+  // Loyalty / Rewards — denormalized for fast badge rendering
+  lifetimePoints  Int       @default(0) @map("lifetime_points")
+  availablePoints Int       @default(0) @map("available_points")
+  pendingPoints   Int       @default(0) @map("pending_points")
+  currentTierId   String?   @map("current_tier_id")
+  tierAchievedAt  DateTime? @map("tier_achieved_at")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  bookings       Booking[]
+  payments       Payment[]
+  notifications  Notification[]
+  auditLogs      AuditLog[]
+  blogPosts      BlogPost[]
+  reviews        Review[]
+  affiliate      Affiliate?
+  loyaltyAccount LoyaltyAccount?
+deviceTokens       DeviceToken[]
+  hajjUmrahBookings  HajjUmrahBooking[]
+  pointTransactions  PointTransaction[]
+  passwordResets     PasswordReset[]
+  documents          UserDocument[]
+  invoices           Invoice[]
+
+  @@unique([tenantId, phoneKey], map: "users_tenant_phone_key_key")
+  @@index([tenantId, email])
+  @@index([tenantId, phone])
+  @@map("users")
+}
+
+// =============================================================================
+// DEVICE TOKENS — Firebase Cloud Messaging (push notifications)
+// =============================================================================
+
+model DeviceToken {
+  id        String    @id @default(uuid())
+  tenantId  String    @map("tenant_id")
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String
+  platform  String?  // ios, android, web
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@unique([userId, token])
+  @@index([tenantId, userId])
+  @@map("device_tokens")
+}
+
+// =============================================================================
+// REFERRALS (Refer & Earn)
+// =============================================================================
+
+model ReferralSetting {
+  id       String @id @default(uuid())
+  tenantId String @unique @map("tenant_id")
+
+  isEnabled Boolean @default(true) @map("is_enabled")
+
+  // Referrer (the person who refers) reward
+  referrerRewardType  String   @default("percentage") @map("referrer_reward_type") // percentage, fixed
+  referrerRewardValue Decimal  @default(5.0) @map("referrer_reward_value") @db.Decimal(10, 2)
+  referrerMaxReward   Decimal? @map("referrer_max_reward") @db.Decimal(10, 2)
+
+  /// Loyalty points awarded to the REFERRER when a user they referred signs up.
+  /// Default 0 (off): the referrer's real earning is the commission on the
+  /// referee's actual purchases (conversion). Set > 0 to also reward the signup
+  /// itself. Only credited for verified signups, to limit fake-signup farming.
+  referrerSignupPoints Int @default(0) @map("referrer_signup_points")
+
+  /// Default affiliate type assigned to newly enrolled referrers:
+  /// fixed_commission | commission_less
+  defaultAffiliateType String @default("fixed_commission") @map("default_affiliate_type")
+
+  /// Conditions for "fixed commission" affiliates
+  fixedCommissionType  String  @default("percentage") @map("fixed_commission_type") // percentage, fixed
+  fixedCommissionValue Decimal @default(5.0) @map("fixed_commission_value") @db.Decimal(10, 2)
+
+  /// Conditions for "commission-less" affiliates — loyalty points per signup
+  commissionlessSignupPoints Int @default(500) @map("commissionless_signup_points")
+
+  /// Signup bonus — loyalty points every new user receives the moment they
+  /// register (independent of referrals). Credited as available immediately.
+  signupBonusPoints Int @default(100) @map("signup_bonus_points")
+
+  // Referee (the person who was referred) reward
+  refereeRewardType  String   @default("percentage") @map("referee_reward_type")
+  refereeRewardValue Decimal  @default(5.0) @map("referee_reward_value") @db.Decimal(10, 2)
+  refereeMaxReward   Decimal? @map("referee_max_reward") @db.Decimal(10, 2)
+
+  // Cookie window — days the referral attribution is valid after the link is clicked
+  cookieWindowDays Int @default(30) @map("cookie_window_days")
+
+  // Payout settings
+  minPayoutAmount Decimal @default(20.0) @map("min_payout_amount") @db.Decimal(10, 2)
+  payoutCurrency  String  @default("USD") @map("payout_currency")
+
+  // Conversion triggers: which booking statuses count as a "conversion"
+  conversionStatuses String[] @default(["confirmed", "in_progress", "completed"]) @map("conversion_statuses")
+
+  // Branding for the referral landing page
+  heroTitle    String? @map("hero_title")
+  heroSubtitle String? @map("hero_subtitle") @db.Text
+  termsText    String? @map("terms_text") @db.Text
+
+  // Per-channel share message templates. Each is a string with the
+  // following placeholders that the server substitutes at request time:
+  //   {brand}            — tenant brand / company name
+  //   {refereeReward}    — formatted reward (e.g. "5% off", "10 USD off")
+  //   {referrerReward}   — formatted referrer reward
+  //   {referralCode}     — the user's uppercase referral code
+  //   {shareLink}        — full https://...?ref=CODE URL
+  //   {refereeName}      — first name of the referrer (for "Invited by …")
+  shareMessageTemplates Json? @map("share_message_templates")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("referral_settings")
+}
+
+model ReferralPayout {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  affiliateId String    @map("affiliate_id")
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id])
+
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("USD")
+  method   String // bank_transfer, bkash, nagad, paypal, stripe, manual
+  details  Json?
+
+  status      String    @default("pending") // pending, processing, paid, rejected, cancelled
+  notes       String?   @db.Text
+  processedBy String?   @map("processed_by") // admin user id
+  processedAt DateTime? @map("processed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, affiliateId])
+  @@index([tenantId, status])
+  @@map("referral_payouts")
+}
+
+model ReferralLedger {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  affiliateId String    @map("affiliate_id")
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id])
+
+  type     String // signup, conversion, refund, adjustment, payout_debit
+  amount   Decimal @db.Decimal(10, 2) // positive = credit to affiliate, negative = debit
+  currency String  @default("USD")
+
+  bookingId      String? @map("booking_id")
+  referredUserId String? @map("referred_user_id")
+  payoutId       String? @map("payout_id")
+  description    String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, affiliateId])
+  @@index([tenantId, createdAt])
+  @@map("referral_ledger")
+}
+
+model Role {
+  id       String  @id @default(uuid())
+  tenantId String  @map("tenant_id")
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  name     String
+  code     String
+  isSystem Boolean @default(false) @map("is_system")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@unique([tenantId, code])
+  @@map("roles")
+}
+
+model Permission {
+  id          String  @id @default(uuid())
+  name        String
+  code        String  @unique
+  description String?
+  group       String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String     @map("role_id")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String     @map("permission_id")
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// =============================================================================
+// DESTINATIONS
+// =============================================================================
+
+model Destination {
+  id            String  @id @default(uuid())
+  tenantId      String  @map("tenant_id")
+  name          String
+  slug          String
+  country       String
+  continent     String?
+  description   String? @db.Text
+  imageUrl      String? @map("image_url")
+  flagUrl       String? @map("flag_url")
+  coverImageUrl String? @map("cover_image_url")
+  latitude      Float?
+  longitude     Float?
+  isFeatured    Boolean @default(false) @map("is_featured")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  tours        Tour[]
+  hotels       Hotel[]
+  visaServices VisaService[]
+
+  @@unique([tenantId, slug])
+  @@map("destinations")
+}
+
+// =============================================================================
+// TOURS
+// =============================================================================
+
+model Tour {
+  id            String      @id @default(uuid())
+  tenantId      String      @map("tenant_id")
+  destinationId String      @map("destination_id")
+  destination   Destination @relation(fields: [destinationId], references: [id])
+
+  title       String
+  slug        String
+  description String   @db.Text
+  highlights  String[] @default([])
+  inclusions  String[] @default([])
+  exclusions  String[] @default([])
+
+  price     Decimal  @db.Decimal(10, 2)
+  salePrice Decimal? @map("sale_price") @db.Decimal(10, 2)
+  currency  String   @default("USD")
+
+  duration      Int
+  maxGuests     Int     @default(10) @map("max_guests")
+  difficulty    String? // easy, moderate, challenging
+  tourType      String? @map("tour_type") // group, private, adventure, luxury
+  startLocation String? @map("start_location")
+  endLocation   String? @map("end_location")
+
+  isActive   Boolean @default(true) @map("is_active")
+  isFeatured Boolean @default(false) @map("is_featured")
+
+  coverImageUrl String? @map("cover_image_url")
+
+  // Loyalty: points awarded when this tour is booked + service completed
+  pointsAwarded Int @default(0) @map("points_awarded")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  images    Media[]
+  itinerary ItineraryDay[]
+
+  @@unique([tenantId, slug])
+  @@map("tours")
+}
+
+model ItineraryDay {
+  id          String   @id @default(uuid())
+  tourId      String   @map("tour_id")
+  tour        Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  day         Int
+  title       String
+  description String   @db.Text
+  activities  String[]
+
+  @@unique([tourId, day])
+  @@map("itinerary_days")
+}
+
+// =============================================================================
+// HOTELS
+// =============================================================================
+
+model Hotel {
+  id            String      @id @default(uuid())
+  tenantId      String      @map("tenant_id")
+  destinationId String      @map("destination_id")
+  destination   Destination @relation(fields: [destinationId], references: [id])
+
+  name        String
+  slug        String
+  description String  @db.Text
+  starRating  Int     @default(3) @map("star_rating")
+  address     String?
+  latitude    Float?
+  longitude   Float?
+
+  pricePerNight Decimal @map("price_per_night") @db.Decimal(10, 2)
+  currency      String  @default("USD")
+
+  amenities    String[] @default([])
+  checkInTime  String?  @default("14:00") @map("check_in_time")
+  checkOutTime String?  @default("12:00") @map("check_out_time")
+
+  coverImageUrl String? @map("cover_image_url")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  // Loyalty: points awarded when this hotel is booked + service completed
+  pointsAwarded Int @default(0) @map("points_awarded")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  images Media[]
+  rooms  Room[]
+
+  @@unique([tenantId, slug])
+  @@map("hotels")
+}
+
+model Room {
+  id      String @id @default(uuid())
+  hotelId String @map("hotel_id")
+  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  name          String
+  description   String?
+  pricePerNight Decimal  @map("price_per_night") @db.Decimal(10, 2)
+  currency      String   @default("USD")
+  capacity      Int
+  available     Int      @default(1)
+  amenities     String[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("rooms")
+}
+
+// =============================================================================
+// FLIGHTS
+// =============================================================================
+
+model Flight {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  airline         String
+  flightNumber    String  @map("flight_number")
+  originCode      String  @map("origin_code")
+  originCity      String? @map("origin_city")
+  destinationCode String  @map("destination_code")
+  destinationCity String? @map("destination_city")
+
+  coverImageUrl String? @map("cover_image_url")
+
+  departureTime DateTime @map("departure_time")
+  arrivalTime   DateTime @map("arrival_time")
+  duration      Int? // minutes
+
+  price          Decimal @db.Decimal(10, 2)
+  currency       String  @default("USD")
+  availableSeats Int     @default(0) @map("available_seats")
+  cabinClass     String? @map("cabin_class") // economy, business, first
+
+  isActive Boolean @default(true) @map("is_active")
+
+  // Loyalty: points awarded when this flight is booked + service completed
+  pointsAwarded Int @default(0) @map("points_awarded")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("flights")
+}
+
+// =============================================================================
+// VISA
+// =============================================================================
+
+model VisaService {
+  id            String      @id @default(uuid())
+  tenantId      String      @map("tenant_id")
+  destinationId String      @map("country_id")
+  country       Destination @relation(fields: [destinationId], references: [id])
+
+  title          String
+  description    String   @db.Text
+  processingTime String?  @map("processing_time")
+  price          Decimal  @db.Decimal(10, 2)
+  currency       String   @default("USD")
+  requirements   String[]
+
+  isActive Boolean @default(true) @map("is_active")
+
+  // Loyalty: points awarded when this visa is processed
+  pointsAwarded Int @default(0) @map("points_awarded")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("visa_services")
+}
+
+// =============================================================================
+// BOOKINGS
+// =============================================================================
+
+model Booking {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  userId   String? @map("user_id")
+  user     User?   @relation(fields: [userId], references: [id])
+
+  bookingType String @map("booking_type") // tour, hotel, flight, visa, package
+  bookingCode String @unique @map("booking_code")
+  itemId      String @map("item_id")
+
+  // Customer contact, captured on EVERY booking (guest or signed-in) so the
+  // admin table always shows who booked — independent of whether the row links
+  // to a user account.
+  customerName  String? @map("customer_name")
+  customerPhone String? @map("customer_phone")
+
+  status    String    @default("pending") // pending, confirmed, in_progress, completed, cancelled
+  startDate DateTime  @map("start_date")
+  endDate   DateTime? @map("end_date")
+  guests    Int       @default(1)
+
+  totalAmount    Decimal  @default(0) @map("total_amount") @db.Decimal(10, 2)
+  discountAmount Decimal? @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  paidAmount     Decimal  @default(0) @map("paid_amount") @db.Decimal(10, 2)
+  currency       String   @default("USD")
+
+  couponCode String? @map("coupon_code")
+  notes      String?
+
+  // Flow-specific answers with no dedicated column — the visa application
+  // (passport/DOB/purpose/document checklist) and the custom-quote brief.
+  // Both wizards collected this and then dropped it on submit, so staff had to
+  // phone the customer back for details they had already typed in.
+  meta Json? @map("meta")
+
+  // Referral attribution — set if this booking originated from a Refer & Earn link
+  referredByCode      String?   @map("referred_by_code")
+  referralDiscount    Decimal   @default(0) @map("referral_discount") @db.Decimal(10, 2)
+  referralProcessedAt DateTime? @map("referral_processed_at")
+
+  // Loyalty / Rewards — points awarded at each lifecycle stage
+  pointsAwardedConfirmation Int     @default(0) @map("points_awarded_confirmation") // 50% on confirmation
+  pointsAwardedCompletion   Int     @default(0) @map("points_awarded_completion") // remaining 50% on completion
+  pointsRedeemed            Int     @default(0) @map("points_redeemed") // points applied at checkout
+  pointsRedemptionBdt       Decimal @default(0) @map("points_redemption_bdt") @db.Decimal(10, 2)
+
+  // Ad-attribution (UTM + click ids)
+  utmSource   String? @map("utm_source")
+  utmMedium   String? @map("utm_medium")
+  utmCampaign String? @map("utm_campaign")
+  utmContent  String? @map("utm_content")
+  utmTerm     String? @map("utm_term")
+  gclid       String? @map("gclid") // Google Ads click id
+  fbclid      String? @map("fbclid") // Meta Ads click id
+  msclkid     String? @map("msclkid") // Bing click id
+  landingPath String? @map("landing_path") // first page they touched
+
+  // Hajj-specific
+  departureCity String? @map("departure_city")
+  groupType     String? @map("group_type") // group, private, vip
+  packageSlug   String? @map("package_slug") // hajj-package or umrah-package slug
+
+  // Hotel-specific fields
+  hotelId       String?  @map("hotel_id")
+  roomId        String?  @map("room_id")
+  hotelName     String?  @map("hotel_name")
+  roomName      String?  @map("room_name")
+  roomsCount    Int      @default(1) @map("rooms_count")
+  adults        Int      @default(1)
+  children      Int      @default(0)
+  childAges     Int[]    @default([]) @map("child_ages")
+  mealPlan      String?  @map("meal_plan") // RO, BB, HB, FB, AI
+  nights        Int      @default(1)
+  pricePerNight Decimal? @map("price_per_night") @db.Decimal(10, 2)
+  arrivalTime   String?  @map("arrival_time")
+  flightNumber  String?  @map("flight_number")
+
+  cancelledAt DateTime? @map("cancelled_at")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  payments          Payment[]
+  travelers         BookingTraveler[]
+  paymentMilestones PaymentMilestone[]
+  invoices          Invoice[]
+
+  @@index([tenantId, userId])
+  @@index([hotelId])
+  @@index([roomId])
+  @@map("bookings")
+}
+
+model BookingTraveler {
+  id        String  @id @default(uuid())
+  tenantId  String  @map("tenant_id")
+  bookingId String  @map("booking_id")
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  isLead   Boolean @default(false) @map("is_lead")
+  fullName String  @map("full_name")
+  email    String?
+  phone    String?
+  age      Int?
+  type     String  @default("adult") // adult, child, infant
+
+  // Shariah fields (Hajj/Umrah — important)
+  passportNumber String?   @map("passport_number")
+  nationality    String?
+  dateOfBirth    DateTime? @map("date_of_birth")
+  gender         String? // male, female
+  mahramFullName String?   @map("mahram_full_name")
+  mahramRelation String?   @map("mahram_relation") // husband, father, son, brother, father_in_law, son_in_law, nephew
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([bookingId])
+  @@map("booking_travelers")
+}
+
+// =============================================================================
+// PAYMENTS
+// =============================================================================
+
+model Payment {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  userId   String? @map("user_id")
+  user     User?   @relation(fields: [userId], references: [id])
+  bookingId String? @map("booking_id")
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+  hajjUmrahBookingId String? @map("hajj_umrah_booking_id")
+  hajjUmrahBooking   HajjUmrahBooking? @relation(fields: [hajjUmrahBookingId], references: [id])
+
+  amount        Decimal @db.Decimal(10, 2)
+  currency      String  @default("BDT")
+  method        String // bkash, bank_transfer, cash, stripe, nagad, sslcommerz
+  status        String  @default("pending") // pending, processing, completed, failed, refunded
+  transactionId String  @unique @map("transaction_id")
+  gatewayRef    String? @map("gateway_ref")
+
+  bkashTrxId    String? @map("bkash_trx_id")
+  bankAccountId String? @map("bank_account_id")
+  bankAccount   BankAccount? @relation(fields: [bankAccountId], references: [id])
+  receiptUrls   String[] @default([]) @map("receipt_urls")
+  senderName    String? @map("sender_name")
+  senderAccount String? @map("sender_account")
+  payerPhone    String? @map("payer_phone")
+  notes         String?
+
+  verifiedAt   DateTime? @map("verified_at")
+  verifiedById String?   @map("verified_by_id")
+
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  invoice Invoice?
+
+  @@index([tenantId, bookingId])
+  @@index([tenantId, hajjUmrahBookingId])
+  @@unique([tenantId, bkashTrxId])
+  @@map("payments")
+}
+
+model BankAccount {
+  id            String  @id @default(uuid())
+  tenantId      String  @map("tenant_id")
+  bankName      String  @map("bank_name")
+  accountName   String  @map("account_name")
+  accountNumber String  @map("account_number")
+  branch        String?
+  routingNumber String? @map("routing_number")
+  swiftCode     String? @map("swift_code")
+  instructions  String? @db.Text
+  logoUrl       String? @map("logo_url")
+  isActive      Boolean @default(true) @map("is_active")
+  sortOrder     Int     @default(0) @map("sort_order")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  payments Payment[]
+
+  @@index([tenantId, isActive])
+  @@map("bank_accounts")
+}
+
+model Invoice {
+  id            String @id @default(uuid())
+  tenantId      String @map("tenant_id")
+  invoiceNumber String @unique @map("invoice_number")
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id])
+
+  bookingId String?  @map("booking_id")
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+
+  hajjUmrahBookingId String? @map("hajj_umrah_booking_id")
+  hajjUmrahBooking   HajjUmrahBooking? @relation(fields: [hajjUmrahBookingId], references: [id])
+
+  paymentId String?  @unique @map("payment_id")
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  status     String  @default("issued") // issued, paid, void
+  subtotal   Decimal @db.Decimal(10, 2)
+  discount   Decimal @default(0) @db.Decimal(10, 2)
+  total      Decimal @db.Decimal(10, 2)
+  paidAmount Decimal @default(0) @map("paid_amount") @db.Decimal(10, 2)
+  currency   String  @default("BDT")
+  lineItems  Json    @map("line_items")
+  notes      String?
+
+  issuedAt DateTime  @default(now()) @map("issued_at")
+  paidAt   DateTime? @map("paid_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, userId])
+  @@index([bookingId])
+  @@map("invoices")
+}
+
+// =============================================================================
+// CMS
+// =============================================================================
+
+model CmsPage {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  title           String
+  slug            String
+  content         Json?
+  status          String  @default("draft") // draft, published, archived
+  metaTitle       String? @map("meta_title")
+  metaDescription String? @map("meta_description") @db.Text
+
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  sections CmsSection[]
+
+  @@unique([tenantId, slug])
+  @@map("cms_pages")
+}
+
+model CmsSection {
+  id     String  @id @default(uuid())
+  pageId String  @map("page_id")
+  page   CmsPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  type     String // hero, features, testimonials, gallery, cta, custom
+  title    String?
+  subtitle String?
+  content  Json?
+  order    Int     @default(0)
+  settings Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("cms_sections")
+}
+
+model BlogPost {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  authorId String @map("author_id")
+  author   User   @relation(fields: [authorId], references: [id])
+
+  title         String
+  slug          String
+  excerpt       String? @db.Text
+  content       String  @db.Text
+  featuredImage String? @map("featured_image")
+
+  status   String  @default("draft") // draft, published, archived
+  isPinned Boolean @default(false) @map("is_pinned")
+
+  metaTitle       String?  @map("meta_title")
+  metaDescription String?  @map("meta_description") @db.Text
+  tags            String[]
+
+  viewCount Int @default(0) @map("view_count")
+
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  categories BlogPostCategory[]
+
+  @@unique([tenantId, slug])
+  @@map("blog_posts")
+}
+
+model BlogCategory {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  name     String
+  slug     String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  posts BlogPostCategory[]
+
+  @@unique([tenantId, slug])
+  @@map("blog_categories")
+}
+
+model BlogPostCategory {
+  id         String       @id @default(uuid())
+  postId     String       @map("post_id")
+  post       BlogPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  categoryId String       @map("category_id")
+  category   BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, categoryId])
+  @@map("blog_post_categories")
+}
+
+model Testimonial {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  customerName  String  @map("customer_name")
+  customerTitle String? @map("customer_title")
+  customerImage String? @map("customer_image")
+  content       String  @db.Text
+  rating        Int     @default(5)
+  isApproved    Boolean @default(false) @map("is_approved")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("testimonials")
+}
+
+model Faq {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  question    String
+  answer      String  @db.Text
+  category    String?
+  order       Int     @default(0)
+  isPublished Boolean @default(false) @map("is_published")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("faqs")
+}
+
+// =============================================================================
+// MARKETING
+// =============================================================================
+
+model Coupon {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  code        String
+  type        String // percentage, fixed
+  value       Decimal  @db.Decimal(10, 2)
+  minPurchase Decimal? @map("min_purchase") @db.Decimal(10, 2)
+  maxDiscount Decimal? @map("max_discount") @db.Decimal(10, 2)
+
+  maxUses   Int @default(0) @map("max_uses") // 0 = unlimited
+  usedCount Int @default(0) @map("used_count")
+
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  isActive  Boolean  @default(true) @map("is_active")
+
+  applicableTo String[] @default([]) @map("applicable_to") // tour, hotel, flight, visa
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@unique([tenantId, code])
+  @@map("coupons")
+}
+
+model Affiliate {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  userId   String @unique @map("user_id")
+  user     User   @relation(fields: [userId], references: [id])
+
+  referralCode String @unique @map("referral_code")
+
+  /// fixed_commission = earns cash commission per converted booking;
+  /// commission_less = points-only referrer (no cash commissions, no payouts)
+  affiliateType  String  @default("fixed_commission") @map("affiliate_type")
+  commissionRate Decimal @default(5.0) @map("commission_rate") @db.Decimal(5, 2)
+  totalEarnings  Decimal @default(0) @map("total_earnings") @db.Decimal(10, 2)
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  referrals   AffiliateReferral[]
+  commissions AffiliateCommission[]
+  payouts     ReferralPayout[]
+  ledger      ReferralLedger[]
+
+  @@map("affiliates")
+}
+
+model AffiliateReferral {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  affiliateId String    @map("affiliate_id")
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id])
+
+  referredUserId String @map("referred_user_id")
+  status         String @default("pending") // pending, registered, converted, cancelled
+
+  registeredAt DateTime? @map("registered_at")
+  convertedAt  DateTime? @map("converted_at")
+  cancelledAt  DateTime? @map("cancelled_at")
+
+  // Reward snapshot captured at conversion time so future config changes don't retroactively change it
+  referrerReward Decimal? @map("referrer_reward") @db.Decimal(10, 2)
+  refereeReward  Decimal? @map("referee_reward") @db.Decimal(10, 2)
+
+  // Prevent the referee discount from being reused on multiple bookings.
+  discountUsedAt DateTime? @map("discount_used_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, referredUserId])
+  @@index([tenantId, affiliateId])
+  @@map("affiliate_referrals")
+}
+
+model AffiliateCommission {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  affiliateId String    @map("affiliate_id")
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id])
+
+  bookingId String   @map("booking_id")
+  amount    Decimal  @db.Decimal(10, 2)
+  currency  String   @default("USD")
+  rate      Decimal? @db.Decimal(5, 2) // snapshot of commissionRate used at conversion time
+  status    String   @default("pending") // pending, paid, cancelled
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, bookingId])
+  @@index([tenantId, affiliateId])
+  @@map("affiliate_commissions")
+}
+
+// =============================================================================
+// NOTIFICATIONS
+// =============================================================================
+
+model Notification {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id])
+
+  type  String // email, sms, push, in_app
+  title String
+  body  String @db.Text
+  data  Json?
+
+  readAt DateTime? @map("read_at")
+  sentAt DateTime? @map("sent_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, userId])
+  @@map("notifications")
+}
+
+// =============================================================================
+// AUDIT LOG
+// =============================================================================
+
+model AuditLog {
+  id       String  @id @default(uuid())
+  tenantId String  @map("tenant_id")
+  userId   String? @map("user_id")
+  user     User?   @relation(fields: [userId], references: [id])
+
+  action    String
+  entity    String
+  entityId  String? @map("entity_id")
+  oldValue  Json?   @map("old_value")
+  newValue  Json?   @map("new_value")
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, userId])
+  @@index([tenantId, entity])
+  @@map("audit_logs")
+}
+
+// =============================================================================
+// MEDIA
+// =============================================================================
+
+model Media {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  url      String
+  alt      String?
+  width    Int?
+  height   Int?
+  size     Int? // bytes
+  mimeType String? @map("mime_type")
+  filename String? @map("filename")
+  folder   String? @map("folder")
+
+  tourId  String? @map("tour_id")
+  tour    Tour?   @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  hotelId String? @map("hotel_id")
+  hotel   Hotel?  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@index([tourId])
+  @@index([hotelId])
+  @@map("media")
+}
+
+// =============================================================================
+// HOMEPAGE HERO SECTION (one per tenant)
+// =============================================================================
+
+model HeroSection {
+  id       String @id @default(uuid())
+  tenantId String @unique @map("tenant_id")
+
+  badgeTextEn       String?  @map("badge_text_en")
+  badgeTextBn       String?  @map("badge_text_bn")
+  titleLineAEn      String?  @map("title_line_a_en")
+  titleLineABn      String?  @map("title_line_a_bn")
+  titleLineBEn      String?  @map("title_line_b_en")
+  titleLineBBn      String?  @map("title_line_b_bn")
+  titleLineCEn      String?  @map("title_line_c_en")
+  titleLineCBn      String?  @map("title_line_c_bn")
+  subtitleEn        String?  @map("subtitle_en") @db.Text
+  subtitleBn        String?  @map("subtitle_bn") @db.Text
+  ctaExploreEn      String?  @map("cta_explore_en")
+  ctaExploreBn      String?  @map("cta_explore_bn")
+  ctaVisaEn         String?  @map("cta_visa_en")
+  ctaVisaBn         String?  @map("cta_visa_bn")
+  ctaDestinationsEn String?  @map("cta_destinations_en")
+  ctaDestinationsBn String?  @map("cta_destinations_bn")
+  stats             Json     @default("[]")
+  quickPlaces       String[] @default([]) @map("quick_places")
+  isActive          Boolean  @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("hero_sections")
+}
+
+// =============================================================================
+// GLOBE CITIES + ROUTES (powers the home hero globe animation)
+// =============================================================================
+
+model GlobeCity {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  nameEn String  @map("name_en")
+  nameBn String? @map("name_bn")
+  lat    Float
+  lon    Float
+
+  isActive  Boolean @default(true) @map("is_active")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  routesFrom GlobeRoute[] @relation("GlobeRouteFrom")
+  routesTo   GlobeRoute[] @relation("GlobeRouteTo")
+
+  @@index([tenantId])
+  @@map("globe_cities")
+}
+
+model GlobeRoute {
+  id         String @id @default(uuid())
+  tenantId   String @map("tenant_id")
+  fromCityId String @map("from_city_id")
+  toCityId   String @map("to_city_id")
+
+  fromCity GlobeCity @relation("GlobeRouteFrom", fields: [fromCityId], references: [id], onDelete: Cascade)
+  toCity   GlobeCity @relation("GlobeRouteTo", fields: [toCityId], references: [id], onDelete: Cascade)
+
+  isActive  Boolean @default(true) @map("is_active")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([tenantId])
+  @@index([fromCityId])
+  @@index([toCityId])
+  @@map("globe_routes")
+}
+
+// =============================================================================
+// VISA COUNTRIES (curated country-level cards for the visa grid — Malaysia, UK, etc.)
+// =============================================================================
+
+model VisaCountry {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  name           String
+  slug           String
+  flagUrl        String?  @map("flag_url")
+  imageUrl       String?  @map("image_url")
+  coverImageUrl  String?  @map("cover_image_url")
+  region         String? // asia, europe, americas, oceania, africa, middle_east
+  visaTypes      String[] @default([]) @map("visa_types") // tourist, business, student, work
+  processingTime String?  @map("processing_time")
+  fee            Decimal  @db.Decimal(10, 2)
+  currency       String   @default("BDT")
+  requirements   String[] @default([])
+  description    String?  @db.Text
+  isActive       Boolean  @default(true) @map("is_active")
+  isFeatured     Boolean  @default(false) @map("is_featured")
+  order          Int      @default(0)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@unique([tenantId, slug])
+  @@map("visa_countries")
+}
+
+// =============================================================================
+// HAJJ PACKAGES
+// =============================================================================
+
+model HajjPackage {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  title         String
+  slug          String
+  tier          String // pre_registration, non_shifting, shifting, cheap, five_star, vip, a_grade
+  durationDays  Int      @map("duration_days")
+  price         Decimal  @db.Decimal(10, 2)
+  currency      String   @default("BDT")
+  makkahNights  Int      @default(0) @map("makkah_nights")
+  madinahNights Int      @default(0) @map("madinah_nights")
+  inclusions    String[] @default([])
+  highlights    String[] @default([])
+  imageUrl      String?  @map("image_url")
+  coverImageUrl String?  @map("cover_image_url")
+  isActive      Boolean  @default(true) @map("is_active")
+  isFeatured    Boolean  @default(false) @map("is_featured")
+  order         Int      @default(0)
+
+  // Inventory + deposit
+  totalSeats    Int       @default(0) @map("total_seats")
+  seatsBooked   Int       @default(0) @map("seats_booked")
+  depositAmount Decimal   @default(0) @map("deposit_amount") @db.Decimal(10, 2)
+  visaAmount    Decimal   @default(0) @map("visa_amount") @db.Decimal(10, 2)
+  finalAmount   Decimal   @default(0) @map("final_amount") @db.Decimal(10, 2)
+  departureDate DateTime? @map("departure_date")
+  returnDate    DateTime? @map("return_date")
+
+  // Departure airports (multiple origin support)
+  departureCities String[] @default([]) @map("departure_cities")
+
+  // Marketing-friendly metadata
+  metaTitle       String? @map("meta_title")
+  metaDescription String? @map("meta_description") @db.Text
+  metaImage       String? @map("meta_image")
+
+  // Loyalty: points awarded when this Hajj package is booked + completed
+  pointsAwarded Int @default(0) @map("points_awarded")
+
+  // Per-occupancy pricing (BD market, per-person). null = not offered.
+  quadPrice   Decimal @default(0) @map("quad_price") @db.Decimal(10, 2)
+  triplePrice Decimal @default(0) @map("triple_price") @db.Decimal(10, 2)
+  doublePrice Decimal @default(0) @map("double_price") @db.Decimal(10, 2)
+
+  // Payment plan (BD market: advance now, balance before departure)
+  balanceDueDate DateTime? @map("balance_due_date")
+
+  // Compliance policy — enforced at booking time, not just shown in the UI.
+  requireMahramForFemales Boolean @default(true) @map("require_mahram_for_females")
+  passportValidityMonths  Int      @default(6) @map("passport_validity_months")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@unique([tenantId, slug])
+  @@map("hajj_packages")
+}
+
+// =============================================================================
+// UMRAH PACKAGES
+// =============================================================================
+
+model UmrahPackage {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  title         String
+  slug          String
+  durationDays  Int      @map("duration_days")
+  price         Decimal  @db.Decimal(10, 2)
+  currency      String   @default("BDT")
+  makkahNights  Int      @default(0) @map("makkah_nights")
+  madinahNights Int      @default(0) @map("madinah_nights")
+  addOnCity     String?  @map("add_on_city") // optional combined-trip city e.g. "Qatar", "Turkey", "Jordan"
+  inclusions    String[] @default([])
+  highlights    String[] @default([])
+  imageUrl      String?  @map("image_url")
+  coverImageUrl String?  @map("cover_image_url")
+  isActive      Boolean  @default(true) @map("is_active")
+  isFeatured    Boolean  @default(false) @map("is_featured")
+  order         Int      @default(0)
+
+  // Inventory + deposit
+  totalSeats    Int       @default(0) @map("total_seats")
+  seatsBooked   Int       @default(0) @map("seats_booked")
+  depositAmount Decimal   @default(0) @map("deposit_amount") @db.Decimal(10, 2)
+  visaAmount    Decimal   @default(0) @map("visa_amount") @db.Decimal(10, 2)
+  finalAmount   Decimal   @default(0) @map("final_amount") @db.Decimal(10, 2)
+  departureDate DateTime? @map("departure_date")
+  returnDate    DateTime? @map("return_date")
+
+  // Departure airports
+  departureCities String[] @default([]) @map("departure_cities")
+
+  // Marketing-friendly metadata
+  metaTitle       String? @map("meta_title")
+  metaDescription String? @map("meta_description") @db.Text
+  metaImage       String? @map("meta_image")
+
+  // Walking-distance hint (meters to Haram / Prophet's Mosque) — surfaced for SEO + UI badges
+  walkingDistanceToHaram   Int? @map("walking_distance_to_haram")
+  walkingDistanceToProphet Int? @map("walking_distance_to_prophet")
+
+  // Trip-style preference for AI itineraries
+  preferredRoute String? @map("preferred_route") // makkah_first, madinah_first, combined
+
+  // Loyalty: points awarded when this Umrah package is booked + completed
+  pointsAwarded Int @default(0) @map("points_awarded")
+
+  // Per-occupancy pricing (BD market, per-person). null = not offered.
+  quadPrice   Decimal @default(0) @map("quad_price") @db.Decimal(10, 2)
+  triplePrice Decimal @default(0) @map("triple_price") @db.Decimal(10, 2)
+  doublePrice Decimal @default(0) @map("double_price") @db.Decimal(10, 2)
+
+  // Payment plan (BD market: advance now, balance before departure)
+  balanceDueDate DateTime? @map("balance_due_date")
+
+  // Compliance policy — enforced at booking time, not just shown in the UI.
+  requireMahramForFemales Boolean @default(true) @map("require_mahram_for_females")
+  passportValidityMonths  Int      @default(6) @map("passport_validity_months")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@unique([tenantId, slug])
+  @@map("umrah_packages")
+}
+
+// =============================================================================
+// HAJJ PRE-REGISTRATION (submissions from the public form)
+// =============================================================================
+
+model HajjPreRegistration {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  fullName    String  @map("full_name")
+  phone       String
+  email       String?
+  passportNo  String? @map("passport_no")
+  passportExpiry DateTime? @map("passport_expiry")
+  gender      String?
+  mahramRelation String? @map("mahram_relation")
+  district    String?
+  travelers   Int     @default(1)
+  packageTier String? @map("package_tier") // pre_registration, non_shifting, shifting, etc.
+  year        Int?
+  status      String  @default("new") // new, contacted, registered, rejected
+  notes       String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, status])
+  @@map("hajj_pre_registrations")
+}
+
+// =============================================================================
+// HAJJ / UMRAH BOOKINGS (real bookings, as distinct from lead capture)
+// =============================================================================
+
+model HajjUmrahBooking {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  // Nullable so guests can book without an account, exactly like the generic
+  // Booking. Signed-in users are still linked via OptionalJwtAuthGuard.
+  userId   String? @map("user_id")
+  user     User?   @relation(fields: [userId], references: [id])
+
+  // Public tracking code (FLY-XXXX-XXXX) shown after checkout, so a pilgrimage
+  // booking is lookup-able on /track just like every other booking type.
+  bookingCode String? @unique @map("booking_code")
+
+  // Lead contact captured on the form. Kept on the booking itself (not only on
+  // the user) so guest bookings still show a name + phone in the admin table.
+  customerName  String? @map("customer_name")
+  customerPhone String? @map("customer_phone")
+  customerEmail String? @map("customer_email")
+
+  kind       String // hajj | umrah
+  packageId  String @map("package_id") // HajjPackage or UmrahPackage id
+  packageTitle String @map("package_title")
+  packageSlug  String @map("package_slug")
+
+  // Trip info
+  departureDate DateTime  @map("departure_date")
+  returnDate    DateTime? @map("return_date")
+  durationDays  Int       @default(0) @map("duration_days")
+
+  // Room occupancy: quad / triple / double
+  occupancyType String  @default("quad") @map("occupancy_type")
+  numPilgrims   Int     @default(1) @map("num_pilgrims")
+
+  // Pricing + payment plan
+  currency     String  @default("BDT")
+  perPersonAmount Decimal @default(0) @map("per_person_amount") @db.Decimal(10, 2)
+  totalAmount  Decimal @default(0) @map("total_amount") @db.Decimal(10, 2)
+  advancePaid  Decimal @default(0) @map("advance_paid") @db.Decimal(10, 2)
+  balanceDue   Decimal @default(0) @map("balance_due") @db.Decimal(10, 2)
+  balanceDueDate DateTime? @map("balance_due_date")
+  paymentPlan  String  @default("full") @map("payment_plan") // full | installments
+
+  // Referral: one-time 5% referee discount applied to the first booking made
+  // through a referral link. Atomic claim happens in resolveDiscountForUser.
+  referralDiscount Decimal @default(0) @map("referral_discount") @db.Decimal(10, 2)
+  discountAmount   Decimal @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  referredByCode   String? @map("referred_by_code")
+
+  status      String  @default("pending") // pending, confirmed, paid, cancelled, completed
+  paymentStatus String @default("unpaid") @map("payment_status") // unpaid, partial, paid, refunded
+
+  // Loyalty points awarded on status transitions (mirrors the generic Booking).
+  pointsAwardedConfirmation Int @default(0) @map("points_awarded_confirmation")
+  pointsAwardedCompletion   Int @default(0) @map("points_awarded_completion")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  pilgrims Pilgrim[]
+  payments Payment[]
+  invoices Invoice[]
+
+  @@index([tenantId, userId])
+  @@index([tenantId, kind, status])
+  @@index([tenantId, packageId])
+  @@map("hajj_umrah_bookings")
+}
+
+model Pilgrim {
+  id        String @id @default(uuid())
+  bookingId String @map("booking_id")
+  booking   HajjUmrahBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  fullName         String  @map("full_name")
+  passportNumber   String  @map("passport_number")
+  passportExpiry   DateTime @map("passport_expiry")
+  dateOfBirth      DateTime @map("date_of_birth")
+  gender           String  @default("male")
+  // Required for female pilgrims per Hajj/Umrah rules — blank = not supplying.
+  mahramRelation   String? @map("mahram_relation") // spouse, father, son, brother
+  relationshipToLead String? @map("relationship_to_lead")
+
+  @@index([bookingId])
+  @@map("pilgrims")
+}
+
+// =============================================================================
+// TRANSPORT (BD market: airport transfer, intercity bus, launch/ferry, car rental)
+// =============================================================================
+
+model Transport {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  vehicleType  String  @map("vehicle_type") // car, bus, ferry, shuttle, microbus
+  operatorName String? @map("operator_name")
+  title        String
+
+  originCity      String   @map("origin_city")
+  destinationCity String   @map("destination_city")
+  boardingPoints  String[] @default([]) @map("boarding_points")
+  droppingPoints  String[] @default([]) @map("dropping_points")
+
+  departureTime String? @map("departure_time")
+  arrivalTime   String? @map("arrival_time")
+  duration      String?
+
+  price          Decimal @db.Decimal(10, 2)
+  currency       String  @default("BDT")
+  totalSeats     Int     @default(0) @map("total_seats")
+  availableSeats Int     @default(0) @map("available_seats")
+
+  amenities String[] @default([])
+
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Loyalty: points awarded when this transport is booked
+  pointsAwarded Int @default(0) @map("points_awarded")
+
+  @@map("transports")
+}
+
+// =============================================================================
+// REVIEWS (Customer reviews on tours/hotels/flights/visa)
+// =============================================================================
+
+model Review {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id])
+
+  itemType String @map("item_type") // tour, hotel, flight, visa
+  itemId   String @map("item_id")
+
+  rating  Int
+  title   String?
+  content String  @db.Text
+
+  isApproved Boolean @default(false) @map("is_approved")
+  isVerified Boolean @default(false) @map("is_verified") // verified booking
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([tenantId, itemType, itemId])
+  @@map("reviews")
+}
+
+// =============================================================================
+// ABOUT PAGE — ordered content blocks (story, vision, mission, values, etc.)
+// =============================================================================
+
+enum AboutSectionType {
+  STORY
+  VISION
+  MISSION
+  SERVICE
+  SERVICES
+  VALUES
+  STATS
+  ACHIEVEMENTS
+  TEAM
+  TRIPS
+  STRATEGIES
+  CONTACT
+  CUSTOM
+}
+
+model AboutPageSection {
+  id       String           @id @default(uuid())
+  tenantId String           @map("tenant_id")
+  type     AboutSectionType
+  order    Int              @default(0)
+
+  titleEn    String? @map("title_en")
+  titleBn    String? @map("title_bn")
+  subtitleEn String? @map("subtitle_en") @db.Text
+  subtitleBn String? @map("subtitle_bn") @db.Text
+  bodyEn     String? @map("body_en") @db.Text
+  bodyBn     String? @map("body_bn") @db.Text
+
+  // Section payload — flexible JSON for type-specific content
+  // values:        [{ titleEn, titleBn, descriptionEn, descriptionBn, icon? }]
+  // services:      [{ titleEn, titleBn, descriptionEn, descriptionBn, icon? }]
+  // stats:         [{ value, labelEn, labelBn }]
+  // achievements:  [{ titleEn, titleBn, descriptionEn?, icon? }]
+  // strategies:    [{ titleEn, titleBn, descriptionEn, icon? }]
+  // trips:         free-form text in bodyEn/bodyBn
+  // team:          free-form text in bodyEn/bodyBn
+  // contact:       { address?, phone?, email?, hours? }
+  // custom:        free-form { html?, image?, ctaLabel?, ctaHref? }
+  payload Json @default("{}")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([tenantId, type, order])
+  @@map("about_page_sections")
+}
+
+// =============================================================================
+// ABOUT PAGE — singleton metadata (hero, banner image, slogan, SEO)
+// =============================================================================
+
+model AboutPageMeta {
+  id       String @id @default(uuid())
+  tenantId String @unique @map("tenant_id")
+
+  // Hero / banner
+  heroEyebrowEn  String? @map("hero_eyebrow_en")
+  heroEyebrowBn  String? @map("hero_eyebrow_bn")
+  heroTitleEn    String? @map("hero_title_en")
+  heroTitleBn    String? @map("hero_title_bn")
+  heroSubtitleEn String? @map("hero_subtitle_en") @db.Text
+  heroSubtitleBn String? @map("hero_subtitle_bn") @db.Text
+  heroImageUrl   String? @map("hero_image_url")
+
+  // Optional CTA under hero
+  ctaLabelEn String? @map("cta_label_en")
+  ctaLabelBn String? @map("cta_label_bn")
+  ctaHref    String? @map("cta_href")
+
+  // Office address block (separate from the dynamic CONTACT section)
+  officeAddress String? @map("office_address") @db.Text
+  officePhone   String? @map("office_phone")
+  officeEmail   String? @map("office_email")
+
+  // Slogan / tagline
+  sloganEn String? @map("slogan_en")
+  sloganBn String? @map("slogan_bn")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("about_page_meta")
+}
+
+// =============================================================================
+// MESSAGE FROM CEO — one active per tenant, history preserved
+// =============================================================================
+
+model CeoMessage {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  name        String  @map("name")
+  title       String  @map("title")
+  imageUrl    String? @map("image_url")
+  bodyEn      String  @map("body_en") @db.Text
+  bodyBn      String? @map("body_bn") @db.Text
+  signatureEn String? @map("signature_en")
+  signatureBn String? @map("signature_bn")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([tenantId, isActive])
+  @@map("ceo_messages")
+}
+
+// =============================================================================
+// SITE NAVIGATION (header / mega-menu)
+// Owner-controlled top-level menu + sub-items.
+// `translationKey` is optional: when present, the public site resolves it
+// through the i18n catalog (e.g. "nav_home"). Otherwise labelEn/labelBn are
+// shown directly. `href` is the destination URL/path (relative or absolute).
+// `linkType` lets owners mark links as "external" so the frontend opens them
+// in a new tab, or as "section" for in-page anchors.
+// =============================================================================
+
+enum NavLinkType {
+  INTERNAL
+  EXTERNAL
+  SECTION
+}
+
+model NavMenu {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  labelEn        String      @map("label_en")
+  labelBn        String?     @map("label_bn")
+  translationKey String?     @map("translation_key")
+  href           String      @map("href")
+  linkType       NavLinkType @default(INTERNAL) @map("link_type")
+
+  iconName     String?   @map("icon_name")
+  isVisible    Boolean   @default(true) @map("is_visible")
+  openInNewTab Boolean   @default(false) @map("open_in_new_tab")
+  highlight    Boolean   @default(false) @map("highlight")
+  order        Int       @default(0)
+  parentId     String?   @map("parent_id")
+  parent       NavMenu?  @relation("NavMenuChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children     NavMenu[] @relation("NavMenuChildren")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([tenantId, parentId, order])
+  @@map("nav_menus")
+}
+
+// =============================================================================
+// SITE FOOTER (configurable columns + link columns + contact + socials)
+// A single row per tenant. `columns` is a JSON array of:
+//   { id, headingEn, headingBn, translationKey?, links: [{ id, labelEn,
+//     labelBn, translationKey?, href, linkType, openInNewTab }] }
+// `contact` and `social` are editable JSON blobs; `copyrightTextEn/Bn`
+// override the default "© YYYY Company. All rights reserved." line.
+// =============================================================================
+
+model FooterConfig {
+  id       String @id @default(uuid())
+  tenantId String @unique @map("tenant_id")
+
+  taglineEn     String? @map("tagline_en") @db.Text
+  taglineBn     String? @map("tagline_bn") @db.Text
+  accentLabelEn String? @map("accent_label_en")
+  accentLabelBn String? @map("accent_label_bn")
+
+  columns     Json @default("[]")
+  socialLinks Json @default("[]") @map("social_links")
+
+  contactEmail  String? @map("contact_email")
+  contactPhone  String? @map("contact_phone")
+  contactNoteEn String? @map("contact_note_en")
+  contactNoteBn String? @map("contact_note_bn")
+
+  copyrightTextEn String? @map("copyright_text_en")
+  copyrightTextBn String? @map("copyright_text_bn")
+
+  showLanguageToggle Boolean @default(true) @map("show_language_toggle")
+  showShareButton    Boolean @default(true) @map("show_share_button")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("footer_configs")
+}
+
+// =============================================================================
+// TRACKING + ADS (Meta CAPI, GA4, GTM, lead capture)
+// =============================================================================
+
+model TrackingEvent {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  eventName String  @map("event_name") // page_view, view_item, add_to_cart, initiate_checkout, purchase, lead, search
+  source    String  @default("web") // web, server, meta_capi, ga4
+  eventId   String? @map("event_id") // dedup key (e.g. Meta event_id)
+  userId    String? @map("user_id")
+  sessionId String? @map("session_id")
+  url       String?
+  referrer  String?
+  userAgent String? @map("user_agent")
+
+  // Ad attribution
+  utmSource   String? @map("utm_source")
+  utmMedium   String? @map("utm_medium")
+  utmCampaign String? @map("utm_campaign")
+  utmContent  String? @map("utm_content")
+  utmTerm     String? @map("utm_term")
+  gclid       String? @map("gclid")
+  fbclid      String? @map("fbclid")
+  msclkid     String? @map("msclkid")
+
+  // Advanced matching (PII → SHA-256 for Meta CAPI) + fingerprint cookies
+  email      String?
+  phone      String?
+  fullName   String? @map("full_name")
+  externalId String? @map("external_id")
+  fbp        String? @map("fbp")
+  fbc        String? @map("fbc")
+  consent    String? // all | essential | none — drives LDU decisions
+
+  // E-commerce / lead payload
+  value       Decimal? @db.Decimal(10, 2)
+  currency    String?  @default("USD")
+  items       Json?
+  contentName String?  @map("content_name")
+  contentIds  String[] @default([]) @map("content_ids")
+
+  payload Json?
+
+  // Forwarding status (so we can retry on failure)
+  forwardedAt DateTime? @map("forwarded_at")
+  failedAt    DateTime? @map("failed_at")
+  errorMsg    String?   @map("error_msg")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, eventName])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, utmCampaign])
+  @@map("tracking_events")
+}
+
+model Lead {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  fullName String  @map("full_name")
+  phone    String
+  email    String?
+  message  String? @db.Text
+
+  source   String  @default("website") // website, meta_lead_ads, google_ads, whatsapp, hajj_pre_reg
+  campaign String? // utm_campaign / ad campaign name
+  formSlug String? @map("form_slug") // which form captured it (e.g. hajj-2026)
+
+  // Optional context
+  packageSlug   String? @map("package_slug")
+  travelers     Int?    @default(1)
+  departureCity String? @map("departure_city")
+  budget        String?
+
+  // Funnel state
+  status     String  @default("new") // new, contacted, qualified, converted, lost
+  assignedTo String? @map("assigned_to")
+  notes      String? @db.Text
+
+  // Meta Lead Ads sync
+  metaLeadId   String?   @map("meta_lead_id")
+  metaSyncedAt DateTime? @map("meta_synced_at")
+
+  // Ad attribution
+  utmSource   String? @map("utm_source")
+  utmMedium   String? @map("utm_medium")
+  utmCampaign String? @map("utm_campaign")
+  utmContent  String? @map("utm_content")
+  utmTerm     String? @map("utm_term")
+  fbclid      String? @map("fbclid")
+  gclid       String? @map("gclid")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@map("leads")
+}
+
+model LandingPage {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  slug            String
+  title           String
+  subtitle        String? @db.Text
+  heroImage       String? @map("hero_image")
+  body            Json?
+  ctaLabel        String? @map("cta_label")
+  ctaHref         String? @map("cta_href")
+  formSlug        String? @map("form_slug") // ties to Lead.formSlug
+  metaTitle       String? @map("meta_title")
+  metaDescription String? @map("meta_description") @db.Text
+  metaImage       String? @map("meta_image")
+
+  // Campaign association
+  campaign  String?
+  utmSource String? @map("utm_source")
+
+  visits   Int     @default(0)
+  leads    Int     @default(0)
+  bookings Int     @default(0)
+  revenue  Decimal @default(0) @db.Decimal(12, 2)
+
+  isActive Boolean   @default(true) @map("is_active")
+  startsAt DateTime? @map("starts_at")
+  endsAt   DateTime? @map("ends_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, slug])
+  @@map("landing_pages")
+}
+
+model TrackingSettings {
+  id       String @id @default(uuid())
+  tenantId String @unique @map("tenant_id")
+
+  // Meta Pixel + Conversions API
+  metaPixelId      String? @map("meta_pixel_id")
+  metaCapiToken    String? @map("meta_capi_token")
+  metaCapiTestCode String? @map("meta_capi_test_code")
+  metaCapiEnabled  Boolean @default(false) @map("meta_capi_enabled")
+
+  // Consent & compliance (LDU for EEA/UK/US). Off until flipped on pre-launch.
+  requireMarketingConsent Boolean @default(false) @map("require_marketing_consent")
+  metaLduEnabled           Boolean @default(false) @map("meta_ldu_enabled")
+
+  // GA4 + GTM
+  ga4MeasurementId String? @map("ga4_measurement_id")
+  ga4ApiSecret     String? @map("ga4_api_secret")
+  gtmContainerId   String? @map("gtm_container_id")
+
+  // Google Ads
+  googleAdsConversionId    String? @map("google_ads_conversion_id")
+  googleAdsConversionLabel String? @map("google_ads_conversion_label")
+
+  // TikTok / Snap / X
+  tiktokPixelId   String? @map("tiktok_pixel_id")
+  snapchatPixelId String? @map("snapchat_pixel_id")
+  xPixelId        String? @map("x_pixel_id")
+
+  // WhatsApp Business
+  whatsappNumber   String? @map("whatsapp_number")
+  whatsappGreeting String? @map("whatsapp_greeting") @db.Text
+
+  // Trust badges
+  trustBadges     Json @default("[]") @map("trust_badges") // [{label, icon, url}]
+  customerCount   Int  @default(0) @map("customer_count")
+  yearsInBusiness Int  @default(0) @map("years_in_business")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tracking_settings")
+}
+
+// =============================================================================
+// PAYMENT MILESTONES (Hajj/Umrah multi-stage installments)
+// =============================================================================
+
+model PaymentMilestone {
+  id        String  @id @default(uuid())
+  tenantId  String  @map("tenant_id")
+  bookingId String  @map("booking_id")
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  stage      String // deposit, visa, balance, full
+  label      String
+  amount     Decimal   @db.Decimal(10, 2)
+  currency   String    @default("USD")
+  dueDate    DateTime  @map("due_date")
+  paidAmount Decimal   @default(0) @map("paid_amount") @db.Decimal(10, 2)
+  status     String    @default("pending") // pending, paid, overdue, cancelled
+  paidAt     DateTime? @map("paid_at")
+  paymentId  String?   @map("payment_id")
+  notes      String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, bookingId])
+  @@index([tenantId, status])
+  @@map("payment_milestones")
+}
+
+// =============================================================================
+// LOYALTY / REWARDS — Tier system + per-product points + redemption
+// =============================================================================
+//
+// Tiers (auto-promotion): Silver → Gold → Platinum → Diamond → Ambassador
+// Thresholds seeded per tenant: 10K / 50K / 150K / 300K / 500K
+// Each tier has a redemptionMultiplier — points redeem for more BDT at higher tiers
+// (Silver: 1.0× = 1pt/1BDT, Gold: 1.1×, Platinum: 1.25×, Diamond: 1.5×, Ambassador: 2.0×)
+//
+// Points earning:
+//   - Referral signup: 500 pts to referrer
+//   - Booking confirmation: 50% of product.pointsAwarded
+//   - Service completion:  remaining 50% of product.pointsAwarded
+//
+// Redemption: at booking checkout, user applies N points → discount = N × tier.multiplier BDT
+// =============================================================================
+
+model LoyaltyTier {
+  id                   String   @id @default(uuid())
+  tenantId             String   @map("tenant_id")
+  name                 String // "Silver", "Gold", "Platinum", "Diamond", "Ambassador"
+  slug                 String // "silver" | "gold" | "platinum" | "diamond" | "ambassador"
+  color                String // hex: "#C0C0C0", "#FFD700", "#E5E4E2", "#60A5FA", "#7B61FF"
+  starCount            Int      @map("star_count")
+  minPoints            Int      @map("min_points")
+  redemptionMultiplier Decimal  @default(1.0) @map("redemption_multiplier") @db.Decimal(4, 2)
+  benefits             Json? // free-form {perks: [...], description: "..."}
+  sortOrder            Int      @default(0) @map("sort_order")
+  isActive             Boolean  @default(true) @map("is_active")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  accounts LoyaltyAccount[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, minPoints])
+  @@map("loyalty_tiers")
+}
+
+model LoyaltyAccount {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  userId   String @unique @map("user_id")
+  user     User   @relation(fields: [userId], references: [id])
+
+  lifetimePoints  Int @default(0) @map("lifetime_points")
+  availablePoints Int @default(0) @map("available_points")
+  redeemedPoints  Int @default(0) @map("redeemed_points")
+
+  currentTierId String?      @map("current_tier_id")
+  currentTier   LoyaltyTier? @relation(fields: [currentTierId], references: [id])
+
+  tierAchievedAt DateTime? @map("tier_achieved_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  transactions LoyaltyTransaction[]
+
+  @@index([tenantId])
+  @@map("loyalty_accounts")
+}
+
+model LoyaltyTransaction {
+  id        String         @id @default(uuid())
+  tenantId  String         @map("tenant_id")
+  accountId String         @map("account_id")
+  account   LoyaltyAccount @relation(fields: [accountId], references: [id])
+
+  // Type catalog:
+  //   referral_signup       — +pts to referrer when a referee signs up
+  //   booking_confirmation  — +pts when booking.status = 'confirmed' (50% of product.pointsAwarded)
+  //   booking_completion    — +pts when booking.status = 'completed' (remaining 50%)
+  //   redemption            — -pts applied at checkout (BDT discount applied)
+  //   admin_adjustment      — manual +/- by admin (with reason)
+  //   refund                — -pts when booking is refunded/cancelled
+  type String
+
+  // Positive = earn, negative = redeem
+  points Int
+
+  currency String?  @default("BDT")
+  bdtValue Decimal? @map("bdt_value") @db.Decimal(10, 2)
+
+  bookingId   String? @map("booking_id")
+  referralId  String? @map("referral_id")
+  description String?
+  metadata    Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, accountId])
+  @@index([tenantId, type])
+  @@index([tenantId, createdAt])
+  @@map("loyalty_transactions")
+}
+
+model ProductPointsRule {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+
+  // Product category: "tour" | "flight" | "hotel" | "visa" | "hajj" | "umrah" | "transport"
+  productType String @map("product_type")
+
+  // Null = category-wide default; set = per-product override
+  productId   String? @map("product_id")
+  productName String? @map("product_name")
+
+  // Direct points per booking of this product (Q3: per-product rule)
+  pointsValue Int @default(0) @map("points_value")
+
+  // Optional cap (e.g., "max 1000 points per booking of this product")
+  maxPoints Int?     @map("max_points")
+  minSpend  Decimal? @map("min_spend") @db.Decimal(10, 2)
+
+  isActive Boolean   @default(true) @map("is_active")
+  startsAt DateTime? @map("starts_at")
+  endsAt   DateTime? @map("ends_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, productType, productId])
+  @@index([tenantId, productType])
+  @@map("product_points_rules")
+}
+
+enum PointTransactionType {
+  SIGNUP_BONUS
+  REFERRAL_SIGNUP
+  BOOKING_CONFIRMED
+  BOOKING_COMPLETED
+  REDEMPTION
+  ADMIN_ADJUSTMENT
+  REVERSAL
+}
+
+enum PointTransactionStatus {
+  PENDING
+  POSTED
+  REVERSED
+}
+
+enum PointReferenceType {
+  BOOKING
+  REFERRAL
+  REDEMPTION
+  ADMIN
+  SIGNUP
+}
+
+model PointTransaction {
+  id             String                 @id @default(uuid())
+  userId         String                 @map("user_id")
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           PointTransactionType
+  amount         Int
+  status         PointTransactionStatus @default(POSTED)
+  referenceType  PointReferenceType     @map("reference_type")
+  referenceId    String                 @map("reference_id")
+  idempotencyKey String                 @unique @map("idempotency_key")
+  balanceAfter   Json                   @map("balance_after")
+  metadata       Json                   @default("{}")
+  createdAt      DateTime               @default(now()) @map("created_at")
+
+  @@unique([referenceType, referenceId, type])
+  @@index([userId, createdAt])
+  @@index([userId, type, createdAt])
+   @@map("point_transactions")
+}
+
+// =============================================================================
+// WEBHOOK EVENT LOG (payment-gateway idempotency)
+// =============================================================================
+
+model WebhookEventLog {
+  id        String   @id @default(uuid())
+  tenantId  String?  @map("tenant_id")
+  provider  String // stripe | bkash
+  eventId   String   @map("event_id")
+  eventType String?  @map("event_type")
+  payload   Json?
+  processed Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([provider, eventId])
+  @@index([provider, createdAt])
+  @@map("webhook_event_logs")
+}
+
+// =============================================================================
+// PASSWORD RESET TOKENS
+// =============================================================================
+// A single-use, time-limited token delivered over the channel the user chose
+// (email or SMS). Only a SHA-256 hash of the token is stored — the raw token
+// lives only in the reset link that was sent.
+
+model PasswordReset {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique @map("token_hash")
+  channel     String // email | sms
+  destination String? // the address/number the link was sent to (for audit)
+  expiresAt   DateTime  @map("expires_at")
+  usedAt      DateTime? @map("used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("password_resets")
+}
+
+// =============================================================================
+// USER DOCUMENTS (customer-uploaded files: passport, ID, tickets, photos…)
+// =============================================================================
+// Files a user attaches to their own profile. The binary lives in media
+// storage (R2 / local); this row keeps the metadata + public URL so they can
+// list and download them.
+
+model UserDocument {
+  id        String    @id @default(uuid())
+  tenantId  String    @map("tenant_id")
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url       String
+  filename  String
+  mimeType  String?   @map("mime_type")
+  size      Int?
+  kind      String    @default("document") // document | image
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([userId, deletedAt])
+  @@map("user_documents")
+}

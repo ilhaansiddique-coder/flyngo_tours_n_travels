@@ -1,0 +1,202 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import {
+  LayoutDashboard, BookOpen, Users, Map, Building2, Plane, Globe,
+  Ticket, Percent, BarChart3, Settings, Gift,
+  Shield, FileText, ChevronLeft, Home,
+  FileText as FileIcon, Image, Search as SearchIcon, Star, HelpCircle,
+  Megaphone, Car, MessageSquare, Bell, CreditCard, Sparkles, FileCheck,
+  Languages, MessageCircle, Info, Menu as MenuIcon, LayoutGrid, Target, Coins,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AdminTopbar } from '@/components/admin/admin-topbar';
+import { useAuthStore } from '@/stores/auth.store';
+import { api } from '@/lib/api';
+
+const ADMIN_ROLES = ['admin', 'super_admin'];
+
+const navigation = [
+  { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+  { label: 'Bookings', href: '/admin/bookings', icon: BookOpen },
+  { label: 'Customers', href: '/admin/customers', icon: Users },
+  { label: 'Tours', href: '/admin/tours', icon: Map },
+  { label: 'Hotels', href: '/admin/hotels', icon: Building2 },
+  { label: 'Flights', href: '/admin/flights', icon: Plane },
+  { label: 'Visa', href: '/admin/visa', icon: Globe },
+  { label: 'Hajj Packages', href: '/admin/hajj', icon: Sparkles },
+  { label: 'Hajj Pre-Regs', href: '/admin/hajj-pre-registrations', icon: FileCheck },
+  { label: 'Umrah Packages', href: '/admin/umrah', icon: Sparkles },
+  { label: 'Hajj/Umrah Bookings', href: '/admin/hajj-umrah-bookings', icon: BookOpen },
+  { label: 'Destinations', href: '/admin/destinations', icon: Ticket },
+  { label: 'Transport', href: '/admin/transport', icon: Car },
+  { label: 'Reviews', href: '/admin/reviews', icon: MessageSquare },
+  { label: 'Payments', href: '/admin/payments', icon: CreditCard },
+  { label: 'Bank Accounts', href: '/admin/bank-accounts', icon: Building2 },
+  { label: 'Coupons', href: '/admin/coupons', icon: Percent },
+  { label: 'Refer & Earn', href: '/admin/affiliates', icon: Gift },
+  { label: 'Loyalty & Points', href: '/admin/loyalty', icon: Coins },
+  { label: 'Tracking & Ads', href: '/admin/tracking', icon: Target },
+  { label: 'Campaigns', href: '/admin/marketing', icon: Megaphone },
+  { label: 'Reports', href: '/admin/reports', icon: BarChart3 },
+  { label: 'Settings', href: '/admin/settings', icon: Settings },
+  { label: 'Users & Roles', href: '/admin/users', icon: Shield },
+  { label: 'Audit Logs', href: '/admin/audit-logs', icon: FileText },
+  { label: 'Notifications', href: '/admin/notifications', icon: Bell },
+  // CMS
+  { label: 'CMS Pages', href: '/admin/cms/pages', icon: FileIcon },
+  { label: 'CMS Blogs', href: '/admin/cms/blogs', icon: FileIcon },
+  { label: 'Hero Section', href: '/admin/cms/hero', icon: Languages },
+  { label: 'About Us', href: '/admin/cms/about', icon: Info },
+  { label: 'CEO Message', href: '/admin/cms/ceo', icon: MessageCircle },
+  { label: 'Globe Cities', href: '/admin/cms/globe', icon: Globe },
+  { label: 'Media Library', href: '/admin/cms/media', icon: Image },
+  { label: 'SEO Manager', href: '/admin/cms/seo', icon: SearchIcon },
+  { label: 'Testimonials', href: '/admin/cms/testimonials', icon: Star },
+  { label: 'FAQs', href: '/admin/cms/faqs', icon: HelpCircle },
+  // Site chrome (owner-controlled)
+  { label: 'Navbar', href: '/admin/site/navbar', icon: MenuIcon },
+  { label: 'Footer', href: '/admin/site/footer', icon: LayoutGrid },
+];
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [collapsed, setCollapsed] = useState(false);
+  const { accessToken, user, hasHydrated, setUser } = useAuthStore();
+  // 'checking' covers the case where a token is present but the cached profile
+  // isn't — resolve the role from the server rather than guessing.
+  const [status, setStatus] = useState<'checking' | 'allowed' | 'denied'>('checking');
+
+  // The API rejects unauthorised calls on its own, but without this the entire
+  // admin shell — every nav entry, every screen name — rendered for anyone who
+  // typed /admin. Wait for hydration first, or a refresh bounces a valid admin.
+  useEffect(() => {
+    if (!hasHydrated) return;
+    if (!accessToken) {
+      setStatus('denied');
+      return;
+    }
+    if (user?.role) {
+      setStatus(ADMIN_ROLES.includes(user.role) ? 'allowed' : 'denied');
+      return;
+    }
+
+    // Token but no cached profile: happens when the profile fetch after login
+    // failed, or the cookie predates profile caching. Deciding from the empty
+    // store would lock a real admin out of their own panel, so ask the server.
+    let cancelled = false;
+    (async () => {
+      try {
+        const me = await api.get<{ id: string; email: string | null; fullName: string; role: { code: string; permissions: Array<{ permission: { code: string } }> } }>(
+          '/users/me',
+          { token: accessToken },
+        );
+        if (cancelled) return;
+        setUser({
+          id: me.id,
+          email: me.email ?? '',
+          fullName: me.fullName,
+          role: me.role.code,
+          permissions: me.role.permissions.map((p) => p.permission.code),
+        });
+        setStatus(ADMIN_ROLES.includes(me.role.code) ? 'allowed' : 'denied');
+      } catch {
+        if (!cancelled) setStatus('denied');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasHydrated, accessToken, user?.role, setUser]);
+
+  useEffect(() => {
+    if (status !== 'denied') return;
+    router.replace(`/auth/login?callbackUrl=${encodeURIComponent(pathname)}`);
+  }, [status, router, pathname]);
+
+  if (status !== 'allowed') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-on-surface-variant">
+        <p className="text-sm">{status === 'denied' ? 'Redirecting to sign in…' : 'Loading…'}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen bg-background text-on-surface">
+      {/* Sidebar */}
+      <aside className={cn(
+        'fixed left-0 top-0 z-40 h-screen bg-surface-container-low border-r border-outline-variant',
+        'transition-all duration-300 flex flex-col',
+        collapsed ? 'w-20' : 'w-64',
+      )}>
+        {/* Logo */}
+        <div className={cn('h-16 flex items-center border-b border-outline-variant px-4', collapsed ? 'justify-center' : 'gap-3')}>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-amber-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/30">
+            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </div>
+          {!collapsed && <span className="font-display text-lg font-bold text-on-surface">FlynGo Admin</span>}
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                  collapsed && 'justify-center',
+                  isActive
+                    ? 'bg-gradient-to-r from-blue-600/20 to-amber-500/10 text-accent border border-accent/30 shadow-lg shadow-accent/5'
+                    : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface',
+                )}
+              >
+                <item.icon className={cn('w-5 h-5 flex-shrink-0', isActive && 'text-accent')} />
+                {!collapsed && item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Footer */}
+        <div className="border-t border-outline-variant p-4">
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={cn(
+              'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors',
+              collapsed && 'justify-center',
+            )}
+          >
+            <ChevronLeft className={cn('w-5 h-5 transition-transform', collapsed && 'rotate-180')} />
+            {!collapsed && 'Collapse'}
+          </button>
+          <Link
+            href="/"
+            className={cn(
+              'w-full flex items-center gap-3 px-3 py-2 mt-1 rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors',
+              collapsed && 'justify-center',
+            )}
+          >
+            <Home className="w-5 h-5" />
+            {!collapsed && 'Back to Site'}
+          </Link>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className={cn('flex-1 transition-all duration-300', collapsed ? 'ml-20' : 'ml-64')}>
+        <AdminTopbar navigation={navigation} />
+        {/* Page Content */}
+        <div className="px-6 py-4">{children}</div>
+      </main>
+    </div>
+  );
+}

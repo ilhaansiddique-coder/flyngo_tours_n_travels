@@ -1,0 +1,386 @@
+import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, Req, Res, UseGuards, UseFilters, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { Request, Response } from 'express';
+import * as crypto from 'crypto';
+import { AuthService } from './auth.service';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { TokenResponseDto } from './dto/token-response.dto';
+import {
+  ForgotPasswordOptionsDto,
+  SendPasswordResetDto,
+  ResetPasswordDto,
+} from './dto/password-reset.dto';
+import { Public } from '../../common/decorators/public.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { ConfigService } from '../../config/config.service';
+import { PrismaService } from '../../database/prisma.service';
+import { GoogleOAuthGuard, FacebookOAuthGuard } from './guards/oauth.guards';
+import { OAuthRedirectFilter } from './filters/oauth-redirect.filter';
+
+@ApiTags('Authentication')
+@UseFilters(OAuthRedirectFilter)
+@Controller('auth')
+export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  @Post('login')
+  @Public()
+  // Credential endpoints are the ones worth brute-forcing, so they get a much
+  // tighter budget than the global default.
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({ status: 200, type: TokenResponseDto })
+  async login(@Body() dto: LoginDto, @Req() req: Request) {
+    const tenantId = this.getTenantId(req);
+    return this.authService.login(dto, tenantId);
+  }
+
+  @Post('register')
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register new customer account' })
+  @ApiBody({ type: RegisterDto })
+  @ApiResponse({ status: 201, type: TokenResponseDto })
+  async register(@Body() dto: RegisterDto, @Req() req: Request) {
+    const tenantId = this.getTenantId(req);
+    // Read referral code from (in order): body, custom header, the cookie the
+    // frontend actually sets (`flyngo_ref_code`), and finally a legacy `ref_code`
+    // cookie in case any older clients are still setting it.
+    const cookies = (req.cookies as Record<string, string> | undefined) ?? {};
+    const refCode =
+      dto.referralCode ||
+      ((req.headers['x-referral-code'] as string) || '').trim() ||
+      (cookies['flyngo_ref_code'] || '').trim() ||
+      (cookies['ref_code'] || '').trim() ||
+      null;
+    return this.authService.register(dto, tenantId, refCode);
+  }
+
+  @Post('refresh')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh access token' })
+  async refresh(@Body('refreshToken') refreshToken: string, @Req() req: Request) {
+    const tenantId = this.getTenantId(req);
+    return this.authService.refreshToken(refreshToken, tenantId);
+  }
+
+  @Post('forgot-password/options')
+  @Public()
+  // This route confirms whether an account exists and reveals masked contact
+  // details, so it is an enumeration oracle if left unmetered.
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List reset-link delivery channels (email/SMS) for an identifier' })
+  async forgotPasswordOptions(@Body() dto: ForgotPasswordOptionsDto, @Req() req: Request) {
+    return this.authService.passwordResetOptions(this.getTenantId(req), dto.identifier);
+  }
+
+  @Post('forgot-password')
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send a password reset link over the chosen channel' })
+  async forgotPassword(@Body() dto: SendPasswordResetDto, @Req() req: Request) {
+    return this.authService.sendPasswordReset(this.getTenantId(req), dto.identifier, dto.channel);
+  }
+
+  @Post('admin/password-reset-link')
+  @Roles('admin', 'super_admin')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Issue a password reset link for a customer (admin only) — for handing over via WhatsApp while email/SMS delivery is unconfigured',
+  })
+  async adminResetLink(
+    @Body('userId') userId: string,
+    @CurrentUser('id') actorId: string,
+    @Req() req: Request,
+  ) {
+    if (!userId) throw new BadRequestException('userId is required');
+    return this.authService.createResetLinkForUser(this.getTenantId(req), userId, actorId);
+  }
+
+  @Post('admin/issue-credentials')
+  @Roles('admin', 'super_admin')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Issue a one-time temporary password for a customer (admin only) — returned once, for sending over WhatsApp',
+  })
+  async issueCredentials(
+    @Body('userId') userId: string,
+    @CurrentUser('id') actorId: string,
+    @Req() req: Request,
+  ) {
+    if (!userId) throw new BadRequestException('userId is required');
+    return this.authService.issueTempPassword(this.getTenantId(req), userId, actorId);
+  }
+
+  @Post('change-password')
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Complete the forced password change after signing in with a temporary password (requires the scoped changePasswordToken)',
+  })
+  async changePassword(
+    @Body() body: { changePasswordToken: string; currentPassword: string; newPassword: string },
+    @Req() req: Request,
+  ) {
+    // @Public() because the caller holds a scoped token, which JwtAuthGuard
+    // deliberately rejects everywhere. Verify it here instead.
+    const payload = await this.authService.verifyScopedToken(body?.changePasswordToken, 'password_change');
+    return this.authService.completePasswordChange(
+      this.getTenantId(req),
+      payload.sub,
+      body?.currentPassword ?? '',
+      body?.newPassword ?? '',
+    );
+  }
+
+  @Post('reset-password')
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Set a new password using a reset token' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.password);
+  }
+
+  @Get('google')
+  @Public()
+  @UseGuards(GoogleOAuthGuard)
+  @ApiOperation({ summary: 'Start Google OAuth flow' })
+  async googleAuth() {
+    // Passport redirects to Google — handler never runs.
+  }
+
+  @Get('google/callback')
+  @Public()
+  @UseGuards(GoogleOAuthGuard)
+  @ApiOperation({ summary: 'Google OAuth callback' })
+  async googleAuthCallback(@Req() req: Request, @Res() res: Response) {
+    return this.handleOAuthCallback(req, res, 'google');
+  }
+
+  @Get('facebook')
+  @Public()
+  @UseGuards(FacebookOAuthGuard)
+  @ApiOperation({ summary: 'Start Facebook OAuth flow' })
+  async facebookAuth() {
+    // Passport redirects to Facebook — handler never runs.
+  }
+
+  @Get('facebook/callback')
+  @Public()
+  @UseGuards(FacebookOAuthGuard)
+  @ApiOperation({ summary: 'Facebook OAuth callback' })
+  async facebookAuthCallback(@Req() req: Request, @Res() res: Response) {
+    return this.handleOAuthCallback(req, res, 'facebook');
+  }
+
+  @Post('facebook/delete')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Facebook Data Deletion Callback' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { signed_request: { type: 'string' } },
+      required: ['signed_request'],
+    },
+  })
+  async facebookDataDeletion(@Body('signed_request') signedRequest: string) {
+    return this.handleFacebookDataDeletion(signedRequest);
+  }
+
+  @Get('facebook/delete')
+  @Public()
+  @ApiOperation({ summary: 'Facebook Data Deletion Instructions page / callback (GET form)' })
+  async facebookDataDeletionGet(
+    @Query('signed_request') signedRequest: string,
+    @Res() res: Response,
+  ) {
+    // Without a signed_request this is a human visit (or Meta's URL validator).
+    // Serve the public data-deletion instructions page instead of an API error.
+    if (!signedRequest || typeof signedRequest !== 'string') {
+      return res.status(HttpStatus.OK).type('html').send(this.dataDeletionInstructionsHtml());
+    }
+    const result = await this.handleFacebookDataDeletion(signedRequest);
+    return res.status(HttpStatus.OK).json(result);
+  }
+
+  private dataDeletionInstructionsHtml(): string {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlyNGo — Facebook Data Deletion Instructions</title>
+<style>
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#eef3fb;color:#0f172a;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+  .card{max-width:640px;background:#fff;border-radius:16px;box-shadow:0 8px 30px rgba(2,6,23,.08);padding:40px}
+  h1{font-size:24px;margin:0 0 8px}
+  p{line-height:1.6;color:#334155;margin:12px 0}
+  ol{line-height:1.8;color:#334155;padding-left:22px;margin:12px 0}
+  .muted{color:#64748b;font-size:14px}
+  a{color:#0c6fdf}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>Delete your FlyNGo data</h1>
+<p>If you signed up to FlyNGo using Facebook, you can remove your account and personal data at any time using either method below.</p>
+<ol>
+<li><strong>From Facebook:</strong> open Facebook &rarr; <em>Settings &amp; privacy &rarr; Settings &rarr; Apps and websites</em> &rarr; select <strong>FlyNGo</strong> &rarr; <strong>Remove</strong>. Choose “Delete” to also erase the data we received from Facebook. Facebook will notify us automatically and we will delete your account within 30 days.</li>
+<li><strong>Direct request:</strong> email us at <a href="mailto:support@flyngo.world">support@flyngo.world</a> with the subject “Delete my account”. We will verify your identity and permanently delete your profile and associated bookings data.</li>
+</ol>
+<p>When a deletion is processed you receive a confirmation code you can track on our <a href="/auth/facebook-data-deletion">data deletion status page</a>.</p>
+<p class="muted">Deletion removes your name, email address and Facebook ID from our systems. Records required by law (e.g. completed invoices) are retained in anonymised form only.</p>
+</div>
+</body>
+</html>`;
+  }
+
+  private async handleFacebookDataDeletion(signedRequest: string | undefined) {
+    if (!signedRequest || typeof signedRequest !== 'string') {
+      throw new BadRequestException('signed_request is required');
+    }
+
+    const appSecret = this.configService.getOrNull('FACEBOOK_APP_SECRET');
+    if (!appSecret) {
+      throw new InternalServerErrorException('Facebook app secret is not configured');
+    }
+
+    const payload = this.verifyFacebookSignedRequest(signedRequest, appSecret);
+    if (!payload) {
+      throw new BadRequestException('Invalid signed_request signature');
+    }
+
+    const fbUserId = (payload as { user_id?: string }).user_id;
+    if (!fbUserId) {
+      throw new BadRequestException('signed_request payload missing user_id');
+    }
+
+    const tenantId = (payload as { tenant_id?: string }).tenant_id
+      || '00000000-0000-0000-0000-000000000001';
+
+    const user = await this.prisma.user.findFirst({
+      where: { provider: 'facebook', providerId: fbUserId, tenantId, deletedAt: null },
+    });
+
+    const confirmationCode = crypto.randomBytes(16).toString('hex');
+
+    if (user) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          deletedAt: new Date(),
+          providerId: null,
+        },
+      });
+      this.logger.log(`Facebook data deletion processed for user ${user.id} (fb:${fbUserId})`);
+    } else {
+      this.logger.warn(`Facebook data deletion: no matching user for fb:${fbUserId}`);
+    }
+
+    const frontendUrl = this.configService.get('FRONTEND_URL');
+    const statusUrl = `${frontendUrl}/auth/facebook-data-deletion?code=${confirmationCode}`;
+
+    return {
+      url: statusUrl,
+      confirmation_code: confirmationCode,
+    };
+  }
+
+  private verifyFacebookSignedRequest(
+    signedRequest: string,
+    appSecret: string,
+  ): Record<string, unknown> | null {
+    const parts = signedRequest.split('.');
+    if (parts.length !== 2) return null;
+
+    const [encodedSig, encodedPayload] = parts;
+    try {
+      const sig = this.base64UrlDecode(encodedSig);
+      const payload = this.base64UrlDecode(encodedPayload);
+      const expectedSig = crypto
+        .createHmac('sha256', appSecret)
+        .update(encodedPayload)
+        .digest();
+
+      if (sig.length !== expectedSig.length) return null;
+      if (!crypto.timingSafeEqual(sig, expectedSig)) return null;
+
+      const payloadJson = JSON.parse(payload.toString('utf8'));
+      if (payloadJson.algorithm && payloadJson.algorithm !== 'HMAC-SHA256') return null;
+      return payloadJson;
+    } catch {
+      return null;
+    }
+  }
+
+  private base64UrlDecode(input: string): Buffer {
+    const padded = input.replace(/-/g, '+').replace(/_/g, '/');
+    const padding = padded.length % 4 === 0 ? '' : '='.repeat(4 - (padded.length % 4));
+    return Buffer.from(padded + padding, 'base64');
+  }
+
+  private async handleOAuthCallback(req: Request, res: Response, provider: 'google' | 'facebook') {
+    const profile = req.user as
+      | { email: string; fullName: string; provider: string; providerId: string }
+      | undefined;
+
+    if (!profile || !profile.email) {
+      this.logger.error(`${provider} OAuth callback received no profile`);
+      return res.redirect(this.errorRedirect('authentication_failed'));
+    }
+
+    const tenantId = this.getTenantId(req);
+    try {
+      // The referral cookie is server-visible during the callback, unlike
+      // arbitrary OAuth state supplied by the browser.
+      const referralCode =
+        ((req.cookies as any)?.flyngo_ref_code || (req.cookies as any)?.ref_code || '').trim() || null;
+      const tokens = await this.authService.validateOAuthUser(profile, tenantId, referralCode);
+      const frontendUrl = this.configService.get('FRONTEND_URL');
+      const params = new URLSearchParams({
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: String(tokens.expiresIn),
+        provider,
+      });
+      return res.redirect(`${frontendUrl}/auth/callback?${params.toString()}`);
+    } catch (err: any) {
+      this.logger.error(`${provider} OAuth callback failed: ${err?.message ?? err}`);
+      return res.redirect(this.errorRedirect('oauth_signin_failed'));
+    }
+  }
+
+  private errorRedirect(reason: string): string {
+    const frontendUrl = this.configService.get('FRONTEND_URL');
+    return `${frontendUrl}/auth/callback?error=${encodeURIComponent(reason)}`;
+  }
+
+  private getTenantId(req: Request): string {
+    return (req as any).tenantId ||
+      (req.headers['x-tenant-id'] as string) ||
+      '00000000-0000-0000-0000-000000000001';
+  }
+}

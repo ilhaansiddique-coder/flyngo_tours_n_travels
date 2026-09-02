@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Menu, X, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, X, LogOut, ChevronDown, LogIn } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
@@ -384,20 +384,13 @@ export function Header() {
           ) : (
             <Link
               href="/auth/login"
-              className="hidden xl:inline-flex mr-3 px-5 py-2.5 rounded-full text-sm font-bold tracking-wider transition-all duration-300 shadow-lg whitespace-nowrap"
+              className="hidden xl:inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-[var(--color-on-primary)] shadow-lg transition hover:opacity-95 active:scale-[0.98] mr-3"
               style={{
-                backgroundColor: 'var(--color-header-btn-bg)',
-                color: 'var(--color-header-btn-text)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--color-header-btn-hover-bg)';
-                e.currentTarget.style.color = 'var(--color-header-btn-hover-text)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--color-header-btn-bg)';
-                e.currentTarget.style.color = 'var(--color-header-btn-text)';
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-tertiary) 100%)',
+                boxShadow: '0 14px 30px -12px color-mix(in oklab, var(--color-primary) 60%, transparent), inset 0 1px 0 color-mix(in oklab, #fff 25%, transparent)',
               }}
             >
+              <LogIn className="w-4 h-4" />
               {t('nav_signin')}
             </Link>
           )}

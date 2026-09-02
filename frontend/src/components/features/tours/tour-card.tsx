@@ -2,6 +2,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import { tourImage } from '@/lib/entity-image';
+import { DestinationList } from '@/components/features/destination-list';
 import Link from 'next/link';
 import { Clock, Users, ArrowRight } from 'lucide-react';
 
@@ -14,12 +15,13 @@ interface TourCardProps {
   duration: number;
   maxGuests?: number;
   destination?: { name: string; country: string };
+  additionalDestinations?: Array<{ destination?: { name: string; country?: string } }>;
   difficulty?: string;
   imageUrl?: string;
   coverImageUrl?: string;
 }
 
-export function TourCard({ slug, title, description, price, duration, maxGuests, destination, difficulty, imageUrl, coverImageUrl }: TourCardProps) {
+export function TourCard({ slug, title, description, price, duration, maxGuests, destination, additionalDestinations, difficulty, imageUrl, coverImageUrl }: TourCardProps) {
   return (
     <Card className="group overflow-hidden flex flex-col" hover={false} premium>
       <div className="relative h-56 overflow-hidden rounded-t-2xl">
@@ -38,11 +40,11 @@ export function TourCard({ slug, title, description, price, duration, maxGuests,
           </Badge>
         </div>
         <div className="absolute bottom-4 left-4 right-4 z-20">
-          <p className="text-xs font-semibold uppercase tracking-wider text-on-bg/70 mb-1">
-            {destination?.name && destination?.country
-              ? `${destination.name}, ${destination.country}`
-              : 'Explore destination'}
-          </p>
+          <DestinationList
+            primary={destination}
+            additions={additionalDestinations}
+            className="text-xs font-semibold uppercase tracking-wider text-on-bg/70 mb-1"
+          />
           <h3 className="text-xl font-bold text-on-bg leading-tight group-hover:text-accent transition-colors duration-300">{title}</h3>
         </div>
       </div>

@@ -1,8 +1,9 @@
 import { Card } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { hotelImage } from '@/lib/entity-image';
+import { DestinationList } from '@/components/features/destination-list';
 import Link from 'next/link';
-import { Star, MapPin, ArrowRight } from 'lucide-react';
+import { Star, ArrowRight } from 'lucide-react';
 
 interface HotelCardProps {
   id: string;
@@ -11,12 +12,13 @@ interface HotelCardProps {
   starRating?: number;
   pricePerNight: number;
   destination?: { name: string; country: string };
+  additionalDestinations?: Array<{ destination?: { name: string; country?: string } }>;
   amenities?: string[];
   imageUrl?: string;
   coverImageUrl?: string;
 }
 
-export function HotelCard({ slug, name, starRating, pricePerNight, destination, amenities, imageUrl, coverImageUrl }: HotelCardProps) {
+export function HotelCard({ slug, name, starRating, pricePerNight, destination, additionalDestinations, amenities, imageUrl, coverImageUrl }: HotelCardProps) {
   return (
     <Card className="group overflow-hidden flex flex-col" hover={false} premium>
       <div className="relative h-56 overflow-hidden rounded-t-2xl">
@@ -38,9 +40,12 @@ export function HotelCard({ slug, name, starRating, pricePerNight, destination, 
           </div>
         </div>
         <div className="absolute bottom-4 left-4 right-4 z-20">
-          <p className="text-xs font-semibold uppercase tracking-wider text-on-bg/70 flex items-center gap-1 mb-1">
-            <MapPin className="w-3 h-3" /> {destination?.name && destination?.country ? `${destination.name}, ${destination.country}` : 'View location'}
-          </p>
+          <DestinationList
+            primary={destination}
+            additions={additionalDestinations}
+            emptyLabel="View location"
+            className="text-xs font-semibold uppercase tracking-wider text-on-bg/70 mb-1"
+          />
           <h3 className="text-xl font-bold text-on-bg leading-tight group-hover:text-accent transition-colors duration-300">{name}</h3>
         </div>
       </div>

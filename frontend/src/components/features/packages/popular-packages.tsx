@@ -22,6 +22,7 @@ interface ApiTour {
   coverImageUrl?: string | null;
   images?: { url: string; alt?: string | null }[];
   destination?: { name: string; country: string } | null;
+  additionalDestinations?: Array<{ destination?: { name: string; country?: string } }>;
 }
 
 const num = (v: number | string | null | undefined) => (v == null ? 0 : Number(v));
@@ -171,7 +172,16 @@ export function PopularPackages() {
                 <div className="flex items-center gap-2 text-xs text-muted mb-4">
                   <MapPin className="w-3.5 h-3.5 text-accent" />
                   <span className="line-clamp-1">
-                    {tour.destination ? `${tour.destination.name}${tour.destination.country ? `, ${tour.destination.country}` : ''}` : 'Worldwide'}
+                    {tour.destination
+                      ? `${tour.destination.name}${tour.destination.country ? `, ${tour.destination.country}` : ''}${
+                          (tour.additionalDestinations || []).length
+                            ? ` · ${(tour.additionalDestinations || [])
+                                .map((ad) => ad.destination?.name)
+                                .filter(Boolean)
+                                .join(' · ')}`
+                            : ''
+                        }`
+                      : 'Worldwide'}
                   </span>
                 </div>
 

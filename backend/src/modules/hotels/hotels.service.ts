@@ -11,6 +11,33 @@ function slugify(text: string): string {
 export class HotelsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async resolveAdditionalIds(tenantId: string, addl: any[] | undefined, primaryId?: string): Promise<string[]> {
+    const ids: string[] = [];
+    for (const entry of Array.isArray(addl) ? addl : []) {
+      const rawId = typeof entry === 'string' ? entry : entry?.id || entry?.destinationId;
+      if (typeof rawId === 'string' && rawId && rawId !== primaryId && !ids.includes(rawId)) {
+        ids.push(rawId);
+        continue;
+      }
+      if (rawId) continue;
+      const name = String(entry?.name || entry?.countryName || '').trim();
+      if (!name) continue;
+      const slug = slugify(name);
+      const existing = await this.prisma.destination.findFirst({
+        where: { tenantId, OR: [{ slug }, { name: { equals: name, mode: 'insensitive' } }] },
+        select: { id: true },
+      });
+      const destId = existing?.id || (
+        await this.prisma.destination.create({
+          data: { tenantId, name, slug, country: name },
+          select: { id: true },
+        })
+      ).id;
+      if (destId !== primaryId && !ids.includes(destId)) ids.push(destId);
+    }
+    return ids;
+  }
+
   async findAll(tenantId: string, page = 1, limit = 20, q?: string, filters: ListQueryDto = {}) {
     const where: any = { tenantId, deletedAt: null };
 
@@ -24,6 +51,11 @@ export class HotelsService {
       (term) => ({ address: { contains: term, mode: 'insensitive' } }),
       (term) => ({ destination: { name: { contains: term, mode: 'insensitive' } } }),
       (term) => ({ destination: { country: { contains: term, mode: 'insensitive' } } }),
+      (term) => ({
+        additionalDestinations: {
+          some: { destination: { name: { contains: term, mode: 'insensitive' } } },
+        },
+      }),
     ]);
     if (or) where.OR = or;
     const [items, total] = await Promise.all([
@@ -31,7 +63,12 @@ export class HotelsService {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        include: { destination: true, images: true, rooms: true },
+        include: {
+          destination: true,
+          images: true,
+          rooms: true,
+          additionalDestinations: { include: { destination: true } },
+        },
         orderBy: orderByFor(filters.sort, 'pricePerNight'),
       }),
       this.prisma.hotel.count({ where }),
@@ -42,7 +79,12 @@ export class HotelsService {
   async findById(identifier: string, tenantId: string) {
     const hotel = await this.prisma.hotel.findFirst({
       where: { AND: [{ tenantId }, { deletedAt: null }, { OR: [{ id: identifier }, { slug: identifier }] }] },
-      include: { destination: true, images: true, rooms: true },
+      include: {
+        destination: true,
+        images: true,
+        rooms: true,
+        additionalDestinations: { include: { destination: true }, orderBy: { position: 'asc' } },
+      },
     });
     if (!hotel) throw new NotFoundException('Hotel not found');
     return hotel;
@@ -52,6 +94,8 @@ export class HotelsService {
     const slug = slugify(data.name);
     const existing = await this.prisma.hotel.findFirst({ where: { tenantId, slug } });
     if (existing) throw new ConflictException('A hotel with this name already exists');
+
+    const additionalIds = await this.resolveAdditionalIds(tenantId, data.additionalDestinationIds, data.destinationId);
 
     return this.prisma.hotel.create({
       data: {
@@ -83,8 +127,11 @@ export class HotelsService {
             amenities: r.amenities || [],
           })),
         } : undefined,
+        additionalDestinations: {
+          create: additionalIds.map((destinationId, i) => ({ tenantId, destinationId, position: i })),
+        },
       },
-      include: { destination: true, images: true, rooms: true },
+      include: { destination: true, images: true, rooms: true, additionalDestinations: { include: { destination: true } } },
     });
   }
 
@@ -96,6 +143,15 @@ export class HotelsService {
     if (data.name && slug !== existing.slug) {
       const dupe = await this.prisma.hotel.findFirst({ where: { tenantId, slug, id: { not: id } } });
       if (dupe) throw new ConflictException('A hotel with this name already exists');
+    }
+
+    let additionalUpdate: any = undefined;
+    if (data.additionalDestinationIds !== undefined) {
+      const primaryId = data.destinationId ?? existing.destinationId;
+      const ids = (await this.resolveAdditionalIds(tenantId, data.additionalDestinationIds, primaryId))
+        .filter((did) => did !== primaryId)
+        .map((did, i) => ({ tenantId, destinationId: did, position: i }));
+      additionalUpdate = { deleteMany: {}, create: ids };
     }
 
     return this.prisma.hotel.update({
@@ -117,8 +173,9 @@ export class HotelsService {
         isActive: data.isActive,
         pointsAwarded: data.pointsAwarded === undefined ? undefined : Number(data.pointsAwarded) || 0,
         coverImageUrl: data.coverImageUrl,
+        ...(additionalUpdate ? { additionalDestinations: additionalUpdate } : {}),
       },
-      include: { destination: true, images: true, rooms: true },
+      include: { destination: true, images: true, rooms: true, additionalDestinations: { include: { destination: true } } },
     });
   }
 

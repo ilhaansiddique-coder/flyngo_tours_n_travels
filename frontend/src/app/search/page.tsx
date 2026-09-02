@@ -38,6 +38,9 @@ function ResultCard({ section, item }: { section: Section['key']; item: any }) {
     item.name ||
     `${item.airline ?? ''} ${item.flightNumber ?? ''}`.trim() ||
     'Untitled';
+  const extraDest = (item.additionalDestinations || [])
+    .map((ad: any) => ad?.destination?.name)
+    .filter(Boolean);
   const subtitle =
     item.destination?.name ||
     item.country?.name ||
@@ -46,6 +49,9 @@ function ResultCard({ section, item }: { section: Section['key']; item: any }) {
     (item.originCode && item.destinationCode ? `${item.originCode} → ${item.destinationCode}` : '') ||
     item.country ||
     '';
+  const subtitleWithExtra = extraDest.length
+    ? `${subtitle}${subtitle ? ' · ' : ''}${extraDest.join(' · ')}`
+    : subtitle;
   const price = typeof item.price === 'number' || typeof item.pricePerNight === 'number'
     ? (item.price ?? item.pricePerNight)
     : null;
@@ -76,12 +82,12 @@ function ResultCard({ section, item }: { section: Section['key']; item: any }) {
           <div className="text-sm font-semibold truncate" style={{ color: 'var(--color-on-surface)' }}>
             {title}
           </div>
-          {subtitle && (
+            {subtitleWithExtra && (
             <div className="mt-1 flex items-center gap-1 text-xs" style={{ color: 'var(--color-on-surface-variant)' }}>
               <MapPin className="w-3 h-3 shrink-0" />
-              <span className="truncate">{subtitle}</span>
+              <span className="truncate">{subtitleWithExtra}</span>
             </div>
-          )}
+            )}
         </div>
       </div>
       {price != null && (

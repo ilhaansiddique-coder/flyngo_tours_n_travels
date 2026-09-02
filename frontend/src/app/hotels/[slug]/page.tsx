@@ -30,6 +30,7 @@ interface HotelDetail {
   checkOutTime?: string | null;
   coverImageUrl?: string | null;
   destination?: { id: string; name: string; country: string; slug: string } | null;
+  additionalDestinations?: Array<{ destination?: { id?: string; name: string; country?: string } }>;
   images: HotelImage[];
 }
 
@@ -155,6 +156,15 @@ export default function HotelDetailPage() {
                 {[hotel.address, hotel.destination?.name, hotel.destination?.country].filter(Boolean).join(', ')}
               </span>
             )}
+            {(hotel.additionalDestinations || [])
+              .map((ad) => ad.destination)
+              .filter((d): d is { name: string } => !!d?.name)
+              .map((d) => (
+                <span key={d.name} className="inline-flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-accent" />
+                  {d.name}
+                </span>
+              ))}
             {hotel.checkInTime && (
               <span className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-accent" /> Check-in {hotel.checkInTime}

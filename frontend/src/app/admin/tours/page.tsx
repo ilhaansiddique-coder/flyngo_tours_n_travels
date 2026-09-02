@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
 import { ImageUploader } from '@/components/admin/image-uploader';
 import { CountryAutocomplete } from '@/components/admin/country-autocomplete';
+import { MultiCountryAutocomplete } from '@/components/admin/multi-country-autocomplete';
+import type { CountryOption } from '@/components/admin/country-autocomplete';
 import { tourImage } from '@/lib/entity-image';
 import { useEffect, useState } from 'react';
 import { Map, Search, Plus, Pencil, Trash2 } from 'lucide-react';
@@ -27,6 +29,7 @@ interface Tour {
   isActive?: boolean;
   destinationId?: string;
   destination?: { id: string; name: string };
+  additionalDestinations?: { destination?: { id: string; name: string; flagUrl?: string | null } }[];
   images?: { id: string; url: string; alt?: string }[];
   pointsAwarded?: number;
 }
@@ -85,6 +88,7 @@ export default function AdminToursPage() {
   });
 
   const [destName, setDestName] = useState('');
+  const [additionalNames, setAdditionalNames] = useState<CountryOption[]>([]);
 
   const fetchTours = async (page?: number) => {
     setLoading(true);
@@ -112,6 +116,7 @@ export default function AdminToursPage() {
     setEditingTour(null);
     setForm(initialForm);
     setDestName('');
+    setAdditionalNames([]);
     setModalOpen(true);
   };
 
@@ -132,6 +137,11 @@ export default function AdminToursPage() {
       isActive: tour.isActive ?? true,
     });
     setDestName(tour.destination?.name || '');
+    setAdditionalNames(
+      (tour.additionalDestinations || [])
+        .map((ad) => ad.destination)
+        .filter((d): d is { id: string; name: string; flagUrl?: string | null } => !!d),
+    );
     setModalOpen(true);
   };
 
@@ -142,6 +152,10 @@ export default function AdminToursPage() {
       const body = {
         title: form.title,
         destinationId: form.destinationId,
+        additionalDestinationIds: additionalNames.map((a) => ({
+          id: a.id || undefined,
+          name: a.name,
+        })),
         description: form.description,
         price: Number(form.price),
         duration: Number(form.duration),
@@ -280,7 +294,14 @@ export default function AdminToursPage() {
                           })()}
                         </td>
                         <td className="p-4 font-medium">{t.title}</td>
-                        <td className="p-4 text-on-surface-variant">{t.destination?.name || '\u2014'}</td>
+                        <td className="p-4 text-on-surface-variant">
+                          {t.destination?.name || '—'}
+                          {(t.additionalDestinations || []).length > 0 && (
+                            <span className="text-on-surface-variant/60">
+                              {' '}+{(t.additionalDestinations || []).length} more
+                            </span>
+                          )}
+                        </td>
                         <td className="p-4 font-medium">{formatCurrency(t.price)}</td>
                         <td className="p-4">{t.duration} days</td>
                         <td className="p-4">
@@ -366,6 +387,17 @@ export default function AdminToursPage() {
               }}
               placeholder="Select or type a destination/Country…"
             />
+          </FormField>
+
+          <FormField label="Additional Destinations">
+            <MultiCountryAutocomplete
+              value={additionalNames}
+              onChange={setAdditionalNames}
+              placeholder="Add destinations this tour also visits…"
+            />
+            <p className="text-xs text-on-surface-variant mt-1">
+              Optional. Pick a country or type a new one — it will be created automatically.
+            </p>
           </FormField>
 
           <FormField label="Description">

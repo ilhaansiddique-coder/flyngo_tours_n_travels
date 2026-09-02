@@ -370,12 +370,60 @@ model Destination {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  tours        Tour[]
-  hotels       Hotel[]
-  visaServices VisaService[]
+  tours           Tour[]
+  hotels          Hotel[]
+  visaServices    VisaService[]
+  tourLinks       TourDestination[]
+  hotelLinks      HotelDestination[]
+  visaLinks       VisaDestination[]
 
   @@unique([tenantId, slug])
   @@map("destinations")
+}
+
+// Join table: additional destinations for a tour (destinationId is the primary).
+model TourDestination {
+  id            String      @id @default(uuid())
+  tenantId      String      @map("tenant_id")
+  tourId        String      @map("tour_id")
+  destinationId String      @map("destination_id")
+  position      Int         @default(0)
+  tour          Tour        @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@unique([tourId, destinationId])
+  @@index([destinationId])
+  @@map("tour_destinations")
+}
+
+// Join table: additional destinations for a hotel (destinationId is the primary).
+model HotelDestination {
+  id            String      @id @default(uuid())
+  tenantId      String      @map("tenant_id")
+  hotelId       String      @map("hotel_id")
+  destinationId String      @map("destination_id")
+  position      Int         @default(0)
+  hotel         Hotel       @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@unique([hotelId, destinationId])
+  @@index([destinationId])
+  @@map("hotel_destinations")
+}
+
+// Join table: additional destinations for a visa service (destinationId is the primary).
+model VisaDestination {
+  id            String      @id @default(uuid())
+  tenantId      String      @map("tenant_id")
+  visaServiceId String      @map("visa_service_id")
+  destinationId String      @map("destination_id")
+  position      Int         @default(0)
+  visaService   VisaService @relation(fields: [visaServiceId], references: [id], onDelete: Cascade)
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@unique([visaServiceId, destinationId])
+  @@index([destinationId])
+  @@map("visa_destinations")
 }
 
 // =============================================================================
@@ -394,7 +442,6 @@ model Tour {
   highlights  String[] @default([])
   inclusions  String[] @default([])
   exclusions  String[] @default([])
-
   price     Decimal  @db.Decimal(10, 2)
   salePrice Decimal? @map("sale_price") @db.Decimal(10, 2)
   currency  String   @default("USD")
@@ -420,6 +467,7 @@ model Tour {
 
   images    Media[]
   itinerary ItineraryDay[]
+  additionalDestinations TourDestination[]
 
   @@unique([tenantId, slug])
   @@map("tours")
@@ -476,6 +524,7 @@ model Hotel {
 
   images Media[]
   rooms  Room[]
+  additionalDestinations HotelDestination[]
 
   @@unique([tenantId, slug])
   @@map("hotels")
@@ -563,6 +612,8 @@ model VisaService {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
+
+  additionalDestinations VisaDestination[]
 
   @@map("visa_services")
 }

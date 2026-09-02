@@ -43,6 +43,7 @@ interface TourDetail {
   endLocation?: string | null;
   coverImageUrl?: string | null;
   destination?: { id: string; name: string; country: string; slug: string } | null;
+  additionalDestinations?: Array<{ destination?: { id?: string; name: string; country?: string } }>;
   images: TourImage[];
   itinerary: ItineraryDay[];
 }
@@ -161,6 +162,14 @@ export default function TourDetailPage() {
                 {tour.destination.country ? `, ${tour.destination.country}` : ''}
               </span>
             )}
+            {(tour.additionalDestinations || [])
+              .map((ad) => ad.destination)
+              .filter((d): d is { name: string; country?: string } => !!d?.name)
+              .map((d) => (                <span key={d.name} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-accent/10 border border-accent/30 text-accent">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {d.name}
+                </span>
+              ))}
             {tour.tourType && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold capitalize bg-accent/10 border border-accent/30 text-accent">
                 {tour.tourType}

@@ -9,6 +9,8 @@ import { useApi } from '@/hooks/use-api';
 import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
 import { ImageUploader } from '@/components/admin/image-uploader';
 import { CountryAutocomplete } from '@/components/admin/country-autocomplete';
+import { MultiCountryAutocomplete } from '@/components/admin/multi-country-autocomplete';
+import type { CountryOption } from '@/components/admin/country-autocomplete';
 import { HotelRoomsManager } from '@/components/admin/hotel-rooms-manager';
 import { hotelImage } from '@/lib/entity-image';
 import { Building2, Plus, Pencil, Trash2, Star, Search, BedDouble } from 'lucide-react';
@@ -26,6 +28,7 @@ interface Hotel {
   description: string;
   destination?: Destination | null;
   destinationId?: string;
+  additionalDestinations?: { destination?: { id: string; name: string; flagUrl?: string | null } }[];
   starRating: number;
   pricePerNight: number;
   address?: string;
@@ -64,6 +67,7 @@ export default function AdminHotelsPage() {
 
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [destName, setDestName] = useState('');
+  const [additionalNames, setAdditionalNames] = useState<CountryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -115,6 +119,7 @@ export default function AdminHotelsPage() {
     setEditingHotel(null);
     setForm({ ...defaultForm });
     setDestName('');
+    setAdditionalNames([]);
     setFormError(null);
     setModalOpen(true);
   };
@@ -136,6 +141,11 @@ export default function AdminHotelsPage() {
       isActive: hotel.isActive ?? true,
     });
     setDestName(hotel.destination?.name || '');
+    setAdditionalNames(
+      (hotel.additionalDestinations || [])
+        .map((ad) => ad.destination)
+        .filter((d): d is { id: string; name: string; flagUrl?: string | null } => !!d),
+    );
     setFormError(null);
     setModalOpen(true);
   };
@@ -151,6 +161,7 @@ export default function AdminHotelsPage() {
       const body = {
         name: form.name.trim(),
         destinationId: form.destinationId,
+        additionalDestinationIds: additionalNames.map((a) => ({ id: a.id || undefined, name: a.name })),
         description: form.description.trim(),
         starRating: Number(form.starRating),
         pricePerNight: Number(form.pricePerNight),
@@ -278,7 +289,14 @@ export default function AdminHotelsPage() {
                         })()}
                       </td>
                       <td className="p-4 font-medium">{h.name}</td>
-                      <td className="p-4 text-on-surface-variant">{h.destination?.name ?? '—'}</td>
+                      <td className="p-4 text-on-surface-variant">
+                        {h.destination?.name ?? '—'}
+                        {(h.additionalDestinations || []).length > 0 && (
+                          <span className="text-on-surface-variant/60">
+                            {' '}+{(h.additionalDestinations || []).length} more
+                          </span>
+                        )}
+                      </td>
                       <td className="p-4 font-medium">{formatCurrency(h.pricePerNight)}</td>
                       <td className="p-4">{renderStarRating(h.starRating)}</td>
                       <td className="p-4">
@@ -377,6 +395,17 @@ export default function AdminHotelsPage() {
               }}
               placeholder="Select or type a destination/Country…"
             />
+          </FormField>
+
+          <FormField label="Additional Locations">
+            <MultiCountryAutocomplete
+              value={additionalNames}
+              onChange={setAdditionalNames}
+              placeholder="Add other locations this hotel is in…"
+            />
+            <p className="text-xs text-on-surface-variant mt-1">
+              Optional. Pick a country or type a new one — it will be created automatically.
+            </p>
           </FormField>
 
           <FormField label="Description" required>

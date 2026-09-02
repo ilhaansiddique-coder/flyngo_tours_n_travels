@@ -11,6 +11,33 @@ function slugify(text: string): string {
 export class ToursService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async resolveAdditionalIds(tenantId: string, addl: any[] | undefined, primaryId?: string): Promise<string[]> {
+    const ids: string[] = [];
+    for (const entry of Array.isArray(addl) ? addl : []) {
+      const rawId = typeof entry === 'string' ? entry : entry?.id || entry?.destinationId;
+      if (typeof rawId === 'string' && rawId && rawId !== primaryId && !ids.includes(rawId)) {
+        ids.push(rawId);
+        continue;
+      }
+      if (rawId) continue;
+      const name = String(entry?.name || entry?.countryName || '').trim();
+      if (!name) continue;
+      const slug = slugify(name);
+      const existing = await this.prisma.destination.findFirst({
+        where: { tenantId, OR: [{ slug }, { name: { equals: name, mode: 'insensitive' } }] },
+        select: { id: true },
+      });
+      const destId = existing?.id || (
+        await this.prisma.destination.create({
+          data: { tenantId, name, slug, country: name },
+          select: { id: true },
+        })
+      ).id;
+      if (destId !== primaryId && !ids.includes(destId)) ids.push(destId);
+    }
+    return ids;
+  }
+
   async findAll(tenantId: string, page = 1, limit = 20, q?: string, filters: ListQueryDto = {}) {
     const where: any = { tenantId, deletedAt: null };
 
@@ -32,6 +59,11 @@ export class ToursService {
       (term) => ({ description: { contains: term, mode: 'insensitive' } }),
       (term) => ({ destination: { name: { contains: term, mode: 'insensitive' } } }),
       (term) => ({ destination: { country: { contains: term, mode: 'insensitive' } } }),
+      (term) => ({
+        additionalDestinations: {
+          some: { destination: { name: { contains: term, mode: 'insensitive' } } },
+        },
+      }),
       (term) => ({ startLocation: { contains: term, mode: 'insensitive' } }),
       (term) => ({ endLocation: { contains: term, mode: 'insensitive' } }),
     ]);
@@ -41,7 +73,7 @@ export class ToursService {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        include: { destination: true, images: true },
+        include: { destination: true, images: true, additionalDestinations: { include: { destination: true } } },
         orderBy: orderByFor(filters.sort, 'price'),
       }),
       this.prisma.tour.count({ where }),
@@ -52,7 +84,12 @@ export class ToursService {
   async findById(identifier: string, tenantId: string) {
     const tour = await this.prisma.tour.findFirst({
       where: { AND: [{ tenantId }, { deletedAt: null }, { OR: [{ id: identifier }, { slug: identifier }] }] },
-      include: { destination: true, images: true, itinerary: { orderBy: { day: 'asc' } } },
+      include: {
+        destination: true,
+        images: true,
+        itinerary: { orderBy: { day: 'asc' } },
+        additionalDestinations: { include: { destination: true }, orderBy: { position: 'asc' } },
+      },
     });
     if (!tour) throw new NotFoundException('Tour not found');
     return tour;
@@ -63,10 +100,14 @@ export class ToursService {
     const existing = await this.prisma.tour.findFirst({ where: { tenantId, slug } });
     if (existing) throw new ConflictException('A tour with this title already exists');
 
+    const additionalIds = await this.resolveAdditionalIds(tenantId, data.additionalDestinationIds, data.destinationId);
+    const primaryId = data.destinationId;
+    const additionalIdsFiltered = additionalIds.filter((id) => id !== primaryId);
+
     return this.prisma.tour.create({
       data: {
         tenantId,
-        destinationId: data.destinationId,
+        destinationId: primaryId,
         title: data.title,
         slug,
         description: data.description || '',
@@ -86,8 +127,15 @@ export class ToursService {
         isFeatured: data.isFeatured ?? false,
         coverImageUrl: data.coverImageUrl,
         pointsAwarded: Number(data.pointsAwarded) || 0,
+        additionalDestinations: {
+          create: additionalIdsFiltered.map((destinationId, i) => ({
+            tenantId,
+            destinationId,
+            position: i,
+          })),
+        },
       },
-      include: { destination: true, images: true },
+      include: { destination: true, images: true, additionalDestinations: { include: { destination: true } } },
     });
   }
 
@@ -99,6 +147,20 @@ export class ToursService {
     if (data.title && slug !== existing.slug) {
       const dupe = await this.prisma.tour.findFirst({ where: { tenantId, slug, id: { not: id } } });
       if (dupe) throw new ConflictException('A tour with this title already exists');
+    }
+
+    // Replace the set of additional destinations (fresh create, delete removed).
+    let additionalUpdate: any = undefined;
+    if (data.additionalDestinationIds !== undefined) {
+      const primaryId = data.destinationId ?? existing.destinationId;
+      const additionalIds = await this.resolveAdditionalIds(tenantId, data.additionalDestinationIds, primaryId);
+      const ids = additionalIds
+        .filter((did) => did !== primaryId)
+        .map((did, i) => ({ tenantId, destinationId: did, position: i }));
+      additionalUpdate = {
+        deleteMany: {},
+        create: ids,
+      };
     }
 
     return this.prisma.tour.update({
@@ -124,8 +186,9 @@ export class ToursService {
         isFeatured: data.isFeatured,
         coverImageUrl: data.coverImageUrl,
         pointsAwarded: data.pointsAwarded === undefined ? undefined : Number(data.pointsAwarded) || 0,
+        ...(additionalUpdate ? { additionalDestinations: additionalUpdate } : {}),
       },
-      include: { destination: true, images: true },
+      include: { destination: true, images: true, additionalDestinations: { include: { destination: true } } },
     });
   }
 

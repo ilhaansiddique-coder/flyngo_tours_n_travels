@@ -34,14 +34,23 @@ export class VisaService implements OnModuleInit {
       (term) => ({ title: { contains: term, mode: 'insensitive' } }),
       (term) => ({ description: { contains: term, mode: 'insensitive' } }),
       (term) => ({ country: { name: { contains: term, mode: 'insensitive' } } }),
+      (term) => ({
+        additionalDestinations: {
+          some: { destination: { name: { contains: term, mode: 'insensitive' } } },
+        },
+      }),
     ]);
     if (or) where.OR = or;
     if (countrySlug && countrySlug.trim()) {
-      where.country = { slug: countrySlug.trim() };
+      where.OR = [
+        ...(where.OR ? where.OR : []),
+        { country: { slug: countrySlug.trim() } },
+        { additionalDestinations: { some: { destination: { slug: countrySlug.trim() } } } },
+      ];
     }
     return this.prisma.visaService.findMany({
       where,
-      include: { country: true },
+      include: { country: true, additionalDestinations: { include: { destination: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -49,7 +58,10 @@ export class VisaService implements OnModuleInit {
   async getVisaServiceById(id: string, tenantId: string) {
     const service = await this.prisma.visaService.findFirst({
       where: { id, tenantId, deletedAt: null },
-      include: { country: true },
+      include: {
+        country: true,
+        additionalDestinations: { include: { destination: true }, orderBy: { position: 'asc' } },
+      },
     });
     if (!service) throw new NotFoundException('Visa service not found');
     return service;
@@ -68,6 +80,8 @@ export class VisaService implements OnModuleInit {
       await this.ensureVisaCountry(tenantId, destination.name, data.price, data.currency, data.isActive, destination.flagUrl);
     }
 
+    const additionalIds = await this.resolveAdditionalIds(tenantId, data.additionalDestinationIds, destinationId, data);
+
     return this.prisma.visaService.create({
       data: {
         tenantId,
@@ -80,8 +94,11 @@ export class VisaService implements OnModuleInit {
         requirements: data.requirements || [],
         pointsAwarded: Number(data.pointsAwarded) || 0,
         isActive: data.isActive ?? true,
+        additionalDestinations: {
+          create: additionalIds.map((did, i) => ({ tenantId, destinationId: did, position: i })),
+        },
       },
-      include: { country: true },
+      include: { country: true, additionalDestinations: { include: { destination: true } } },
     });
   }
 
@@ -98,10 +115,13 @@ export class VisaService implements OnModuleInit {
       await this.ensureVisaCountry(tenantId, destination.name, data.price, data.currency, data.isActive, destination.flagUrl);
     }
 
+    const finalPrimary = destinationId ?? existing.destinationId;
+    const additionalIds = await this.resolveAdditionalIds(tenantId, data.additionalDestinationIds, finalPrimary, data);
+
     return this.prisma.visaService.update({
       where: { id },
       data: {
-        destinationId: destinationId ?? existing.destinationId,
+        destinationId: finalPrimary,
         title: data.title,
         description: data.description,
         processingTime: data.processingTime,
@@ -110,8 +130,16 @@ export class VisaService implements OnModuleInit {
         requirements: data.requirements,
         pointsAwarded: data.pointsAwarded === undefined ? undefined : Number(data.pointsAwarded) || 0,
         isActive: data.isActive,
+        ...(data.additionalDestinationIds !== undefined
+          ? {
+              additionalDestinations: {
+                deleteMany: {},
+                create: additionalIds.map((did, i) => ({ tenantId, destinationId: did, position: i })),
+              },
+            }
+          : {}),
       },
-      include: { country: true },
+      include: { country: true, additionalDestinations: { include: { destination: true } } },
     });
   }
 
@@ -152,6 +180,37 @@ export class VisaService implements OnModuleInit {
       data: { tenantId, name, slug, country: name, continent: undefined, imageUrl: undefined, isFeatured: false },
     });
     return { destinationId: created.id };
+  }
+
+  /** Resolve the additional (non-primary) destination ids. Each entry may be a
+   *  destination id/object, or a raw country name that gets auto-created, and is
+   *  uniqued against the primary destination. Also ensures a VisaCountry card. */
+  private async resolveAdditionalIds(
+    tenantId: string,
+    addl: any[] | undefined,
+    primaryId: string | undefined,
+    data: any,
+  ): Promise<string[]> {
+    const ids: string[] = [];
+    for (const entry of Array.isArray(addl) ? addl : []) {
+      const id = typeof entry === 'string' ? entry : entry?.id || entry?.destinationId;
+      if (typeof id === 'string' && id && id !== primaryId && !ids.includes(id)) {
+        ids.push(id);
+        continue;
+      }
+      if (id) continue; // exists but is the primary or a duplicate
+      const name = String(entry?.name || entry?.countryName || '').trim();
+      if (!name) continue;
+      const { destinationId } = await this.resolveCountry(tenantId, { countryName: name });
+      if (destinationId && destinationId !== primaryId && !ids.includes(destinationId)) {
+        const dest = await this.prisma.destination.findUnique({ where: { id: destinationId } });
+        if (dest) {
+          await this.ensureVisaCountry(tenantId, dest.name, data.price, data.currency, data.isActive, dest.flagUrl);
+        }
+        ids.push(destinationId);
+      }
+    }
+    return ids;
   }
 
   /** Auto-create a VisaCountry (public landing card) for a service's country if

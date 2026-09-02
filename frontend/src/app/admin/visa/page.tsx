@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal, FormField, FormInput, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
 import { CountryAutocomplete } from '@/components/admin/country-autocomplete';
+import { MultiCountryAutocomplete } from '@/components/admin/multi-country-autocomplete';
+import type { CountryOption } from '@/components/admin/country-autocomplete';
 import { countryImage } from '@/lib/country-image';
 import { Globe, Plus, Pencil, Trash2, Search, Coins } from 'lucide-react';
 
@@ -18,6 +20,7 @@ interface VisaService {
   country?: { id: string; name: string; slug?: string };
   destinationId?: string;
   destination?: { id: string; name: string };
+  additionalDestinations?: { destination?: { id: string; name: string; flagUrl?: string | null } }[];
   description?: string;
   price: number;
   processingTime?: string;
@@ -39,6 +42,8 @@ export default function AdminVisaPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [deleteItem, setDeleteItem] = useState<VisaService | null>(null);
+
+  const [additionalNames, setAdditionalNames] = useState<CountryOption[]>([]);
 
   const [form, setForm] = useState({
     title: '',
@@ -71,6 +76,7 @@ export default function AdminVisaPage() {
   const openAddModal = () => {
     setEditItem(null);
     setForm({ title: '', countryName: '', description: '', processingTime: '', price: '', points: '', requirements: '', isActive: true });
+    setAdditionalNames([]);
     setModalOpen(true);
   };
 
@@ -86,6 +92,11 @@ export default function AdminVisaPage() {
       requirements: Array.isArray(item.requirements) ? item.requirements.join(', ') : (item.requirements || ''),
       isActive: item.isActive,
     });
+    setAdditionalNames(
+      (item.additionalDestinations || [])
+        .map((ad) => ad.destination)
+        .filter((d): d is { id: string; name: string; flagUrl?: string | null } => !!d),
+    );
     setModalOpen(true);
   };
 
@@ -96,6 +107,7 @@ export default function AdminVisaPage() {
       const body: any = {
         title: form.title.trim(),
         countryName: form.countryName.trim(),
+        additionalDestinationIds: additionalNames.map((a) => ({ id: a.id || undefined, name: a.name })),
         description: form.description.trim(),
         processingTime: form.processingTime.trim(),
         price: Number(form.price),
@@ -217,6 +229,11 @@ export default function AdminVisaPage() {
                     </td>
                     <td className="p-4 text-on-surface-variant">
                       {v.country?.name || v.destination?.name || '—'}
+                      {(v.additionalDestinations || []).length > 0 && (
+                        <span className="text-on-surface-variant/60">
+                          {' '}+{(v.additionalDestinations || []).length} more
+                        </span>
+                      )}
                     </td>
                     <td className="p-4 font-medium">{formatCurrency(v.price)}</td>
                     <td className="p-4">
@@ -272,6 +289,16 @@ export default function AdminVisaPage() {
           />
           <p className="text-xs text-on-surface-variant mt-1">
             Pick from the list or type a new country — it will be created automatically and show up next time.
+          </p>
+        </FormField>
+        <FormField label="Additional Countries">
+          <MultiCountryAutocomplete
+            value={additionalNames}
+            onChange={setAdditionalNames}
+            placeholder="Add other countries covered by this visa…"
+          />
+          <p className="text-xs text-on-surface-variant mt-1">
+            Optional. Add multiple countries this visa service covers.
           </p>
         </FormField>
         <FormField label="Description" required>

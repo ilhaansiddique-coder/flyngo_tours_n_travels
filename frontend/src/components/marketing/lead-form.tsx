@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Phone, Mail, User, Loader2, CheckCircle2, MapPin, Users, Wallet } from 'lucide-react';
+import { PhoneInput } from '@/components/ui/phone-input';
+import { DEFAULT_COUNTRY_CODE, findDialByCode } from '@/lib/country-dial-codes';
 import { submitLead, trackEvent } from '@/lib/tracking-client';
 
 export interface LeadFormProps {
@@ -29,13 +31,14 @@ export function LeadForm({
 }: LeadFormProps) {
   const [form, setForm] = useState({
     fullName: '',
-    phone: '',
     email: '',
     travelers: 1,
     departureCity: '',
     budget: '',
     message: '',
   });
+  const [phoneCountry, setPhoneCountry] = useState<string>(DEFAULT_COUNTRY_CODE);
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,9 +48,10 @@ export function LeadForm({
     setSubmitting(true);
     setError(null);
     try {
+      const dialCode = findDialByCode(phoneCountry)?.dial ?? '';
       await submitLead({
         fullName: form.fullName,
-        phone: form.phone,
+        phone: dialCode + phoneNumber,
         email: form.email || undefined,
         message: form.message || undefined,
         formSlug,
@@ -102,17 +106,15 @@ export function LeadForm({
         />
       </div>
 
-      <div className="relative">
-        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-accent" />
-        <input
-          required
-          type="tel"
-          placeholder="Phone (+880...)"
-          value={form.phone}
-          onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          className={inputCls + ' pl-9'}
-        />
-      </div>
+      <PhoneInput
+        countryCode={phoneCountry}
+        number={phoneNumber}
+        onCountryCodeChange={setPhoneCountry}
+        onNumberChange={setPhoneNumber}
+        required
+        placeholder="Phone number"
+        name="phone"
+      />
 
       <div className="relative">
         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-accent" />

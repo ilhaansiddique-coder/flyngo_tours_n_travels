@@ -12,9 +12,10 @@ export function Card({ className, children, hover = true, padding = 'md', premiu
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-2xl border border-outline-variant/70 bg-surface-container/70 backdrop-blur-xl text-on-surface card-elevated card-glow',
-        hover && 'transition-all duration-500 hover:-translate-y-1.5 hover:border-accent/30',
-        premium && 'card-premium-border card-top-accent',
+        'relative overflow-hidden rounded-3xl border border-outline-variant/50 bg-surface-container backdrop-blur-xl text-on-surface',
+        'shadow-[0_2px_8px_rgba(12,22,40,0.06),0_8px_24px_-4px_rgba(12,22,40,0.08)]',
+        hover && 'transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_4px_12px_rgba(12,22,40,0.08),0_16px_40px_-6px_rgba(12,22,40,0.12)]',
+        premium && 'card-premium-border',
         {
           'p-0': padding === 'none',
           'p-4': padding === 'sm',

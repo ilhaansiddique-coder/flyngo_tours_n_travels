@@ -117,13 +117,13 @@ export function CuratedExperiences() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {EXPERIENCES.map((exp) => (
           <article
             key={exp.id}
             onMouseEnter={() => setHovered(exp.id)}
             onMouseLeave={() => setHovered(null)}
-            className={`group relative overflow-hidden rounded-2xl border border-hairline surface-card card-elevated card-glow card-premium-border cursor-pointer transition-all duration-500 hover:-translate-y-1 hover:border-accent-soft ${
+            className={`group relative overflow-hidden rounded-3xl border border-outline-variant/50 bg-surface-container cursor-pointer transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_4px_12px_rgba(12,22,40,0.08),0_16px_40px_-6px_rgba(12,22,40,0.12)] ${
               exp.size === 'lg' ? 'md:col-span-2 h-[520px]' : 'h-[520px]'
             }`}
           >
@@ -149,30 +149,28 @@ export function CuratedExperiences() {
               </div>
             )}
 
-            <div className="absolute inset-x-0 bottom-0 p-7 sm:p-8">
-              <div className="flex items-center gap-2 text-xs text-muted mb-3">
+            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
+              <div className="flex items-center gap-2 text-xs text-muted mb-2">
                 <MapPin className="w-3.5 h-3.5 text-accent" />
                 <span className="font-semibold">{exp.location}</span>
                 <span className="text-muted/60">·</span>
                 <span className="text-muted/80">{exp.meta}</span>
               </div>
-              <h3 className={`font-display font-bold text-on-bg leading-[1.1] tracking-[-0.02em] mb-3 ${exp.size === 'lg' ? 'text-3xl sm:text-4xl' : 'text-2xl'}`}>
+              <h3 className={`font-display font-bold text-on-bg leading-[1.1] tracking-[-0.02em] mb-2 ${exp.size === 'lg' ? 'text-3xl sm:text-4xl' : 'text-2xl'}`}>
                 {exp.title}
               </h3>
-              <p className={`text-muted leading-relaxed mb-6 ${exp.size === 'lg' ? 'max-w-md' : ''}`}>
+              <p className={`text-muted leading-relaxed mb-4 ${exp.size === 'lg' ? 'max-w-md' : ''}`}>
                 {exp.description}
               </p>
               <div className="flex items-center justify-between">
                 <Link
                   href={exp.href}
-                  className="group/btn inline-flex items-center gap-2 text-sm font-bold text-on-bg hover:text-accent transition-colors duration-300"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-white rounded-full px-5 py-2.5 transition-all duration-300 hover:shadow-lg hover:shadow-accent/20"
+                  style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-primary))' }}
                 >
                   {exp.cta}
-                  <span className="w-7 h-7 rounded-full border border-soft group-hover/btn:border-accent group-hover/btn:bg-accent group-hover/btn:text-[var(--color-on-accent)] flex items-center justify-center transition-all duration-300 group-hover/btn:scale-110">
-                    <ArrowUpRight className="w-3.5 h-3.5" />
-                  </span>
                 </Link>
-                <div className="hidden sm:flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted font-semibold">
+                <div className="hidden sm:flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-white/60 font-semibold">
                   <Plane className="w-3 h-3" />
                   <span>{hovered === exp.id ? 'Ready' : 'Tap to view'}</span>
                 </div>

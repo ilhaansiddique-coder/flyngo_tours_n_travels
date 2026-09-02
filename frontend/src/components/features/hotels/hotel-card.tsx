@@ -3,7 +3,7 @@ import { formatCurrency } from '@/lib/utils';
 import { hotelImage } from '@/lib/entity-image';
 import { DestinationList } from '@/components/features/destination-list';
 import Link from 'next/link';
-import { Star, ArrowRight } from 'lucide-react';
+import { Star, MapPin, Heart } from 'lucide-react';
 
 interface HotelCardProps {
   id: string;
@@ -18,59 +18,71 @@ interface HotelCardProps {
   coverImageUrl?: string;
 }
 
-export function HotelCard({ slug, name, starRating, pricePerNight, destination, additionalDestinations, amenities, imageUrl, coverImageUrl }: HotelCardProps) {
+export function HotelCard({ slug, name, starRating, pricePerNight, destination, additionalDestinations, imageUrl, coverImageUrl }: HotelCardProps) {
   return (
     <Card className="group overflow-hidden flex flex-col" hover={false} premium>
-      <div className="relative h-56 overflow-hidden rounded-t-2xl">
+      <div className="relative h-60 overflow-hidden rounded-t-3xl">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-tertiary" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={hotelImage({ coverImageUrl, imageUrl, destination, name })}
           alt={name}
           loading="lazy"
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
-        <div className="absolute inset-0 card-image-overlay z-10" />
-        <div className="absolute top-4 right-4 z-20">
-          <div className="flex items-center gap-0.5 bg-background/40 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-lg">
-            {Array.from({ length: starRating || 0 }).map((_, i) => (
-              <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400 star-glow" />
-            ))}
-            <span className="ml-1 text-xs font-bold text-on-bg">{starRating}★</span>
-          </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1">
+          {Array.from({ length: starRating || 0 }).map((_, i) => (
+            <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+          ))}
         </div>
+
+        <button
+          className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.85)',
+            backdropFilter: 'blur(8px)',
+          }}
+          aria-label="Save"
+          onClick={(e) => e.preventDefault()}
+        >
+          <Heart className="w-4 h-4 text-gray-600" />
+        </button>
+
         <div className="absolute bottom-4 left-4 right-4 z-20">
-          <DestinationList
-            primary={destination}
-            additions={additionalDestinations}
-            emptyLabel="View location"
-            className="text-xs font-semibold uppercase tracking-wider text-on-bg/70 mb-1"
-          />
-          <h3 className="text-xl font-bold text-on-bg leading-tight group-hover:text-accent transition-colors duration-300">{name}</h3>
+          <div className="flex items-center gap-1.5 mb-2">
+            <MapPin className="w-3.5 h-3.5 text-white/80" />
+            <DestinationList
+              primary={destination}
+              additions={additionalDestinations}
+              emptyLabel="View location"
+              className="text-xs font-medium text-white/90"
+            />
+          </div>
+          <h3 className="text-xl font-bold text-white leading-tight tracking-tight">{name}</h3>
         </div>
       </div>
-      <div className="p-6 flex flex-col flex-1">
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {amenities?.slice(0, 3).map((amenity) => (
-            <span key={amenity} className="amenity-pill">
-              {amenity}
-            </span>
+
+      <div className="px-5 py-4 flex flex-col flex-1">
+        <div className="flex items-center gap-1 mb-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star key={i} className={`w-3.5 h-3.5 ${i < (starRating || 0) ? 'fill-amber-400 text-amber-400' : 'fill-gray-200 text-gray-200'}`} />
           ))}
-          {amenities && amenities.length > 3 && (
-            <span className="text-xs text-on-surface-variant self-center ml-1">+{amenities.length - 3}</span>
-          )}
+          <span className="text-xs text-on-surface-variant ml-1">({starRating || 0}.0)</span>
         </div>
-        <div className="flex items-center justify-between mt-auto pt-4 border-t border-outline-variant/50">
-          <div className="price-tag">
-            <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold block">Per night</span>
-            <p className="text-xl font-bold text-accent">{formatCurrency(pricePerNight)}</p>
+
+        <div className="mt-auto pt-3 border-t border-outline-variant/40 flex items-end justify-between">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">Per night</p>
+            <p className="text-2xl font-bold text-accent leading-none mt-0.5">{formatCurrency(pricePerNight)}</p>
           </div>
           <Link
             href={`/hotels/${slug}`}
-            className="group/cta inline-flex items-center gap-2 text-sm font-bold text-accent hover:text-primary transition-colors cta-glow rounded-full px-4 py-2 border border-accent/20 hover:border-accent/40 hover:bg-accent/5"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-white rounded-full px-5 py-2.5 transition-all duration-300 hover:shadow-lg hover:shadow-accent/20"
+            style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-primary))' }}
           >
-            View Details
-            <ArrowRight className="w-3.5 h-3.5 group-hover/cta:translate-x-1 transition-transform duration-300" />
+            Book Now
           </Link>
         </div>
       </div>

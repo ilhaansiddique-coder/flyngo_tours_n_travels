@@ -118,10 +118,10 @@ export function DestinationsShowcase() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading
           ? Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-2xl border border-hairline surface-card overflow-hidden animate-pulse">
+              <div key={i} className="rounded-3xl border border-outline-variant/50 bg-surface-container overflow-hidden animate-pulse">
                 <div className="h-72 bg-on-surface-soft" />
                 <div className="px-5 py-4 space-y-2">
                   <div className="h-3 w-1/3 rounded bg-on-surface-soft" />
@@ -130,76 +130,64 @@ export function DestinationsShowcase() {
               </div>
             ))
           : filtered.map((d) => {
-              // Admin-set image wins; otherwise a deterministic landmark photo
-              // keyed by the destination name so every card always shows a
-              // relevant image instead of an empty grid placeholder.
               const image = destinationImage(d);
               return (
                 <a
                   key={d.id}
                   href={`/destinations/${d.slug}`}
-                  className="group relative overflow-hidden rounded-2xl border border-hairline surface-card card-elevated card-glow card-premium-border hover-accent-ring transition-all duration-500 hover:-translate-y-1"
+                  className="group relative overflow-hidden rounded-3xl border border-outline-variant/50 bg-surface-container transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_4px_12px_rgba(12,22,40,0.08),0_16px_40px_-6px_rgba(12,22,40,0.12)]"
                 >
                   <div className="relative h-72 overflow-hidden bg-gradient-to-br from-primary to-tertiary">
                     {image ? (
                       <img
                         src={image}
                         alt={d.name}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                       />
                     ) : (
                       <div className="absolute inset-0 bg-grid opacity-50" />
                     )}
-                    <div className="absolute inset-0 scrim-soft" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                     {d.isFeatured && (
-                      <div className="absolute top-4 left-4">
+                      <div className="absolute top-4 left-4 z-10">
                         <Tag tone="accent">Featured</Tag>
                       </div>
                     )}
-                    <div className="absolute top-4 right-4">
+                    <div className="absolute top-4 right-4 z-10">
                       <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 group-hover:rotate-45"
+                        className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
                         style={{
-                          backgroundColor: 'color-mix(in oklab, var(--color-background) 40%, transparent)',
+                          backgroundColor: 'rgba(255,255,255,0.85)',
                           backdropFilter: 'blur(8px)',
-                          border: '1px solid color-mix(in oklab, var(--color-on-background) 15%, transparent)',
-                          color: 'var(--color-on-background)',
                         }}
                       >
-                        <ArrowUpRight className="w-4 h-4" />
+                        <ArrowUpRight className="w-4 h-4 text-gray-600" />
                       </div>
                     </div>
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="flex items-center gap-1.5 text-xs text-on-bg/80 mb-1">
-                        <MapPin className="w-3 h-3 text-accent" />
-                        <span className="font-semibold">{d.country}</span>
+                    <div className="absolute bottom-4 left-4 right-4 z-10">
+                      <div className="flex items-center gap-1.5 text-xs text-white/80 mb-1.5">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span className="font-medium">{d.country}</span>
                       </div>
-                      <h3 className="font-display text-2xl font-bold text-on-bg tracking-tight">
+                      <h3 className="text-2xl font-bold text-white tracking-tight">
                         {d.name}
                       </h3>
                     </div>
                   </div>
                   {(d._count?.tours != null || d._count?.hotels != null) && (
-                    <div className="flex items-center justify-between px-5 py-4 border-t border-faint">
-                      <div className="flex items-center gap-4 text-xs">
-                        {d._count?.tours != null && (
-                          <>
-                            <div>
-                              <div className="text-[10px] uppercase tracking-widest text-muted font-semibold">Tours</div>
-                              <div className="text-on-bg font-bold mt-0.5">{d._count.tours}</div>
-                            </div>
-                            {d._count?.hotels != null && (
-                              <div className="h-6 w-px" style={{ backgroundColor: 'var(--color-outline-variant)' }} />
-                            )}
-                          </>
-                        )}
-                        {d._count?.hotels != null && (
-                          <div>
-                            <div className="text-[10px] uppercase tracking-widest text-muted font-semibold">Hotels</div>
-                            <div className="text-on-bg font-bold mt-0.5">{d._count.hotels}</div>
-                          </div>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-4 px-5 py-3.5">
+                      {d._count?.tours != null && (
+                        <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                          <span className="font-semibold text-on-bg">{d._count.tours}</span>
+                          <span>tours</span>
+                        </div>
+                      )}
+                      {d._count?.hotels != null && (
+                        <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                          <span className="font-semibold text-on-bg">{d._count.hotels}</span>
+                          <span>hotels</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </a>

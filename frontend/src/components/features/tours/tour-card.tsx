@@ -3,7 +3,7 @@ import { formatCurrency } from '@/lib/utils';
 import { tourImage } from '@/lib/entity-image';
 import { DestinationList } from '@/components/features/destination-list';
 import Link from 'next/link';
-import { Clock, Users, MapPin, Star, Heart } from 'lucide-react';
+import { Clock, Users, MapPin, Star } from 'lucide-react';
 
 interface TourCardProps {
   id: string;
@@ -33,18 +33,6 @@ export function TourCard({ slug, title, price, duration, maxGuests, destination,
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-
-        <button
-          className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
-          style={{
-            backgroundColor: 'rgba(255,255,255,0.85)',
-            backdropFilter: 'blur(8px)',
-          }}
-          aria-label="Save"
-          onClick={(e) => e.preventDefault()}
-        >
-          <Heart className="w-4 h-4 text-gray-600" />
-        </button>
 
         <div className="absolute bottom-4 left-4 right-4 z-20">
           <div className="flex items-center gap-1.5 mb-2">

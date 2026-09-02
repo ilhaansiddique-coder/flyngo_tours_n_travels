@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useApi } from '@/hooks/use-api';
 import { useLocale } from '@/contexts/locale-context';
-import { MapPin, Clock, Heart, Star } from 'lucide-react';
+import { MapPin, Clock, Star } from 'lucide-react';
 import { SectionHeading } from '@/components/ui/section-heading';
 import { formatCurrency } from '@/lib/utils';
 import { tourImage } from '@/lib/entity-image';
@@ -144,17 +144,6 @@ export function PopularPackages() {
                   </div>
                 )}
 
-                <button
-                  className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
-                  style={{
-                    backgroundColor: 'rgba(255,255,255,0.85)',
-                    backdropFilter: 'blur(8px)',
-                  }}
-                  aria-label="Save"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  <Heart className="w-4 h-4 text-gray-600" />
-                </button>
               </div>
 
               <div className="px-5 py-4 flex flex-col flex-1">

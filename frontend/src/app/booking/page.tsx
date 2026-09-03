@@ -257,7 +257,7 @@ function SectionHeading({ title, help }: { title: string; help?: string }) {
 
 export default function BookingPage() {
   const { currentStep, setStep, selectedItem, totalAmount, reset, setFormData, formData } = useBookingStore();
-  const { createBooking, getPaymentMethods, uploadPaymentReceipt, submitPaymentConfirmation } = useApi();
+  const { createBooking, getPaymentMethods, uploadPaymentReceipt, submitPaymentConfirmation, uploadMedia } = useApi();
   const { t, locale } = useLocale();
   const isBn = locale === 'bn';
   const [submitting, setSubmitting] = useState(false);
@@ -283,6 +283,8 @@ export default function BookingPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [cashAmount, setCashAmount] = useState('');
   const [bankAmount, setBankAmount] = useState('');
+  const [docUrls, setDocUrls] = useState<Record<string, string>>({});
+  const [docUploading, setDocUploading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -359,6 +361,23 @@ export default function BookingPage() {
       setPaymentError(err.message || (isBn ? 'রসিদ আপলোড ব্যর্থ হয়েছে' : 'Receipt upload failed'));
     } finally {
       setUploading(false);
+    }
+  };
+
+  const uploadVisaDoc = async (key: string, files: FileList | null) => {
+    if (!files?.length) return;
+    setDocUploading((prev) => ({ ...prev, [key]: true }));
+    try {
+      const file = files[0];
+      const res = (await uploadMedia(file, { folder: 'visa-documents' })) as { url: string };
+      if (res?.url) {
+        setDocUrls((prev) => ({ ...prev, [key]: res.url }));
+        updateForm(key, res.url);
+      }
+    } catch {
+      setError(isBn ? 'ফাইল আপলোড ব্যর্থ হয়েছে' : 'File upload failed');
+    } finally {
+      setDocUploading((prev) => ({ ...prev, [key]: false }));
     }
   };
 
@@ -544,6 +563,18 @@ export default function BookingPage() {
               accommodation: formData.accommodation,
               meals: formData.meals,
               budget: formData.budget,
+            }
+          : bookingType === 'visa'
+          ? {
+              ...(formData.destination ? { destination: formData.destination } : {}),
+              ...(formData.visaType ? { visaType: formData.visaType } : {}),
+              ...(formData.arrivalDate ? { arrivalDate: formData.arrivalDate } : {}),
+              ...(formData.departureDate ? { departureDate: formData.departureDate } : {}),
+              ...(formData.purpose ? { purpose: formData.purpose } : {}),
+              ...(['doc_passport', 'doc_photos', 'doc_bank', 'doc_nid', 'doc_ticket', 'doc_hotel', 'doc_cover', 'doc_employment'].reduce<Record<string, string | boolean>>((acc, key) => {
+                if (formData[key]) acc[key] = formData[key];
+                return acc;
+              }, {})),
             }
           : undefined,
       })) as any;
@@ -1042,16 +1073,38 @@ export default function BookingPage() {
                       { key: 'doc_cover', label: 'Cover letter (we can draft this for you)' },
                       { key: 'doc_employment', label: 'Employment / student letter' },
                     ].map((d) => (
-                      <label key={d.key} className="flex items-start gap-3 rounded-xl border border-soft p-3 cursor-pointer hover:border-medium transition-colors bg-surface-container/60">
-                        <input
-                          type="checkbox"
-                          checked={!!formData[d.key]}
-                          onChange={(e) => updateForm(d.key, e.target.checked ? 'yes' : '')}
-                          className="mt-0.5"
-                          style={{ accentColor: 'var(--color-primary)' }}
-                        />
-                        <span className="text-sm text-on-surface">{d.label}</span>
-                      </label>
+                      <div key={d.key} className="rounded-xl border border-soft p-3 transition-colors bg-surface-container/60 space-y-2">
+                        <label className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={!!formData[d.key]}
+                            onChange={(e) => updateForm(d.key, e.target.checked ? (docUrls[d.key] || 'yes') : '')}
+                            className="mt-0.5"
+                            style={{ accentColor: 'var(--color-primary)' }}
+                          />
+                          <span className="text-sm text-on-surface">{d.label}</span>
+                        </label>
+                        {isPresetBooking && (
+                          <div className="flex items-center gap-2 pl-7">
+                            <label className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer transition-colors">
+                              <Upload className="w-3.5 h-3.5" />
+                              {docUploading[d.key] ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : docUrls[d.key] ? (
+                                'Uploaded'
+                              ) : (
+                                'Upload'
+                              )}
+                              <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => { void uploadVisaDoc(d.key, e.target.files); e.currentTarget.value = ''; }} />
+                            </label>
+                            {docUrls[d.key] && (
+                              <a href={docUrls[d.key]} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline truncate max-w-[100px]">
+                                View
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                   <Input label={isBn ? 'নোট (ঐ�্ছিক)' : t('booking_notes')} value={formData.notes || ''} onChange={(e) => updateForm('notes', e.target.value)} placeholder="Anything we should know?" />

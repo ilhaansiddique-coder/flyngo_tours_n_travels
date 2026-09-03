@@ -61,8 +61,8 @@ export function useApi() {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/destinations' + qs);
   }, []);
-  const getDestinationAutocomplete = useCallback(async (q?: string, limit = 25) => {
-    const qs = new URLSearchParams({ q: q || '', limit: String(limit) }).toString();
+  const getDestinationAutocomplete = useCallback(async (q?: string, limit = 25, toursOnly = false) => {
+    const qs = new URLSearchParams({ q: q || '', limit: String(limit), ...(toursOnly ? { toursOnly: 'true' } : {}) }).toString();
     return api.get('/destinations/autocomplete?' + qs);
   }, []);
   const resolveDestination = useCallback(async (name: string) => api.post('/destinations/resolve', { name }, auth()), [auth]);

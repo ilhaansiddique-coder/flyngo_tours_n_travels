@@ -61,7 +61,7 @@ export function DestinationAutocomplete({
   mode = 'city',
   filterForPackages = false,
 }: DestinationAutocompleteProps) {
-  const { getDestinations, getVisaCountries } = useApi();
+  const { getDestinationAutocomplete, getVisaCountries } = useApi();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<(Destination | VisaCountryItem | CountryDial)[]>([]);
   const [loading, setLoading] = useState(false);
@@ -111,9 +111,7 @@ export function DestinationAutocomplete({
           );
           setItems([...local, ...extras]);
         } else {
-          const params: Record<string, string> = { q: q.trim(), limit: '8' };
-          if (filterForPackages) params.toursOnly = 'true';
-          const res: any = await getDestinations(params);
+          const res: any = await getDestinationAutocomplete(q.trim(), 8, filterForPackages);
           const list = res?.items ?? res?.data ?? res ?? [];
           setItems(Array.isArray(list) ? list : []);
         }
@@ -128,7 +126,7 @@ export function DestinationAutocomplete({
         setLoading(false);
       }
     },
-    [getDestinations, getVisaCountries, mode, filterForPackages],
+    [getDestinationAutocomplete, getVisaCountries, mode, filterForPackages],
   );
 
   function handleInput(next: string) {

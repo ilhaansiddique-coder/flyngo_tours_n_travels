@@ -396,8 +396,8 @@ button:disabled {
   --color-tertiary-fixed: var(--color-tertiary-fixed);
   --color-tertiary-fixed-dim: var(--color-tertiary-fixed-dim);
 
-  --font-sans: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui;
-  --font-display: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui;
+--font-sans: var(--font-manrope), 'Manrope', ui-sans-serif, system-ui;
+--font-display: var(--font-outfit), 'Outfit', ui-serif, system-ui;
 
   /* Note: Tailwind utility-family remaps (indigo→Fly blue, amber→Go orange, etc.)
      live in the `.dark` block at the top of the @layer base section. They are

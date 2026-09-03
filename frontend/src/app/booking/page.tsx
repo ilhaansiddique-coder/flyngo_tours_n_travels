@@ -293,7 +293,6 @@ export default function BookingPage() {
       } else if (currentStep === 5) {
         reqMissing('firstName', 'Full name');
         reqMissing('phone', 'Phone');
-        reqMissing('email', 'Email');
         if (formData.email && !validateEmail(formData.email)) errors.email = 'Enter a valid email';
         if (formData.phone && !validatePhone(formData.phone)) errors.phone = 'Enter a valid phone';
       }
@@ -303,7 +302,6 @@ export default function BookingPage() {
         reqMissing('lastName', 'Last name');
         reqMissing('dob', 'Date of birth');
         reqMissing('placeOfBirth', 'Place of birth');
-        reqMissing('email', 'Email');
         reqMissing('phone', 'Phone');
         if (formData.email && !validateEmail(formData.email)) errors.email = 'Enter a valid email';
         if (formData.phone && !validatePhone(formData.phone)) errors.phone = 'Enter a valid phone';
@@ -319,9 +317,6 @@ export default function BookingPage() {
       if (currentStep === 1) {
         reqMissing('firstName', 'First name');
         reqMissing('lastName', 'Last name');
-        if (bookingType !== 'tour') {
-          reqMissing('email', 'Email');
-        }
         reqMissing('phone', 'Phone');
         if (formData.email && !validateEmail(formData.email)) errors.email = 'Enter a valid email';
         if (formData.phone && !validatePhone(formData.phone)) errors.phone = 'Enter a valid phone';
@@ -672,7 +667,6 @@ export default function BookingPage() {
                   type="email"
                   value={formData.email || ''}
                   onChange={(e) => updateForm('email', e.target.value)}
-                  required
                   error={fieldErrors.email}
                 />
               </div>
@@ -800,7 +794,7 @@ export default function BookingPage() {
                     <Input label={isBn ? 'জন্ম তারিখ' : 'Date of birth'} type="date" value={formData.dob || ''} onChange={(e) => updateForm('dob', e.target.value)} required error={fieldErrors.dob} />
                     <Input label={isBn ? 'জন্মস্থান' : 'Place of birth'} value={formData.placeOfBirth || ''} onChange={(e) => updateForm('placeOfBirth', e.target.value)} required error={fieldErrors.placeOfBirth} />
                   </div>
-                  <Input label={t('booking_email')} type="email" value={formData.email || ''} onChange={(e) => updateForm('email', e.target.value)} required error={fieldErrors.email} />
+                  <Input label={t('booking_email')} type="email" value={formData.email || ''} onChange={(e) => updateForm('email', e.target.value)} error={fieldErrors.email} />
                   <PhoneInput
                     label={t('booking_phone')}
                     countryCode={getStoredPhoneParts().code}
@@ -880,7 +874,7 @@ export default function BookingPage() {
                     <Input label={t('booking_first_name')} value={formData.firstName || ''} onChange={(e) => updateForm('firstName', e.target.value)} required error={fieldErrors.firstName} />
                     <Input label={t('booking_last_name')} value={formData.lastName || ''} onChange={(e) => updateForm('lastName', e.target.value)} required error={fieldErrors.lastName} />
                   </div>
-                  <Input label={t('booking_email')} type="email" value={formData.email || ''} onChange={(e) => updateForm('email', e.target.value)} required={bookingType !== 'tour'} error={fieldErrors.email} />
+                  <Input label={t('booking_email')} type="email" value={formData.email || ''} onChange={(e) => updateForm('email', e.target.value)} error={fieldErrors.email} />
                   <PhoneInput
                     label={t('booking_phone')}
                     countryCode={getStoredPhoneParts().code}

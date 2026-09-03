@@ -207,13 +207,13 @@ export default function BookingPage() {
     if (typeof window === 'undefined') return;
     const sp = new URLSearchParams(window.location.search);
     const urlType = sp.get('type');
-    if (!urlType) return;
-
-    const mapped: BookingType | null = urlType in URL_TYPE_MAP ? URL_TYPE_MAP[urlType] : null;
-    if (mapped) {
-      setBookingType(mapped);
-      setTypeLocked(true);
-      sentType.current = urlType in URL_TYPE_SENT ? URL_TYPE_SENT[urlType] : urlType;
+    if (urlType) {
+      const mapped: BookingType | null = urlType in URL_TYPE_MAP ? URL_TYPE_MAP[urlType] : null;
+      if (mapped) {
+        setBookingType(mapped);
+        setTypeLocked(true);
+        sentType.current = urlType in URL_TYPE_SENT ? URL_TYPE_SENT[urlType] : urlType;
+      }
     }
 
     const saved = loadContact();
@@ -269,6 +269,7 @@ export default function BookingPage() {
     const trimmedNumber = number.replace(/^\s+/, '');
     const combined = trimmedNumber ? `${dial} ${trimmedNumber}` : '';
     setFormData({ ...formData, phoneCountry: code, phone: combined });
+    if (combined) saveContact({ phone: combined });
     setFieldErrors((prev) => {
       if (!prev.phone) return prev;
       const next = { ...prev };

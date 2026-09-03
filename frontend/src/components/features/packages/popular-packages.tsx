@@ -154,7 +154,7 @@ export function PopularPackages() {
                   <MapPin className="w-3.5 h-3.5 text-accent" />
                   <span className="line-clamp-1">
                     {tour.destination
-                      ? `${tour.destination.name}${tour.destination.country ? `, ${tour.destination.country}` : ''}${
+                      ? `${tour.destination.name}${tour.destination.country && tour.destination.country !== tour.destination.name ? `, ${tour.destination.country}` : ''}${
                           (tour.additionalDestinations || []).length
                             ? ` · ${(tour.additionalDestinations || [])
                                 .map((ad) => ad.destination?.name)

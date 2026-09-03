@@ -69,7 +69,7 @@ function ItemSummaryCard({ t }: { t: (k: any) => string }) {
             <div className="flex items-center gap-1 mt-1 text-xs text-muted">
               <MapPin className="w-3 h-3" />
               <span>
-                {item.destination.name}{item.destination?.country ? `, ${item.destination.country}` : ''}
+                {item.destination.name}{item.destination?.country && item.destination.country !== item.destination.name ? `, ${item.destination.country}` : ''}
                 {(item.additionalDestinations || []).length
                   ? ` · ${(item.additionalDestinations || [])
                       .map((ad: any) => ad?.destination?.name)

@@ -158,8 +158,7 @@ export default function TourDetailPage() {
             {tour.destination && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-accent/10 border border-accent/30 text-accent">
                 <MapPin className="w-3.5 h-3.5" />
-                {tour.destination.name}
-                {tour.destination.country ? `, ${tour.destination.country}` : ''}
+                {tour.destination.name}{tour.destination.country && tour.destination.country !== tour.destination.name ? `, ${tour.destination.country}` : ''}
               </span>
             )}
             {(tour.additionalDestinations || [])

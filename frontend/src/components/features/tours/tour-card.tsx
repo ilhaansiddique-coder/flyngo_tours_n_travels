@@ -21,10 +21,10 @@ interface TourCardProps {
 
 export function TourCard({ slug, title, price, duration, maxGuests, destination, additionalDestinations, imageUrl, coverImageUrl }: TourCardProps) {
   const destinationBadges = [
-    destination?.name ? { name: destination.name, label: destination.country ? `${destination.name}, ${destination.country}` : destination.name } : null,
+    destination?.name ? { name: destination.name, label: destination.country && destination.country !== destination.name ? `${destination.name}, ${destination.country}` : destination.name } : null,
     ...(additionalDestinations || []).map((a) => {
       const d = a && 'destination' in (a as any) ? (a as { destination?: { name: string; country?: string } }).destination : (a as { name: string; country?: string });
-      return d && d.name ? { name: d.name, label: d.country ? `${d.name}, ${d.country}` : d.name } : null;
+      return d && d.name ? { name: d.name, label: d.country && d.country !== d.name ? `${d.name}, ${d.country}` : d.name } : null;
     }),
   ].filter((b): b is { name: string; label: string } => !!b);
 

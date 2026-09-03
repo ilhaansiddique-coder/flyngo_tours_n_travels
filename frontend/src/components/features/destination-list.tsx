@@ -23,7 +23,7 @@ export function DestinationList({ primary, additions, className = '', emptyLabel
   }
 
   const labels = [
-    primary?.name ? (primary.country ? `${primary.name}, ${primary.country}` : primary.name) : null,
+    primary?.name ? (primary.country && primary.country !== primary.name ? `${primary.name}, ${primary.country}` : primary.name) : null,
     ...extra.map((d) => d.name),
   ].filter((x): x is string => !!x);
 

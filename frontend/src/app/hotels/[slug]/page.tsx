@@ -153,7 +153,7 @@ export default function HotelDetailPage() {
             {(hotel.address || hotel.destination) && (
               <span className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-accent" />
-                {[hotel.address, hotel.destination?.name, hotel.destination?.country].filter(Boolean).join(', ')}
+                {[hotel.address, hotel.destination?.name, hotel.destination?.country && hotel.destination.country !== hotel.destination.name ? hotel.destination.country : null].filter(Boolean).join(', ')}
               </span>
             )}
             {(hotel.additionalDestinations || [])

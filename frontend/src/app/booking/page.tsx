@@ -283,7 +283,7 @@ export default function BookingPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [cashAmount, setCashAmount] = useState('');
   const [bankAmount, setBankAmount] = useState('');
-  const [docUrls, setDocUrls] = useState<Record<string, string>>({});
+  const [docUrls, setDocUrls] = useState<Record<string, string[]>>({});
   const [docUploading, setDocUploading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -368,17 +368,34 @@ export default function BookingPage() {
     if (!files?.length) return;
     setDocUploading((prev) => ({ ...prev, [key]: true }));
     try {
-      const file = files[0];
-      const res = (await uploadMedia(file, { folder: 'visa-documents' })) as { url: string };
-      if (res?.url) {
-        setDocUrls((prev) => ({ ...prev, [key]: res.url }));
-        updateForm(key, res.url);
+      const uploadedUrls: string[] = [];
+      for (const file of Array.from(files)) {
+        const res = (await uploadMedia(file, { folder: 'visa-documents' })) as { url: string };
+        if (res?.url) uploadedUrls.push(res.url);
+      }
+      if (uploadedUrls.length > 0) {
+        setDocUrls((prev) => {
+          const current = prev[key] ?? [];
+          return { ...prev, [key]: [...current, ...uploadedUrls] };
+        });
+        const existing = docUrls[key] ?? [];
+        updateForm(key, [...existing, ...uploadedUrls].join(','));
       }
     } catch {
       setError(isBn ? 'ফাইল আপলোড ব্যর্থ হয়েছে' : 'File upload failed');
     } finally {
       setDocUploading((prev) => ({ ...prev, [key]: false }));
     }
+  };
+
+  const removeVisaDoc = (key: string, url: string) => {
+    setDocUrls((prev) => {
+      const existing = prev[key] ?? [];
+      const next = existing.filter((u) => u !== url);
+      const nextObj = { ...prev, [key]: next };
+      updateForm(key, next.length ? next.join(',') : '');
+      return nextObj;
+    });
   };
 
   const updateForm = (key: string, value: string) => {
@@ -1062,50 +1079,100 @@ export default function BookingPage() {
               {bookingType === 'visa' && currentStep === (isPresetBooking ? 2 : 3) && (
                 <div className="space-y-5">
                   <SectionHeading title={t('booking_step_documents')} help={t('booking_visa_docs_help')} />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-3">
                     {[
-                      { key: 'doc_passport', label: 'Valid passport (min 6 months validity)' },
-                      { key: 'doc_photos', label: '2 passport-size photos (white background)' },
-                      { key: 'doc_bank', label: 'Bank statement (last 6 months)' },
-                      { key: 'doc_nid', label: 'National ID / birth certificate' },
-                      { key: 'doc_ticket', label: 'Confirmed return ticket' },
-                      { key: 'doc_hotel', label: 'Hotel booking or invitation letter' },
-                      { key: 'doc_cover', label: 'Cover letter (we can draft this for you)' },
-                      { key: 'doc_employment', label: 'Employment / student letter' },
-                    ].map((d) => (
-                      <div key={d.key} className="rounded-xl border border-soft p-3 transition-colors bg-surface-container/60 space-y-2">
-                        <label className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={!!formData[d.key]}
-                            onChange={(e) => updateForm(d.key, e.target.checked ? (docUrls[d.key] || 'yes') : '')}
-                            className="mt-0.5"
-                            style={{ accentColor: 'var(--color-primary)' }}
-                          />
-                          <span className="text-sm text-on-surface">{d.label}</span>
-                        </label>
-                        {isPresetBooking && (
-                          <div className="flex items-center gap-2 pl-7">
-                            <label className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer transition-colors">
-                              <Upload className="w-3.5 h-3.5" />
-                              {docUploading[d.key] ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : docUrls[d.key] ? (
-                                'Uploaded'
-                              ) : (
-                                'Upload'
-                              )}
-                              <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => { void uploadVisaDoc(d.key, e.target.files); e.currentTarget.value = ''; }} />
-                            </label>
-                            {docUrls[d.key] && (
-                              <a href={docUrls[d.key]} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline truncate max-w-[100px]">
-                                View
-                              </a>
-                            )}
+                      { key: 'doc_passport', label: 'Valid passport', hint: 'Min 6 months validity' },
+                      { key: 'doc_photos', label: 'Passport-size photos', hint: '2 photos, white background' },
+                      { key: 'doc_bank', label: 'Bank statement', hint: 'Last 6 months' },
+                      { key: 'doc_nid', label: 'National ID / birth certificate', hint: '' },
+                      { key: 'doc_ticket', label: 'Confirmed return ticket', hint: '' },
+                      { key: 'doc_hotel', label: 'Hotel booking / invitation letter', hint: '' },
+                      { key: 'doc_cover', label: 'Cover letter', hint: 'We can draft this for you' },
+                      { key: 'doc_employment', label: 'Employment / student letter', hint: '' },
+                    ].map((d) => {
+                      const uploaded = docUrls[d.key] ?? [];
+                      const uploadedCount = uploaded.length;
+                      return (
+                        <div key={d.key} className={`rounded-xl border p-4 transition-all ${uploaded.length > 0 ? 'border-primary/40 bg-primary/[0.03]' : 'border-soft bg-surface-container/60'}`}>
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={!!formData[d.key]}
+                              onChange={(e) => updateForm(d.key, e.target.checked ? (uploaded.length ? uploaded.join(',') : 'yes') : '')}
+                              className="mt-1"
+                              style={{ accentColor: 'var(--color-primary)' }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-medium text-on-surface">{d.label}</p>
+                                {uploaded.length > 0 && (
+                                  <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success/10 text-success">
+                                    <Check className="w-3 h-3" /> {uploaded.length} file{uploaded.length > 1 ? 's' : ''} uploaded
+                                  </span>
+                                )}
+                              </div>
+                              {d.hint && <p className="text-xs text-on-surface-variant mt-0.5">{d.hint}</p>}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    ))}
+
+                          {isPresetBooking && (
+                            <div className="mt-3 pl-7">
+                              {/* Uploaded files */}
+                              {uploaded.length > 0 && (
+                                <div className="space-y-1.5 mb-2">
+                                  {uploaded.map((url) => (
+                                    <div key={url} className="flex items-center gap-2 rounded-lg bg-surface-container px-2.5 py-1.5 border border-outline-variant">
+                                      <FileText className="w-3.5 h-3.5 shrink-0 text-on-surface-variant" />
+                                      <a href={url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
+                                        <span className="block text-xs font-medium text-primary hover:underline truncate">
+                                          {url.split('/').pop()?.split('?')[0] || 'File'}
+                                        </span>
+                                      </a>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeVisaDoc(d.key, url)}
+                                        className="p-1 rounded-md hover:bg-danger-soft text-on-surface-variant hover:text-error transition-colors"
+                                        aria-label="Remove file"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Upload button */}
+                              <label className="group flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed cursor-pointer transition-all ${
+                                uploaded.length > 0 ? 'border-primary/40 bg-primary/5 hover:bg-primary/10' : 'border-outline-variant hover:border-primary/40'
+                              }">
+                                <input
+                                  type="file"
+                                  accept="image/*,.pdf"
+                                  multiple
+                                  className="hidden"
+                                  onChange={(e) => { void uploadVisaDoc(d.key, e.target.files); e.currentTarget.value = ''; }}
+                                />
+                                {docUploading[d.key] ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                    <span className="text-xs font-medium text-primary">{isBn ? 'আপলোড হচ্ছে...' : 'Uploading...'}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="w-4 h-4 text-primary" />
+                                    <span className="text-xs font-medium text-primary">
+                                      {uploaded.length > 0
+                                        ? isBn ? `আরও ফাইল যোগ করুন (${uploaded.length} আপলোড হয়েছে)` : `Add ${d.key === 'doc_photos' ? 'more photos' : 'more files'} (${uploaded.length} uploaded)`
+                                        : isBn ? 'ফাইল আপলোড করুন' : `Upload ${d.label.toLowerCase()}`}
+                                    </span>
+                                  </>
+                                )}
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   <Input label={isBn ? 'নোট (ঐ�্ছিক)' : t('booking_notes')} value={formData.notes || ''} onChange={(e) => updateForm('notes', e.target.value)} placeholder="Anything we should know?" />
                 </div>
@@ -1550,7 +1617,7 @@ export default function BookingPage() {
                   {currentStep === 1 && !typeLocked ? t('booking_back_to_types') : t('booking_previous')}
                 </Button>
                 <div className="flex gap-2">
-                  <Button variant="ghost" onClick={reset}>{t('booking_cancel')}</Button>
+                  <Button variant="ghost" onClick={() => { reset(); setDocUrls({}); setDocUploading({}); }}>{t('booking_cancel')}</Button>
                   <Button
                     size="lg"
                     disabled={submitting}

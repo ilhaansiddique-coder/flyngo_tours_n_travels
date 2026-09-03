@@ -638,7 +638,7 @@ model Booking {
   customerName  String? @map("customer_name")
   customerPhone String? @map("customer_phone")
 
-  status    String    @default("pending") // pending, confirmed, in_progress, completed, cancelled
+  status    String    @default("pending") // pending, confirmed, in_progress, completed, cancelled, paid
   startDate DateTime  @map("start_date")
   endDate   DateTime? @map("end_date")
   guests    Int       @default(1)

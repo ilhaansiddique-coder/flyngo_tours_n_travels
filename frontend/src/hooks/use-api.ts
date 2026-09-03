@@ -273,6 +273,8 @@ export function useApi() {
   const getPaymentStats = useCallback(async () => api.get('/payments/admin/stats', auth()), [auth]);
   const updatePaymentStatus = useCallback(async (id: string, status: string) =>
     api.patch(`/payments/admin/${id}/status`, { status }, auth()), [auth]);
+  const recordAdminPayment = useCallback(async (body: Record<string, unknown>) =>
+    api.post('/payments/admin/record', body, auth()), [auth]);
   const getPaymentMethods = useCallback(async () => api.get('/payments/methods'), []);
   const getBookingPayment = useCallback(async (code: string) =>
     api.get(`/payments/booking/${encodeURIComponent(code.trim())}`), []);
@@ -540,7 +542,7 @@ export function useApi() {
     passwordResetOptions, sendPasswordReset, resetPassword,
     getBookings, createBooking, createHotelBooking, createHajjUmrahBooking, trackBooking, adminCreateBooking, cancelBooking, updateBookingStatus,
     deleteBooking, getTrashedBookings, restoreBooking, purgeBooking,
-    getPayments, getPaymentStats, updatePaymentStatus,
+    getPayments, getPaymentStats, updatePaymentStatus, recordAdminPayment,
     getPaymentMethods, getBookingPayment, uploadPaymentReceipt, submitPaymentConfirmation,
     getBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount,
     getMobileWallets, createMobileWallet, updateMobileWallet, deleteMobileWallet,

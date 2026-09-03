@@ -196,7 +196,16 @@ export class BookingService {
     const [items, total] = await Promise.all([
       this.prisma.booking.findMany({
         where, skip: (page - 1) * limit, take: limit,
-        include: { user: { select: { id: true, fullName: true, email: true, accountStatus: true } } },
+        include: {
+          user: { select: { id: true, fullName: true, email: true, accountStatus: true } },
+          payments: {
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true, amount: true, currency: true, method: true, status: true,
+              transactionId: true, bkashTrxId: true, createdAt: true,
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.booking.count({ where }),

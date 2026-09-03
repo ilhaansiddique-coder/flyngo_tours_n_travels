@@ -259,6 +259,23 @@ describe('PaymentsService', () => {
     });
   });
 
+  describe('recordAdminPayment', () => {
+    it('rejects when the booking is already paid', async () => {
+      mockPrisma.booking.findFirst.mockResolvedValue({
+        id: 'booking-1', userId: 'user-1', bookingCode: 'FLY-ABC123', bookingType: 'tour',
+        status: 'pending', totalAmount: 5000, paidAmount: 5000, referralDiscount: 0,
+        pointsRedemptionBdt: 0, currency: 'BDT', customerName: 'Ada',
+      });
+
+      await expect(
+        service.recordAdminPayment('tenant-1', 'admin-1', {
+          bookingCode: 'FLY-ABC123',
+          method: 'cash',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
   describe('submitConfirmation', () => {
     it('creates a pending bKash payment with trx ID', async () => {
       mockPrisma.booking.findFirst.mockResolvedValue({

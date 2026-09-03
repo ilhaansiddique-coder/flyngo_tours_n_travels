@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog, Modal, FormField, FormInput, FormSelect, FormTextarea } from '@/components/admin/ui';
 import { useApi } from '@/hooks/use-api';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Search, Plus, Eye, Trash2, RotateCcw, Copy, Check } from 'lucide-react';
+import { Search, Plus, Eye, Trash2, RotateCcw, Copy, Check, Banknote } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface BookingUser {
@@ -118,6 +118,23 @@ function isGuestAccount(b: Booking): boolean {
   return !!(b.customerPhone && (b.user?.accountStatus === 'provisional' || b.user?.accountStatus === 'invited'));
 }
 
+function bookingDue(b: Booking): number {
+  return Math.max(0, Number(b.totalAmount || 0) - Number(b.paidAmount || 0));
+}
+
+function isUnpaid(b: Booking): boolean {
+  return b.status !== 'cancelled' && bookingDue(b) > 0.01;
+}
+
+const PAY_METHODS = [
+  { label: 'Cash', value: 'cash' },
+  { label: 'bKash', value: 'bkash' },
+  { label: 'Nagad', value: 'nagad' },
+  { label: 'Rocket', value: 'rocket' },
+  { label: 'Upay', value: 'upay' },
+  { label: 'Bank transfer', value: 'bank_transfer' },
+];
+
 async function copyGuestCredentials(b: Booking, setCopiedId: (id: string | null) => void) {
   const name = b.customerName || b.user?.fullName || '';
   const phone = b.customerPhone || '';
@@ -141,7 +158,7 @@ async function copyGuestCredentials(b: Booking, setCopiedId: (id: string | null)
 
 export default function BookingsPage() {
   const { getBookings, updateBookingStatus, adminCreateBooking, getUsers, getTours, getHotels, getFlights, getVisaServices, getTransport,
-    deleteBooking, getTrashedBookings, restoreBooking, purgeBooking } = useApi();
+    deleteBooking, getTrashedBookings, restoreBooking, purgeBooking, recordAdminPayment } = useApi();
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [meta, setMeta] = useState<BookingsMeta | null>(null);
@@ -163,6 +180,10 @@ export default function BookingsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [detailTarget, setDetailTarget] = useState<Booking | null>(null);
+  const [payTarget, setPayTarget] = useState<Booking | null>(null);
+  const [payForm, setPayForm] = useState({ method: 'cash', amount: '', bkashTrxId: '', notes: '' });
+  const [paySubmitting, setPaySubmitting] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -264,6 +285,39 @@ export default function BookingsPage() {
       setCancelTarget(null);
     } catch (err: any) {
       setError(err.message || 'Failed to cancel booking');
+    }
+  };
+
+  const openPayModal = (b: Booking) => {
+    setPayTarget(b);
+    setPayError(null);
+    setPayForm({
+      method: 'cash',
+      amount: String(bookingDue(b) || ''),
+      bkashTrxId: '',
+      notes: '',
+    });
+  };
+
+  const handleRecordPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!payTarget) return;
+    setPaySubmitting(true);
+    setPayError(null);
+    try {
+      await recordAdminPayment({
+        bookingCode: payTarget.bookingCode,
+        method: payForm.method,
+        amount: Number(payForm.amount),
+        bkashTrxId: payForm.method === 'cash' || payForm.method === 'bank_transfer' ? undefined : (payForm.bkashTrxId.trim() || undefined),
+        notes: payForm.notes.trim() || undefined,
+      });
+      setPayTarget(null);
+      setRefreshKey((k) => k + 1);
+    } catch (err: any) {
+      setPayError(err.message || 'Failed to record payment');
+    } finally {
+      setPaySubmitting(false);
     }
   };
 
@@ -474,7 +528,14 @@ export default function BookingsPage() {
                     </div>
                   </td>
                   <td className="p-4 capitalize">{b.bookingType}</td>
-                  <td className="p-4 font-medium">{formatCurrency(Number(b.totalAmount), b.currency || 'BDT')}</td>
+                  <td className="p-4 font-medium">
+                    <div>{formatCurrency(Number(b.totalAmount), b.currency || 'BDT')}</div>
+                    {isUnpaid(b) ? (
+                      <div className="text-[10px] font-semibold text-error">Due {formatCurrency(bookingDue(b), b.currency || 'BDT')}</div>
+                    ) : (
+                      <div className="text-[10px] text-on-surface-variant">Paid {formatCurrency(Number(b.paidAmount || 0), b.currency || 'BDT')}</div>
+                    )}
+                  </td>
                   <td className="p-4">{statusBadge(b.status)}</td>
                   <td className="p-4 text-on-surface-variant">{formatDate(b.startDate)}</td>
                   <td className="p-4">
@@ -523,6 +584,15 @@ export default function BookingsPage() {
                         </>
                       ) : (
                         <>
+                          {isUnpaid(b) && (
+                            <button
+                              onClick={() => openPayModal(b)}
+                              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
+                              title="Record payment"
+                            >
+                              <Banknote className="w-3.5 h-3.5" /> Pay
+                            </button>
+                          )}
                           <select
                             value={b.status}
                             onChange={(e) => handleStatusChange(b.id, e.target.value)}
@@ -654,6 +724,15 @@ export default function BookingsPage() {
               <div>
                 <p className="text-on-surface-variant text-xs">Paid Amount</p>
                 <p className="font-medium">{formatCurrency(Number(detailTarget.paidAmount || 0), detailTarget.currency || 'BDT')}</p>
+                {isUnpaid(detailTarget) && (
+                  <button
+                    type="button"
+                    onClick={() => { setDetailTarget(null); openPayModal(detailTarget); }}
+                    className="inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
+                  >
+                    <Banknote className="w-3.5 h-3.5" /> Record payment
+                  </button>
+                )}
               </div>
             </div>
             {isGuestAccount(detailTarget) && (
@@ -717,6 +796,51 @@ export default function BookingsPage() {
               </div>
             )}
           </div>
+        )}
+      </Modal>
+
+      <Modal open={!!payTarget} onClose={() => setPayTarget(null)} title={`Record payment · ${payTarget?.bookingCode ?? ''}`}>
+        {payTarget && (
+          <form onSubmit={handleRecordPayment} className="space-y-3">
+            <p className="text-sm text-on-surface-variant">
+              Balance due {formatCurrency(bookingDue(payTarget), payTarget.currency || 'BDT')}
+            </p>
+            <FormField label="Method" required>
+              <FormSelect
+                value={payForm.method}
+                onChange={(v) => setPayForm({ ...payForm, method: v })}
+                options={PAY_METHODS}
+              />
+            </FormField>
+            <FormField label="Amount" required>
+              <FormInput
+                value={payForm.amount}
+                onChange={(v) => setPayForm({ ...payForm, amount: v })}
+                placeholder="0"
+              />
+            </FormField>
+            {payForm.method !== 'cash' && payForm.method !== 'bank_transfer' && (
+              <FormField label="Transaction ID">
+                <FormInput
+                  value={payForm.bkashTrxId}
+                  onChange={(v) => setPayForm({ ...payForm, bkashTrxId: v })}
+                  placeholder="Optional"
+                />
+              </FormField>
+            )}
+            <FormField label="Notes">
+              <FormTextarea
+                value={payForm.notes}
+                onChange={(v) => setPayForm({ ...payForm, notes: v })}
+                placeholder="Office collection, reference, etc."
+              />
+            </FormField>
+            {payError && <p className="text-sm text-error">{payError}</p>}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="ghost" onClick={() => setPayTarget(null)}>Cancel</Button>
+              <Button type="submit" loading={paySubmitting}>Record as paid</Button>
+            </div>
+          </form>
         )}
       </Modal>
 

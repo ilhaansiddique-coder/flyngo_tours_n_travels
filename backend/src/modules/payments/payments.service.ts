@@ -30,6 +30,17 @@ export interface SubmitConfirmationInput {
   notes?: string;
 }
 
+export interface RecordAdminPaymentInput {
+  bookingCode: string;
+  method: string;
+  amount?: number;
+  bkashTrxId?: string;
+  bankAccountId?: string;
+  mobileWalletId?: string;
+  notes?: string;
+  senderName?: string;
+}
+
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
@@ -566,6 +577,91 @@ export class PaymentsService {
       }
       throw err;
     }
+  }
+
+  async recordAdminPayment(tenantId: string, adminUserId: string, input: RecordAdminPaymentInput) {
+    const method = (input.method || '').trim() as OfflineMethod;
+    if (!OFFLINE_METHODS.includes(method)) {
+      throw new BadRequestException(`method must be one of: ${OFFLINE_METHODS.join(', ')}`);
+    }
+    const code = (input.bookingCode || '').trim();
+    if (!code) throw new BadRequestException('bookingCode is required');
+
+    const target = await this.findBookable(tenantId, code);
+    if (target.status === 'cancelled') {
+      throw new BadRequestException('Cannot pay a cancelled booking');
+    }
+
+    const due = Math.max(0, target.total - target.paid);
+    if (due <= 0) throw new BadRequestException('This booking is already paid');
+
+    const amount = input.amount != null ? Number(input.amount) : due;
+    if (!Number.isFinite(amount) || amount <= 0) throw new BadRequestException('Invalid amount');
+    if (amount > due + 0.01) throw new BadRequestException(`Amount exceeds balance due (${due})`);
+
+    let bkashTrxId: string | null = null;
+    let bankAccountId: string | null = null;
+    let mobileWalletId: string | null = null;
+
+    if (WALLET_METHOD_SET.has(method) && input.bkashTrxId) {
+      bkashTrxId = this.normalizeBkashTrx(input.bkashTrxId);
+      if (!bkashTrxId) throw new BadRequestException('Invalid transaction ID');
+      const dup = await this.prisma.payment.findFirst({
+        where: { tenantId, bkashTrxId },
+        select: { id: true },
+      });
+      if (dup) throw new BadRequestException('This transaction ID has already been submitted');
+    }
+
+    if (method === 'bank_transfer' && input.bankAccountId) {
+      const account = await this.prisma.bankAccount.findFirst({
+        where: { id: input.bankAccountId, tenantId, isActive: true, deletedAt: null },
+        select: { id: true },
+      });
+      if (!account) throw new BadRequestException('Bank account not found');
+      bankAccountId = account.id;
+    }
+
+    if (WALLET_METHOD_SET.has(method) && input.mobileWalletId) {
+      const wallet = await this.prisma.mobileWallet.findFirst({
+        where: { id: input.mobileWalletId, tenantId, isActive: true, deletedAt: null },
+        select: { id: true, provider: true },
+      });
+      if (!wallet) throw new BadRequestException('Mobile wallet not found');
+      if (wallet.provider !== method) {
+        throw new BadRequestException('mobileWalletId does not match the selected payment method');
+      }
+      mobileWalletId = wallet.id;
+    }
+
+    let created;
+    try {
+      created = await this.prisma.payment.create({
+        data: {
+          tenantId,
+          userId: target.userId,
+          bookingId: target.kind === 'booking' ? target.id : null,
+          hajjUmrahBookingId: target.kind === 'hajjUmrah' ? target.id : null,
+          amount,
+          currency: target.currency,
+          method,
+          status: 'pending',
+          transactionId: `PAY-${randomUUID()}`,
+          bkashTrxId,
+          bankAccountId,
+          mobileWalletId,
+          senderName: input.senderName?.trim() || null,
+          notes: input.notes?.trim() || 'Recorded by admin',
+        },
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        throw new BadRequestException('This transaction ID has already been submitted');
+      }
+      throw err;
+    }
+
+    return this.updatePaymentStatus(created.id, tenantId, 'completed', adminUserId);
   }
 
   async getBookingPaymentSummary(tenantId: string, bookingCode: string) {

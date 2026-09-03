@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
-import { PaymentsService, SubmitConfirmationInput } from './payments.service';
+import { PaymentsService, SubmitConfirmationInput, RecordAdminPaymentInput } from './payments.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -106,6 +106,18 @@ export class PaymentsController {
     @Req() req: any,
   ) {
     return this.paymentsService.handleBKashWebhook(signature, req.rawBody);
+  }
+
+  @Post('admin/record')
+  @ApiBearerAuth()
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: 'Record a received payment against a booking (admin)' })
+  record(
+    @CurrentTenantId() tenantId: string,
+    @CurrentUser('id') adminUserId: string,
+    @Body() body: RecordAdminPaymentInput,
+  ) {
+    return this.paymentsService.recordAdminPayment(tenantId, adminUserId, body);
   }
 
   @Get('admin/all')

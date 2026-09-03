@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapPin, Plus, Pencil, Trash2, Star } from 'lucide-react';
+import { MapPin, Plus, Pencil, Trash2, Star, Share2 } from 'lucide-react';
+import { ShareMenu } from '@/components/shared/share-menu';
 import { useApi } from '@/hooks/use-api';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -242,6 +243,19 @@ export default function AdminDestinationsPage() {
                     </td>
                     <td className="p-4">
                       <div className="flex gap-1">
+                        <ShareMenu
+                          path={`/destinations/${d.slug || d.id}`}
+                          title={d.name}
+                          trigger={
+                            <button
+                              type="button"
+                              className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
+                              title="Share"
+                            >
+                              <Share2 className="w-4 h-4" />
+                            </button>
+                          }
+                        />
                         <button
                           className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
                           title="Edit"

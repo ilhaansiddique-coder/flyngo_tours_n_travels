@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { hotelImage } from '@/lib/entity-image';
 import { Button } from '@/components/ui/button';
+import { ShareMenu } from '@/components/shared/share-menu';
 import { ReviewsSection } from '@/components/features/reviews/reviews-section';
 import { ArrowLeft, MapPin, Star, Clock, Sparkles } from 'lucide-react';
 
@@ -106,9 +107,12 @@ export default function HotelDetailPage() {
 
   return (
     <main className="min-h-screen bg-background pt-28 pb-20 px-4 sm:px-6 lg:px-16 max-w-[1200px] mx-auto">
-      <Link href="/hotels" className="inline-flex items-center gap-2 text-sm mb-6 hover:underline text-accent">
-        <ArrowLeft className="w-4 h-4" /> Back to hotels
-      </Link>
+      <div className="flex items-start justify-between mb-6">
+        <Link href="/hotels" className="inline-flex items-center gap-2 text-sm hover:underline text-accent">
+          <ArrowLeft className="w-4 h-4" /> Back to hotels
+        </Link>
+        <ShareMenu path={`/hotels/${slug}`} title={hotel.name} />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
         <div>

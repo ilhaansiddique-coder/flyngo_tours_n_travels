@@ -8,6 +8,7 @@ import { useFormatCurrency } from '@/lib/utils';
 import { umrahImage } from '@/lib/entity-image';
 import { useBookingStore } from '@/stores/booking.store';
 import { ReviewsSection } from '@/components/features/reviews/reviews-section';
+import { ShareMenu } from '@/components/shared/share-menu';
 import { ArrowLeft, Clock, Check, Moon, Coins, ArrowRight, Sparkles, MapPin } from 'lucide-react';
 
 interface UmrahPackage {
@@ -75,9 +76,12 @@ export default function UmrahPackageDetailPage({ params }: { params: Promise<{ s
 
   return (
     <main className="min-h-screen pt-28 pb-16 px-4 sm:px-6 lg:px-16 max-w-[1200px] mx-auto">
-      <Link href="/umrah" className="inline-flex items-center gap-2 text-sm mb-6 hover:underline" style={{ color: 'var(--color-nav-active)' }}>
-        <ArrowLeft className="w-4 h-4" /> Back to Umrah packages
-      </Link>
+      <div className="flex items-start justify-between mb-6">
+        <Link href="/umrah" className="inline-flex items-center gap-2 text-sm hover:underline" style={{ color: 'var(--color-nav-active)' }}>
+          <ArrowLeft className="w-4 h-4" /> Back to Umrah packages
+        </Link>
+        <ShareMenu path={`/umrah/${slug}`} title={pkg.title} />
+      </div>
 
       {/* Cover banner */}
       <div className="relative mb-8 h-52 sm:h-64 rounded-2xl overflow-hidden border" style={{ borderColor: 'var(--color-outline-variant)' }}>

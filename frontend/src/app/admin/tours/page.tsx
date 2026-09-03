@@ -13,10 +13,12 @@ import { MultiCountryAutocomplete } from '@/components/admin/multi-country-autoc
 import type { CountryOption } from '@/components/admin/country-autocomplete';
 import { tourImage } from '@/lib/entity-image';
 import { useEffect, useState } from 'react';
-import { Map, Search, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Map, Search, Plus, Pencil, Trash2, Share2 } from 'lucide-react';
+import { ShareMenu } from '@/components/shared/share-menu';
 
 interface Tour {
   id: string;
+  slug?: string;
   title: string;
   description?: string;
   price: number;
@@ -311,6 +313,19 @@ export default function AdminToursPage() {
                         </td>
                         <td className="p-4">
                           <div className="flex gap-1">
+                            <ShareMenu
+                              path={t.slug ? `/tours/${t.slug}` : `/booking?type=tour&id=${t.id}`}
+                              title={t.title}
+                              trigger={
+                                <button
+                                  type="button"
+                                  className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
+                                  title="Share"
+                                >
+                                  <Share2 className="w-4 h-4" />
+                                </button>
+                              }
+                            />
                             <button
                               className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
                               title="Edit"

@@ -13,10 +13,12 @@ import { MultiCountryAutocomplete } from '@/components/admin/multi-country-autoc
 import type { CountryOption } from '@/components/admin/country-autocomplete';
 import { countryImage } from '@/lib/country-image';
 import { VisaContentEditor, type VisaCountryEditor } from './content-editor';
-import { Globe, Plus, Pencil, Trash2, Search, Coins, FileText, Loader2 } from 'lucide-react';
+import { Globe, Plus, Pencil, Trash2, Search, Coins, FileText, Loader2, Share2 } from 'lucide-react';
+import { ShareMenu } from '@/components/shared/share-menu';
 
 interface VisaService {
   id: string;
+  slug?: string;
   title: string;
   country?: { id: string; name: string; slug?: string };
   destinationId?: string;
@@ -343,6 +345,19 @@ export default function AdminVisaPage() {
                     </td>
                     <td className="p-4">
                       <div className="flex gap-1">
+                        <ShareMenu
+                          path={`/booking?type=visa&id=${v.id}`}
+                          title={v.title}
+                          trigger={
+                            <button
+                              type="button"
+                              className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
+                              title="Share"
+                            >
+                              <Share2 className="w-4 h-4" />
+                            </button>
+                          }
+                        />
                         <button
                           className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
                           title="Edit"
@@ -507,6 +522,19 @@ export default function AdminVisaPage() {
                           </td>
                           <td className="p-4">
                             <div className="flex gap-1">
+                              <ShareMenu
+                                path={`/visa/${cd.slug || cd.id}`}
+                                title={`${cd.name} Visa`}
+                                trigger={
+                                  <button
+                                    type="button"
+                                    className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
+                                    title="Share"
+                                  >
+                                    <Share2 className="w-4 h-4" />
+                                  </button>
+                                }
+                              />
                               <button
                                 className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
                                 title="Edit page content"

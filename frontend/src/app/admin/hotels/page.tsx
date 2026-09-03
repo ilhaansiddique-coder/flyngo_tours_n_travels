@@ -13,7 +13,8 @@ import { MultiCountryAutocomplete } from '@/components/admin/multi-country-autoc
 import type { CountryOption } from '@/components/admin/country-autocomplete';
 import { HotelRoomsManager } from '@/components/admin/hotel-rooms-manager';
 import { hotelImage } from '@/lib/entity-image';
-import { Building2, Plus, Pencil, Trash2, Star, Search, BedDouble } from 'lucide-react';
+import { Building2, Plus, Pencil, Trash2, Star, Search, BedDouble, Share2 } from 'lucide-react';
+import { ShareMenu } from '@/components/shared/share-menu';
 
 const LIMIT = 10;
 
@@ -24,6 +25,7 @@ interface Destination {
 
 interface Hotel {
   id: string;
+  slug?: string;
   name: string;
   description: string;
   destination?: Destination | null;
@@ -306,6 +308,19 @@ export default function AdminHotelsPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex gap-1">
+                          <ShareMenu
+                            path={h.slug ? `/hotels/${h.slug}` : `/booking?type=hotel&id=${h.id}`}
+                            title={h.name}
+                            trigger={
+                              <button
+                                type="button"
+                                className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
+                                title="Share"
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </button>
+                            }
+                          />
                           <button
                             className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
                             title="Manage rooms"

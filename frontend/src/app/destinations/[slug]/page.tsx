@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { TourCard } from '@/components/features/tours/tour-card';
+import { ShareMenu } from '@/components/shared/share-menu';
 import { destinationImage } from '@/lib/entity-image';
 import { ArrowLeft, MapPin, Globe2 } from 'lucide-react';
 
@@ -105,12 +106,15 @@ export default function DestinationDetailPage() {
 
   return (
     <main className="min-h-screen bg-background pt-28 pb-20 px-4 sm:px-6 lg:px-16 max-w-[1200px] mx-auto">
-      <Link
-        href="/destinations"
-        className="inline-flex items-center gap-2 text-sm mb-6 hover:underline text-accent"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to destinations
-      </Link>
+      <div className="flex items-start justify-between mb-6">
+        <Link
+          href="/destinations"
+          className="inline-flex items-center gap-2 text-sm hover:underline text-accent"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to destinations
+        </Link>
+        <ShareMenu path={`/destinations/${params.slug}`} title={destination.name} />
+      </div>
 
       {/* Hero image gallery */}
       <div className="relative h-72 sm:h-96 overflow-hidden rounded-2xl mb-3 bg-gradient-to-br from-primary to-tertiary">

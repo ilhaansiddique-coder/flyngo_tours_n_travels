@@ -9,7 +9,8 @@ import { formatCurrency } from '@/lib/utils';
 import { transportImage } from '@/lib/entity-image';
 import { useApi } from '@/hooks/use-api';
 import { useEffect, useState } from 'react';
-import { Car, Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Car, Plus, Pencil, Trash2, Search, Share2 } from 'lucide-react';
+import { ShareMenu } from '@/components/shared/share-menu';
 
 interface Transport {
   id: string;
@@ -297,6 +298,19 @@ export default function TransportPage() {
                         </td>
                         <td className="p-4">
                           <div className="flex gap-1">
+                            <ShareMenu
+                              path={`/booking?type=transport&id=${t.id}`}
+                              title={t.title}
+                              trigger={
+                                <button
+                                  type="button"
+                                  className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
+                                  title="Share"
+                                >
+                                  <Share2 className="w-4 h-4" />
+                                </button>
+                              }
+                            />
                             <button
                               className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
                               title="Edit"

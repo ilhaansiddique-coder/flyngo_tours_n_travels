@@ -8,6 +8,7 @@ import { useFormatCurrency } from '@/lib/utils';
 import { visaImage } from '@/lib/entity-image';
 import { useBookingStore } from '@/stores/booking.store';
 import { ReviewsSection } from '@/components/features/reviews/reviews-section';
+import { ShareMenu } from '@/components/shared/share-menu';
 import { LeadForm } from '@/components/marketing/lead-form';
 import { Section, Container } from '@/components/ui/section';
 import { Badge } from '@/components/ui/badge';
@@ -174,9 +175,12 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
 
   return (
     <main className="min-h-screen pt-24 pb-16 px-4 sm:px-6 lg:px-16 max-w-[1200px] mx-auto">
-      <Link href="/visa" className="inline-flex items-center gap-2 text-sm mb-6 hover:underline text-accent">
-        <ArrowLeft className="w-4 h-4" /> Back to visa services
-      </Link>
+      <div className="flex items-start justify-between mb-6">
+        <Link href="/visa" className="inline-flex items-center gap-2 text-sm hover:underline text-accent">
+          <ArrowLeft className="w-4 h-4" /> Back to visa services
+        </Link>
+        <ShareMenu path={`/visa/${slug}`} title={`${country.name} Visa`} />
+      </div>
 
       {/* ── Hero banner ─────────────────────────────────────────────── */}
       <div className="relative mb-8 h-56 sm:h-72 rounded-2xl overflow-hidden">

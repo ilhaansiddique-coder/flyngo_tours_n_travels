@@ -10,10 +10,12 @@ import { ImageUploader } from '@/components/admin/image-uploader';
 import { useApi } from '@/hooks/use-api';
 import { formatCurrency } from '@/lib/utils';
 import { hajjImage } from '@/lib/entity-image';
-import { Sparkles, Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Sparkles, Plus, Pencil, Trash2, Search, Share2 } from 'lucide-react';
+import { ShareMenu } from '@/components/shared/share-menu';
 
 interface HajjPackage {
   id: string;
+  slug?: string;
   title: string;
   tier: string;
   durationDays: number;
@@ -120,6 +122,19 @@ export default function AdminHajjPage() {
                 </div>
               </div>
               <div className="flex gap-2 justify-end">
+                <ShareMenu
+                  path={p.slug ? `/hajj/${p.slug}` : `/hajj/${p.id}`}
+                  title={p.title}
+                  trigger={
+                    <button
+                      type="button"
+                      className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
+                      title="Share"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                  }
+                />
                 <Button variant="ghost" size="sm" onClick={() => { setEditing(p); setShowForm(true); }}>
                   <Pencil className="w-3.5 h-3.5" /> Edit
                 </Button>

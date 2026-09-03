@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plane, Plus, Pencil, Trash2, ArrowRight } from 'lucide-react';
+import { Plane, Plus, Pencil, Trash2, ArrowRight, Share2 } from 'lucide-react';
+import { ShareMenu } from '@/components/shared/share-menu';
 import { useApi } from '@/hooks/use-api';
 import { flightImage } from '@/lib/entity-image';
 import { formatCurrency } from '@/lib/utils';
@@ -269,6 +270,19 @@ export default function AdminFlightsPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex gap-1">
+                          <ShareMenu
+                            path={`/booking?type=flight&id=${f.id}`}
+                            title={`${f.originCode} → ${f.destinationCode}`}
+                            trigger={
+                              <button
+                                type="button"
+                                className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"
+                                title="Share"
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </button>
+                            }
+                          />
                           <button
                             onClick={() => openEdit(f)}
                             className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary"

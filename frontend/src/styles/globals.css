@@ -1135,3 +1135,91 @@ body {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+@media (max-width: 1023.98px) {
+  .admin-table-cards :has(> table),
+  .admin-table-cards :has(> .overflow-x-auto > table) {
+    overflow: visible;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+  .admin-table-cards .overflow-x-auto:has(table) {
+    overflow: visible;
+  }
+  .admin-table-cards table {
+    min-width: 0 !important;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .admin-table-cards thead {
+    display: none;
+  }
+  .admin-table-cards tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+  .admin-table-cards tr {
+    display: block;
+    background: var(--color-surface-container);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: 1rem;
+    padding: 0.25rem 1rem;
+    box-shadow: 0 1px 2px rgb(var(--shadow-color, 12 22 40) / 0.06);
+  }
+  .admin-table-cards td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid color-mix(in oklab, var(--color-outline-variant) 80%, transparent);
+    text-align: right;
+    font-size: 0.875rem;
+    word-break: break-word;
+  }
+  .admin-table-cards td:last-child {
+    border-bottom: none;
+  }
+  .admin-table-cards td::before {
+    content: attr(data-label);
+    flex: 0 0 36%;
+    max-width: 9.5rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-on-surface-variant);
+    text-align: left;
+  }
+  .admin-table-cards td[data-label=""]::before,
+  .admin-table-cards td[data-actions="true"]::before {
+    display: none;
+  }
+  .admin-table-cards td[data-actions="true"] {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-top: 0.85rem;
+    margin-top: 0.15rem;
+    border-top: 1px solid var(--color-outline-variant);
+    border-bottom: none;
+  }
+  .admin-table-cards td[data-empty-row="true"] {
+    display: block;
+    text-align: center;
+    border: none;
+    padding: 2.5rem 1rem;
+  }
+  .admin-table-cards td[data-empty-row="true"]::before {
+    display: none;
+  }
+  .admin-table-cards td img {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+}

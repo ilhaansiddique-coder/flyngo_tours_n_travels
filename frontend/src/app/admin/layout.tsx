@@ -12,7 +12,7 @@ import {
   Languages, MessageCircle, Info, Menu as MenuIcon, LayoutGrid, Target, Coins,
   Smartphone,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AdminTopbar } from '@/components/admin/admin-topbar';
 import { useAuthStore } from '@/stores/auth.store';
 import { api } from '@/lib/api';
@@ -68,6 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
   const { accessToken, user, hasHydrated, setUser } = useAuthStore();
   // 'checking' covers the case where a token is present but the cached profile
   // isn't — resolve the role from the server rather than guessing.
@@ -119,6 +120,41 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (status !== 'denied') return;
     router.replace(`/auth/login?callbackUrl=${encodeURIComponent(pathname)}`);
   }, [status, router, pathname]);
+
+  useEffect(() => {
+    const root = contentRef.current;
+    if (!root) return;
+
+    const labelize = () => {
+      root.querySelectorAll('table').forEach((table) => {
+        const headers = Array.from(table.querySelectorAll('thead th')).map((th) =>
+          (th.textContent || '').replace(/\s+/g, ' ').trim(),
+        );
+        table.querySelectorAll('tbody tr').forEach((tr) => {
+          const cells = Array.from(tr.querySelectorAll(':scope > td'));
+          if (cells.length === 1 && cells[0].hasAttribute('colspan')) {
+            cells[0].setAttribute('data-empty-row', 'true');
+            return;
+          }
+          cells.forEach((td, i) => {
+            const label = headers[i] || '';
+            td.setAttribute('data-label', label);
+            const isLast = i === cells.length - 1;
+            if (/^actions?$/i.test(label) || (isLast && !label)) {
+              td.setAttribute('data-actions', 'true');
+            } else {
+              td.removeAttribute('data-actions');
+            }
+          });
+        });
+      });
+    };
+
+    labelize();
+    const mo = new MutationObserver(labelize);
+    mo.observe(root, { childList: true, subtree: true });
+    return () => mo.disconnect();
+  }, [pathname, status]);
 
   if (status !== 'allowed') {
     return (
@@ -206,7 +242,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <main className={cn('flex-1 transition-all duration-300', collapsed ? 'lg:ml-20' : 'lg:ml-64')}>
         <AdminTopbar navigation={navigation} onMenuClick={() => setMobileOpen(true)} />
         {/* Page Content */}
-        <div className="px-4 sm:px-6 py-4">{children}</div>
+        <div ref={contentRef} className="admin-table-cards px-4 sm:px-6 py-4">{children}</div>
       </main>
     </div>
   );

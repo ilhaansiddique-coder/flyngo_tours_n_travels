@@ -354,18 +354,18 @@ export default function BookingsPage() {
 
   const openCreateModal = async () => {
     setCreateForm({
-      userId: userOptions[0]?.value || '',
-      type: 'tour',
+      userId: '',
+      type: '',
       itemId: '',
-      startDate: new Date().toISOString().slice(0, 10),
+      startDate: '',
       endDate: '',
-      guests: '1',
+      guests: '',
       totalAmount: '',
       notes: '',
     });
     setCreateOpen(true);
     await fetchUserOptions();
-    await fetchItemOptions('tour');
+    setItemOptions([]);
   };
 
   const handleCreateTypeChange = async (newType: string) => {

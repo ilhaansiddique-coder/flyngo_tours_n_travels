@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { Phone, Mail, User, Loader2, CheckCircle2, MapPin, Users, Wallet } from 'lucide-react';
 import { PhoneInput } from '@/components/ui/phone-input';
-import { DEFAULT_COUNTRY_CODE, findDialByCode } from '@/lib/country-dial-codes';
+import { findDialByCode } from '@/lib/country-dial-codes';
 import { submitLead, trackEvent } from '@/lib/tracking-client';
+import { loadContact, saveContact, splitStoredPhone } from '@/lib/contact-persist';
 
 export interface LeadFormProps {
   formSlug: string;
@@ -29,16 +30,19 @@ export function LeadForm({
   showDepartureCity = true,
   showBudget = true,
 }: LeadFormProps) {
+  const savedContact = loadContact();
+  const fullNameParts = (savedContact.firstName || '') + ' ' + (savedContact.lastName || '');
+  const savedPhone = splitStoredPhone(savedContact.phone);
   const [form, setForm] = useState({
-    fullName: '',
-    email: '',
+    fullName: fullNameParts.trim() || '',
+    email: savedContact.email || '',
     travelers: 1,
     departureCity: '',
     budget: '',
     message: '',
   });
-  const [phoneCountry, setPhoneCountry] = useState<string>(DEFAULT_COUNTRY_CODE);
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState<string>(savedPhone.code);
+  const [phoneNumber, setPhoneNumber] = useState(savedPhone.number);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +63,13 @@ export function LeadForm({
         travelers: form.travelers,
         departureCity: form.departureCity || undefined,
         budget: form.budget || undefined,
+      });
+      const nameParts = form.fullName.trim().split(/\s+/);
+      saveContact({
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        phone: `${dialCode} ${phoneNumber}`.trim(),
+        email: form.email || '',
       });
       await trackEvent('submit_application', {
         contentName: formSlug,

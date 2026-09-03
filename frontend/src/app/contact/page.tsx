@@ -8,21 +8,23 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { PageHero } from '@/components/ui/page-hero';
 import { Mail, Phone, MapPin, Send, MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { DEFAULT_COUNTRY_CODE } from '@/lib/country-dial-codes';
 import { submitLead } from '@/lib/tracking-client';
+import { loadContact, saveContact, splitStoredPhone } from '@/lib/contact-persist';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ContactPage() {
+  const savedContact = loadContact();
+  const savedPhone = splitStoredPhone(savedContact.phone);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState(savedContact.firstName || '');
+  const [lastName, setLastName] = useState(savedContact.lastName || '');
+  const [email, setEmail] = useState(savedContact.email || '');
   const [message, setMessage] = useState('');
-  const [phoneCountry, setPhoneCountry] = useState<string>(DEFAULT_COUNTRY_CODE);
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState<string>(savedPhone.code);
+  const [phoneNumber, setPhoneNumber] = useState(savedPhone.number);
 
   // Pre-fill the message when we arrive from a CTA that knows what the visitor
   // wants (e.g. a visa country with no bookable service yet). Read from
@@ -63,6 +65,12 @@ export default function ContactPage() {
         phone: `${phoneCountry}${phoneNumber.trim()}`,
         message: message.trim(),
         source: 'contact-page',
+      });
+      saveContact({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+        phone: `${phoneCountry} ${phoneNumber.trim()}`.trim(),
       });
       setSubmitted(true);
     } catch (err: any) {

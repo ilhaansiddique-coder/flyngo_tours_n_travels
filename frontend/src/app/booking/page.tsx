@@ -12,11 +12,12 @@ import {
   DEFAULT_COUNTRY_CODE,
   findDialByCode,
 } from '@/lib/country-dial-codes';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Check, Loader2, Sparkles, MapPin, Wallet, Users as UsersIcon, Heart, ArrowRight, ArrowLeft, AlertCircle, Compass, Building2, Plane, Briefcase, Banknote, Building, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/contexts/locale-context';
+import { loadContact, saveContact } from '@/lib/contact-persist';
 
 const STANDARD_STEPS = [
   { number: 1, key: 'booking_step_details' },
@@ -48,6 +49,25 @@ const TYPE_META: Record<BookingType, { icon: typeof Compass; accent: string }> =
   flight: { icon: Plane, accent: 'primary' },
   visa: { icon: Briefcase, accent: 'primary' },
   custom: { icon: Sparkles, accent: 'primary' },
+};
+
+const URL_TYPE_MAP: Record<string, BookingType> = {
+  tour: 'tour',
+  hotel: 'hotel',
+  flight: 'flight',
+  visa: 'visa',
+  custom: 'custom',
+  destination: 'tour',
+  hajj: 'tour',
+  umrah: 'tour',
+  transport: 'tour',
+};
+
+const URL_TYPE_SENT: Record<string, string> = {
+  hajj: 'hajj',
+  umrah: 'umrah',
+  transport: 'transport',
+  destination: 'destination',
 };
 
 function ItemSummaryCard({ t }: { t: (k: any) => string }) {
@@ -180,9 +200,39 @@ export default function BookingPage() {
   const [error, setError] = useState<string | null>(null);
   const [bookingType, setBookingType] = useState<BookingType>('tour');
   const [paymentMethod, setPaymentMethod] = useState<string>('');
+  const [typeLocked, setTypeLocked] = useState<boolean>(false);
+  const sentType = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    const urlType = sp.get('type');
+    if (!urlType) return;
+
+    const mapped: BookingType | null = urlType in URL_TYPE_MAP ? URL_TYPE_MAP[urlType] : null;
+    if (mapped) {
+      setBookingType(mapped);
+      setTypeLocked(true);
+      sentType.current = urlType in URL_TYPE_SENT ? URL_TYPE_SENT[urlType] : urlType;
+    }
+
+    const saved = loadContact();
+    if (saved.firstName || saved.lastName || saved.phone || saved.email) {
+      setFormData({
+        ...formData,
+        firstName: saved.firstName || formData.firstName || '',
+        lastName: saved.lastName || formData.lastName || '',
+        phone: saved.phone || formData.phone || '',
+        email: saved.email || formData.email || '',
+      });
+    }
+  }, []);
 
   const updateForm = (key: string, value: string) => {
     setFormData({ ...formData, [key]: value });
+    if (['firstName', 'lastName', 'phone', 'email'].includes(key)) {
+      saveContact({ [key]: value });
+    }
     setFieldErrors((prev) => {
       if (!prev[key]) return prev;
       const next = { ...prev };
@@ -269,7 +319,9 @@ export default function BookingPage() {
       if (currentStep === 1) {
         reqMissing('firstName', 'First name');
         reqMissing('lastName', 'Last name');
-        reqMissing('email', 'Email');
+        if (bookingType !== 'tour') {
+          reqMissing('email', 'Email');
+        }
         reqMissing('phone', 'Phone');
         if (formData.email && !validateEmail(formData.email)) errors.email = 'Enter a valid email';
         if (formData.phone && !validatePhone(formData.phone)) errors.phone = 'Enter a valid phone';
@@ -314,7 +366,7 @@ export default function BookingPage() {
     setError(null);
     try {
       const result = (await createBooking({
-        type: bookingType,
+        type: sentType.current || bookingType,
         itemId: (typeof selectedItem === 'string' ? selectedItem : (selectedItem as any)?.id) || (bookingType === 'custom' ? 'custom-quote' : 'demo'),
         startDate: new Date(formData.startDate || new Date()).toISOString(),
         endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
@@ -686,48 +738,50 @@ export default function BookingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
           <div>
             {/* Type selector */}
-            <div className="mb-6">
-              <label className="block text-[10px] uppercase tracking-widest font-bold text-muted mb-2">
-                {t('booking_type_label')}
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {(['tour', 'hotel', 'flight', 'visa', 'custom'] as BookingType[]).map((type) => {
-                  const Icon = TYPE_META[type].icon;
-                  const active = bookingType === type;
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => {
-                        if (type === 'custom') {
-                          setStep(1);
-                          setBookingType('custom');
-                        } else {
-                          setBookingType(type);
-                          setStep(1);
+            {!typeLocked && (
+              <div className="mb-6">
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-muted mb-2">
+                  {t('booking_type_label')}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {(['tour', 'hotel', 'flight', 'visa', 'custom'] as BookingType[]).map((type) => {
+                    const Icon = TYPE_META[type].icon;
+                    const active = bookingType === type;
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          if (type === 'custom') {
+                            setStep(1);
+                            setBookingType('custom');
+                          } else {
+                            setBookingType(type);
+                            setStep(1);
+                          }
+                          setFieldErrors({});
+                          setError(null);
+                        }}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition ${
+                          active ? 'text-on-surface' : 'text-muted hover:border-medium'
+                        }`}
+                        style={
+                          active
+                            ? {
+                                background: 'linear-gradient(135deg, color-mix(in oklab, var(--color-primary) 18%, transparent), color-mix(in oklab, var(--color-tertiary) 18%, transparent))',
+                                borderColor: 'var(--color-primary)',
+                              }
+                            : { backgroundColor: 'var(--color-surface-container)', borderColor: 'var(--color-outline-variant)' }
                         }
-                        setFieldErrors({});
-                        setError(null);
-                      }}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition ${
-                        active ? 'text-on-surface' : 'text-muted hover:border-medium'
-                      }`}
-                      style={
-                        active
-                          ? {
-                              background: 'linear-gradient(135deg, color-mix(in oklab, var(--color-primary) 18%, transparent), color-mix(in oklab, var(--color-tertiary) 18%, transparent))',
-                              borderColor: 'var(--color-primary)',
-                            }
-                          : { backgroundColor: 'var(--color-surface-container)', borderColor: 'var(--color-outline-variant)' }
-                      }
-                    >
-                      <Icon className="w-4 h-4" />
-                      {t(`booking_type_${type}` as any)}
-                    </button>
-                  );
-                })}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {t(`booking_type_${type}` as any)}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             <StepIndicator steps={steps} currentStep={currentStep} t={t} />
 
@@ -826,7 +880,7 @@ export default function BookingPage() {
                     <Input label={t('booking_first_name')} value={formData.firstName || ''} onChange={(e) => updateForm('firstName', e.target.value)} required error={fieldErrors.firstName} />
                     <Input label={t('booking_last_name')} value={formData.lastName || ''} onChange={(e) => updateForm('lastName', e.target.value)} required error={fieldErrors.lastName} />
                   </div>
-                  <Input label={t('booking_email')} type="email" value={formData.email || ''} onChange={(e) => updateForm('email', e.target.value)} required error={fieldErrors.email} />
+                  <Input label={t('booking_email')} type="email" value={formData.email || ''} onChange={(e) => updateForm('email', e.target.value)} required={bookingType !== 'tour'} error={fieldErrors.email} />
                   <PhoneInput
                     label={t('booking_phone')}
                     countryCode={getStoredPhoneParts().code}
@@ -985,14 +1039,15 @@ export default function BookingPage() {
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    if (currentStep === 1) setBookingType('tour');
+                    if (currentStep === 1 && !typeLocked) setBookingType('tour');
+                    else if (currentStep === 1 && typeLocked) return;
                     else setStep(currentStep - 1);
                     setFieldErrors({});
                     setError(null);
                   }}
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  {currentStep === 1 ? t('booking_back_to_types') : t('booking_previous')}
+                  {currentStep === 1 && !typeLocked ? t('booking_back_to_types') : t('booking_previous')}
                 </Button>
                 <div className="flex gap-2">
                   <Button variant="ghost" onClick={reset}>{t('booking_cancel')}</Button>

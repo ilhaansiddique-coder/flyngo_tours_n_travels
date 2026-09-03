@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Compass, FileCheck, Plane, Search, Building2, Moon, Sparkles, Car } from 'lucide-react';
@@ -9,6 +9,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { DestinationAutocomplete } from '@/components/ui/destination-autocomplete';
 import { DEFAULT_COUNTRY_CODE, findDialByCode } from '@/lib/country-dial-codes';
 import { useApi } from '@/hooks/use-api';
+import { loadContact, saveContact, splitStoredPhone } from '@/lib/contact-persist';
 
 type TabKey = 'tours' | 'visa' | 'hotels' | 'flights' | 'hajj' | 'umrah' | 'transport';
 
@@ -30,8 +31,11 @@ export function HeroSearchPanel() {
   const { submitLead, getTours } = useApi();
   const [tab, setTab] = useState<TabKey>('tours');
   const [destination, setDestination] = useState('');
-  const [contactNumber, setContactNumber] = useState('');
-  const [contactCountry, setContactCountry] = useState<string>(DEFAULT_COUNTRY_CODE);
+
+  const savedContact = useMemo(() => loadContact(), []);
+  const savedPhoneParts = useMemo(() => splitStoredPhone(savedContact?.phone), [savedContact]);
+  const [contactNumber, setContactNumber] = useState(savedPhoneParts.number);
+  const [contactCountry, setContactCountry] = useState<string>(savedPhoneParts.code || DEFAULT_COUNTRY_CODE);
   const [contactError, setContactError] = useState('');
   const [destinationError, setDestinationError] = useState('');
 
@@ -136,6 +140,12 @@ export function HeroSearchPanel() {
 
     // Fire-and-forget lead capture — never block the search on it.
     submitLead(buildLead()).catch(() => {});
+
+    // Persist the contact number so it can pre-fill the booking form later.
+    const dial = findDialByCode(contactCountry)?.dial ?? '';
+    if (contactNumber.trim()) {
+      saveContact({ phone: `${dial} ${contactNumber.trim()}`.trim() });
+    }
 
     // Only carry search-relevant params into the URL. The contact number is
     // captured in the lead above, not leaked into the address bar / history.

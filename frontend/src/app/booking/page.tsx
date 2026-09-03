@@ -26,6 +26,12 @@ const STANDARD_STEPS = [
   { number: 4, key: 'booking_step_checkout' },
 ];
 
+const TOUR_STEPS = [
+  { number: 1, key: 'booking_step_details' },
+  { number: 2, key: 'booking_step_review' },
+  { number: 3, key: 'booking_step_checkout' },
+];
+
 const VISA_STEPS = [
   { number: 1, key: 'booking_step_applicant' },
   { number: 2, key: 'booking_step_travel' },
@@ -321,7 +327,7 @@ export default function BookingPage() {
         reqMissing('phone', 'Phone');
         if (formData.email && !validateEmail(formData.email)) errors.email = 'Enter a valid email';
         if (formData.phone && !validatePhone(formData.phone)) errors.phone = 'Enter a valid phone';
-      } else if (currentStep === 2) {
+      } else if (currentStep === 2 && bookingType !== 'tour') {
         reqMissing('destination', 'Destination');
         reqMissing('startDate', 'Start date');
         reqMissing('guests', 'Number of guests');
@@ -340,7 +346,7 @@ export default function BookingPage() {
       return;
     }
     // Checkout step: require payment method selection
-    const max = bookingType === 'custom' ? 5 : bookingType === 'visa' ? 4 : 4;
+    const max = bookingType === 'custom' ? 5 : bookingType === 'visa' ? 4 : bookingType === 'tour' ? 3 : 4;
     if (currentStep === max && bookingType !== 'visa' && bookingType !== 'custom') {
       if (!paymentMethod) {
         setError(isBn ? 'অনুগ্রহ করে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Please select a payment method');
@@ -716,8 +722,9 @@ export default function BookingPage() {
   }
 
   // -------- STANDARD booking flow --------
-  const maxStep = bookingType === 'visa' ? 4 : 4;
-  const steps = bookingType === 'visa' ? VISA_STEPS : STANDARD_STEPS;
+  const isTour = bookingType === 'tour';
+  const maxStep = bookingType === 'visa' ? 4 : isTour ? 3 : 4;
+  const steps = bookingType === 'visa' ? VISA_STEPS : isTour ? TOUR_STEPS : STANDARD_STEPS;
   const isLastStep = currentStep === maxStep;
 
   return (
@@ -891,10 +898,27 @@ export default function BookingPage() {
                     required
                     error={fieldErrors.phone}
                   />
+                  {bookingType === 'tour' && (
+                    <div>
+                      <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+                        {t('booking_notes')}
+                      </label>
+                      <textarea
+                        value={formData.notes || ''}
+                        onChange={(e) => updateForm('notes', e.target.value)}
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-xl text-on-surface placeholder:text-muted outline-none border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all bg-surface-container/60 backdrop-blur-md"
+                        placeholder={isBn ? 'আপনার ভ্রমণ সম্পর্কে একটি সংক্ষিপ্ত নোট লিখুন' : 'Leave a short note about your trip (optional)'}
+                      />
+                      <p className="text-xs text-muted mt-1">
+                        {isBn ? 'আপনার বুকিং নিশ্চিত হওয়ার পর আমরা কল/এসএমএস/ইমেইলের মাধ্যমে আপনার সাথে যোগাযোগ করব।' : 'We will contact you by call, SMS or email after your booking is confirmed.'}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {currentStep === 2 && bookingType !== 'visa' && (
+              {currentStep === 2 && bookingType !== 'visa' && bookingType !== 'tour' && (
                 <div className="space-y-5">
                   <SectionHeading title={t('booking_section_trip')} help={t('booking_section_trip_help')} />
                   <DestinationAutocomplete
@@ -925,8 +949,8 @@ export default function BookingPage() {
                 </div>
               )}
 
-              {/* REVIEW (standard step 3 / visa step 4) */}
-              {((currentStep === 3 && bookingType !== 'visa') || (currentStep === 4 && bookingType === 'visa')) && (
+              {/* REVIEW (standard step 3 / tour step 2 / visa step 4) */}
+              {((currentStep === 3 && bookingType !== 'visa') || (currentStep === 4 && bookingType === 'visa') || (currentStep === 2 && bookingType === 'tour')) && (
                 <div className="space-y-5">
                   <SectionHeading title={t('booking_review_title')} help={t('booking_review_help')} />
                   {bookingType === 'visa' ? (
@@ -946,20 +970,20 @@ export default function BookingPage() {
                     <div className="space-y-3">
                       <ReviewRow label={t('booking_service')} value={displayName} />
                       <ReviewRow label={t('booking_type_label')} value={t(`booking_type_${bookingType}` as any)} />
-                      <ReviewRow label={t('booking_destination')} value={formData.destination || '—'} />
+                      {bookingType !== 'tour' && <ReviewRow label={t('booking_destination')} value={formData.destination || '—'} />}
                       <ReviewRow label={isBn ? 'অতিথির নাম' : 'Guest name'} value={`${formData.firstName || ''} ${formData.lastName || ''}`.trim() || '—'} />
                       <ReviewRow label={t('booking_email')} value={formData.email || '—'} />
                       <ReviewRow label={t('booking_phone')} value={formData.phone || '—'} />
-                      <ReviewRow label={t('booking_dates')} value={`${formData.startDate || '—'}${formData.endDate ? ` — ${formData.endDate}` : ''}`} />
-                      <ReviewRow label={t('booking_guests')} value={String(formData.guests || 1)} />
+                      {bookingType !== 'tour' && <ReviewRow label={t('booking_dates')} value={`${formData.startDate || '—'}${formData.endDate ? ` — ${formData.endDate}` : ''}`} />}
+                      {bookingType !== 'tour' && <ReviewRow label={t('booking_guests')} value={String(formData.guests || 1)} />}
                       {formData.notes && <ReviewRow label={t('booking_notes')} value={formData.notes} />}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* CHECKOUT (standard step 4) */}
-              {currentStep === 4 && bookingType !== 'visa' && (
+              {/* CHECKOUT (standard step 4 / tour step 3) */}
+              {((currentStep === 4 && bookingType !== 'visa' && bookingType !== 'tour') || (currentStep === 3 && bookingType === 'tour')) && (
                 <div className="space-y-6">
                   <SectionHeading title={t('booking_step_checkout')} help={t('booking_checkout_help')} />
                   

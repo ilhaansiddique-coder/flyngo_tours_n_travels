@@ -166,18 +166,23 @@ describe('BookingService', () => {
       expect(result.discountAmount).toBe(100);
     });
 
-    // resolveItemPrice has no 'hotel' case, so one arriving here used to fall to
-    // `default: return 0` and persist a real booking with totalAmount 0.
-    it('rejects hotels instead of silently pricing them at zero', async () => {
-      await expect(
-        service.createBooking('tenant-1', 'user-1', {
-          type: 'hotel',
-          itemId: 'hotel-1',
-          startDate: new Date('2026-08-01'),
-          guests: 2,
-        }),
-      ).rejects.toThrow(BadRequestException);
-      expect(mockPrisma.booking.create).not.toHaveBeenCalled();
+    // Hotels can now go through the generic endpoint for payment-free general
+    // bookings. resolveItemPrice still has no 'hotel' case, so a booking made
+    // here is priced at 0 and left for the operator to quote.
+    it('allows hotels through the generic endpoint priced at zero for a quote', async () => {
+      mockReferral.resolveDiscountForUser.mockResolvedValue({ discount: 0, code: null });
+      mockPrisma.booking.create.mockImplementation(({ data }: any) => ({ ...data, id: 'booking-1' }));
+
+      const result: any = await service.createBooking('tenant-1', 'user-1', {
+        type: 'hotel',
+        itemId: 'hotel-1',
+        startDate: new Date('2026-08-01'),
+        guests: 2,
+      });
+
+      expect(result.bookingType).toBe('hotel');
+      expect(result.totalAmount).toBe(0);
+      expect(mockPrisma.booking.create).toHaveBeenCalled();
     });
 
     // Public endpoint with an inline body and no DTO — a date-only value used to

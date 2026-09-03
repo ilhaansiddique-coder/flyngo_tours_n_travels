@@ -13,9 +13,8 @@ import {
   findDialByCode,
 } from '@/lib/country-dial-codes';
 import { useState, useEffect, useRef } from 'react';
-import { Check, Loader2, Sparkles, MapPin, Wallet, Users as UsersIcon, Heart, ArrowRight, ArrowLeft, AlertCircle, Compass, Building2, Plane, Briefcase, Banknote, Building, Smartphone } from 'lucide-react';
+import { Check, Loader2, Sparkles, MapPin, Wallet, Users as UsersIcon, Heart, ArrowRight, ArrowLeft, AlertCircle, Compass, Building2, Plane, Briefcase, Banknote, Building, Smartphone, Copy, Upload, X, FileText, Info } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useLocale } from '@/contexts/locale-context';
 import { loadContact, saveContact } from '@/lib/contact-persist';
 
@@ -48,6 +47,17 @@ const CUSTOM_STEPS = [
 ];
 
 type BookingType = 'tour' | 'hotel' | 'flight' | 'visa' | 'custom';
+
+interface BankAccount {
+  id: string;
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  branch?: string | null;
+  routingNumber?: string | null;
+  swiftCode?: string | null;
+  instructions?: string | null;
+}
 
 const TYPE_META: Record<BookingType, { icon: typeof Compass; accent: string }> = {
   tour: { icon: Compass, accent: 'primary' },
@@ -196,18 +206,29 @@ function SectionHeading({ title, help }: { title: string; help?: string }) {
 
 export default function BookingPage() {
   const { currentStep, setStep, selectedItem, totalAmount, reset, setFormData, formData } = useBookingStore();
-  const { createBooking } = useApi();
-  const router = useRouter();
+  const { createBooking, getPaymentMethods, uploadPaymentReceipt, submitPaymentConfirmation } = useApi();
   const { t, locale } = useLocale();
   const isBn = locale === 'bn';
   const [submitting, setSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingCode, setBookingCode] = useState('');
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingType, setBookingType] = useState<BookingType>('tour');
   const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [typeLocked, setTypeLocked] = useState<boolean>(false);
   const sentType = useRef<string | null>(null);
+
+  const [bkashWallet, setBkashWallet] = useState<string | null>(null);
+  const [bkashName, setBkashName] = useState<string | null>(null);
+  const [paymentInstructions, setPaymentInstructions] = useState<string | null>(null);
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [bkashTrxId, setBkashTrxId] = useState('');
+  const [bankAccountId, setBankAccountId] = useState('');
+  const [senderName, setSenderName] = useState('');
+  const [receiptUrls, setReceiptUrls] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -233,6 +254,46 @@ export default function BookingPage() {
       });
     }
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const methods = (await getPaymentMethods()) as any;
+        if (!mounted) return;
+        setBkashWallet(methods?.bkash?.walletNumber || null);
+        setBkashName(methods?.bkash?.merchantName || null);
+        setPaymentInstructions(methods?.instructions || null);
+        setBankAccounts(methods?.bankAccounts || []);
+        if (methods?.bankAccounts?.[0]?.id) setBankAccountId(methods.bankAccounts[0].id);
+      } catch {
+        // payment settings unavailable; checkout still works without presets
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [getPaymentMethods]);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard?.writeText(text).catch(() => {});
+  };
+
+  const uploadReceipt = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploading(true);
+    setPaymentError(null);
+    try {
+      for (const file of Array.from(files)) {
+        const res = (await uploadPaymentReceipt(file)) as { url: string };
+        if (res?.url) setReceiptUrls((prev) => [...prev, res.url]);
+      }
+    } catch (err: any) {
+      setPaymentError(err.message || (isBn ? 'রসিদ আপলোড ব্যর্থ হয়েছে' : 'Receipt upload failed'));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const updateForm = (key: string, value: string) => {
     setFormData({ ...formData, [key]: value });
@@ -352,6 +413,20 @@ export default function BookingPage() {
         setError(isBn ? 'অনুগ্রহ করে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Please select a payment method');
         return;
       }
+      if (paymentMethod === 'bkash' && !bkashTrxId.trim()) {
+        setError(isBn ? 'bKash ট্রানজেকশন আইডি দিন' : 'Please enter the bKash transaction ID');
+        return;
+      }
+      if (paymentMethod === 'bank_transfer') {
+        if (!bankAccountId) {
+          setError(isBn ? 'ব্যাংক অ্যাকাউন্ট নির্বাচন করুন' : 'Please select a bank account');
+          return;
+        }
+        if (receiptUrls.length === 0) {
+          setError(isBn ? 'অনুগ্রহ করে রসিদ আপলোড করুন' : 'Please upload your payment receipt');
+          return;
+        }
+      }
     }
     setError(null);
     if (bookingType === 'custom') {
@@ -392,12 +467,21 @@ export default function BookingPage() {
       const code = result?.bookingCode || (bookingType === 'custom' ? 'QUOTE-PENDING' : '');
       setBookingCode(code || 'FLY-XXXX-XXXX');
       if (bookingType !== 'custom' && code) {
-        const mapped =
-          paymentMethod === 'bank_transfer' ? 'bank_transfer'
-          : paymentMethod === 'cash' || paymentMethod === 'cash_on_delivery' ? 'cash'
-          : 'bkash';
-        router.push(`/pay/${encodeURIComponent(code)}?method=${mapped}`);
-        return;
+        if (paymentMethod && (paymentMethod === 'bkash' || paymentMethod === 'bank_transfer' || paymentMethod === 'cash')) {
+          try {
+            await submitPaymentConfirmation({
+              bookingCode: code,
+              method: paymentMethod,
+              bkashTrxId: paymentMethod === 'bkash' ? bkashTrxId.trim() : undefined,
+              bankAccountId: paymentMethod === 'bank_transfer' ? bankAccountId : undefined,
+              receiptUrls,
+              senderName: paymentMethod === 'bank_transfer' ? senderName || undefined : undefined,
+            });
+          } catch {
+            // payment confirmation failed; booking is still created and can be paid later
+          }
+        }
+        setPaymentConfirmed(true);
       }
       setBookingSuccess(true);
       setStep(bookingType === 'custom' ? 6 : 5);
@@ -435,25 +519,40 @@ export default function BookingPage() {
                 ? t('booking_success_help_quote')
                 : t('booking_success_help')}
             </p>
+            {paymentConfirmed && (
+              <p className="text-xs text-muted rounded-xl p-3 bg-surface-container/60">
+                {isBn
+                  ? 'পেমেন্ট তথ্য জমা হয়েছে। আমাদের টিম রসিদ যাচাই করে নিশ্চিত করবে এবং ইনভয়েস তৈরি করবে।'
+                  : 'Payment details submitted. Our team will verify your receipt and generate the invoice after confirmation.'}
+              </p>
+            )}
             <p className="text-[10px] uppercase tracking-widest font-bold text-muted mt-4">{t('booking_booking_code')}</p>
             <p className="font-mono text-lg font-bold text-on-surface mb-8">{bookingCode}</p>
             <div className="flex gap-3">
-              <Link href="/" className="flex-1">
+              <Link href="/track" className="flex-1">
                 <Button variant="ghost" size="lg" className="w-full">
-                  {t('booking_back_home')}
+                  {isBn ? 'ট্র্যাক বুকিং' : 'Track booking'}
                 </Button>
               </Link>
-              <Button
-                size="lg"
-                className="flex-1"
-                onClick={() => {
-                  setBookingSuccess(false);
-                  reset();
-                }}
-              >
-                {t('booking_new')}
-              </Button>
+              {bookingCode && bookingCode !== 'FLY-XXXX-XXXX' && (
+                <Link href={`/pay/${encodeURIComponent(bookingCode)}`} className="flex-1">
+                  <Button size="lg" className="w-full">
+                    {isBn ? 'ইনভয়েস / পেমেন্ট' : 'Invoice / Payment'}
+                  </Button>
+                </Link>
+              )}
             </div>
+            <Button
+              size="lg"
+              className="w-full mt-3"
+              variant="ghost"
+              onClick={() => {
+                setBookingSuccess(false);
+                reset();
+              }}
+            >
+              {t('booking_new')}
+            </Button>
           </div>
         </div>
       </main>
@@ -1002,6 +1101,13 @@ export default function BookingPage() {
                     </div>
                   </div>
 
+                  {paymentInstructions && (
+                    <div className="flex items-start gap-2 rounded-xl border border-soft p-3 bg-surface-container/60">
+                      <Info className="w-4 h-4 shrink-0 mt-0.5 text-[var(--color-primary)]" />
+                      <p className="text-xs text-muted">{paymentInstructions}</p>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-3">
                       {isBn ? 'পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Select Payment Method'}
@@ -1039,6 +1145,160 @@ export default function BookingPage() {
                     </div>
                     {!paymentMethod && (
                       <p className="text-xs text-muted mt-3 text-center">{isBn ? 'চালিয়ে যেতে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Select a payment method to continue'}</p>
+                    )}
+
+                    {paymentMethod === 'bkash' && (
+                      <div className="mt-4 rounded-2xl border border-soft p-5 bg-surface-container/60 space-y-4">
+                        <div className="flex items-start gap-3">
+                          <Smartphone className="w-5 h-5 shrink-0 mt-0.5 text-muted" />
+                          <div className="text-sm">
+                            <div className="font-semibold text-on-surface">{isBn ? 'bKash ডেটা পাঠান' : 'Send to bKash'}</div>
+                            {bkashWallet ? (
+                              <div className="mt-1 flex items-center gap-2 flex-wrap">
+                                <span className="text-2xl font-display font-bold tracking-wider text-[var(--color-primary)]">{bkashWallet}</span>
+                                {bkashName && <span className="text-xs text-muted">({bkashName})</span>}
+                                <button
+                                  type="button"
+                                  onClick={() => copyToClipboard(bkashWallet)}
+                                  className="flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:opacity-70"
+                                >
+                                  <Copy className="w-3.5 h-3.5" /> {isBn ? 'কপি' : 'Copy'}
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="mt-1 text-xs text-muted">{isBn ? 'bKash নম্বর শীঘ্রই প্রদর্শিত হবে' : 'bKash number will appear shortly'}</div>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+                            {isBn ? 'ট্রানজেকশন আইডি' : 'bKash Transaction ID'}
+                          </label>
+                          <Input
+                            value={bkashTrxId}
+                            onChange={(e) => setBkashTrxId(e.target.value)}
+                            placeholder="9J3XXXXXXX"
+                          />
+                          <p className="text-xs text-muted mt-1">{isBn ? 'সেন্ড মানিতে দেখানো ট্রানজেকশন আইডি লিখুন' : 'Enter the transaction ID shown after you send money'}.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {paymentMethod === 'bank_transfer' && (
+                      <div className="mt-4 rounded-2xl border border-soft p-5 bg-surface-container/60 space-y-4">
+                        <div className="flex items-start gap-3">
+                          <Building className="w-5 h-5 shrink-0 mt-0.5 text-muted" />
+                          <div className="text-sm">
+                            <div className="font-semibold text-on-surface">{isBn ? 'ব্যাংক একাউন্টে পাঠান' : 'Transfer to our bank account'}</div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+                            {isBn ? 'ব্যাংক নির্বাচন করুন' : 'Select Bank Account'}
+                          </label>
+                          {bankAccounts.length > 0 ? (
+                            <div className="space-y-2">
+                              {bankAccounts.map((acc) => (
+                                <button
+                                  key={acc.id}
+                                  type="button"
+                                  onClick={() => setBankAccountId(acc.id)}
+                                  className={`w-full flex items-center justify-between gap-2 p-3 rounded-xl border text-left transition ${
+                                    bankAccountId === acc.id ? 'border-[var(--color-primary)]' : 'border-soft hover:border-medium'
+                                  }`}
+                                  style={bankAccountId === acc.id ? { backgroundColor: 'color-mix(in oklab, var(--color-primary) 10%, transparent)' } : { backgroundColor: 'var(--color-surface-container)' }}
+                                >
+                                  <div>
+                                    <div className="text-sm font-semibold text-on-surface">{acc.bankName}</div>
+                                    <div className="text-xs text-muted">{acc.accountName}</div>
+                                    {bankAccountId === acc.id && (
+                                      <div className="mt-1 flex items-center gap-2 flex-wrap">
+                                        <span className="text-lg font-display font-bold tracking-wider text-[var(--color-primary)]">{acc.accountNumber}</span>
+                                        <button type="button" onClick={() => copyToClipboard(acc.accountNumber)} className="flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:opacity-70">
+                                          <Copy className="w-3.5 h-3.5" /> {isBn ? 'কপি' : 'Copy'}
+                                        </button>
+                                      </div>
+                                    )}
+                                    {bankAccountId === acc.id && (acc.branch || acc.routingNumber || acc.swiftCode) && (
+                                      <div className="mt-1 text-[11px] text-muted">
+                                        {acc.branch && <div>{isBn ? 'শাখা' : 'Branch'}: {acc.branch}</div>}
+                                        {acc.routingNumber && <div>{isBn ? 'রাউটিং' : 'Routing'}: {acc.routingNumber}</div>}
+                                        {acc.swiftCode && <div>SWIFT: {acc.swiftCode}</div>}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {bankAccountId === acc.id && <Check className="w-4 h-4 shrink-0" style={{ color: 'var(--color-primary)' }} />}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted">{isBn ? 'ব্যাংক অ্যাকাউন্ট পাওয়া যায়নি' : 'No bank accounts available'}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+                            {isBn ? 'প্রেরকের নাম (ঐচ্ছিক)' : 'Sender Name (optional)'}
+                          </label>
+                          <Input value={senderName} onChange={(e) => setSenderName(e.target.value)} />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+                            {isBn ? 'রসিদ আপলোড করুন' : 'Upload Payment Receipt'}
+                          </label>
+                          <label className="flex flex-col items-center justify-center gap-2 p-5 rounded-xl border border-dashed border-soft cursor-pointer hover:border-[var(--color-primary)] bg-surface-container/60 transition">
+                            <Upload className="w-5 h-5 text-muted" />
+                            <span className="text-sm text-muted text-center">
+                              {uploading ? (isBn ? 'আপলোড হচ্ছে...' : 'Uploading...') : (isBn ? 'ছবি বা PDF আপলোড করুন' : 'Click to upload an image or PDF')}
+                            </span>
+                            <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={(e) => uploadReceipt(e.target.files)} />
+                          </label>
+                          {paymentError && (
+                            <p className="mt-2 text-xs" style={{ color: 'var(--color-error, #ef4444)' }}>{paymentError}</p>
+                          )}
+                          {receiptUrls.length > 0 && (
+                            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {receiptUrls.map((url, i) => (
+                                <div key={url} className="relative rounded-xl overflow-hidden border border-soft bg-surface-container">
+                                  {url.match(/\.(jpe?g|png|gif|webp)(\?|$)/i) ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={url} alt="receipt" className="w-full h-20 object-cover" />
+                                  ) : (
+                                    <div className="w-full h-20 flex items-center justify-center">
+                                      <FileText className="w-8 h-8 text-muted" />
+                                    </div>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => setReceiptUrls((prev) => prev.filter((_, idx) => idx !== i))}
+                                    className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {paymentMethod === 'cash' && (
+                      <div className="mt-4 rounded-2xl border border-soft p-5 bg-surface-container/60 space-y-3">
+                        <div className="flex items-start gap-3">
+                          <Banknote className="w-5 h-5 shrink-0 mt-0.5 text-muted" />
+                          <div className="text-sm">
+                            <div className="font-semibold text-on-surface">{isBn ? 'ক্যাশ পেমেন্ট' : 'Cash Payment'}</div>
+                            <p className="text-xs text-muted mt-1">
+                              {isBn
+                                ? 'আমাদের অফিসে বা কালেকশনের মাধ্যমে পরিশোধ করুন। আমাদের টিম আপনার সাথে যোগাযোগ করবে।'
+                                : 'Pay at our office or via collection. Our team will contact you to arrange the payment.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
 

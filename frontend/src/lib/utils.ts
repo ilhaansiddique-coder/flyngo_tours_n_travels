@@ -21,6 +21,9 @@ export function formatDate(date: string | Date): string {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: true,
   }).format(new Date(date));
 }
 

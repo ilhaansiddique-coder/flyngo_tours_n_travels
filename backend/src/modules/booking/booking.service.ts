@@ -191,8 +191,17 @@ export class BookingService {
     return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
-  async listAllBookings(tenantId: string, page = 1, limit = 20) {
-    const where = { tenantId, deletedAt: null };
+  async listAllBookings(tenantId: string, page = 1, limit = 20, status?: string, type?: string) {
+    const where = {
+      tenantId,
+      deletedAt: null,
+    } as const;
+    if (status) {
+      where.status = status;
+    }
+    if (type) {
+      where.bookingType = type;
+    }
     const [items, total] = await Promise.all([
       this.prisma.booking.findMany({
         where, skip: (page - 1) * limit, take: limit,

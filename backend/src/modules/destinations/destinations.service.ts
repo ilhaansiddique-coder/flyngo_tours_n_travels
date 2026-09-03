@@ -24,7 +24,17 @@ export class DestinationsService {
       ];
     }
     if (toursOnly) {
-      where.tours = { some: { deletedAt: null, isActive: true } };
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        {
+          OR: [
+            // Primary destination of an active tour.
+            { tours: { some: { deletedAt: null, isActive: true } } },
+            // Additional destination linked to an active tour.
+            { tourLinks: { some: { tour: { deletedAt: null, isActive: true } } } },
+          ],
+        },
+      ];
     }
     return this.prisma.destination.findMany({
       where,
@@ -76,7 +86,15 @@ export class DestinationsService {
       ];
     }
     if (toursOnly) {
-      where.tours = { some: { deletedAt: null, isActive: true } };
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        {
+          OR: [
+            { tours: { some: { deletedAt: null, isActive: true } } },
+            { tourLinks: { some: { tour: { deletedAt: null, isActive: true } } } },
+          ],
+        },
+      ];
     }
     const [items, total] = await Promise.all([
       this.prisma.destination.findMany({

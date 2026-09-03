@@ -144,33 +144,56 @@ export function Testimonials() {
           )}
         </div>
 
-        {!loading && testimonials.length > 0 && (
-          <div className="flex items-center justify-between mt-6">
-            <div className="flex items-center gap-2">
+        {!loading && testimonials.length > 1 && (
+          <div className="flex items-center justify-between gap-4 mt-8">
+            <span className="hidden sm:block text-xs text-muted tabular-nums">
+              {String(active + 1).padStart(2, '0')}
+              <span className="mx-1 text-on-surface-soft">/</span>
+              {String(testimonials.length).padStart(2, '0')}
+            </span>
+
+            <div className="flex items-center gap-2.5" role="tablist" aria-label="Testimonials">
               {testimonials.map((_, i) => (
                 <button
                   key={i}
-                  onClick={() => setActive(i)}
+                  role="tab"
+                  aria-selected={i === active}
                   aria-label={`Show testimonial ${i + 1}`}
-                  className={`h-1.5 rounded-full transition-all ${i === active ? 'w-8 bg-accent' : 'w-1.5 bg-on-surface-firm hover:bg-on-surface-firm'
+                  onClick={() => setActive(i)}
+                  className="group p-1.5"
+                >
+                  <span
+                    className={`block rounded-full transition-all duration-300 ${
+                      i === active ? 'w-7 h-2.5' : 'w-2.5 h-2.5 group-hover:scale-110'
                     }`}
-                />
+                    style={
+                      i === active
+                        ? {
+                            background:
+                              'linear-gradient(90deg, var(--color-accent), var(--color-primary))',
+                            boxShadow: '0 0 0 4px color-mix(in oklab, var(--color-accent) 18%, transparent)',
+                          }
+                        : { backgroundColor: 'var(--color-on-surface-firm)' }
+                    }
+                  />
+                </button>
               ))}
             </div>
+
             <div className="flex gap-2">
               <button
                 onClick={prev}
                 disabled={!prev}
-                className="w-10 h-10 rounded-full border border-hairline-strong flex items-center justify-center text-muted hover:text-on-bg hover:border-accent-soft transition-all disabled:opacity-40"
                 aria-label="Previous testimonial"
+                className="w-10 h-10 rounded-full border border-hairline-strong flex items-center justify-center text-muted hover:text-on-bg hover:border-accent-soft transition-all disabled:opacity-40"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={next}
                 disabled={!next}
-                className="w-10 h-10 rounded-full border border-hairline-strong flex items-center justify-center text-muted hover:text-on-bg hover:border-accent-soft transition-all disabled:opacity-40"
                 aria-label="Next testimonial"
+                className="w-10 h-10 rounded-full border border-hairline-strong flex items-center justify-center text-muted hover:text-on-bg hover:border-accent-soft transition-all disabled:opacity-40"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>

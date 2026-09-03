@@ -190,6 +190,7 @@ export function HeroSearchPanel() {
       }}
       placeholder={destinationPlaceholder}
       mode={tab === 'visa' ? 'country' : 'city'}
+      filterForPackages={tab === 'tours'}
       required={DESTINATION_REQUIRED.includes(tab)}
       error={destinationError}
     />

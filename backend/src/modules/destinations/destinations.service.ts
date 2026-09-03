@@ -14,7 +14,7 @@ export class DestinationsService {
    * the fields the UI needs (id, name, slug, flag, country, continent) so the
    * dropdown can render a flag + name without over-fetching.
    */
-  async searchAutocomplete(tenantId: string, q?: string, limit = 25) {
+  async searchAutocomplete(tenantId: string, q?: string, limit = 25, toursOnly = false) {
     const where: any = { tenantId, deletedAt: null };
     if (q && q.trim()) {
       const term = q.trim();
@@ -22,6 +22,9 @@ export class DestinationsService {
         { name: { contains: term, mode: 'insensitive' } },
         { country: { contains: term, mode: 'insensitive' } },
       ];
+    }
+    if (toursOnly) {
+      where.tours = { some: { deletedAt: null, isActive: true } };
     }
     return this.prisma.destination.findMany({
       where,
@@ -62,7 +65,7 @@ export class DestinationsService {
     return created;
   }
 
-  async findAll(tenantId: string, page = 1, limit = 50, q?: string) {
+  async findAll(tenantId: string, page = 1, limit = 50, q?: string, toursOnly = false) {
     const where: any = { tenantId, deletedAt: null };
     if (q && q.trim()) {
       const term = q.trim();
@@ -71,6 +74,9 @@ export class DestinationsService {
         { country: { contains: term, mode: 'insensitive' } },
         { description: { contains: term, mode: 'insensitive' } },
       ];
+    }
+    if (toursOnly) {
+      where.tours = { some: { deletedAt: null, isActive: true } };
     }
     const [items, total] = await Promise.all([
       this.prisma.destination.findMany({

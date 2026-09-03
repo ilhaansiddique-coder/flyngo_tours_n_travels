@@ -17,8 +17,9 @@ export class DestinationsController {
   async findAll(
     @CurrentTenantId() tenantId: string,
     @Query() pagination: PaginationDto,
+    @Query('toursOnly') toursOnly?: string,
   ) {
-    return this.destinationsService.findAll(tenantId, pagination.page, pagination.limit, pagination.q);
+    return this.destinationsService.findAll(tenantId, pagination.page, pagination.limit, pagination.q, toursOnly === 'true');
   }
 
   @Get('autocomplete')
@@ -28,8 +29,9 @@ export class DestinationsController {
     @CurrentTenantId() tenantId: string,
     @Query('q') q?: string,
     @Query('limit') limit?: string,
+    @Query('toursOnly') toursOnly?: string,
   ) {
-    return this.destinationsService.searchAutocomplete(tenantId, q, limit ? Number(limit) : 25);
+    return this.destinationsService.searchAutocomplete(tenantId, q, limit ? Number(limit) : 25, toursOnly === 'true');
   }
 
   @Post('resolve')

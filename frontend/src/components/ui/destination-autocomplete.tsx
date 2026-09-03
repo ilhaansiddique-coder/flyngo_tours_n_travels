@@ -25,6 +25,7 @@ interface DestinationAutocompleteProps {
   disabled?: boolean;
   helperText?: string;
   mode?: 'city' | 'country';
+  filterForPackages?: boolean;
 }
 
 function formatDestination(d: Destination): string {
@@ -58,6 +59,7 @@ export function DestinationAutocomplete({
   disabled,
   helperText,
   mode = 'city',
+  filterForPackages = false,
 }: DestinationAutocompleteProps) {
   const { getDestinations, getVisaCountries } = useApi();
   const [open, setOpen] = useState(false);
@@ -109,7 +111,9 @@ export function DestinationAutocomplete({
           );
           setItems([...local, ...extras]);
         } else {
-          const res: any = await getDestinations({ q: q.trim(), limit: '8' });
+          const params: Record<string, string> = { q: q.trim(), limit: '8' };
+          if (filterForPackages) params.toursOnly = 'true';
+          const res: any = await getDestinations(params);
           const list = res?.items ?? res?.data ?? res ?? [];
           setItems(Array.isArray(list) ? list : []);
         }
@@ -124,7 +128,7 @@ export function DestinationAutocomplete({
         setLoading(false);
       }
     },
-    [getDestinations, getVisaCountries, mode],
+    [getDestinations, getVisaCountries, mode, filterForPackages],
   );
 
   function handleInput(next: string) {
@@ -300,8 +304,17 @@ export function DestinationAutocomplete({
           className="absolute z-50 mt-1 w-full rounded-xl border shadow-lg bg-surface-container text-muted text-sm px-4 py-3"
           style={{ borderColor: 'var(--color-outline-variant)' }}
         >
-          No {mode === 'country' ? 'countries' : 'destinations'} match &ldquo;{value || ''}&rdquo;. You can
-          still type one manually.
+          {filterForPackages ? (
+            <>
+              <p>This tour packages aren&apos;t available right now.</p>
+              <p className="mt-1">এই টুর প্যাকেজগুলো এখন উপলব্ধ নয়।</p>
+            </>
+          ) : (
+            <>
+              No {mode === 'country' ? 'countries' : 'destinations'} match &ldquo;{value || ''}&rdquo;. You can
+              still type one manually.
+            </>
+          )}
         </div>
       )}
 

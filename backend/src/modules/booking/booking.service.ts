@@ -192,10 +192,10 @@ export class BookingService {
   }
 
   async listAllBookings(tenantId: string, page = 1, limit = 20, status?: string, type?: string) {
-    const where = {
+    const where: any = {
       tenantId,
       deletedAt: null,
-    } as const;
+    };
     if (status) {
       where.status = status;
     }

@@ -1018,7 +1018,6 @@ export default function BookingPage() {
                     <Input label={isBn ? 'প্রস্থানের তারিখ' : 'Intended departure'} type="date" value={formData.departureDate || ''} onChange={(e) => updateForm('departureDate', e.target.value)} required error={fieldErrors.departureDate} />
                   </div>
                   <Input label={isBn ? 'ভ্রমণের উদ্দেশ্য' : 'Purpose of travel'} value={formData.purpose || ''} onChange={(e) => updateForm('purpose', e.target.value)} required placeholder="e.g. Tourism, family visit, business meeting" error={fieldErrors.purpose} />
-                  <Input label={isBn ? 'থাকার ঠিকানা' : 'Accommodation address'} value={formData.accommodation || ''} onChange={(e) => updateForm('accommodation', e.target.value)} placeholder="Hotel name and city" />
                 </div>
               )}
 

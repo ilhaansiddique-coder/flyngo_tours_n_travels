@@ -389,12 +389,15 @@ export default function BookingsPage() {
       if (createForm.endDate) body.endDate = createForm.endDate;
       await adminCreateBooking(body);
       setCreateOpen(false);
-      const params: Record<string, string> = { page: '1', per_page: '10' };
-      if (statusFilter !== 'all') params.status = statusFilter;
-      if (typeFilter !== 'all') params.type = typeFilter;
-      const result = (await getBookings(params)) as BookingsResponse;
-      setBookings(result.data ?? []);
-      setMeta(result.meta ?? null);
+      setRefreshKey((k) => k + 1);
+      setTimeout(async () => {
+        const params: Record<string, string> = { page: '1', per_page: '10' };
+        if (statusFilter !== 'all') params.status = statusFilter;
+        if (typeFilter !== 'all') params.type = typeFilter;
+        const result = (await getBookings(params)) as BookingsResponse;
+        setBookings(result.data ?? []);
+        setMeta(result.meta ?? null);
+      }, 5000);
     } catch {
       // silently fail
     } finally {

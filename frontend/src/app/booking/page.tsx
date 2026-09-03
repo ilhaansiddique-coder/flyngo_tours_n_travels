@@ -980,10 +980,6 @@ export default function BookingPage() {
                     <Input label={t('booking_first_name')} value={formData.firstName || ''} onChange={(e) => updateForm('firstName', e.target.value)} required error={fieldErrors.firstName} />
                     <Input label={t('booking_last_name')} value={formData.lastName || ''} onChange={(e) => updateForm('lastName', e.target.value)} required error={fieldErrors.lastName} />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label={t('booking_first_name')} value={formData.firstName || ''} onChange={(e) => updateForm('firstName', e.target.value)} required error={fieldErrors.firstName} />
-                    <Input label={t('booking_last_name')} value={formData.lastName || ''} onChange={(e) => updateForm('lastName', e.target.value)} required error={fieldErrors.lastName} />
-                  </div>
                   <Input label={t('booking_email')} type="email" value={formData.email || ''} onChange={(e) => updateForm('email', e.target.value)} error={fieldErrors.email} />
                   <PhoneInput
                     label={t('booking_phone')}

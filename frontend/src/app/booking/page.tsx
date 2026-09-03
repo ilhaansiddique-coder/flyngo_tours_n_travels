@@ -49,6 +49,12 @@ const VISA_STEPS = [
   { number: 4, key: 'booking_step_confirm' },
 ];
 
+const VISA_STEPS_PRESET = [
+  { number: 1, key: 'booking_step_applicant' },
+  { number: 2, key: 'booking_step_documents' },
+  { number: 3, key: 'booking_step_confirm' },
+];
+
 const CUSTOM_STEPS = [
   { number: 1, key: 'custom_step_destination', icon: MapPin },
   { number: 2, key: 'custom_step_dates', icon: Heart },
@@ -432,7 +438,7 @@ export default function BookingPage() {
         reqMissing('phone', 'Phone');
         if (formData.email && !validateEmail(formData.email)) errors.email = 'Enter a valid email';
         if (formData.phone && !validatePhone(formData.phone)) errors.phone = 'Enter a valid phone';
-      } else if (currentStep === 2) {
+      } else if (currentStep === 2 && !isPresetBooking) {
         reqMissing('destination', 'Destination country');
         reqMissing('arrivalDate', 'Arrival date');
         reqMissing('departureDate', 'Departure date');
@@ -466,7 +472,7 @@ export default function BookingPage() {
       return;
     }
     // Checkout step: require payment method selection (only for preset bookings)
-    const max = bookingType === 'custom' ? 5 : bookingType === 'visa' ? 4 : bookingType === 'tour' ? (isPresetBooking ? 3 : 2) : (isPresetBooking ? 4 : 3);
+    const max = bookingType === 'custom' ? 5 : bookingType === 'visa' ? (isPresetBooking ? 3 : 4) : bookingType === 'tour' ? (isPresetBooking ? 3 : 2) : (isPresetBooking ? 4 : 3);
     if (currentStep === max && bookingType !== 'visa' && bookingType !== 'custom' && isPresetBooking) {
       if (!paymentMethod) {
         setError(isBn ? 'অনুগ্রহ করে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Please select a payment method');
@@ -905,8 +911,9 @@ export default function BookingPage() {
 
   // -------- STANDARD booking flow --------
   const isTour = bookingType === 'tour';
-  const maxStep = bookingType === 'visa' ? 4 : isTour ? (isPresetBooking ? 3 : 2) : (isPresetBooking ? 4 : 3);
-  const steps = bookingType === 'visa' ? VISA_STEPS : isTour ? (isPresetBooking ? TOUR_STEPS : TOUR_STEPS_GENERAL) : (isPresetBooking ? STANDARD_STEPS : STANDARD_STEPS_GENERAL);
+  const isPresetVisa = bookingType === 'visa' && isPresetBooking;
+  const maxStep = bookingType === 'visa' ? (isPresetBooking ? 3 : 4) : isTour ? (isPresetBooking ? 3 : 2) : (isPresetBooking ? 4 : 3);
+  const steps = bookingType === 'visa' ? (isPresetBooking ? VISA_STEPS_PRESET : VISA_STEPS) : isTour ? (isPresetBooking ? TOUR_STEPS : TOUR_STEPS_GENERAL) : (isPresetBooking ? STANDARD_STEPS : STANDARD_STEPS_GENERAL);
   const isLastStep = currentStep === maxStep;
 
   return (
@@ -999,7 +1006,7 @@ export default function BookingPage() {
                 </div>
               )}
 
-              {currentStep === 2 && bookingType === 'visa' && (
+              {currentStep === 2 && bookingType === 'visa' && !isPresetBooking && (
                 <div className="space-y-5">
                   <SectionHeading title={t('booking_step_travel')} help={t('booking_visa_travel_help')} />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1021,7 +1028,7 @@ export default function BookingPage() {
                 </div>
               )}
 
-              {currentStep === 3 && bookingType === 'visa' && (
+              {bookingType === 'visa' && currentStep === (isPresetBooking ? 2 : 3) && (
                 <div className="space-y-5">
                   <SectionHeading title={t('booking_step_documents')} help={t('booking_visa_docs_help')} />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1126,17 +1133,21 @@ export default function BookingPage() {
                 </div>
               )}
 
-              {/* REVIEW (standard step 3 / tour step 2 / visa step 4) */}
-              {((currentStep === 3 && bookingType !== 'visa') || (currentStep === 4 && bookingType === 'visa') || (currentStep === 2 && bookingType === 'tour')) && (
+              {/* REVIEW (standard step 3 / tour step 2 / visa step 3 or 4) */}
+              {((currentStep === 3 && bookingType !== 'visa') || (bookingType === 'visa' && currentStep === (isPresetBooking ? 3 : 4)) || (currentStep === 2 && bookingType === 'tour')) && (
                 <div className="space-y-5">
                   <SectionHeading title={t('booking_review_title')} help={t('booking_review_help')} />
                   {bookingType === 'visa' ? (
                     <div className="space-y-3">
                       <ReviewRow label={isBn ? 'আবেদনকারী' : 'Applicant'} value={`${formData.firstName || ''} ${formData.lastName || ''}`.trim() || '—'} />
                       <ReviewRow label={t('booking_email')} value={formData.email || '—'} />
-                      <ReviewRow label={isBn ? 'গন্তব্য' : 'Destination'} value={formData.destination || '—'} />
-                      <ReviewRow label={isBn ? 'ভিসার ধরন' : 'Visa type'} value={<span className="capitalize">{formData.visaType || '—'}</span>} />
-                      <ReviewRow label={t('booking_dates')} value={`${formData.arrivalDate || '—'} → ${formData.departureDate || '—'}`} />
+                      {!isPresetBooking && (
+                        <>
+                          <ReviewRow label={isBn ? 'গন্তব্য' : 'Destination'} value={formData.destination || '—'} />
+                          <ReviewRow label={isBn ? 'ভিসার ধরন' : 'Visa type'} value={<span className="capitalize">{formData.visaType || '—'}</span>} />
+                          <ReviewRow label={t('booking_dates')} value={`${formData.arrivalDate || '—'} → ${formData.departureDate || '—'}`} />
+                        </>
+                      )}
                       <div className="rounded-2xl border border-soft p-5 mt-2 bg-surface-container/60">
                         <div className="text-[10px] uppercase tracking-widest text-muted mb-2">{t('booking_field_service_fee')}</div>
                         <div className="font-display text-3xl font-bold text-on-surface">{formatCurrency(totalAmount || 0, 'BDT')}</div>
@@ -1463,8 +1474,8 @@ export default function BookingPage() {
                 </div>
               )}
 
-              {/* CONFIRM (visa step 4) */}
-              {currentStep === 4 && bookingType === 'visa' && (
+              {/* CONFIRM (visa step 4 / preset step 3) */}
+              {bookingType === 'visa' && currentStep === (isPresetBooking ? 3 : 4) && (
                 <div className="space-y-5">
                   <SectionHeading title={t('booking_step_confirm')} help={t('booking_confirm_help')} />
                   <p className="text-xs text-muted text-center">{t('booking_terms')}</p>

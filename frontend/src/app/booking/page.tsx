@@ -257,7 +257,7 @@ function SectionHeading({ title, help }: { title: string; help?: string }) {
 
 export default function BookingPage() {
   const { currentStep, setStep, selectedItem, totalAmount, reset, setFormData, formData } = useBookingStore();
-  const { createBooking, getPaymentMethods, uploadPaymentReceipt, submitPaymentConfirmation, uploadMedia } = useApi();
+  const { createBooking, getPaymentMethods, uploadPaymentReceipt, submitPaymentConfirmation, uploadMedia, getVisaServices } = useApi();
   const { t, locale } = useLocale();
   const isBn = locale === 'bn';
   const [submitting, setSubmitting] = useState(false);
@@ -269,6 +269,8 @@ export default function BookingPage() {
   const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [typeLocked, setTypeLocked] = useState<boolean>(false);
   const [isPresetBooking, setIsPresetBooking] = useState<boolean>(false);
+  const [visaCurrency, setVisaCurrency] = useState<string>('BDT');
+  const setTotalAmount = useBookingStore((s) => s.setTotalAmount);
   const sentType = useRef<string | null>(null);
 
   const [wallets, setWallets] = useState<MobileWallet[]>([]);
@@ -343,6 +345,32 @@ export default function BookingPage() {
       mounted = false;
     };
   }, [getPaymentMethods]);
+
+  useEffect(() => {
+    if (!isPresetBooking || bookingType !== 'visa') return;
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await getVisaServices();
+        const svc: Record<string, unknown>[] = Array.isArray(res)
+          ? (res as Record<string, unknown>[])
+          : ((res as any)?.items ?? []);
+        const id = typeof selectedItem === 'string' ? selectedItem : (selectedItem as any)?.id;
+        const service = svc.find((s) => (s as any)?.id === id);
+        if (mounted && service) {
+          const price = Number((service as any)?.price) || 0;
+          const currency = (service as any)?.currency || 'BDT';
+          setVisaCurrency(currency);
+          setTotalAmount(price);
+        }
+      } catch {
+        // visa price unavailable; keep totalAmount as-is
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [isPresetBooking, bookingType, selectedItem, getVisaServices, setTotalAmount]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard?.writeText(text).catch(() => {});
@@ -509,7 +537,7 @@ export default function BookingPage() {
     }
     // Checkout step: require payment method selection (only for preset bookings)
     const max = bookingType === 'custom' ? 5 : bookingType === 'visa' ? (isPresetBooking ? 3 : 4) : bookingType === 'tour' ? (isPresetBooking ? 3 : 2) : (isPresetBooking ? 4 : 3);
-    if (currentStep === max && bookingType !== 'visa' && bookingType !== 'custom' && isPresetBooking) {
+    if (currentStep === max && bookingType !== 'custom' && isPresetBooking) {
       if (!paymentMethod) {
         setError(isBn ? 'অনুগ্রহ করে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Please select a payment method');
         return;
@@ -1596,8 +1624,72 @@ export default function BookingPage() {
 
               {/* CONFIRM (visa step 4 / preset step 3) */}
               {bookingType === 'visa' && currentStep === (isPresetBooking ? 3 : 4) && (
-                <div className="space-y-5">
+                <div className="space-y-6">
                   <SectionHeading title={t('booking_step_confirm')} help={t('booking_confirm_help')} />
+                  <div className="space-y-3">
+                    <ReviewRow label={isBn ? 'আবেদনকারী' : 'Applicant'} value={`${formData.firstName || ''} ${formData.lastName || ''}`.trim() || '—'} />
+                    <ReviewRow label={t('booking_email')} value={formData.email || '—'} />
+                  </div>
+
+                  <div className="rounded-2xl border border-soft p-5 bg-surface-container/60">
+                    <div className="text-[10px] uppercase tracking-widest font-bold text-muted mb-3">
+                      {isBn ? 'পেমেন্ট সারসংক্ষেপ' : 'Payment Summary'}
+                    </div>
+                    <div className="flex items-baseline justify-between mb-2">
+                      <span className="text-sm text-muted">{displayName}</span>
+                      <span className="font-display text-xl font-bold text-on-surface">
+                        {formatCurrency(totalAmount || 0, visaCurrency)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted">{t('booking_field_embassy_help')}</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-3">
+                      {isBn ? 'পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Select Payment Method'}
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        ...Array.from(new Set(wallets.map((w) => w.provider))).map((provider) => ({
+                          id: provider,
+                          icon: Smartphone,
+                          label: WALLET_LABELS[provider] || provider,
+                          desc: isBn ? `${WALLET_LABELS[provider] || provider} পাঠিয়ে ট্রানজেকশন আইডি দিন` : `Send ${WALLET_LABELS[provider] || provider} and submit your transaction ID`,
+                        })),
+                        { id: 'bank_transfer', icon: Building, label: isBn ? 'ব্যাংক ট্রান্সফার' : 'Bank Transfer', desc: isBn ? 'আমাদের হিসাবে পাঠিয়ে রসিদ আপলোড করুন' : 'Transfer to our account and upload the receipt' },
+                        { id: 'cash', icon: Banknote, label: isBn ? 'নগদ' : 'Cash', desc: isBn ? 'অফিসে বা কালেকশনের মাধ্যমে পরিশোধ' : 'Pay at our office or via collection' },
+                      ].map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => {
+                            setPaymentMethod(m.id);
+                            const first = wallets.find((w) => w.provider === m.id);
+                            if (first) setSelectedWalletId(first.id);
+                          }}
+                          className={`flex items-start gap-3 p-4 rounded-xl border text-left transition ${
+                            paymentMethod === m.id
+                              ? 'border-[var(--color-primary)]'
+                              : 'border-soft hover:border-medium'
+                          }`}
+                          style={paymentMethod === m.id ? { backgroundColor: 'color-mix(in oklab, var(--color-primary) 12%, transparent)' } : { backgroundColor: 'var(--color-surface-container)' }}
+                        >
+                          <m.icon
+                            className="w-5 h-5 mt-0.5 shrink-0"
+                            style={{ color: paymentMethod === m.id ? 'var(--color-primary)' : 'var(--color-muted)' }}
+                          />
+                          <div>
+                            <div className="text-sm font-semibold text-on-surface">{m.label}</div>
+                            <div className="text-xs text-muted mt-0.5">{m.desc}</div>
+                          </div>
+                          {paymentMethod === m.id && (
+                            <Check className="w-4 h-4 ml-auto mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <p className="text-xs text-muted text-center">{t('booking_terms')}</p>
                 </div>
               )}

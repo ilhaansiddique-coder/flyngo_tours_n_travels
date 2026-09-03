@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Compass, FileCheck, Plane, Search, Building2, Moon, Sparkles, Car } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -26,7 +27,7 @@ const DESTINATION_REQUIRED: TabKey[] = ['tours', 'visa', 'hotels'];
 
 export function HeroSearchPanel() {
   const router = useRouter();
-  const { submitLead } = useApi();
+  const { submitLead, getTours } = useApi();
   const [tab, setTab] = useState<TabKey>('tours');
   const [destination, setDestination] = useState('');
   const [contactNumber, setContactNumber] = useState('');
@@ -106,9 +107,32 @@ export function HeroSearchPanel() {
     };
   }
 
-  function onSubmit(e: React.FormEvent) {
+  async function tourAvailable(term: string): Promise<boolean> {
+    try {
+      const res: any = await getTours({ q: term, limit: '1' });
+      const list = res?.items ?? res?.data ?? res ?? [];
+      return Array.isArray(list) && list.length > 0;
+    } catch {
+      // If the check itself fails, be conservative and let the search proceed.
+      return true;
+    }
+  }
+
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
+
+    // Tours: before submitting, verify the chosen destination has an available
+    // tour package. If it doesn't, alert the visitor and do NOT redirect.
+    if (tab === 'tours' && destination.trim()) {
+      const available = await tourAvailable(destination.trim());
+      if (!available) {
+        toast.error('This tour package isn\'t available right now. / এই টুর প্যাকেজটি এখন উপলব্ধ নয়।', {
+          duration: 6000,
+        });
+        return;
+      }
+    }
 
     // Fire-and-forget lead capture — never block the search on it.
     submitLead(buildLead()).catch(() => {});

@@ -171,7 +171,7 @@ function StepIndicator({
                 {done ? <Check className="w-4 h-4" /> : withIcons && Icon ? <Icon className="w-4 h-4" /> : step.number}
               </div>
               <span
-                className={`text-[10px] sm:text-xs font-semibold whitespace-nowrap text-center max-w-[80px] ${
+                className={`text-[10px] sm:text-xs font-semibold leading-tight text-center max-w-[80px] ${
                   active ? 'text-on-surface' : 'text-muted'
                 }`}
               >

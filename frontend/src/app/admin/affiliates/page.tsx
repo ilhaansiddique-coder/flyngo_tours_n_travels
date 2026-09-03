@@ -472,7 +472,7 @@ export default function AdminAffiliatesPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
               <Input
                 placeholder="Search name, email or code..."
-                className="pl-9 w-72"
+                className="pl-9 w-full sm:w-72"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') fetchAffiliates(1); }}
@@ -890,7 +890,7 @@ export default function AdminAffiliatesPage() {
                 <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
                   01 · Fixed commission conditions
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormField label="Commission basis">
                     <FormSelect
                       value={settingsForm.fixedCommissionType}

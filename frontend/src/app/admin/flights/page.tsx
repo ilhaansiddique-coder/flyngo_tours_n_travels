@@ -337,7 +337,7 @@ export default function AdminFlightsPage() {
           />
         </FormField>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Origin Code" required>
             <FormInput
               value={formData.originCode}
@@ -354,7 +354,7 @@ export default function AdminFlightsPage() {
           </FormField>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Destination Code" required>
             <FormInput
               value={formData.destinationCode}
@@ -371,7 +371,7 @@ export default function AdminFlightsPage() {
           </FormField>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Departure Time" required>
             <FormInput
               type="datetime-local"
@@ -388,7 +388,7 @@ export default function AdminFlightsPage() {
           </FormField>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Duration (minutes)">
             <FormInput
               type="number"
@@ -407,7 +407,7 @@ export default function AdminFlightsPage() {
           </FormField>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Available Seats">
             <FormInput
               type="number"

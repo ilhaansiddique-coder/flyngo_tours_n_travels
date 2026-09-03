@@ -348,7 +348,7 @@ export default function AdminGlobePage() {
         onClose={() => setCityModalOpen(false)}
         title={editingCity ? 'Edit city' : 'New city'}
       >
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField label="Name (English)">
             <FormInput value={cityForm.nameEn} onChange={(v) => setCityForm({ ...cityForm, nameEn: v })} />
           </FormField>
@@ -356,7 +356,7 @@ export default function AdminGlobePage() {
             <FormInput value={cityForm.nameBn} onChange={(v) => setCityForm({ ...cityForm, nameBn: v })} />
           </FormField>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField label="Latitude">
             <FormInput
               type="number"

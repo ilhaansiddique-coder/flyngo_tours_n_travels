@@ -215,7 +215,7 @@ export default function TransportPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
           <Input
             placeholder="Search transport..."
-            className="pl-9 w-64"
+            className="pl-9 w-full sm:w-64"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') fetchItems(1); }}
@@ -335,7 +335,7 @@ export default function TransportPage() {
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Transport' : 'Add Transport'}>
         <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField label="Vehicle Type" required>
               <FormSelect
                 value={form.vehicleType}
@@ -361,7 +361,7 @@ export default function TransportPage() {
             />
           </FormField>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField label="Origin City" required>
               <FormInput
                 value={form.originCity}
@@ -395,7 +395,7 @@ export default function TransportPage() {
             />
           </FormField>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <FormField label="Departure">
               <FormInput
                 value={form.departureTime}
@@ -419,7 +419,7 @@ export default function TransportPage() {
             </FormField>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <FormField label="Price" required>
               <FormInput
                 type="number"

@@ -65,6 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { accessToken, user, hasHydrated, setUser } = useAuthStore();
   // 'checking' covers the case where a token is present but the cached profile
   // isn't — resolve the role from the server rather than guessing.
@@ -127,14 +128,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex min-h-screen bg-background text-on-surface">
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside className={cn(
-        'fixed left-0 top-0 z-40 h-screen bg-surface-container-low border-r border-outline-variant',
+        'fixed left-0 top-0 z-50 h-screen bg-surface-container-low border-r border-outline-variant',
         'transition-all duration-300 flex flex-col',
-        collapsed ? 'w-20' : 'w-64',
+        'lg:translate-x-0',
+        collapsed ? 'lg:w-20' : 'lg:w-64',
+        mobileOpen ? 'translate-x-0' : 'w-64 -translate-x-full lg:w-64',
       )}>
         {/* Logo */}
-        <div className={cn('h-16 flex items-center border-b border-outline-variant px-4', collapsed ? 'justify-center' : 'gap-3')}>
+        <div className={cn('h-16 flex items-center border-b border-outline-variant px-4', collapsed ? 'lg:justify-center' : 'gap-3')}>
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-amber-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/30">
             <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -153,14 +164,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 href={item.href}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-                  collapsed && 'justify-center',
+                  collapsed && 'lg:justify-center',
                   isActive
                     ? 'bg-gradient-to-r from-blue-600/20 to-amber-500/10 text-accent border border-accent/30 shadow-lg shadow-accent/5'
                     : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface',
                 )}
               >
                 <item.icon className={cn('w-5 h-5 flex-shrink-0', isActive && 'text-accent')} />
-                {!collapsed && item.label}
+                <span className={cn(collapsed && 'lg:hidden')}>{item.label}</span>
               </Link>
             );
           })}
@@ -171,8 +182,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button
             onClick={() => setCollapsed(!collapsed)}
             className={cn(
-              'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors',
-              collapsed && 'justify-center',
+              'w-full hidden lg:flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors',
+              collapsed && 'lg:justify-center',
             )}
           >
             <ChevronLeft className={cn('w-5 h-5 transition-transform', collapsed && 'rotate-180')} />
@@ -182,20 +193,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             href="/"
             className={cn(
               'w-full flex items-center gap-3 px-3 py-2 mt-1 rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors',
-              collapsed && 'justify-center',
+              collapsed && 'lg:justify-center',
             )}
           >
             <Home className="w-5 h-5" />
-            {!collapsed && 'Back to Site'}
+            <span className={cn(collapsed && 'lg:hidden')}>Back to Site</span>
           </Link>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className={cn('flex-1 transition-all duration-300', collapsed ? 'ml-20' : 'ml-64')}>
-        <AdminTopbar navigation={navigation} />
+      <main className={cn('flex-1 transition-all duration-300', collapsed ? 'lg:ml-20' : 'lg:ml-64')}>
+        <AdminTopbar navigation={navigation} onMenuClick={() => setMobileOpen(true)} />
         {/* Page Content */}
-        <div className="px-6 py-4">{children}</div>
+        <div className="px-4 sm:px-6 py-4">{children}</div>
       </main>
     </div>
   );

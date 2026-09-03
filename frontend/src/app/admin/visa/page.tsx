@@ -255,7 +255,7 @@ export default function AdminVisaPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
           <Input
             placeholder="Search visa services..."
-            className="pl-9 w-64"
+            className="pl-9 w-full sm:w-64"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -405,7 +405,7 @@ export default function AdminVisaPage() {
         <FormField label="Processing Time">
           <FormInput value={form.processingTime} onChange={(v) => setForm((f) => ({ ...f, processingTime: v }))} placeholder="e.g. 3-5 days" />
         </FormField>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Price" required>
             <FormInput value={form.price} onChange={(v) => setForm((f) => ({ ...f, price: v }))} type="number" placeholder="0" />
           </FormField>

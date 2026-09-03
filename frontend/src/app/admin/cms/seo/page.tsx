@@ -85,7 +85,7 @@ export default function SeoPage() {
       <div className="flex items-center justify-between">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input placeholder="Search pages..." className="pl-9 w-64" />
+          <Input placeholder="Search pages..." className="pl-9 w-full sm:w-64" />
         </div>
       </div>
 

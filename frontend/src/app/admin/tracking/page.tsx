@@ -370,26 +370,28 @@ export default function AdminTrackingPage() {
                 Send traffic with utm_campaign parameters to see campaigns here.
               </p>
             ) : (
-              <table className="w-full text-sm">
-                <thead className="text-xs uppercase tracking-widest text-on-surface-variant border-b border-outline-variant">
-                  <tr>
-                    <th className="text-left py-2 pr-4">Campaign</th>
-                    <th className="text-left py-2 pr-4">Events</th>
-                    <th className="text-left py-2 pr-4">Revenue</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.byCampaign.map((c) => (
-                    <tr key={c.campaign} className="border-b border-outline-variant/50">
-                      <td className="py-2 pr-4 font-mono">{c.campaign}</td>
-                      <td className="py-2 pr-4">{c.count}</td>
-                      <td className="py-2 pr-4 font-bold">
-                        {formatCurrency(c.revenue, 'USD')}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-xs uppercase tracking-widest text-on-surface-variant border-b border-outline-variant">
+                    <tr>
+                      <th className="text-left py-2 pr-4">Campaign</th>
+                      <th className="text-left py-2 pr-4">Events</th>
+                      <th className="text-left py-2 pr-4">Revenue</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {stats.byCampaign.map((c) => (
+                      <tr key={c.campaign} className="border-b border-outline-variant/50">
+                        <td className="py-2 pr-4 font-mono">{c.campaign}</td>
+                        <td className="py-2 pr-4">{c.count}</td>
+                        <td className="py-2 pr-4 font-bold">
+                          {formatCurrency(c.revenue, 'USD')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </Card>
         </>
@@ -645,7 +647,7 @@ export default function AdminTrackingPage() {
               </FormField>
 
               <h4 className="font-bold text-sm uppercase tracking-widest text-on-surface-variant pt-4">Trust badges</h4>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField label="Customers served">
                   <FormInput type="number" value={String(settingsForm.customerCount)} onChange={(v: string) => setSettingsForm({ ...settingsForm, customerCount: Number(v) || 0 })} />
                 </FormField>
@@ -686,7 +688,7 @@ export default function AdminTrackingPage() {
       >
         {pageForm && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label="Slug (URL: /lp/<slug>)" required>
                 <FormInput value={pageForm.slug} onChange={(v: string) => setPageForm({ ...pageForm, slug: v })} placeholder="hajj-2026-bd" />
               </FormField>
@@ -700,7 +702,7 @@ export default function AdminTrackingPage() {
             <FormField label="Subtitle">
               <FormTextarea value={pageForm.subtitle} onChange={(v: string) => setPageForm({ ...pageForm, subtitle: v })} rows={2} />
             </FormField>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label="Hero image URL">
                 <FormInput value={pageForm.heroImage} onChange={(v: string) => setPageForm({ ...pageForm, heroImage: v })} />
               </FormField>
@@ -708,7 +710,7 @@ export default function AdminTrackingPage() {
                 <FormInput value={pageForm.formSlug} onChange={(v: string) => setPageForm({ ...pageForm, formSlug: v })} placeholder="hajj-2026-bd" />
               </FormField>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label="CTA label">
                 <FormInput value={pageForm.ctaLabel} onChange={(v: string) => setPageForm({ ...pageForm, ctaLabel: v })} />
               </FormField>
@@ -716,7 +718,7 @@ export default function AdminTrackingPage() {
                 <FormInput value={pageForm.ctaHref} onChange={(v: string) => setPageForm({ ...pageForm, ctaHref: v })} placeholder="/hajj" />
               </FormField>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label="Meta title">
                 <FormInput value={pageForm.metaTitle} onChange={(v: string) => setPageForm({ ...pageForm, metaTitle: v })} />
               </FormField>

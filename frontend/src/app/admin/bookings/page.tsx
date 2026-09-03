@@ -408,7 +408,7 @@ export default function BookingsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
             <Input
               placeholder="Search bookings..."
-              className="pl-9 w-64"
+              className="pl-9 w-full sm:w-64"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -621,7 +621,7 @@ export default function BookingsPage() {
       <Modal open={!!detailTarget} onClose={() => setDetailTarget(null)} title={`Booking ${detailTarget?.bookingCode ?? ''}`}>
         {detailTarget && (
           <div className="space-y-3 text-sm">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <p className="text-on-surface-variant text-xs">Status</p>
                 <div className="mt-1">{statusBadge(detailTarget.status)}</div>
@@ -746,7 +746,7 @@ export default function BookingsPage() {
               options={itemOptions}
             />
           </FormField>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField label="Start Date" required>
               <FormInput
                 type="date"
@@ -763,7 +763,7 @@ export default function BookingsPage() {
               />
             </FormField>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField label="Guests" required>
               <FormInput
                 type="number"

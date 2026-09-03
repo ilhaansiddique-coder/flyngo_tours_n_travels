@@ -229,7 +229,7 @@ export default function AdminHotelsPage() {
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Search hotels..."
-              className="w-64 pl-9 px-4 py-2.5 text-sm border border-outline-variant rounded-xl bg-surface-container text-on-surface focus:ring-2 focus:ring-primary/50 focus:border-transparent outline-none"
+              className="w-full sm:w-64 pl-9 px-4 py-2.5 text-sm border border-outline-variant rounded-xl bg-surface-container text-on-surface focus:ring-2 focus:ring-primary/50 focus:border-transparent outline-none"
             />
           </div>
           <Button variant="outline" size="md" onClick={handleSearch}>Search</Button>
@@ -478,7 +478,7 @@ export default function AdminHotelsPage() {
             />
           </FormField>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Check-in Time">
               <FormInput
                 value={form.checkInTime}

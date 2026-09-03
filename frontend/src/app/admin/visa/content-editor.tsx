@@ -205,7 +205,7 @@ export function VisaContentEditor({ open, onClose, country, onSaved }: EditorMod
                 <input value={tier.processingTime ?? ''} onChange={(e) => setTier(i, { processingTime: e.target.value })} placeholder="Processing time" className={inputCls} />
                 <input value={tier.flatFee != null ? String(tier.flatFee) : ''} onChange={(e) => setTier(i, { flatFee: e.target.value === '' ? undefined : Number(e.target.value) })} placeholder="Flat fee (all applicants)" type="number" className={inputCls} />
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <input value={tier.male != null ? String(tier.male) : ''} onChange={(e) => setTier(i, { male: e.target.value === '' ? undefined : Number(e.target.value) })} placeholder="Male fee" type="number" className={inputCls} />
                 <input value={tier.female != null ? String(tier.female) : ''} onChange={(e) => setTier(i, { female: e.target.value === '' ? undefined : Number(e.target.value) })} placeholder="Female fee" type="number" className={inputCls} />
                 <input value={tier.child != null ? String(tier.child) : ''} onChange={(e) => setTier(i, { child: e.target.value === '' ? undefined : Number(e.target.value) })} placeholder="Child (<12) fee" type="number" className={inputCls} />

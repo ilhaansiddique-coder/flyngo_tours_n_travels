@@ -551,7 +551,7 @@ export default function AdminAboutPage() {
             />
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Display order">
               <FormInput type="number" value={String(sectionDraft.order ?? 0)} onChange={(v) => setSectionDraft({ ...sectionDraft, order: Number(v) || 0 })} />
             </FormField>
@@ -661,7 +661,7 @@ function PayloadItemEditor({
             </div>
 
             {mode === 'stat' ? (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <FormInput placeholder="Value (e.g. 500+)" value={it.value ?? ''} onChange={(v) => update(idx, { value: v })} />
                 <FormInput placeholder="Label (EN)" value={it.labelEn ?? ''} onChange={(v) => update(idx, { labelEn: v })} />
                 <FormInput placeholder="Label (BN)" value={it.labelBn ?? ''} onChange={(v) => update(idx, { labelBn: v })} />

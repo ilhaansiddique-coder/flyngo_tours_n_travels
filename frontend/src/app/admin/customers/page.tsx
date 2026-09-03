@@ -423,7 +423,7 @@ export default function CustomersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
             placeholder="Search by name, phone, NID, passport..."
-            className="pl-9 w-72"
+            className="pl-9 w-full sm:w-72"
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             onKeyDown={handleSearchKeyDown}

@@ -205,7 +205,7 @@ export default function BankAccountsPage() {
           <FormField label="Account number">
             <FormInput value={form.accountNumber} onChange={(v) => setForm({ ...form, accountNumber: v })} />
           </FormField>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField label="Branch">
               <FormInput value={form.branch} onChange={(v) => setForm({ ...form, branch: v })} />
             </FormField>

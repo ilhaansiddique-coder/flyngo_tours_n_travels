@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
 import { GlobalCustomerSearch } from '@/components/admin/global-customer-search';
-import { Home, LogOut } from 'lucide-react';
+import { Home, LogOut, Menu as MenuIcon } from 'lucide-react';
 
 /**
  * Admin content-area top bar: shows which module the admin is currently in and
@@ -15,8 +15,10 @@ import { Home, LogOut } from 'lucide-react';
  */
 export function AdminTopbar({
   navigation,
+  onMenuClick,
 }: {
   navigation: { label: string; href: string }[];
+  onMenuClick?: () => void;
 }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -31,13 +33,25 @@ export function AdminTopbar({
   const initial = (user?.fullName || user?.email || 'A').charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-outline-variant bg-surface/80 px-6 py-3 backdrop-blur-md">
-      {/* Current module */}
-      <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-          Admin panel
+    <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-outline-variant bg-surface/80 px-4 sm:px-6 py-3 backdrop-blur-md">
+      <div className="flex min-w-0 items-center gap-2">
+        {onMenuClick && (
+          <button
+            type="button"
+            onClick={onMenuClick}
+            title="Open menu"
+            className="rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary lg:hidden"
+          >
+            <MenuIcon className="h-5 w-5" />
+          </button>
+        )}
+        {/* Current module */}
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
+            Admin panel
+          </div>
+          <h1 className="truncate font-display text-lg font-bold text-on-surface">{moduleName}</h1>
         </div>
-        <h1 className="truncate font-display text-lg font-bold text-on-surface">{moduleName}</h1>
       </div>
 
       {/* Global customer search */}

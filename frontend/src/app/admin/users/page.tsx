@@ -337,7 +337,7 @@ export default function UsersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
             placeholder="Search users..."
-            className="pl-9 w-64"
+            className="pl-9 w-full sm:w-64"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') fetchUsers(1); }}

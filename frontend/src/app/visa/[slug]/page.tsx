@@ -246,8 +246,8 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
                         </div>
 
                         {hasRowFees && (
-                          <div className="mt-5 overflow-hidden rounded-xl border" style={{ borderColor: 'var(--color-outline-variant)' }}>
-                            <table className="w-full text-sm">
+                          <div className="mt-5 overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--color-outline-variant)' }}>
+                            <table className="w-full text-sm min-w-[280px]">
                               <thead>
                                 <tr className="text-left text-xs uppercase tracking-wider text-on-surface-variant" style={{ backgroundColor: 'color-mix(in oklab, var(--color-primary) 8%, transparent)' }}>
                                   <th className="px-4 py-2.5 font-semibold">Adult male</th>

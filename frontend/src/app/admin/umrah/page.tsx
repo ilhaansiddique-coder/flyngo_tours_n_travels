@@ -193,21 +193,21 @@ function UmrahForm({ initial, onClose, onSaved }: { initial: UmrahPackage | null
     <Modal open onClose={onClose} title={initial ? 'Edit Umrah Package' : 'New Umrah Package'}>
       <form onSubmit={submit} className="space-y-4">
         <FormField label="Title"><FormInput value={title} onChange={setTitle} required /></FormField>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <FormField label="Duration (days)"><FormInput value={durationDays} onChange={setDurationDays} type="number" /></FormField>
           <FormField label="Price"><FormInput value={price} onChange={setPrice} type="number" /></FormField>
           <FormField label="Currency"><FormSelect value="BDT" onChange={setCurrency} options={[{ value: 'BDT', label: 'BDT (৳)' }]} /></FormField>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <FormField label="Makkah nights"><FormInput value={makkahNights} onChange={setMakkahNights} type="number" /></FormField>
           <FormField label="Madinah nights"><FormInput value={madinahNights} onChange={setMadinahNights} type="number" /></FormField>
           <FormField label="Add-on city"><FormInput value={addOnCity} onChange={setAddOnCity} placeholder="e.g. Istanbul" /></FormField>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField label="Order"><FormInput value={order} onChange={setOrder} type="number" /></FormField>
           <FormField label="Loyalty points"><FormInput value={pointsAwarded} onChange={setPointsAwarded} type="number" /></FormField>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField label="Total seats">
             <FormInput value={totalSeats} onChange={setTotalSeats} type="number" />
             <p className="text-xs text-muted mt-1">0 = unlimited</p>

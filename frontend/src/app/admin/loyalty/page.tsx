@@ -376,17 +376,18 @@ export default function AdminLoyaltyPage() {
             </Button>
           </div>
           <Card hover={false}>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-on-surface-variant text-xs uppercase tracking-wider border-b border-outline-variant">
-                  <th className="py-2">Product</th>
-                  <th className="py-2">Type</th>
-                  <th className="py-2">Points</th>
-                  <th className="py-2">Max</th>
-                  <th className="py-2">Status</th>
-                  <th className="py-2"></th>
-                </tr>
-              </thead>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-on-surface-variant text-xs uppercase tracking-wider border-b border-outline-variant">
+                    <th className="py-2">Product</th>
+                    <th className="py-2">Type</th>
+                    <th className="py-2">Points</th>
+                    <th className="py-2">Max</th>
+                    <th className="py-2">Status</th>
+                    <th className="py-2"></th>
+                  </tr>
+                </thead>
               <tbody>
                 {rules.map((r) => (
                   <tr key={r.id} className="border-b border-outline-variant/50">
@@ -403,6 +404,7 @@ export default function AdminLoyaltyPage() {
                 ))}
               </tbody>
             </table>
+            </div>
             {rules.length === 0 && (
               <p className="text-center py-8 text-on-surface-variant text-sm">
                 No rules yet. Each product uses its own <code className="px-1 bg-surface-container rounded">pointsAwarded</code> field instead.
@@ -425,17 +427,18 @@ export default function AdminLoyaltyPage() {
                 className="flex-1 px-3 py-2 rounded-lg bg-surface-container border border-outline-variant text-sm"
               />
             </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-on-surface-variant text-xs uppercase tracking-wider border-b border-outline-variant">
-                  <th className="py-2">User</th>
-                  <th className="py-2">Tier</th>
-                  <th className="py-2">Lifetime</th>
-                  <th className="py-2">Available</th>
-                  <th className="py-2">Code</th>
-                  <th className="py-2"></th>
-                </tr>
-              </thead>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-on-surface-variant text-xs uppercase tracking-wider border-b border-outline-variant">
+                    <th className="py-2">User</th>
+                    <th className="py-2">Tier</th>
+                    <th className="py-2">Lifetime</th>
+                    <th className="py-2">Available</th>
+                    <th className="py-2">Code</th>
+                    <th className="py-2"></th>
+                  </tr>
+                </thead>
               <tbody>
                 {members.map((m) => (
                   <tr key={m.id} className="border-b border-outline-variant/50">
@@ -457,6 +460,7 @@ export default function AdminLoyaltyPage() {
                 ))}
               </tbody>
             </table>
+            </div>
             {memberTotalPages > 1 && (
               <div className="flex gap-2 mt-4 justify-end">
                 <Button size="sm" variant="outline" disabled={memberPage <= 1} onClick={() => setMemberPage((p) => Math.max(1, p - 1))}>Prev</Button>
@@ -526,7 +530,7 @@ export default function AdminLoyaltyPage() {
           <FormField label="Name"><FormInput value={tierForm.name} onChange={(v) => setTierForm({ ...tierForm, name: v })} /></FormField>
           <FormField label="Slug (lowercase, unique)"><FormInput value={tierForm.slug} onChange={(v) => setTierForm({ ...tierForm, slug: v })} /></FormField>
           <FormField label="Color (hex)"><FormInput value={tierForm.color} onChange={(v) => setTierForm({ ...tierForm, color: v })} /></FormField>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <FormField label="Stars"><FormInput type="number" value={String(tierForm.starCount)} onChange={(v) => setTierForm({ ...tierForm, starCount: Number(v) || 0 })} /></FormField>
             <FormField label="Min points"><FormInput type="number" value={String(tierForm.minPoints)} onChange={(v) => setTierForm({ ...tierForm, minPoints: Number(v) || 0 })} /></FormField>
             <FormField label="Redemption ×"><FormInput type="number" value={String(tierForm.redemptionMultiplier)} onChange={(v) => setTierForm({ ...tierForm, redemptionMultiplier: Number(v) || 1 })} /></FormField>
@@ -561,7 +565,7 @@ export default function AdminLoyaltyPage() {
           <FormField label="Specific product ID (optional)"><FormInput value={ruleForm.productId} onChange={(v) => setRuleForm({ ...ruleForm, productId: v })} /></FormField>
           <FormField label="Product name (optional)"><FormInput value={ruleForm.productName} onChange={(v) => setRuleForm({ ...ruleForm, productName: v })} /></FormField>
           <FormField label="Points per booking"><FormInput type="number" value={String(ruleForm.pointsValue)} onChange={(v) => setRuleForm({ ...ruleForm, pointsValue: Number(v) || 0 })} /></FormField>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField label="Max points"><FormInput type="number" value={ruleForm.maxPoints} onChange={(v) => setRuleForm({ ...ruleForm, maxPoints: v })} /></FormField>
             <FormField label="Min spend (৳)"><FormInput type="number" value={ruleForm.minSpend} onChange={(v) => setRuleForm({ ...ruleForm, minSpend: v })} /></FormField>
           </div>

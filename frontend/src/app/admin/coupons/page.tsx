@@ -205,7 +205,7 @@ export default function CouponsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
           <Input
             placeholder="Search coupons..."
-            className="pl-9 w-64"
+            className="pl-9 w-full sm:w-64"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
@@ -383,7 +383,7 @@ export default function CouponsPage() {
             />
           </FormField>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Min Purchase">
               <FormInput
                 type="number"
@@ -411,7 +411,7 @@ export default function CouponsPage() {
             />
           </FormField>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Start Date" required>
               <FormInput
                 type="date"

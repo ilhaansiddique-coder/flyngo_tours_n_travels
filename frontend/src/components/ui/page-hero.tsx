@@ -25,7 +25,7 @@ export function PageHero({
   children,
 }: PageHeroProps) {
   return (
-    <section className="relative isolate overflow-hidden surface-page pt-32 pb-20">
+    <section className="relative isolate overflow-hidden surface-page pt-20 sm:pt-32 pb-20">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-grid opacity-60" />
         <div

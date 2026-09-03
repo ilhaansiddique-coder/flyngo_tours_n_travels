@@ -229,17 +229,29 @@ export default function BookingPage() {
   const [receiptUrls, setReceiptUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [cashAmount, setCashAmount] = useState('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const sp = new URLSearchParams(window.location.search);
     const urlType = sp.get('type');
+    const urlId = sp.get('id');
     if (urlType) {
       const mapped: BookingType | null = urlType in URL_TYPE_MAP ? URL_TYPE_MAP[urlType] : null;
       if (mapped) {
         setBookingType(mapped);
         setTypeLocked(true);
         sentType.current = urlType in URL_TYPE_SENT ? URL_TYPE_SENT[urlType] : urlType;
+      }
+    }
+    if (urlId) {
+      const currentSelected = useBookingStore.getState().selectedItem;
+      const currentId =
+        typeof currentSelected === 'string'
+          ? currentSelected
+          : (currentSelected as any)?.id;
+      if (!currentId) {
+        useBookingStore.getState().setSelectedItem(urlId);
       }
     }
 
@@ -427,6 +439,13 @@ export default function BookingPage() {
           return;
         }
       }
+      if (paymentMethod === 'cash') {
+        const amt = Number(cashAmount);
+        if (!cashAmount || !Number.isFinite(amt) || amt <= 0) {
+          setError(isBn ? 'অনুগ্রহ করে ক্যাশের পরিমাণ দিন' : 'Please enter the cash amount to pay');
+          return;
+        }
+      }
     }
     setError(null);
     if (bookingType === 'custom') {
@@ -472,6 +491,7 @@ export default function BookingPage() {
             await submitPaymentConfirmation({
               bookingCode: code,
               method: paymentMethod,
+              amount: paymentMethod === 'cash' ? Math.round(Number(cashAmount) * 100) / 100 : undefined,
               bkashTrxId: paymentMethod === 'bkash' ? bkashTrxId.trim() : undefined,
               bankAccountId: paymentMethod === 'bank_transfer' ? bankAccountId : undefined,
               receiptUrls,
@@ -1286,7 +1306,7 @@ export default function BookingPage() {
                     )}
 
                     {paymentMethod === 'cash' && (
-                      <div className="mt-4 rounded-2xl border border-soft p-5 bg-surface-container/60 space-y-3">
+                      <div className="mt-4 rounded-2xl border border-soft p-5 bg-surface-container/60 space-y-4">
                         <div className="flex items-start gap-3">
                           <Banknote className="w-5 h-5 shrink-0 mt-0.5 text-muted" />
                           <div className="text-sm">
@@ -1297,6 +1317,26 @@ export default function BookingPage() {
                                 : 'Pay at our office or via collection. Our team will contact you to arrange the payment.'}
                             </p>
                           </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+                            {isBn ? 'ক্যাশের পরিমাণ (৳)' : 'Cash Amount (BDT)'}
+                          </label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={cashAmount}
+                            onChange={(e) => setCashAmount(e.target.value)}
+                            placeholder={isBn ? 'শুধুমাত্র পরিমাণ লিখুন (যেমন: 5000)' : 'Enter the amount to pay (e.g. 5000)'}
+                          />
+                          {totalAmount ? (
+                            <p className="text-xs text-muted mt-1">
+                              {isBn
+                                ? `মোট বকেয়া: ${formatCurrency(totalAmount || 0, 'BDT')}`
+                                : `Total balance due: ${formatCurrency(totalAmount || 0, 'BDT')}`}
+                            </p>
+                          ) : null}
                         </div>
                       </div>
                     )}

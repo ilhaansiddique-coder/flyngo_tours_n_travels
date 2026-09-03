@@ -37,8 +37,11 @@ export interface RecordAdminPaymentInput {
   bkashTrxId?: string;
   bankAccountId?: string;
   mobileWalletId?: string;
-  notes?: string;
+  receiptUrls?: string[];
   senderName?: string;
+  senderAccount?: string;
+  payerPhone?: string;
+  notes?: string;
 }
 
 @Injectable()
@@ -602,15 +605,27 @@ export class PaymentsService {
     let bkashTrxId: string | null = null;
     let bankAccountId: string | null = null;
     let mobileWalletId: string | null = null;
+    const receiptUrls = (input.receiptUrls || []).filter((u) => typeof u === 'string' && u.trim()).map((u) => u.trim());
 
-    if (WALLET_METHOD_SET.has(method) && input.bkashTrxId) {
+    if (WALLET_METHOD_SET.has(method)) {
       bkashTrxId = this.normalizeBkashTrx(input.bkashTrxId);
-      if (!bkashTrxId) throw new BadRequestException('Invalid transaction ID');
+      if (!bkashTrxId) throw new BadRequestException('Transaction ID is required');
       const dup = await this.prisma.payment.findFirst({
         where: { tenantId, bkashTrxId },
         select: { id: true },
       });
       if (dup) throw new BadRequestException('This transaction ID has already been submitted');
+      if (input.mobileWalletId) {
+        const wallet = await this.prisma.mobileWallet.findFirst({
+          where: { id: input.mobileWalletId, tenantId, isActive: true, deletedAt: null },
+          select: { id: true, provider: true },
+        });
+        if (!wallet) throw new BadRequestException('Mobile wallet not found');
+        if (wallet.provider !== method) {
+          throw new BadRequestException('mobileWalletId does not match the selected payment method');
+        }
+        mobileWalletId = wallet.id;
+      }
     }
 
     if (method === 'bank_transfer' && input.bankAccountId) {
@@ -620,18 +635,12 @@ export class PaymentsService {
       });
       if (!account) throw new BadRequestException('Bank account not found');
       bankAccountId = account.id;
-    }
-
-    if (WALLET_METHOD_SET.has(method) && input.mobileWalletId) {
-      const wallet = await this.prisma.mobileWallet.findFirst({
-        where: { id: input.mobileWalletId, tenantId, isActive: true, deletedAt: null },
-        select: { id: true, provider: true },
-      });
-      if (!wallet) throw new BadRequestException('Mobile wallet not found');
-      if (wallet.provider !== method) {
-        throw new BadRequestException('mobileWalletId does not match the selected payment method');
+      if (!input.senderName?.trim()) {
+        throw new BadRequestException('Sender name is required for bank transfers');
       }
-      mobileWalletId = wallet.id;
+      if (receiptUrls.length === 0) {
+        throw new BadRequestException('Please upload a money receipt image or PDF');
+      }
     }
 
     let created;
@@ -650,6 +659,7 @@ export class PaymentsService {
           bkashTrxId,
           bankAccountId,
           mobileWalletId,
+          receiptUrls,
           senderName: input.senderName?.trim() || null,
           notes: input.notes?.trim() || 'Recorded by admin',
         },

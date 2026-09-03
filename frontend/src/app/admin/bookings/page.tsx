@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog, Modal, FormField, FormInput, FormSelect, FormTextarea } from '@/components/admin/ui';
 import { useApi } from '@/hooks/use-api';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Search, Plus, Eye, Trash2, RotateCcw, Copy, Check, Banknote } from 'lucide-react';
+import { Search, Plus, Eye, Trash2, RotateCcw, Copy, Check, Banknote, Smartphone, Building, Upload, X, FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface BookingUser {
@@ -159,7 +159,7 @@ async function copyGuestCredentials(b: Booking, setCopiedId: (id: string | null)
 
 export default function BookingsPage() {
   const { getBookings, updateBookingStatus, adminCreateBooking, getUsers, getTours, getHotels, getFlights, getVisaServices, getTransport,
-    deleteBooking, getTrashedBookings, restoreBooking, purgeBooking, recordAdminPayment } = useApi();
+    deleteBooking, getTrashedBookings, restoreBooking, purgeBooking, recordAdminPayment, getPaymentMethods, uploadPaymentReceipt } = useApi();
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [meta, setMeta] = useState<BookingsMeta | null>(null);
@@ -182,7 +182,11 @@ export default function BookingsPage() {
 
   const [detailTarget, setDetailTarget] = useState<Booking | null>(null);
   const [payTarget, setPayTarget] = useState<Booking | null>(null);
-  const [payForm, setPayForm] = useState({ method: 'cash', amount: '', bkashTrxId: '', notes: '' });
+  const [payForm, setPayForm] = useState({ method: 'cash', amount: '', bkashTrxId: '', senderName: '', bankAccountId: '', mobileWalletId: '', notes: '' });
+  const [payWallets, setPayWallets] = useState<{ id: string; provider: string; walletNumber: string; accountName?: string | null; accountType?: string | null; instructions?: string | null }[]>([]);
+  const [payBankAccounts, setPayBankAccounts] = useState<{ id: string; bankName: string; accountName: string; accountNumber: string; branch?: string | null; routingNumber?: string | null; swiftCode?: string | null }[]>([]);
+  const [payReceiptUrls, setPayReceiptUrls] = useState<string[]>([]);
+  const [payReceiptUploading, setPayReceiptUploading] = useState(false);
   const [paySubmitting, setPaySubmitting] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
 
@@ -230,6 +234,24 @@ export default function BookingsPage() {
     };
     fetch();
   }, [getBookings, getTrashedBookings, page, statusFilter, typeFilter, viewTrash, refreshKey]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const methods = (await getPaymentMethods()) as any;
+        if (!mounted) return;
+        const wallets = (methods?.wallets ?? methods?.mobileWallets ?? []) as typeof payWallets;
+        setPayWallets(Array.isArray(wallets) ? wallets : []);
+        setPayBankAccounts((methods?.bankAccounts ?? []) as typeof payBankAccounts);
+      } catch {
+        // payment methods unavailable; fall back to method-only options
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [getPaymentMethods]);
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
@@ -296,8 +318,12 @@ export default function BookingsPage() {
       method: 'cash',
       amount: String(bookingDue(b) || ''),
       bkashTrxId: '',
+      senderName: '',
+      bankAccountId: '',
+      mobileWalletId: '',
       notes: '',
     });
+    setPayReceiptUrls([]);
   };
 
   const handleRecordPayment = async (e: React.FormEvent) => {
@@ -306,19 +332,42 @@ export default function BookingsPage() {
     setPaySubmitting(true);
     setPayError(null);
     try {
+      const isWallet = payForm.method !== 'cash' && payForm.method !== 'bank_transfer';
       await recordAdminPayment({
         bookingCode: payTarget.bookingCode,
         method: payForm.method,
         amount: Number(payForm.amount),
-        bkashTrxId: payForm.method === 'cash' || payForm.method === 'bank_transfer' ? undefined : (payForm.bkashTrxId.trim() || undefined),
+        bkashTrxId: isWallet ? (payForm.bkashTrxId.trim() || undefined) : undefined,
+        bankAccountId: payForm.method === 'bank_transfer' ? payForm.bankAccountId || undefined : undefined,
+        mobileWalletId: isWallet ? payForm.mobileWalletId || undefined : undefined,
+        receiptUrls: payReceiptUrls,
+        senderName: payForm.senderName.trim() || undefined,
         notes: payForm.notes.trim() || undefined,
       });
       setPayTarget(null);
+      setPayForm({ method: 'cash', amount: '', bkashTrxId: '', senderName: '', bankAccountId: '', mobileWalletId: '', notes: '' });
+      setPayReceiptUrls([]);
       setRefreshKey((k) => k + 1);
     } catch (err: any) {
       setPayError(err.message || 'Failed to record payment');
     } finally {
       setPaySubmitting(false);
+    }
+  };
+
+  const uploadPayReceipt = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setPayReceiptUploading(true);
+    setPayError(null);
+    try {
+      for (const file of Array.from(files)) {
+        const res = (await uploadPaymentReceipt(file)) as { url: string };
+        if (res?.url) setPayReceiptUrls((prev) => [...prev, res.url]);
+      }
+    } catch {
+      setPayError('Failed to upload receipt');
+    } finally {
+      setPayReceiptUploading(false);
     }
   };
 
@@ -823,15 +872,140 @@ export default function BookingsPage() {
                 placeholder="0"
               />
             </FormField>
+
             {payForm.method !== 'cash' && payForm.method !== 'bank_transfer' && (
-              <FormField label="Transaction ID">
+              <>
+                {payWallets.filter((w) => w.provider === payForm.method).length > 1 && (
+                  <FormField label={`Select ${((PAY_METHODS.find((m) => m.value === payForm.method))?.label) || payForm.method} account`}>
+                    <div className="space-y-1.5">
+                      {payWallets.filter((w) => w.provider === payForm.method).map((w) => (
+                        <button
+                          key={w.id || w.walletNumber}
+                          type="button"
+                          onClick={() => setPayForm({ ...payForm, mobileWalletId: w.id })}
+                          className={`w-full text-left p-2.5 rounded-xl border ${payForm.mobileWalletId === w.id ? 'border-primary' : 'border-outline-variant'}`}
+                        >
+                          <div className="text-xs text-on-surface-variant">{w.accountName}{w.accountType ? ` · ${w.accountType}` : ''}</div>
+                          <div className="font-mono text-base font-bold tracking-wider text-primary">{w.walletNumber}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </FormField>
+                )}
+                {payWallets.filter((w) => w.provider === payForm.method).length === 1 && (
+                  (() => {
+                    const w = payWallets.find((wn) => wn.provider === payForm.method)!;
+                    return (
+                      <div className="rounded-xl border border-outline-variant p-3 bg-surface-container/60">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-xs text-on-surface-variant">Send to {((PAY_METHODS.find((m) => m.value === payForm.method))?.label) || payForm.method}</div>
+                            <div className="font-mono text-lg font-bold tracking-wider text-primary">{w.walletNumber}</div>
+                          </div>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => navigator.clipboard?.writeText(w.walletNumber).catch(() => {})}>
+                            <Copy className="w-3.5 h-3.5 mr-1" /> Copy
+                          </Button>
+                        </div>
+                        {w.instructions && <p className="text-xs text-on-surface-variant mt-1">{w.instructions}</p>}
+                      </div>
+                    );
+                  })()
+                )}
+                <FormField label="Transaction ID" required>
+                  <FormInput
+                    value={payForm.bkashTrxId}
+                    onChange={(v) => setPayForm({ ...payForm, bkashTrxId: v })}
+                    placeholder="e.g. 9J3XXXXXXX"
+                  />
+                </FormField>
+              </>
+            )}
+
+            {payForm.method === 'bank_transfer' && (
+              <>
+                <FormField label="Bank Account" required>
+                  <FormSelect
+                    value={payForm.bankAccountId}
+                    onChange={(v) => setPayForm({ ...payForm, bankAccountId: v })}
+                    options={payBankAccounts.map((a) => ({ label: `${a.bankName} — ${a.accountName}`, value: a.id }))}
+                  />
+                </FormField>
+                {(() => {
+                  const acc = payBankAccounts.find((a) => a.id === payForm.bankAccountId);
+                  return acc ? (
+                    <div className="rounded-xl border border-outline-variant p-3 bg-surface-container/60">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-xs text-on-surface-variant">{acc.bankName} · {acc.accountName}</div>
+                          <div className="font-mono text-lg font-bold tracking-wider text-primary">{acc.accountNumber}</div>
+                        </div>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => navigator.clipboard?.writeText(acc.accountNumber).catch(() => {})}>
+                          <Copy className="w-3.5 h-3.5 mr-1" /> Copy
+                        </Button>
+                      </div>
+                      {(acc.branch || acc.routingNumber || acc.swiftCode) && (
+                        <div className="mt-1 text-[11px] text-on-surface-variant">
+                          {acc.branch && <span>Branch: {acc.branch}</span>}
+                          {acc.routingNumber && <span> · Routing: {acc.routingNumber}</span>}
+                          {acc.swiftCode && <span> · SWIFT: {acc.swiftCode}</span>}
+                        </div>
+                      )}
+                    </div>
+                  ) : null;
+                })()}
+                <FormField label="Sender Name" required>
+                  <FormInput
+                    value={payForm.senderName}
+                    onChange={(v) => setPayForm({ ...payForm, senderName: v })}
+                    placeholder="Name on the transfer"
+                  />
+                </FormField>
+              </>
+            )}
+
+            {payForm.method === 'cash' && (
+              <FormField label="Payer Name">
                 <FormInput
-                  value={payForm.bkashTrxId}
-                  onChange={(v) => setPayForm({ ...payForm, bkashTrxId: v })}
-                  placeholder="Optional"
+                  value={payForm.senderName}
+                  onChange={(v) => setPayForm({ ...payForm, senderName: v })}
+                  placeholder="Who paid in cash"
                 />
               </FormField>
             )}
+
+            <FormField label="Upload Receipt">
+              <label className="flex flex-col items-center justify-center gap-2 p-5 rounded-xl border border-dashed border-outline-variant cursor-pointer hover:border-primary bg-surface-container/60 transition">
+                <Upload className="w-5 h-5 text-on-surface-variant" />
+                <span className="text-sm text-on-surface-variant text-center">
+                  {payReceiptUploading ? 'Uploading...' : 'Click to upload an image or PDF'}
+                </span>
+                <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={(e) => uploadPayReceipt(e.target.files)} />
+              </label>
+              {payReceiptUrls.length > 0 && (
+                <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {payReceiptUrls.map((url, i) => (
+                    <div key={url} className="relative rounded-lg overflow-hidden border border-outline-variant bg-surface-container">
+                      {url.match(/\.(jpe?g|png|gif|webp)(\?|$)/i) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={url} alt="receipt" className="w-full h-16 object-cover" />
+                      ) : (
+                        <div className="w-full h-16 flex items-center justify-center">
+                          <FileText className="w-6 h-6 text-on-surface-variant" />
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setPayReceiptUrls((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </FormField>
+
             <FormField label="Notes">
               <FormTextarea
                 value={payForm.notes}

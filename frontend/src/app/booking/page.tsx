@@ -376,6 +376,234 @@ export default function BookingPage() {
     navigator.clipboard?.writeText(text).catch(() => {});
   };
 
+  const renderPaymentDetailInputs = () => (
+    <>
+      {wallets.some((w) => w.provider === paymentMethod) && (
+        <div className="mt-4 rounded-2xl border border-soft p-5 bg-surface-container/60 space-y-4">
+          {(() => {
+            const providerWallets = wallets.filter((w) => w.provider === paymentMethod);
+            const selected = providerWallets.find((w) => w.id === selectedWalletId) || providerWallets[0];
+            const label = WALLET_LABELS[paymentMethod] || paymentMethod;
+            return (
+              <>
+                <div className="flex items-start gap-3">
+                  <Smartphone className="w-5 h-5 shrink-0 mt-0.5 text-muted" />
+                  <div className="text-sm">
+                    <div className="font-semibold text-on-surface">{isBn ? `${label} এ পাঠান` : `Send to ${label}`}</div>
+                    {providerWallets.length > 1 && (
+                      <div className="mt-2 space-y-2">
+                        {providerWallets.map((w) => (
+                          <button
+                            key={w.id || w.walletNumber}
+                            type="button"
+                            onClick={() => setSelectedWalletId(w.id)}
+                            className={`w-full text-left p-3 rounded-xl border ${selected?.id === w.id ? 'border-[var(--color-primary)]' : 'border-soft'}`}
+                          >
+                            <div className="text-xs text-muted">{w.accountName}{w.accountType ? ` · ${w.accountType}` : ''}</div>
+                            <div className="font-mono text-lg font-bold tracking-wider text-[var(--color-primary)]">{w.walletNumber}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {providerWallets.length <= 1 && selected && (
+                      <div className="mt-1 flex items-center gap-2 flex-wrap">
+                        <span className="text-2xl font-display font-bold tracking-wider text-[var(--color-primary)]">{selected.walletNumber}</span>
+                        {selected.accountName && <span className="text-xs text-muted">({selected.accountName})</span>}
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(selected.walletNumber)}
+                          className="flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:opacity-70"
+                        >
+                          <Copy className="w-3.5 h-3.5" /> {isBn ? 'কপি' : 'Copy'}
+                        </button>
+                      </div>
+                    )}
+                    {selected?.instructions && <p className="text-xs text-muted mt-2">{selected.instructions}</p>}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+                    {isBn ? 'ট্রানজেকশন আইডি' : `${label} Transaction ID`}
+                  </label>
+                  <Input
+                    value={bkashTrxId}
+                    onChange={(e) => setBkashTrxId(e.target.value)}
+                    placeholder="9J3XXXXXXX"
+                  />
+                  <p className="text-xs text-muted mt-1">{isBn ? 'সেন্ড মানিতে দেখানো ট্রানজেকশন আইডি লিখুন' : 'Enter the transaction ID shown after you send money'}.</p>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {paymentMethod === 'bank_transfer' && (
+        <div className="mt-4 rounded-2xl border border-soft p-5 bg-surface-container/60 space-y-4">
+          <div className="flex items-start gap-3">
+            <Building className="w-5 h-5 shrink-0 mt-0.5 text-muted" />
+            <div className="text-sm">
+              <div className="font-semibold text-on-surface">{isBn ? 'ব্যাংক একাউন্টে পাঠান' : 'Transfer to our bank account'}</div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+              {isBn ? 'ব্যাংক নির্বাচন করুন' : 'Select Bank Account'}
+            </label>
+            {bankAccounts.length > 0 ? (
+              <div className="space-y-2">
+                {bankAccounts.map((acc) => (
+                  <button
+                    key={acc.id}
+                    type="button"
+                    onClick={() => setBankAccountId(acc.id)}
+                    className={`w-full flex items-center justify-between gap-2 p-3 rounded-xl border text-left transition ${
+                      bankAccountId === acc.id ? 'border-[var(--color-primary)]' : 'border-soft hover:border-medium'
+                    }`}
+                    style={bankAccountId === acc.id ? { backgroundColor: 'color-mix(in oklab, var(--color-primary) 10%, transparent)' } : { backgroundColor: 'var(--color-surface-container)' }}
+                  >
+                    <div>
+                      <div className="text-sm font-semibold text-on-surface">{acc.bankName}</div>
+                      <div className="text-xs text-muted">{acc.accountName}</div>
+                      {bankAccountId === acc.id && (
+                        <div className="mt-1 flex items-center gap-2 flex-wrap">
+                          <span className="text-lg font-display font-bold tracking-wider text-[var(--color-primary)]">{acc.accountNumber}</span>
+                          <button type="button" onClick={() => copyToClipboard(acc.accountNumber)} className="flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:opacity-70">
+                            <Copy className="w-3.5 h-3.5" /> {isBn ? 'কপি' : 'Copy'}
+                          </button>
+                        </div>
+                      )}
+                      {bankAccountId === acc.id && (acc.branch || acc.routingNumber || acc.swiftCode) && (
+                        <div className="mt-1 text-[11px] text-muted">
+                          {acc.branch && <div>{isBn ? 'শাখা' : 'Branch'}: {acc.branch}</div>}
+                          {acc.routingNumber && <div>{isBn ? 'রাউটিং' : 'Routing'}: {acc.routingNumber}</div>}
+                          {acc.swiftCode && <div>SWIFT: {acc.swiftCode}</div>}
+                        </div>
+                      )}
+                    </div>
+                    {bankAccountId === acc.id && <Check className="w-4 h-4 shrink-0" style={{ color: 'var(--color-primary)' }} />}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted">{isBn ? 'ব্যাংক অ্যাকাউন্ট পাওয়া যায়নি' : 'No bank accounts available'}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+              {isBn ? 'প্রেরকের নাম (আবশ্যক)' : 'Sender Name (required)'}
+            </label>
+            <Input
+              value={senderName}
+              onChange={(e) => setSenderName(e.target.value)}
+              placeholder={isBn ? 'আপনার নাম লিখুন' : 'Enter your name'}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+              {isBn ? 'পরিশোধের পরিমাণ (৳)' : 'Amount to Pay (BDT)'}
+            </label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={bankAmount}
+              onChange={(e) => setBankAmount(e.target.value)}
+              placeholder={isBn ? 'পরিমাণ লিখুন (যেমন: 25000)' : 'Enter the amount (e.g. 25000)'}
+              required
+            />
+            {totalAmount ? (
+              <p className="text-xs text-muted mt-1">
+                {isBn
+                  ? `মোট বকেয়া: ${formatCurrency(totalAmount || 0, 'BDT')}`
+                  : `Total balance due: ${formatCurrency(totalAmount || 0, 'BDT')}`}
+              </p>
+            ) : null}
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+              {isBn ? 'রসিদ আপলোড করুন (আবশ্যক)' : 'Upload Payment Receipt (required)'}
+            </label>
+            <label className="flex flex-col items-center justify-center gap-2 p-5 rounded-xl border border-dashed border-soft cursor-pointer hover:border-[var(--color-primary)] bg-surface-container/60 transition">
+              <Upload className="w-5 h-5 text-muted" />
+              <span className="text-sm text-muted text-center">
+                {uploading ? (isBn ? 'আপলোড হচ্ছে...' : 'Uploading...') : (isBn ? 'ছবি বা PDF আপলোড করুন' : 'Click to upload an image or PDF')}
+              </span>
+              <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={(e) => uploadReceipt(e.target.files)} />
+            </label>
+            {paymentError && (
+              <p className="mt-2 text-xs" style={{ color: 'var(--color-error, #ef4444)' }}>{paymentError}</p>
+            )}
+            {receiptUrls.length > 0 && (
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {receiptUrls.map((url, i) => (
+                  <div key={url} className="relative rounded-xl overflow-hidden border border-soft bg-surface-container">
+                    {url.match(/\.(jpe?g|png|gif|webp)(\?|$)/i) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={url} alt="receipt" className="w-full h-20 object-cover" />
+                    ) : (
+                      <div className="w-full h-20 flex items-center justify-center">
+                        <FileText className="w-8 h-8 text-muted" />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setReceiptUrls((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {paymentMethod === 'cash' && (
+        <div className="mt-4 rounded-2xl border border-soft p-5 bg-surface-container/60 space-y-4">
+          <div className="flex items-start gap-3">
+            <Banknote className="w-5 h-5 shrink-0 mt-0.5 text-muted" />
+            <div className="text-sm">
+              <div className="font-semibold text-on-surface">{isBn ? 'ক্যাশ পেমেন্ট' : 'Cash Payment'}</div>
+              <p className="text-xs text-muted mt-1">
+                {isBn
+                  ? 'আমাদের অফিসে বা কালেকশনের মাধ্যমে পরিশোধ করুন। আমাদের টিম আপনার সাথে যোগাযোগ করবে।'
+                  : 'Pay at our office or via collection. Our team will contact you to arrange the payment.'}
+              </p>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+              {isBn ? 'ক্যাশের পরিমাণ (৳)' : 'Cash Amount (BDT)'}
+            </label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={cashAmount}
+              onChange={(e) => setCashAmount(e.target.value)}
+              placeholder={isBn ? 'শুধুমাত্র পরিমাণ লিখুন (যেমন: 5000)' : 'Enter the amount to pay (e.g. 5000)'}
+            />
+            {totalAmount ? (
+              <p className="text-xs text-muted mt-1">
+                {isBn
+                  ? `মোট বকেয়া: ${formatCurrency(totalAmount || 0, 'BDT')}`
+                  : `Total balance due: ${formatCurrency(totalAmount || 0, 'BDT')}`}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      )}
+    </>
+  );
+
   const uploadReceipt = async (files: FileList | null) => {
     if (!files?.length) return;
     setUploading(true);
@@ -1393,229 +1621,7 @@ export default function BookingPage() {
                       <p className="text-xs text-muted mt-3 text-center">{isBn ? 'চালিয়ে যেতে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Select a payment method to continue'}</p>
                     )}
 
-                    {wallets.some((w) => w.provider === paymentMethod) && (
-                      <div className="mt-4 rounded-2xl border border-soft p-5 bg-surface-container/60 space-y-4">
-                        {(() => {
-                          const providerWallets = wallets.filter((w) => w.provider === paymentMethod);
-                          const selected = providerWallets.find((w) => w.id === selectedWalletId) || providerWallets[0];
-                          const label = WALLET_LABELS[paymentMethod] || paymentMethod;
-                          return (
-                            <>
-                              <div className="flex items-start gap-3">
-                                <Smartphone className="w-5 h-5 shrink-0 mt-0.5 text-muted" />
-                                <div className="text-sm">
-                                  <div className="font-semibold text-on-surface">{isBn ? `${label} এ পাঠান` : `Send to ${label}`}</div>
-                                  {providerWallets.length > 1 && (
-                                    <div className="mt-2 space-y-2">
-                                      {providerWallets.map((w) => (
-                                        <button
-                                          key={w.id || w.walletNumber}
-                                          type="button"
-                                          onClick={() => setSelectedWalletId(w.id)}
-                                          className={`w-full text-left p-3 rounded-xl border ${selected?.id === w.id ? 'border-[var(--color-primary)]' : 'border-soft'}`}
-                                        >
-                                          <div className="text-xs text-muted">{w.accountName}{w.accountType ? ` · ${w.accountType}` : ''}</div>
-                                          <div className="font-mono text-lg font-bold tracking-wider text-[var(--color-primary)]">{w.walletNumber}</div>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
-                                  {providerWallets.length <= 1 && selected && (
-                                    <div className="mt-1 flex items-center gap-2 flex-wrap">
-                                      <span className="text-2xl font-display font-bold tracking-wider text-[var(--color-primary)]">{selected.walletNumber}</span>
-                                      {selected.accountName && <span className="text-xs text-muted">({selected.accountName})</span>}
-                                      <button
-                                        type="button"
-                                        onClick={() => copyToClipboard(selected.walletNumber)}
-                                        className="flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:opacity-70"
-                                      >
-                                        <Copy className="w-3.5 h-3.5" /> {isBn ? 'কপি' : 'Copy'}
-                                      </button>
-                                    </div>
-                                  )}
-                                  {selected?.instructions && <p className="text-xs text-muted mt-2">{selected.instructions}</p>}
-                                </div>
-                              </div>
-                              <div>
-                                <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
-                                  {isBn ? 'ট্রানজেকশন আইডি' : `${label} Transaction ID`}
-                                </label>
-                                <Input
-                                  value={bkashTrxId}
-                                  onChange={(e) => setBkashTrxId(e.target.value)}
-                                  placeholder="9J3XXXXXXX"
-                                />
-                                <p className="text-xs text-muted mt-1">{isBn ? 'সেন্ড মানিতে দেখানো ট্রানজেকশন আইডি লিখুন' : 'Enter the transaction ID shown after you send money'}.</p>
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    )}
-
-                    {paymentMethod === 'bank_transfer' && (
-                      <div className="mt-4 rounded-2xl border border-soft p-5 bg-surface-container/60 space-y-4">
-                        <div className="flex items-start gap-3">
-                          <Building className="w-5 h-5 shrink-0 mt-0.5 text-muted" />
-                          <div className="text-sm">
-                            <div className="font-semibold text-on-surface">{isBn ? 'ব্যাংক একাউন্টে পাঠান' : 'Transfer to our bank account'}</div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
-                            {isBn ? 'ব্যাংক নির্বাচন করুন' : 'Select Bank Account'}
-                          </label>
-                          {bankAccounts.length > 0 ? (
-                            <div className="space-y-2">
-                              {bankAccounts.map((acc) => (
-                                <button
-                                  key={acc.id}
-                                  type="button"
-                                  onClick={() => setBankAccountId(acc.id)}
-                                  className={`w-full flex items-center justify-between gap-2 p-3 rounded-xl border text-left transition ${
-                                    bankAccountId === acc.id ? 'border-[var(--color-primary)]' : 'border-soft hover:border-medium'
-                                  }`}
-                                  style={bankAccountId === acc.id ? { backgroundColor: 'color-mix(in oklab, var(--color-primary) 10%, transparent)' } : { backgroundColor: 'var(--color-surface-container)' }}
-                                >
-                                  <div>
-                                    <div className="text-sm font-semibold text-on-surface">{acc.bankName}</div>
-                                    <div className="text-xs text-muted">{acc.accountName}</div>
-                                    {bankAccountId === acc.id && (
-                                      <div className="mt-1 flex items-center gap-2 flex-wrap">
-                                        <span className="text-lg font-display font-bold tracking-wider text-[var(--color-primary)]">{acc.accountNumber}</span>
-                                        <button type="button" onClick={() => copyToClipboard(acc.accountNumber)} className="flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:opacity-70">
-                                          <Copy className="w-3.5 h-3.5" /> {isBn ? 'কপি' : 'Copy'}
-                                        </button>
-                                      </div>
-                                    )}
-                                    {bankAccountId === acc.id && (acc.branch || acc.routingNumber || acc.swiftCode) && (
-                                      <div className="mt-1 text-[11px] text-muted">
-                                        {acc.branch && <div>{isBn ? 'শাখা' : 'Branch'}: {acc.branch}</div>}
-                                        {acc.routingNumber && <div>{isBn ? 'রাউটিং' : 'Routing'}: {acc.routingNumber}</div>}
-                                        {acc.swiftCode && <div>SWIFT: {acc.swiftCode}</div>}
-                                      </div>
-                                    )}
-                                  </div>
-                                  {bankAccountId === acc.id && <Check className="w-4 h-4 shrink-0" style={{ color: 'var(--color-primary)' }} />}
-                                </button>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-muted">{isBn ? 'ব্যাংক অ্যাকাউন্ট পাওয়া যায়নি' : 'No bank accounts available'}</p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
-                            {isBn ? 'প্রেরকের নাম (আবশ্যক)' : 'Sender Name (required)'}
-                          </label>
-                          <Input
-                            value={senderName}
-                            onChange={(e) => setSenderName(e.target.value)}
-                            placeholder={isBn ? 'আপনার নাম লিখুন' : 'Enter your name'}
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
-                            {isBn ? 'পরিশোধের পরিমাণ (৳)' : 'Amount to Pay (BDT)'}
-                          </label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={bankAmount}
-                            onChange={(e) => setBankAmount(e.target.value)}
-                            placeholder={isBn ? 'পরিমাণ লিখুন (যেমন: 25000)' : 'Enter the amount (e.g. 25000)'}
-                            required
-                          />
-                          {totalAmount ? (
-                            <p className="text-xs text-muted mt-1">
-                              {isBn
-                                ? `মোট বকেয়া: ${formatCurrency(totalAmount || 0, 'BDT')}`
-                                : `Total balance due: ${formatCurrency(totalAmount || 0, 'BDT')}`}
-                            </p>
-                          ) : null}
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
-                            {isBn ? 'রসিদ আপলোড করুন (আবশ্যক)' : 'Upload Payment Receipt (required)'}
-                          </label>
-                          <label className="flex flex-col items-center justify-center gap-2 p-5 rounded-xl border border-dashed border-soft cursor-pointer hover:border-[var(--color-primary)] bg-surface-container/60 transition">
-                            <Upload className="w-5 h-5 text-muted" />
-                            <span className="text-sm text-muted text-center">
-                              {uploading ? (isBn ? 'আপলোড হচ্ছে...' : 'Uploading...') : (isBn ? 'ছবি বা PDF আপলোড করুন' : 'Click to upload an image or PDF')}
-                            </span>
-                            <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={(e) => uploadReceipt(e.target.files)} />
-                          </label>
-                          {paymentError && (
-                            <p className="mt-2 text-xs" style={{ color: 'var(--color-error, #ef4444)' }}>{paymentError}</p>
-                          )}
-                          {receiptUrls.length > 0 && (
-                            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {receiptUrls.map((url, i) => (
-                                <div key={url} className="relative rounded-xl overflow-hidden border border-soft bg-surface-container">
-                                  {url.match(/\.(jpe?g|png|gif|webp)(\?|$)/i) ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={url} alt="receipt" className="w-full h-20 object-cover" />
-                                  ) : (
-                                    <div className="w-full h-20 flex items-center justify-center">
-                                      <FileText className="w-8 h-8 text-muted" />
-                                    </div>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => setReceiptUrls((prev) => prev.filter((_, idx) => idx !== i))}
-                                    className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white"
-                                  >
-                                    <X className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {paymentMethod === 'cash' && (
-                      <div className="mt-4 rounded-2xl border border-soft p-5 bg-surface-container/60 space-y-4">
-                        <div className="flex items-start gap-3">
-                          <Banknote className="w-5 h-5 shrink-0 mt-0.5 text-muted" />
-                          <div className="text-sm">
-                            <div className="font-semibold text-on-surface">{isBn ? 'ক্যাশ পেমেন্ট' : 'Cash Payment'}</div>
-                            <p className="text-xs text-muted mt-1">
-                              {isBn
-                                ? 'আমাদের অফিসে বা কালেকশনের মাধ্যমে পরিশোধ করুন। আমাদের টিম আপনার সাথে যোগাযোগ করবে।'
-                                : 'Pay at our office or via collection. Our team will contact you to arrange the payment.'}
-                            </p>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
-                            {isBn ? 'ক্যাশের পরিমাণ (৳)' : 'Cash Amount (BDT)'}
-                          </label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={cashAmount}
-                            onChange={(e) => setCashAmount(e.target.value)}
-                            placeholder={isBn ? 'শুধুমাত্র পরিমাণ লিখুন (যেমন: 5000)' : 'Enter the amount to pay (e.g. 5000)'}
-                          />
-                          {totalAmount ? (
-                            <p className="text-xs text-muted mt-1">
-                              {isBn
-                                ? `মোট বকেয়া: ${formatCurrency(totalAmount || 0, 'BDT')}`
-                                : `Total balance due: ${formatCurrency(totalAmount || 0, 'BDT')}`}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                    )}
+                    {renderPaymentDetailInputs()}
                   </div>
 
                   <p className="text-xs text-muted text-center">{t('booking_terms')}</p>
@@ -1689,6 +1695,8 @@ export default function BookingPage() {
                       ))}
                     </div>
                   </div>
+
+                  {renderPaymentDetailInputs()}
 
                   <p className="text-xs text-muted text-center">{t('booking_terms')}</p>
                 </div>

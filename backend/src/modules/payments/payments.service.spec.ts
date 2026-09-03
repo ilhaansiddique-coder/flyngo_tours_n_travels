@@ -7,6 +7,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { MediaService } from '../media/media.service';
 import { BankAccountsService } from './bank-accounts.service';
+import { MobileWalletsService } from './mobile-wallets.service';
 import { InvoicesService } from './invoices.service';
 import { BadRequestException } from '@nestjs/common';
 
@@ -33,6 +34,9 @@ describe('PaymentsService', () => {
       update: jest.fn(),
     },
     bankAccount: {
+      findFirst: jest.fn(),
+    },
+    mobileWallet: {
       findFirst: jest.fn(),
     },
     tenantSettings: {
@@ -65,6 +69,7 @@ describe('PaymentsService', () => {
 
   const mockMedia = { upload: jest.fn() };
   const mockBanks = { listPublic: jest.fn().mockResolvedValue([]) };
+  const mockWallets = { listPublic: jest.fn().mockResolvedValue([]) };
   const mockInvoices = { generateForPayment: jest.fn().mockResolvedValue({ id: 'inv-1', invoiceNumber: 'INV-1' }) };
 
   beforeEach(async () => {
@@ -78,6 +83,7 @@ describe('PaymentsService', () => {
         { provide: LoyaltyService, useValue: mockLoyalty },
         { provide: MediaService, useValue: mockMedia },
         { provide: BankAccountsService, useValue: mockBanks },
+        { provide: MobileWalletsService, useValue: mockWallets },
         { provide: InvoicesService, useValue: mockInvoices },
       ],
     }).compile();

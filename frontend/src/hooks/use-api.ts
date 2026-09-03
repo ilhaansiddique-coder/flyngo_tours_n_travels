@@ -290,6 +290,13 @@ export function useApi() {
     api.patch(`/payments/admin/bank-accounts/${id}`, body, auth()), [auth]);
   const deleteBankAccount = useCallback(async (id: string) =>
     api.delete(`/payments/admin/bank-accounts/${id}`, auth()), [auth]);
+  const getMobileWallets = useCallback(async () => api.get('/payments/admin/mobile-wallets', auth()), [auth]);
+  const createMobileWallet = useCallback(async (body: Record<string, unknown>) =>
+    api.post('/payments/admin/mobile-wallets', body, auth()), [auth]);
+  const updateMobileWallet = useCallback(async (id: string, body: Record<string, unknown>) =>
+    api.patch(`/payments/admin/mobile-wallets/${id}`, body, auth()), [auth]);
+  const deleteMobileWallet = useCallback(async (id: string) =>
+    api.delete(`/payments/admin/mobile-wallets/${id}`, auth()), [auth]);
   const getMyInvoices = useCallback(async () => api.get('/invoices/my', auth()), [auth]);
   const getInvoice = useCallback(async (id: string) => api.get(`/invoices/${id}`, auth()), [auth]);
   const getAdminInvoices = useCallback(async (params?: Record<string, string>) => {
@@ -536,6 +543,7 @@ export function useApi() {
     getPayments, getPaymentStats, updatePaymentStatus,
     getPaymentMethods, getBookingPayment, uploadPaymentReceipt, submitPaymentConfirmation,
     getBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount,
+    getMobileWallets, createMobileWallet, updateMobileWallet, deleteMobileWallet,
     getMyInvoices, getInvoice, getAdminInvoices,
     getTransport, createTransport, updateTransport, deleteTransport,
     getHajjPackages, createHajjPackage, updateHajjPackage, deleteHajjPackage,

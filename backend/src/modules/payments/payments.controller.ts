@@ -19,7 +19,7 @@ export class PaymentsController {
 
   @Get('methods')
   @Public()
-  @ApiOperation({ summary: 'Public offline payment methods (bKash + bank accounts)' })
+  @ApiOperation({ summary: 'Public offline payment methods (wallets + bank accounts)' })
   methods(@CurrentTenantId() tenantId: string) {
     return this.paymentsService.getOfflineMethods(tenantId);
   }

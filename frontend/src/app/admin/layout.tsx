@@ -10,6 +10,7 @@ import {
   FileText as FileIcon, Image, Search as SearchIcon, Star, HelpCircle,
   Megaphone, Car, MessageSquare, Bell, CreditCard, Sparkles, FileCheck,
   Languages, MessageCircle, Info, Menu as MenuIcon, LayoutGrid, Target, Coins,
+  Smartphone,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AdminTopbar } from '@/components/admin/admin-topbar';
@@ -35,6 +36,7 @@ const navigation = [
   { label: 'Reviews', href: '/admin/reviews', icon: MessageSquare },
   { label: 'Payments', href: '/admin/payments', icon: CreditCard },
   { label: 'Bank Accounts', href: '/admin/bank-accounts', icon: Building2 },
+  { label: 'Mobile Wallets', href: '/admin/mobile-wallets', icon: Smartphone },
   { label: 'Coupons', href: '/admin/coupons', icon: Percent },
   { label: 'Refer & Earn', href: '/admin/affiliates', icon: Gift },
   { label: 'Loyalty & Points', href: '/admin/loyalty', icon: Coins },

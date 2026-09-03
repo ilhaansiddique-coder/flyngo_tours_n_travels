@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useLocale } from '@/contexts/locale-context';
 
-type Method = 'bkash' | 'bank_transfer' | 'cash';
+type Method = string;
 
 interface BankAccount {
   id: string;
@@ -24,6 +24,40 @@ interface BankAccount {
   routingNumber?: string | null;
   swiftCode?: string | null;
   instructions?: string | null;
+}
+
+interface MobileWallet {
+  id: string;
+  provider: string;
+  accountName: string;
+  walletNumber: string;
+  accountType?: string | null;
+  instructions?: string | null;
+}
+
+const WALLET_LABELS: Record<string, string> = {
+  bkash: 'bKash',
+  nagad: 'Nagad',
+  rocket: 'Rocket',
+  upay: 'Upay',
+  tap: 'Tap',
+  surecash: 'SureCash',
+  mcash: 'mCash',
+};
+
+function resolveCheckoutWallets(methods: any): MobileWallet[] {
+  const list = Array.isArray(methods?.wallets) ? (methods.wallets as MobileWallet[]) : [];
+  if (list.length) return list.filter((w) => w.walletNumber);
+  if (methods?.bkash?.walletNumber) {
+    return [{
+      id: '',
+      provider: 'bkash',
+      accountName: methods.bkash.merchantName || 'bKash',
+      walletNumber: methods.bkash.walletNumber,
+      accountType: 'merchant',
+    }];
+  }
+  return [];
 }
 
 interface PaymentRow {
@@ -58,14 +92,14 @@ export default function PayPage() {
   } = useApi();
 
   const [summary, setSummary] = useState<Summary | null>(null);
-  const [bkashWallet, setBkashWallet] = useState<string | null>(null);
-  const [bkashName, setBkashName] = useState<string | null>(null);
+  const [wallets, setWallets] = useState<MobileWallet[]>([]);
+  const [selectedWalletId, setSelectedWalletId] = useState('');
   const [instructions, setInstructions] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [method, setMethod] = useState<Method>('bkash');
+  const [method, setMethod] = useState<Method>('');
   const [bkashTrxId, setBkashTrxId] = useState('');
   const [bankAccountId, setBankAccountId] = useState('');
   const [senderName, setSenderName] = useState('');
@@ -83,8 +117,14 @@ export default function PayPage() {
         getPaymentMethods() as Promise<any>,
       ]);
       setSummary(sum);
-      setBkashWallet(methods?.bkash?.walletNumber || null);
-      setBkashName(methods?.bkash?.merchantName || null);
+      const nextWallets = resolveCheckoutWallets(methods);
+      setWallets(nextWallets);
+      if (nextWallets[0]) {
+        setSelectedWalletId((prev) => prev || nextWallets[0].id);
+        setMethod((prev) => prev || nextWallets[0].provider);
+      } else {
+        setMethod((prev) => prev || 'bank_transfer');
+      }
       setInstructions(methods?.instructions || null);
       setAccounts(methods?.bankAccounts || []);
       if (methods?.bankAccounts?.[0]?.id) setBankAccountId((prev) => prev || methods.bankAccounts[0].id);
@@ -97,7 +137,7 @@ export default function PayPage() {
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('method');
-    if (q === 'bkash' || q === 'bank_transfer' || q === 'cash') setMethod(q);
+    if (q) setMethod(q);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
@@ -130,7 +170,8 @@ export default function PayPage() {
       await submitPaymentConfirmation({
         bookingCode: summary.bookingCode,
         method,
-        bkashTrxId: method === 'bkash' ? bkashTrxId : undefined,
+        bkashTrxId: wallets.some((w) => w.provider === method) ? bkashTrxId : undefined,
+        mobileWalletId: wallets.some((w) => w.provider === method) && selectedWalletId ? selectedWalletId : undefined,
         bankAccountId: method === 'bank_transfer' ? bankAccountId : undefined,
         receiptUrls,
         senderName: senderName || undefined,
@@ -225,14 +266,22 @@ export default function PayPage() {
           <div className="glass rounded-2xl p-6 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {([
-                { id: 'bkash' as const, icon: Smartphone, label: 'bKash' },
-                { id: 'bank_transfer' as const, icon: Building, label: isBn ? 'ব্যাংক' : 'Bank' },
-                { id: 'cash' as const, icon: Banknote, label: isBn ? 'নগদ' : 'Cash' },
+                ...Array.from(new Set(wallets.map((w) => w.provider))).map((provider) => ({
+                  id: provider,
+                  icon: Smartphone,
+                  label: WALLET_LABELS[provider] || provider,
+                })),
+                { id: 'bank_transfer', icon: Building, label: isBn ? 'ব্যাংক' : 'Bank' },
+                { id: 'cash', icon: Banknote, label: isBn ? 'নগদ' : 'Cash' },
               ]).map((m) => (
                 <button
                   key={m.id}
                   type="button"
-                  onClick={() => setMethod(m.id)}
+                  onClick={() => {
+                    setMethod(m.id);
+                    const first = wallets.find((w) => w.provider === m.id);
+                    if (first) setSelectedWalletId(first.id);
+                  }}
                   className={`flex items-center gap-2 p-3 rounded-xl border text-left ${method === m.id ? 'border-[var(--color-primary)]' : 'border-soft'}`}
                   style={method === m.id ? { backgroundColor: 'color-mix(in oklab, var(--color-primary) 12%, transparent)' } : undefined}
                 >
@@ -244,21 +293,24 @@ export default function PayPage() {
 
             {instructions && <p className="text-sm text-muted">{instructions}</p>}
 
-            {method === 'bkash' && (
+            {wallets.some((w) => w.provider === method) && (
               <div className="space-y-4">
-                {bkashWallet ? (
-                  <div className="rounded-xl border border-soft p-4 flex items-center justify-between">
+                {wallets.filter((w) => w.provider === method).map((w) => (
+                  <button
+                    key={w.id || w.walletNumber}
+                    type="button"
+                    onClick={() => setSelectedWalletId(w.id)}
+                    className={`w-full rounded-xl border p-4 flex items-center justify-between text-left ${(!selectedWalletId && wallets.filter((x) => x.provider === method)[0]?.id === w.id) || selectedWalletId === w.id ? 'border-[var(--color-primary)]' : 'border-soft'}`}
+                  >
                     <div>
-                      <div className="text-[10px] uppercase tracking-widest text-muted">{bkashName || 'bKash'}</div>
-                      <div className="font-mono text-lg font-bold">{bkashWallet}</div>
+                      <div className="text-[10px] uppercase tracking-widest text-muted">{w.accountName || WALLET_LABELS[w.provider] || w.provider}{w.accountType ? ` · ${w.accountType}` : ''}</div>
+                      <div className="font-mono text-lg font-bold">{w.walletNumber}</div>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => copy(bkashWallet)}><Copy className="w-4 h-4" /></Button>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted">{isBn ? 'bKash নম্বর শীঘ্রই যোগ করা হবে। ট্রানজেকশন আইডি দিন।' : 'Send to our bKash and enter the transaction ID.'}</p>
-                )}
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); copy(w.walletNumber); }}><Copy className="w-4 h-4" /></Button>
+                  </button>
+                ))}
                 <Input
-                  label={isBn ? 'bKash ট্রানজেকশন আইডি' : 'bKash Transaction ID'}
+                  label={isBn ? `${WALLET_LABELS[method] || method} ট্রানজেকশন আইডি` : `${WALLET_LABELS[method] || method} Transaction ID`}
                   value={bkashTrxId}
                   onChange={(e) => setBkashTrxId(e.target.value)}
                   placeholder="e.g. 9J3XXXXXXX"

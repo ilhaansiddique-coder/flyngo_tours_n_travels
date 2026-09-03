@@ -50,6 +50,10 @@ const METHOD_LABELS: Record<string, string> = {
   nagad: 'Nagad',
   sslcommerz: 'SSLCommerz',
   rocket: 'Rocket',
+  upay: 'Upay',
+  tap: 'Tap',
+  surecash: 'SureCash',
+  mcash: 'mCash',
 };
 
 export default function PaymentsPage() {
@@ -243,6 +247,7 @@ export default function PaymentsPage() {
             <option value="sslcommerz">SSLCommerz</option>
             <option value="stripe">Stripe</option>
             <option value="rocket">Rocket</option>
+            <option value="upay">Upay</option>
           </select>
         </div>
         <Button variant="outline" size="md" className="gap-2" onClick={exportCsv}>

@@ -70,6 +70,40 @@ interface BankAccount {
   instructions?: string | null;
 }
 
+interface MobileWallet {
+  id: string;
+  provider: string;
+  accountName: string;
+  walletNumber: string;
+  accountType?: string | null;
+  instructions?: string | null;
+}
+
+const WALLET_LABELS: Record<string, string> = {
+  bkash: 'bKash',
+  nagad: 'Nagad',
+  rocket: 'Rocket',
+  upay: 'Upay',
+  tap: 'Tap',
+  surecash: 'SureCash',
+  mcash: 'mCash',
+};
+
+function resolveCheckoutWallets(methods: any): MobileWallet[] {
+  const list = Array.isArray(methods?.wallets) ? (methods.wallets as MobileWallet[]) : [];
+  if (list.length) return list.filter((w) => w.walletNumber);
+  if (methods?.bkash?.walletNumber) {
+    return [{
+      id: '',
+      provider: 'bkash',
+      accountName: methods.bkash.merchantName || 'bKash',
+      walletNumber: methods.bkash.walletNumber,
+      accountType: 'merchant',
+    }];
+  }
+  return [];
+}
+
 const TYPE_META: Record<BookingType, { icon: typeof Compass; accent: string }> = {
   tour: { icon: Compass, accent: 'primary' },
   hotel: { icon: Building2, accent: 'primary' },
@@ -231,8 +265,8 @@ export default function BookingPage() {
   const [isPresetBooking, setIsPresetBooking] = useState<boolean>(false);
   const sentType = useRef<string | null>(null);
 
-  const [bkashWallet, setBkashWallet] = useState<string | null>(null);
-  const [bkashName, setBkashName] = useState<string | null>(null);
+  const [wallets, setWallets] = useState<MobileWallet[]>([]);
+  const [selectedWalletId, setSelectedWalletId] = useState('');
   const [paymentInstructions, setPaymentInstructions] = useState<string | null>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [bkashTrxId, setBkashTrxId] = useState('');
@@ -287,8 +321,9 @@ export default function BookingPage() {
       try {
         const methods = (await getPaymentMethods()) as any;
         if (!mounted) return;
-        setBkashWallet(methods?.bkash?.walletNumber || null);
-        setBkashName(methods?.bkash?.merchantName || null);
+        const nextWallets = resolveCheckoutWallets(methods);
+        setWallets(nextWallets);
+        if (nextWallets[0]) setSelectedWalletId(nextWallets[0].id);
         setPaymentInstructions(methods?.instructions || null);
         setBankAccounts(methods?.bankAccounts || []);
         if (methods?.bankAccounts?.[0]?.id) setBankAccountId(methods.bankAccounts[0].id);
@@ -439,8 +474,10 @@ export default function BookingPage() {
         setError(isBn ? 'অনুগ্রহ করে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Please select a payment method');
         return;
       }
-      if (paymentMethod === 'bkash' && !bkashTrxId.trim()) {
-        setError(isBn ? 'bKash ট্রানজেকশন আইডি দিন' : 'Please enter the bKash transaction ID');
+      const isWalletMethod = wallets.some((w) => w.provider === paymentMethod);
+      if (isWalletMethod && !bkashTrxId.trim()) {
+        const label = WALLET_LABELS[paymentMethod] || paymentMethod;
+        setError(isBn ? `${label} ট্রানজেকশন আইডি দিন` : `Please enter the ${label} transaction ID`);
         return;
       }
       if (paymentMethod === 'bank_transfer') {
@@ -509,7 +546,8 @@ export default function BookingPage() {
       const code = result?.bookingCode || (bookingType === 'custom' ? 'QUOTE-PENDING' : '');
       setBookingCode(code || 'FLY-XXXX-XXXX');
       if (isPresetBooking && bookingType !== 'custom' && code) {
-        if (paymentMethod && (paymentMethod === 'bkash' || paymentMethod === 'bank_transfer' || paymentMethod === 'cash')) {
+        const isWalletMethod = wallets.some((w) => w.provider === paymentMethod);
+        if (paymentMethod && (isWalletMethod || paymentMethod === 'bank_transfer' || paymentMethod === 'cash')) {
           try {
             await submitPaymentConfirmation({
               bookingCode: code,
@@ -520,7 +558,8 @@ export default function BookingPage() {
                   : paymentMethod === 'bank_transfer'
                   ? Math.round(Number(bankAmount) * 100) / 100
                   : undefined,
-              bkashTrxId: paymentMethod === 'bkash' ? bkashTrxId.trim() : undefined,
+              bkashTrxId: isWalletMethod ? bkashTrxId.trim() : undefined,
+              mobileWalletId: isWalletMethod && selectedWalletId ? selectedWalletId : undefined,
               bankAccountId: paymentMethod === 'bank_transfer' ? bankAccountId : undefined,
               receiptUrls,
               senderName: paymentMethod === 'bank_transfer' ? senderName : undefined,
@@ -1160,14 +1199,23 @@ export default function BookingPage() {
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {[
-                        { id: 'bkash', icon: Smartphone, label: 'bKash', desc: isBn ? 'bKash পাঠিয়ে ট্রানজেকশন আইডি দিন' : 'Send bKash and submit your transaction ID' },
+                        ...Array.from(new Set(wallets.map((w) => w.provider))).map((provider) => ({
+                          id: provider,
+                          icon: Smartphone,
+                          label: WALLET_LABELS[provider] || provider,
+                          desc: isBn ? `${WALLET_LABELS[provider] || provider} পাঠিয়ে ট্রানজেকশন আইডি দিন` : `Send ${WALLET_LABELS[provider] || provider} and submit your transaction ID`,
+                        })),
                         { id: 'bank_transfer', icon: Building, label: isBn ? 'ব্যাংক ট্রান্সফার' : 'Bank Transfer', desc: isBn ? 'আমাদের হিসাবে পাঠিয়ে রসিদ আপলোড করুন' : 'Transfer to our account and upload the receipt' },
                         { id: 'cash', icon: Banknote, label: isBn ? 'নগদ' : 'Cash', desc: isBn ? 'অফিসে বা কালেকশনের মাধ্যমে পরিশোধ' : 'Pay at our office or via collection' },
                       ].map((m) => (
                         <button
                           key={m.id}
                           type="button"
-                          onClick={() => setPaymentMethod(m.id)}
+                          onClick={() => {
+                            setPaymentMethod(m.id);
+                            const first = wallets.find((w) => w.provider === m.id);
+                            if (first) setSelectedWalletId(first.id);
+                          }}
                           className={`flex items-start gap-3 p-4 rounded-xl border text-left transition ${
                             paymentMethod === m.id
                               ? 'border-[var(--color-primary)]'
@@ -1193,40 +1241,63 @@ export default function BookingPage() {
                       <p className="text-xs text-muted mt-3 text-center">{isBn ? 'চালিয়ে যেতে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Select a payment method to continue'}</p>
                     )}
 
-                    {paymentMethod === 'bkash' && (
+                    {wallets.some((w) => w.provider === paymentMethod) && (
                       <div className="mt-4 rounded-2xl border border-soft p-5 bg-surface-container/60 space-y-4">
-                        <div className="flex items-start gap-3">
-                          <Smartphone className="w-5 h-5 shrink-0 mt-0.5 text-muted" />
-                          <div className="text-sm">
-                            <div className="font-semibold text-on-surface">{isBn ? 'bKash ডেটা পাঠান' : 'Send to bKash'}</div>
-                            {bkashWallet ? (
-                              <div className="mt-1 flex items-center gap-2 flex-wrap">
-                                <span className="text-2xl font-display font-bold tracking-wider text-[var(--color-primary)]">{bkashWallet}</span>
-                                {bkashName && <span className="text-xs text-muted">({bkashName})</span>}
-                                <button
-                                  type="button"
-                                  onClick={() => copyToClipboard(bkashWallet)}
-                                  className="flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:opacity-70"
-                                >
-                                  <Copy className="w-3.5 h-3.5" /> {isBn ? 'কপি' : 'Copy'}
-                                </button>
+                        {(() => {
+                          const providerWallets = wallets.filter((w) => w.provider === paymentMethod);
+                          const selected = providerWallets.find((w) => w.id === selectedWalletId) || providerWallets[0];
+                          const label = WALLET_LABELS[paymentMethod] || paymentMethod;
+                          return (
+                            <>
+                              <div className="flex items-start gap-3">
+                                <Smartphone className="w-5 h-5 shrink-0 mt-0.5 text-muted" />
+                                <div className="text-sm">
+                                  <div className="font-semibold text-on-surface">{isBn ? `${label} এ পাঠান` : `Send to ${label}`}</div>
+                                  {providerWallets.length > 1 && (
+                                    <div className="mt-2 space-y-2">
+                                      {providerWallets.map((w) => (
+                                        <button
+                                          key={w.id || w.walletNumber}
+                                          type="button"
+                                          onClick={() => setSelectedWalletId(w.id)}
+                                          className={`w-full text-left p-3 rounded-xl border ${selected?.id === w.id ? 'border-[var(--color-primary)]' : 'border-soft'}`}
+                                        >
+                                          <div className="text-xs text-muted">{w.accountName}{w.accountType ? ` · ${w.accountType}` : ''}</div>
+                                          <div className="font-mono text-lg font-bold tracking-wider text-[var(--color-primary)]">{w.walletNumber}</div>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {providerWallets.length <= 1 && selected && (
+                                    <div className="mt-1 flex items-center gap-2 flex-wrap">
+                                      <span className="text-2xl font-display font-bold tracking-wider text-[var(--color-primary)]">{selected.walletNumber}</span>
+                                      {selected.accountName && <span className="text-xs text-muted">({selected.accountName})</span>}
+                                      <button
+                                        type="button"
+                                        onClick={() => copyToClipboard(selected.walletNumber)}
+                                        className="flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:opacity-70"
+                                      >
+                                        <Copy className="w-3.5 h-3.5" /> {isBn ? 'কপি' : 'Copy'}
+                                      </button>
+                                    </div>
+                                  )}
+                                  {selected?.instructions && <p className="text-xs text-muted mt-2">{selected.instructions}</p>}
+                                </div>
                               </div>
-                            ) : (
-                              <div className="mt-1 text-xs text-muted">{isBn ? 'bKash নম্বর শীঘ্রই প্রদর্শিত হবে' : 'bKash number will appear shortly'}</div>
-                            )}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
-                            {isBn ? 'ট্রানজেকশন আইডি' : 'bKash Transaction ID'}
-                          </label>
-                          <Input
-                            value={bkashTrxId}
-                            onChange={(e) => setBkashTrxId(e.target.value)}
-                            placeholder="9J3XXXXXXX"
-                          />
-                          <p className="text-xs text-muted mt-1">{isBn ? 'সেন্ড মানিতে দেখানো ট্রানজেকশন আইডি লিখুন' : 'Enter the transaction ID shown after you send money'}.</p>
-                        </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+                                  {isBn ? 'ট্রানজেকশন আইডি' : `${label} Transaction ID`}
+                                </label>
+                                <Input
+                                  value={bkashTrxId}
+                                  onChange={(e) => setBkashTrxId(e.target.value)}
+                                  placeholder="9J3XXXXXXX"
+                                />
+                                <p className="text-xs text-muted mt-1">{isBn ? 'সেন্ড মানিতে দেখানো ট্রানজেকশন আইডি লিখুন' : 'Enter the transaction ID shown after you send money'}.</p>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     )}
 

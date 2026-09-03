@@ -764,9 +764,11 @@ model Payment {
   transactionId String  @unique @map("transaction_id")
   gatewayRef    String? @map("gateway_ref")
 
-  bkashTrxId    String? @map("bkash_trx_id")
-  bankAccountId String? @map("bank_account_id")
-  bankAccount   BankAccount? @relation(fields: [bankAccountId], references: [id])
+  bkashTrxId     String? @map("bkash_trx_id")
+  bankAccountId  String? @map("bank_account_id")
+  bankAccount    BankAccount? @relation(fields: [bankAccountId], references: [id])
+  mobileWalletId String? @map("mobile_wallet_id")
+  mobileWallet   MobileWallet? @relation(fields: [mobileWalletId], references: [id])
   receiptUrls   String[] @default([]) @map("receipt_urls")
   senderName    String? @map("sender_name")
   senderAccount String? @map("sender_account")
@@ -811,6 +813,27 @@ model BankAccount {
 
   @@index([tenantId, isActive])
   @@map("bank_accounts")
+}
+
+model MobileWallet {
+  id           String  @id @default(uuid())
+  tenantId     String  @map("tenant_id")
+  provider     String
+  accountName  String  @map("account_name")
+  walletNumber String  @map("wallet_number")
+  accountType  String  @default("personal") @map("account_type")
+  instructions String? @db.Text
+  isActive     Boolean @default(true) @map("is_active")
+  sortOrder    Int     @default(0) @map("sort_order")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  payments Payment[]
+
+  @@index([tenantId, isActive])
+  @@map("mobile_wallets")
 }
 
 model Invoice {

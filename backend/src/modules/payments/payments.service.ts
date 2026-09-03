@@ -8,11 +8,13 @@ import { LoyaltyService } from '../loyalty/loyalty.service';
 import { EmailQueueService } from '../notifications/email-queue.service';
 import { MediaService } from '../media/media.service';
 import { BankAccountsService } from './bank-accounts.service';
+import { MobileWalletsService, WALLET_PROVIDERS } from './mobile-wallets.service';
 import { InvoicesService } from './invoices.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
-const OFFLINE_METHODS = ['bkash', 'bank_transfer', 'cash'] as const;
+const OFFLINE_METHODS = [...WALLET_PROVIDERS, 'bank_transfer', 'cash'] as const;
 type OfflineMethod = (typeof OFFLINE_METHODS)[number];
+const WALLET_METHOD_SET = new Set<string>(WALLET_PROVIDERS);
 
 export interface SubmitConfirmationInput {
   bookingCode: string;
@@ -20,6 +22,7 @@ export interface SubmitConfirmationInput {
   amount?: number;
   bkashTrxId?: string;
   bankAccountId?: string;
+  mobileWalletId?: string;
   receiptUrls?: string[];
   senderName?: string;
   senderAccount?: string;
@@ -39,6 +42,7 @@ export class PaymentsService {
     private readonly emailQueueService: EmailQueueService,
     private readonly mediaService: MediaService,
     private readonly bankAccounts: BankAccountsService,
+    private readonly mobileWallets: MobileWalletsService,
     private readonly invoices: InvoicesService,
     private readonly notificationsService: NotificationsService,
   ) {
@@ -95,6 +99,7 @@ export class PaymentsService {
         hajjUmrahBooking: { select: { id: true, bookingCode: true, kind: true, totalAmount: true, advancePaid: true, currency: true } },
         invoice: { select: { id: true, invoiceNumber: true, status: true } },
         bankAccount: { select: { id: true, bankName: true, accountNumber: true } },
+        mobileWallet: { select: { id: true, provider: true, accountName: true, walletNumber: true } },
       },
     });
   }
@@ -330,6 +335,7 @@ export class PaymentsService {
           booking: { select: { id: true, bookingCode: true, bookingType: true, totalAmount: true, paidAmount: true } },
           hajjUmrahBooking: { select: { id: true, bookingCode: true, kind: true, totalAmount: true, advancePaid: true } },
           bankAccount: { select: { id: true, bankName: true, accountName: true, accountNumber: true } },
+          mobileWallet: { select: { id: true, provider: true, accountName: true, walletNumber: true } },
           invoice: { select: { id: true, invoiceNumber: true, status: true } },
         },
       }),
@@ -424,7 +430,7 @@ export class PaymentsService {
   }
 
   async getOfflineMethods(tenantId: string) {
-    const [settings, bankAccounts] = await Promise.all([
+    const [settings, bankAccounts, wallets] = await Promise.all([
       this.prisma.tenantSettings.findUnique({
         where: { tenantId },
         select: {
@@ -436,11 +442,14 @@ export class PaymentsService {
         },
       }),
       this.bankAccounts.listPublic(tenantId),
+      this.mobileWallets.listPublic(tenantId),
     ]);
+    const bkashWallet = wallets.find((w) => w.provider === 'bkash');
     return {
+      wallets,
       bkash: {
-        walletNumber: settings?.bkashWalletNumber || null,
-        merchantName: settings?.bkashMerchantName || settings?.companyName || 'Flyngo',
+        walletNumber: bkashWallet?.walletNumber || settings?.bkashWalletNumber || null,
+        merchantName: bkashWallet?.accountName || settings?.bkashMerchantName || settings?.companyName || 'Flyngo',
       },
       bankAccounts,
       instructions: settings?.paymentInstructions || null,
@@ -459,7 +468,7 @@ export class PaymentsService {
   async submitConfirmation(tenantId: string, userId: string | null, input: SubmitConfirmationInput) {
     const method = (input.method || '').trim() as OfflineMethod;
     if (!OFFLINE_METHODS.includes(method)) {
-      throw new BadRequestException('method must be bkash, bank_transfer, or cash');
+      throw new BadRequestException(`method must be one of: ${OFFLINE_METHODS.join(', ')}`);
     }
     const code = (input.bookingCode || '').trim();
     if (!code) throw new BadRequestException('bookingCode is required');
@@ -482,16 +491,28 @@ export class PaymentsService {
 
     let bkashTrxId: string | null = null;
     let bankAccountId: string | null = null;
+    let mobileWalletId: string | null = null;
     const receiptUrls = (input.receiptUrls || []).filter((u) => typeof u === 'string' && u.trim()).map((u) => u.trim());
 
-    if (method === 'bkash') {
+    if (WALLET_METHOD_SET.has(method)) {
       bkashTrxId = this.normalizeBkashTrx(input.bkashTrxId);
-      if (!bkashTrxId) throw new BadRequestException('bKash transaction ID is required');
+      if (!bkashTrxId) throw new BadRequestException('Transaction ID is required');
       const dup = await this.prisma.payment.findFirst({
         where: { tenantId, bkashTrxId },
         select: { id: true },
       });
-      if (dup) throw new BadRequestException('This bKash transaction ID has already been submitted');
+      if (dup) throw new BadRequestException('This transaction ID has already been submitted');
+      if (input.mobileWalletId) {
+        const wallet = await this.prisma.mobileWallet.findFirst({
+          where: { id: input.mobileWalletId, tenantId, isActive: true, deletedAt: null },
+          select: { id: true, provider: true },
+        });
+        if (!wallet) throw new BadRequestException('Mobile wallet not found');
+        if (wallet.provider !== method) {
+          throw new BadRequestException('mobileWalletId does not match the selected payment method');
+        }
+        mobileWalletId = wallet.id;
+      }
     }
 
     if (method === 'bank_transfer') {
@@ -527,6 +548,7 @@ export class PaymentsService {
           transactionId: `PAY-${randomUUID()}`,
           bkashTrxId,
           bankAccountId,
+          mobileWalletId,
           receiptUrls,
           senderName: input.senderName?.trim() || null,
           senderAccount: input.senderAccount?.trim() || null,
@@ -535,11 +557,12 @@ export class PaymentsService {
         },
         include: {
           bankAccount: { select: { id: true, bankName: true, accountName: true, accountNumber: true } },
+          mobileWallet: { select: { id: true, provider: true, accountName: true, walletNumber: true } },
         },
       });
     } catch (err: any) {
       if (err?.code === 'P2002') {
-        throw new BadRequestException('This bKash transaction ID has already been submitted');
+        throw new BadRequestException('This transaction ID has already been submitted');
       }
       throw err;
     }

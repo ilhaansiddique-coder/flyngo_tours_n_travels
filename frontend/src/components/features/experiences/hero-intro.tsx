@@ -19,14 +19,6 @@ const STAT_FALLBACK: HeroStat[] = [
 
 const QUICK_PLACES_FALLBACK = ['Bali', 'Dubai', 'Maldives', 'Switzerland', 'Thailand'];
 
-function PlaneIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1L15 22v-1.5L13 19v-5.5z" />
-    </svg>
-  );
-}
-
 function pickStatLabel(s: HeroStat, locale: 'en' | 'bn'): string {
   if (locale === 'bn') return s.labelBn || s.labelEn;
   return s.labelEn;
@@ -128,7 +120,7 @@ export function HeroIntro({ surface = 'hero' }: HeroIntroProps) {
             boxShadow: '0 12px 28px -8px color-mix(in oklab, var(--color-primary) 50%, transparent)',
           }}
         >
-          <PlaneIcon className="h-4 w-4" />
+          <Plane className="h-4 w-4" />
           {pickHeroText({ en: hero?.ctaExploreEn, bn: hero?.ctaExploreBn }, locale) || 'Explore Tours'}
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Link>

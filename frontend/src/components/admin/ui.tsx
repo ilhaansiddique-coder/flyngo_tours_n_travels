@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, X } from 'lucide-react';
 
 interface ModalProps {
   open: boolean;
@@ -38,9 +38,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
             onClick={onClose}
             className="p-1 hover:bg-surface-container-high rounded-lg text-on-surface-variant"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="w-5 h-5" />
           </button>
         </div>
         <div className="overflow-y-auto p-6">{children}</div>

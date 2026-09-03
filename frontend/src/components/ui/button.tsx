@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { forwardRef } from 'react';
+import { Loader2 } from 'lucide-react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'gradient';
@@ -44,7 +45,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       const NextLink = require('next/link').default;
       return (
         <NextLink href={(props as any).href || '#'} className={baseStyles} style={variantStyle} {...(props as any)}>
-          {loading && <Spinner className="mr-2" />}
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {children}
         </NextLink>
       );
@@ -52,7 +53,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     return (
       <button ref={ref} className={baseStyles} style={variantStyle} disabled={disabled || loading} {...props}>
-        {loading && <Spinner className="mr-2" />}
+        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {children}
       </button>
     );
@@ -60,14 +61,5 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = 'Button';
-
-function Spinner({ className }: { className?: string }) {
-  return (
-    <svg className={cn('animate-spin h-4 w-4', className)} fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-    </svg>
-  );
-}
 
 export { Button };

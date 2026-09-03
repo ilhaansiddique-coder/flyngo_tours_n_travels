@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { formatDate } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import { useEffect, useState, useCallback } from 'react';
-import { FileText, Download, Filter as FilterIcon } from 'lucide-react';
+import { FileText, Download, Filter as FilterIcon, X } from 'lucide-react';
 
 interface AuditUser {
   id: string;
@@ -317,7 +317,7 @@ export default function AuditLogsPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">Audit Log Details</h3>
               <button onClick={() => setSelectedLog(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <X className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-2 text-sm">

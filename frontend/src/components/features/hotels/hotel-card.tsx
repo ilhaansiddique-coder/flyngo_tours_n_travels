@@ -20,7 +20,7 @@ interface HotelCardProps {
 
 export function HotelCard({ slug, name, starRating, pricePerNight, destination, additionalDestinations, imageUrl, coverImageUrl }: HotelCardProps) {
   return (
-    <Card className="group overflow-hidden flex flex-col" hover={false} premium>
+    <Card className="group overflow-hidden flex flex-col" hover={false} premium padding="none">
       <div className="relative h-60 overflow-hidden rounded-t-3xl">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-tertiary" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -52,7 +52,7 @@ export function HotelCard({ slug, name, starRating, pricePerNight, destination, 
         </div>
       </div>
 
-      <div className="px-5 py-4 flex flex-col flex-1">
+      <div className="px-6 py-5 flex flex-col flex-1">
         <div className="flex items-center gap-1 mb-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <Star key={i} className={`w-3.5 h-3.5 ${i < (starRating || 0) ? 'fill-amber-400 text-amber-400' : 'fill-gray-200 text-gray-200'}`} />

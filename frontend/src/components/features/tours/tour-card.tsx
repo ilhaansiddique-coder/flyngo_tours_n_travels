@@ -29,7 +29,7 @@ export function TourCard({ slug, title, price, duration, maxGuests, destination,
   ].filter((b): b is { name: string; label: string } => !!b);
 
   return (
-    <Card className="group overflow-hidden flex flex-col" hover={false} premium>
+    <Card className="group overflow-hidden flex flex-col" hover={false} premium padding="none">
       <div className="relative h-60 overflow-hidden rounded-t-3xl">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-tertiary" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -46,7 +46,7 @@ export function TourCard({ slug, title, price, duration, maxGuests, destination,
         </div>
       </div>
 
-      <div className="px-5 py-4 flex flex-col flex-1">
+      <div className="px-6 py-5 flex flex-col flex-1">
         {destinationBadges.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-3">
             {destinationBadges.map((b, i) => (

@@ -230,6 +230,7 @@ export default function BookingPage() {
   const [uploading, setUploading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [cashAmount, setCashAmount] = useState('');
+  const [bankAmount, setBankAmount] = useState('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -434,8 +435,17 @@ export default function BookingPage() {
           setError(isBn ? 'ব্যাংক অ্যাকাউন্ট নির্বাচন করুন' : 'Please select a bank account');
           return;
         }
+        if (!senderName.trim()) {
+          setError(isBn ? 'প্রেরকের নাম দিন' : 'Please enter the sender name');
+          return;
+        }
+        const amt = Number(bankAmount);
+        if (!bankAmount || !Number.isFinite(amt) || amt <= 0) {
+          setError(isBn ? 'অনুগ্রহ করে পরিশোধের পরিমাণ দিন' : 'Please enter the amount to pay');
+          return;
+        }
         if (receiptUrls.length === 0) {
-          setError(isBn ? 'অনুগ্রহ করে রসিদ আপলোড করুন' : 'Please upload your payment receipt');
+          setError(isBn ? 'অনুগ্রহ করে রসিদ আপলোড করুন (ছবি বা PDF)' : 'Please upload your payment receipt (image or PDF)');
           return;
         }
       }
@@ -491,11 +501,16 @@ export default function BookingPage() {
             await submitPaymentConfirmation({
               bookingCode: code,
               method: paymentMethod,
-              amount: paymentMethod === 'cash' ? Math.round(Number(cashAmount) * 100) / 100 : undefined,
+              amount:
+                paymentMethod === 'cash'
+                  ? Math.round(Number(cashAmount) * 100) / 100
+                  : paymentMethod === 'bank_transfer'
+                  ? Math.round(Number(bankAmount) * 100) / 100
+                  : undefined,
               bkashTrxId: paymentMethod === 'bkash' ? bkashTrxId.trim() : undefined,
               bankAccountId: paymentMethod === 'bank_transfer' ? bankAccountId : undefined,
               receiptUrls,
-              senderName: paymentMethod === 'bank_transfer' ? senderName || undefined : undefined,
+              senderName: paymentMethod === 'bank_transfer' ? senderName : undefined,
             });
           } catch {
             // payment confirmation failed; booking is still created and can be paid later
@@ -1259,14 +1274,41 @@ export default function BookingPage() {
 
                         <div>
                           <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
-                            {isBn ? 'প্রেরকের নাম (ঐচ্ছিক)' : 'Sender Name (optional)'}
+                            {isBn ? 'প্রেরকের নাম (আবশ্যক)' : 'Sender Name (required)'}
                           </label>
-                          <Input value={senderName} onChange={(e) => setSenderName(e.target.value)} />
+                          <Input
+                            value={senderName}
+                            onChange={(e) => setSenderName(e.target.value)}
+                            placeholder={isBn ? 'আপনার নাম লিখুন' : 'Enter your name'}
+                            required
+                          />
                         </div>
 
                         <div>
                           <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
-                            {isBn ? 'রসিদ আপলোড করুন' : 'Upload Payment Receipt'}
+                            {isBn ? 'পরিশোধের পরিমাণ (৳)' : 'Amount to Pay (BDT)'}
+                          </label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={bankAmount}
+                            onChange={(e) => setBankAmount(e.target.value)}
+                            placeholder={isBn ? 'পরিমাণ লিখুন (যেমন: 25000)' : 'Enter the amount (e.g. 25000)'}
+                            required
+                          />
+                          {totalAmount ? (
+                            <p className="text-xs text-muted mt-1">
+                              {isBn
+                                ? `মোট বকেয়া: ${formatCurrency(totalAmount || 0, 'BDT')}`
+                                : `Total balance due: ${formatCurrency(totalAmount || 0, 'BDT')}`}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
+                            {isBn ? 'রসিদ আপলোড করুন (আবশ্যক)' : 'Upload Payment Receipt (required)'}
                           </label>
                           <label className="flex flex-col items-center justify-center gap-2 p-5 rounded-xl border border-dashed border-soft cursor-pointer hover:border-[var(--color-primary)] bg-surface-container/60 transition">
                             <Upload className="w-5 h-5 text-muted" />

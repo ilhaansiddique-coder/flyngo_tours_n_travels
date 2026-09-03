@@ -502,8 +502,14 @@ export class PaymentsService {
       });
       if (!account) throw new BadRequestException('Bank account not found');
       bankAccountId = account.id;
+      if (!input.senderName?.trim()) {
+        throw new BadRequestException('Sender name is required for bank transfers');
+      }
+      if (!(Number.isFinite(amount) && amount > 0)) {
+        throw new BadRequestException('Amount is required and must be greater than zero');
+      }
       if (receiptUrls.length === 0) {
-        throw new BadRequestException('Please upload a money receipt image');
+        throw new BadRequestException('Please upload a money receipt image or PDF');
       }
     }
 

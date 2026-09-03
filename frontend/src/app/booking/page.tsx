@@ -25,10 +25,21 @@ const STANDARD_STEPS = [
   { number: 4, key: 'booking_step_checkout' },
 ];
 
+const STANDARD_STEPS_GENERAL = [
+  { number: 1, key: 'booking_step_details' },
+  { number: 2, key: 'booking_step_trip' },
+  { number: 3, key: 'booking_step_review' },
+];
+
 const TOUR_STEPS = [
   { number: 1, key: 'booking_step_details' },
   { number: 2, key: 'booking_step_review' },
   { number: 3, key: 'booking_step_checkout' },
+];
+
+const TOUR_STEPS_GENERAL = [
+  { number: 1, key: 'booking_step_details' },
+  { number: 2, key: 'booking_step_review' },
 ];
 
 const VISA_STEPS = [
@@ -217,6 +228,7 @@ export default function BookingPage() {
   const [bookingType, setBookingType] = useState<BookingType>('tour');
   const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [typeLocked, setTypeLocked] = useState<boolean>(false);
+  const [isPresetBooking, setIsPresetBooking] = useState<boolean>(false);
   const sentType = useRef<string | null>(null);
 
   const [bkashWallet, setBkashWallet] = useState<string | null>(null);
@@ -237,11 +249,12 @@ export default function BookingPage() {
     const sp = new URLSearchParams(window.location.search);
     const urlType = sp.get('type');
     const urlId = sp.get('id');
-    if (urlType) {
-      const mapped: BookingType | null = urlType in URL_TYPE_MAP ? URL_TYPE_MAP[urlType] : null;
-      if (mapped) {
-        setBookingType(mapped);
-        setTypeLocked(true);
+      if (urlType) {
+        const mapped: BookingType | null = urlType in URL_TYPE_MAP ? URL_TYPE_MAP[urlType] : null;
+        if (mapped) {
+          setIsPresetBooking(true);
+          setBookingType(mapped);
+          setTypeLocked(true);
         sentType.current = urlType in URL_TYPE_SENT ? URL_TYPE_SENT[urlType] : urlType;
       }
     }
@@ -419,9 +432,9 @@ export default function BookingPage() {
       if (typeof window !== 'undefined') window.scrollTo({ top: 200, behavior: 'smooth' });
       return;
     }
-    // Checkout step: require payment method selection
-    const max = bookingType === 'custom' ? 5 : bookingType === 'visa' ? 4 : bookingType === 'tour' ? 3 : 4;
-    if (currentStep === max && bookingType !== 'visa' && bookingType !== 'custom') {
+    // Checkout step: require payment method selection (only for preset bookings)
+    const max = bookingType === 'custom' ? 5 : bookingType === 'visa' ? 4 : bookingType === 'tour' ? (isPresetBooking ? 3 : 2) : (isPresetBooking ? 4 : 3);
+    if (currentStep === max && bookingType !== 'visa' && bookingType !== 'custom' && isPresetBooking) {
       if (!paymentMethod) {
         setError(isBn ? 'অনুগ্রহ করে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Please select a payment method');
         return;
@@ -473,7 +486,7 @@ export default function BookingPage() {
     try {
       const result = (await createBooking({
         type: sentType.current || bookingType,
-        itemId: (typeof selectedItem === 'string' ? selectedItem : (selectedItem as any)?.id) || (bookingType === 'custom' ? 'custom-quote' : 'demo'),
+        itemId: (typeof selectedItem === 'string' ? selectedItem : (selectedItem as any)?.id) || (bookingType === 'custom' ? 'custom-quote' : isPresetBooking ? 'demo' : 'inquiry'),
         startDate: new Date(formData.startDate || new Date()).toISOString(),
         endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
         guests: Number(formData.guests) || 1,
@@ -482,7 +495,7 @@ export default function BookingPage() {
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
-        paymentMethod: bookingType !== 'visa' && bookingType !== 'custom' ? paymentMethod : undefined,
+        paymentMethod: isPresetBooking && bookingType !== 'visa' && bookingType !== 'custom' ? paymentMethod : undefined,
         meta: bookingType === 'custom'
           ? {
               destination: formData.destination,
@@ -495,7 +508,7 @@ export default function BookingPage() {
       })) as any;
       const code = result?.bookingCode || (bookingType === 'custom' ? 'QUOTE-PENDING' : '');
       setBookingCode(code || 'FLY-XXXX-XXXX');
-      if (bookingType !== 'custom' && code) {
+      if (isPresetBooking && bookingType !== 'custom' && code) {
         if (paymentMethod && (paymentMethod === 'bkash' || paymentMethod === 'bank_transfer' || paymentMethod === 'cash')) {
           try {
             await submitPaymentConfirmation({
@@ -545,12 +558,12 @@ export default function BookingPage() {
               <Check className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
             </div>
             <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-              {bookingType === 'custom'
+              {(bookingType === 'custom' || !isPresetBooking)
                 ? t('booking_success_title_quote')
                 : t('booking_success_title')}
             </h2>
             <p className="text-muted mb-2">
-              {bookingType === 'custom'
+              {(bookingType === 'custom' || !isPresetBooking)
                 ? t('booking_success_help_quote')
                 : t('booking_success_help')}
             </p>
@@ -569,7 +582,7 @@ export default function BookingPage() {
                   {isBn ? 'ট্র্যাক বুকিং' : 'Track booking'}
                 </Button>
               </Link>
-              {bookingCode && bookingCode !== 'FLY-XXXX-XXXX' && (
+              {isPresetBooking && bookingCode && bookingCode !== 'FLY-XXXX-XXXX' && (
                 <Link href={`/pay/${encodeURIComponent(bookingCode)}`} className="flex-1">
                   <Button size="lg" className="w-full">
                     {isBn ? 'ইনভয়েস / পেমেন্ট' : 'Invoice / Payment'}
@@ -577,17 +590,15 @@ export default function BookingPage() {
                 </Link>
               )}
             </div>
-            <Button
-              size="lg"
-              className="w-full mt-3"
-              variant="ghost"
-              onClick={() => {
-                setBookingSuccess(false);
-                reset();
-              }}
-            >
-              {t('booking_new')}
-            </Button>
+            <Link href="/booking" className="block">
+              <Button
+                size="lg"
+                className="w-full mt-3"
+                variant="ghost"
+              >
+                {t('booking_new')}
+              </Button>
+            </Link>
           </div>
         </div>
       </main>
@@ -857,8 +868,8 @@ export default function BookingPage() {
 
   // -------- STANDARD booking flow --------
   const isTour = bookingType === 'tour';
-  const maxStep = bookingType === 'visa' ? 4 : isTour ? 3 : 4;
-  const steps = bookingType === 'visa' ? VISA_STEPS : isTour ? TOUR_STEPS : STANDARD_STEPS;
+  const maxStep = bookingType === 'visa' ? 4 : isTour ? (isPresetBooking ? 3 : 2) : (isPresetBooking ? 4 : 3);
+  const steps = bookingType === 'visa' ? VISA_STEPS : isTour ? (isPresetBooking ? TOUR_STEPS : TOUR_STEPS_GENERAL) : (isPresetBooking ? STANDARD_STEPS : STANDARD_STEPS_GENERAL);
   const isLastStep = currentStep === maxStep;
 
   return (
@@ -1116,8 +1127,8 @@ export default function BookingPage() {
                 </div>
               )}
 
-              {/* CHECKOUT (standard step 4 / tour step 3) */}
-              {((currentStep === 4 && bookingType !== 'visa' && bookingType !== 'tour') || (currentStep === 3 && bookingType === 'tour')) && (
+              {/* CHECKOUT (preset bookings only: standard step 4 / tour step 3) */}
+              {isPresetBooking && ((currentStep === 4 && bookingType !== 'visa' && bookingType !== 'tour') || (currentStep === 3 && bookingType === 'tour')) && (
                 <div className="space-y-6">
                   <SectionHeading title={t('booking_step_checkout')} help={t('booking_checkout_help')} />
                   

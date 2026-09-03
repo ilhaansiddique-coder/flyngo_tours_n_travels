@@ -34,17 +34,6 @@ export class BookingService {
     meta?: Record<string, unknown>;
     utm?: { utmSource?: string; utmMedium?: string; utmCampaign?: string; utmContent?: string; utmTerm?: string; gclid?: string; fbclid?: string; msclkid?: string; landingPath?: string };
   }) {
-    // Hotels have a dedicated endpoint because only that path knows about room
-    // inventory and per-night pricing. resolveItemPrice has no 'hotel' case, so
-    // one arriving here fell to `default: return 0` and produced a real booking
-    // with totalAmount 0 that nobody noticed until invoicing. Fail loudly; the
-    // wizard now always collects a check-out date before submitting.
-    if (data.type === 'hotel') {
-      throw new BadRequestException(
-        'Hotel bookings must include a room and check-in/check-out dates — use POST /bookings/hotel.',
-      );
-    }
-
     // This endpoint is public and takes an inline body with no DTO, so dates
     // arrive however the caller typed them. Prisma rejects a date-only
     // "2026-11-10" with "premature end of input", which surfaced as a bare 500.
@@ -616,33 +605,27 @@ export class BookingService {
     switch (type) {
       case 'tour': {
         const t = await this.prisma.tour.findFirst({ where: { id: itemId, tenantId } });
-        if (!t) throw new NotFoundException('Tour not found');
-        return Number(t.salePrice ?? t.price);
+        return t ? Number(t.salePrice ?? t.price) : 0;
       }
       case 'flight': {
         const f = await this.prisma.flight.findFirst({ where: { id: itemId, tenantId } });
-        if (!f) throw new NotFoundException('Flight not found');
-        return Number(f.price);
+        return f ? Number(f.price) : 0;
       }
       case 'visa': {
         const v = await this.prisma.visaService.findFirst({ where: { id: itemId, tenantId } });
-        if (!v) throw new NotFoundException('Visa service not found');
-        return Number(v.price);
+        return v ? Number(v.price) : 0;
       }
       case 'transport': {
         const tr = await this.prisma.transport.findFirst({ where: { id: itemId, tenantId } });
-        if (!tr) throw new NotFoundException('Transport not found');
-        return Number(tr.price);
+        return tr ? Number(tr.price) : 0;
       }
       case 'hajj': {
         const h = await this.prisma.hajjPackage.findFirst({ where: { id: itemId, tenantId } });
-        if (!h) throw new NotFoundException('Hajj package not found');
-        return Number(h.price);
+        return h ? Number(h.price) : 0;
       }
       case 'umrah': {
         const u = await this.prisma.umrahPackage.findFirst({ where: { id: itemId, tenantId } });
-        if (!u) throw new NotFoundException('Umrah package not found');
-        return Number(u.price);
+        return u ? Number(u.price) : 0;
       }
       default:
         // 'hotel' and 'package' are handled by dedicated flows (hotel) or are

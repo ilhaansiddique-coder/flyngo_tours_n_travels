@@ -147,7 +147,7 @@ async function copyGuestCredentials(b: Booking, setCopiedId: (id: string | null)
 
 export default function BookingsPage() {
   const { getBookings, updateBookingStatus, adminCreateBooking, getUsers, getTours, getHotels, getFlights, getVisaServices, getTransport,
-    deleteBooking, getTrashedBookings, restoreBooking, purgeBooking, recordAdminPayment, getPaymentMethods, uploadPaymentReceipt } = useApi();
+    deleteBooking, getTrashedBookings, restoreBooking, purgeBooking, recordAdminPayment, getPaymentMethods, uploadPaymentReceipt, getInvoice } = useApi();
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [meta, setMeta] = useState<BookingsMeta | null>(null);
@@ -249,6 +249,21 @@ export default function BookingsPage() {
       );
     } catch (err: any) {
       setError(err.message || 'Failed to update booking');
+    }
+  };
+
+  // Opens the invoice in a new window and triggers the browser print dialog.
+  const openInvoice = async (invoiceId: string) => {
+    try {
+      const full = (await getInvoice(invoiceId)) as { html?: string };
+      if (!full?.html) return;
+      const w = window.open('', '_blank');
+      if (!w) return;
+      w.document.write(full.html);
+      w.document.close();
+      w.print();
+    } catch (err: any) {
+      setError(err.message || 'Failed to open invoice');
     }
   };
 
@@ -577,13 +592,18 @@ export default function BookingsPage() {
                       <div className="text-[10px] text-on-surface-variant">Paid {formatCurrency(Number(b.paidAmount || 0), b.currency || 'BDT')}</div>
                     )}
                     {b.invoices && b.invoices.length > 0 && (
-                      <div className="flex items-center gap-1 mt-1">
+                      <button
+                        type="button"
+                        onClick={() => openInvoice(b.invoices![0].id)}
+                        className="flex items-center gap-1 mt-1 hover:underline"
+                        title={`Open ${b.invoices[0].invoiceNumber}`}
+                      >
                         <FileText className="w-3 h-3 text-primary" />
                         <span className="text-[10px] font-mono text-primary">{b.invoices[0].invoiceNumber}</span>
                         <span className={`text-[10px] font-semibold ${b.invoices[0].status === 'paid' ? 'text-green-600' : 'text-amber-600'}`}>
                           {b.invoices[0].status === 'paid' ? 'Paid' : 'Issued'}
                         </span>
-                      </div>
+                      </button>
                     )}
                   </td>
                   <td className="p-4">{statusBadge(b.status)}</td>
@@ -842,6 +862,31 @@ export default function BookingsPage() {
                       <Badge variant={p.status === 'completed' ? 'success' : 'warning'}>{p.status}</Badge>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+            {detailTarget.invoices && detailTarget.invoices.length > 0 && (
+              <div>
+                <p className="text-on-surface-variant text-xs mb-1">Invoice</p>
+                <div className="flex items-center justify-between bg-surface-container p-3 rounded-lg">
+                  <div>
+                    <p className="font-mono font-medium">{detailTarget.invoices[0].invoiceNumber}</p>
+                    <p className="text-xs text-on-surface-variant">
+                      {formatCurrency(Number(detailTarget.invoices[0].total), detailTarget.invoices[0].currency)}
+                      {' · '}
+                      <span className={detailTarget.invoices[0].status === 'paid' ? 'text-green-600' : 'text-amber-600'}>
+                        {detailTarget.invoices[0].status === 'paid' ? 'Paid' : 'Issued'}
+                      </span>
+                    </p>
+                  </div>
+                  <Button
+                    size="md"
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => openInvoice(detailTarget.invoices![0].id)}
+                  >
+                    <FileText className="w-4 h-4" /> Open invoice
+                  </Button>
                 </div>
               </div>
             )}

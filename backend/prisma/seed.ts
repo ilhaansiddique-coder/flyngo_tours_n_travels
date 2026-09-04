@@ -61,6 +61,20 @@ async function main() {
   console.log(`✅ Tenant: ${tenant.name} (${TENANT_ID})`);
 
   // ===========================================================================
+  // 1b. TRACKING SETTINGS (WhatsApp, trust badges, etc.)
+  // ===========================================================================
+  const trackingSettings = await prisma.trackingSettings.upsert({
+    where: { tenantId: TENANT_ID },
+    update: {},
+    create: {
+      tenantId: TENANT_ID,
+      whatsappNumber: '+8801322913530',
+      whatsappGreeting: 'Hi! I am interested in your Hajj/Umrah/travel packages. Could you share more details?',
+    },
+  });
+  console.log(`✅ Tracking settings: WhatsApp ${trackingSettings.whatsappNumber}`);
+
+  // ===========================================================================
   // 2. PERMISSIONS
   // ===========================================================================
   const permissionGroups = {

@@ -26,6 +26,13 @@ export class InvoicesController {
     return this.invoices.listAdmin(tenantId, pagination.page, pagination.limit);
   }
 
+  @Post('admin/repair')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
+  @ApiOperation({ summary: 'Generate missing invoices for completed payments (admin)' })
+  repairInvoices(@CurrentTenantId() tenantId: string) {
+    return this.invoices.generateMissingInvoices(tenantId);
+  }
+
   @Patch('admin/:id/void')
   @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Void an invoice (admin)' })

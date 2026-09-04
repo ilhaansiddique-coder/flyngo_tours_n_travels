@@ -440,6 +440,17 @@ export class PaymentsService {
       invoice = await this.applyCompletedPayment(tenantId, existing);
     }
 
+    if (status === 'completed' && !invoice) {
+      const hasInvoice = await this.prisma.invoice.findFirst({ where: { paymentId: id, tenantId } });
+      if (!hasInvoice) {
+        try {
+          invoice = await this.invoices.generateForPayment(id, tenantId);
+        } catch (err: any) {
+          this.logger.warn(`Invoice recovery in updatePaymentStatus failed: ${err.message}`);
+        }
+      }
+    }
+
     if (status === 'refunded' && prev === 'completed') {
       await this.reverseCompletedPayment(tenantId, existing);
     }

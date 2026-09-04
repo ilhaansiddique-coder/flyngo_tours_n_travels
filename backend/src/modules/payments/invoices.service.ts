@@ -111,6 +111,41 @@ export class InvoicesService {
     throw new Error('Failed to create invoice after retries');
   }
 
+  async generateMissingInvoices(tenantId: string) {
+    const completedWithoutInvoice = await this.prisma.payment.findMany({
+      where: {
+        tenantId,
+        status: 'completed',
+        invoice: null,
+      },
+      include: {
+        booking: true,
+        hajjUmrahBooking: true,
+        user: { select: { id: true, fullName: true, email: true, phone: true } },
+      },
+    });
+
+    const results: { paymentId: string; invoiceNumber: string; status: string }[] = [];
+    for (const payment of completedWithoutInvoice) {
+      try {
+        const invoice = await this.generateForPayment(payment.id, tenantId);
+        if (invoice) {
+          results.push({ paymentId: payment.id, invoiceNumber: invoice.invoiceNumber, status: 'created' });
+        }
+      } catch (err: any) {
+        this.logger.warn(`Missing invoice recovery failed for payment ${payment.id}: ${err.message}`);
+        results.push({ paymentId: payment.id, invoiceNumber: '', status: `error: ${err.message}` });
+      }
+    }
+
+    return {
+      scanned: completedWithoutInvoice.length,
+      generated: results.filter((r) => r.status === 'created').length,
+      failed: results.filter((r) => r.status !== 'created').length,
+      results,
+    };
+  }
+
   async listMine(tenantId: string, userId: string) {
     return this.prisma.invoice.findMany({
       where: { tenantId, userId },

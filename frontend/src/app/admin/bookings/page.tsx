@@ -65,7 +65,7 @@ interface User {
   email: string;
 }
 
-const STATUS_FILTERS = ['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'paid'] as const;
+const STATUS_FILTERS = ['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
 const AVAILABLE_STATUSES = [
@@ -74,7 +74,6 @@ const AVAILABLE_STATUSES = [
   { label: 'In Progress', value: 'in_progress' },
   { label: 'Completed', value: 'completed' },
   { label: 'Cancelled', value: 'cancelled' },
-  { label: 'Paid', value: 'paid' },
 ];
 
 // Types the admin can create a booking for (item picker). hajj/umrah are

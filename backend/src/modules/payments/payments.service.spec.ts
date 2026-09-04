@@ -57,6 +57,7 @@ describe('PaymentsService', () => {
 
   const mockNotifications = {
     sendSms: jest.fn().mockResolvedValue({ sent: true, provider: 'log' }),
+    createNotification: jest.fn().mockResolvedValue({ count: 1 }),
   };
 
   const mockLoyalty = {

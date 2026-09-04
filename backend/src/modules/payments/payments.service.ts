@@ -237,7 +237,7 @@ export class PaymentsService {
         },
       });
       if (full) {
-        await this.applyCompletedPayment(payment.tenantId, full);
+        const invoice = await this.applyCompletedPayment(payment.tenantId, full);
 
         // Best-effort confirmation email
         try {
@@ -248,6 +248,10 @@ export class PaymentsService {
               customerName: full.user.fullName || 'Customer',
               bookingCode: code,
               amount: `${full.currency || 'BDT'} ${full.amount}`,
+              invoiceNumber: invoice?.invoiceNumber,
+              invoiceUrl: invoice
+                ? `${process.env.NEXT_PUBLIC_SITE_URL || 'https://flyngo.world'}/pay/${code}`
+                : undefined,
             });
           }
         } catch (err: any) {
@@ -431,8 +435,9 @@ export class PaymentsService {
       },
     });
 
+    let invoice: { id: string; invoiceNumber: string } | null = null;
     if (status === 'completed' && prev !== 'completed') {
-      await this.applyCompletedPayment(tenantId, existing);
+      invoice = await this.applyCompletedPayment(tenantId, existing);
     }
 
     if (status === 'refunded' && prev === 'completed') {
@@ -448,6 +453,10 @@ export class PaymentsService {
             customerName: existing.user.fullName || 'Customer',
             bookingCode: code,
             amount: `${existing.currency || 'BDT'} ${existing.amount}`,
+            invoiceNumber: invoice?.invoiceNumber,
+            invoiceUrl: invoice
+              ? `${process.env.NEXT_PUBLIC_SITE_URL || 'https://flyngo.world'}/pay/${code}`
+              : undefined,
           });
         }
       } catch (err: any) {
@@ -827,7 +836,7 @@ export class PaymentsService {
       booking: any | null;
       hajjUmrahBooking: any | null;
     },
-  ) {
+  ): Promise<{ id: string; invoiceNumber: string } | null> {
     const add = Number(payment.amount);
     if (payment.booking) {
       const paid = Number(payment.booking.paidAmount || 0) + add;
@@ -902,11 +911,26 @@ export class PaymentsService {
       }
     }
 
+    let invoice: { id: string; invoiceNumber: string } | null = null;
     try {
-      await this.invoices.generateForPayment(payment.id, tenantId);
+      invoice = await this.invoices.generateForPayment(payment.id, tenantId);
+      if (invoice && payment.userId) {
+        try {
+          await this.notificationsService.createNotification(tenantId, {
+            userId: payment.userId,
+            type: 'invoice_generated',
+            title: 'Invoice ready',
+            body: `Your invoice ${invoice.invoiceNumber} has been generated. You can view and download it from your dashboard.`,
+            data: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
+          });
+        } catch (err: any) {
+          this.logger.warn(`Invoice notification creation failed: ${err.message}`);
+        }
+      }
     } catch (err: any) {
       this.logger.warn(`Invoice generation failed: ${err.message}`);
     }
+    return invoice;
   }
 
   private async reverseCompletedPayment(

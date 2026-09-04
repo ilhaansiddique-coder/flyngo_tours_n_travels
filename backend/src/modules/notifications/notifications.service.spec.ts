@@ -116,6 +116,27 @@ describe('NotificationsService', () => {
       expect(html).toContain('300');
     });
 
+    it('should mention the generated invoice in payment-receipt template', async () => {
+      await service.sendEmail(
+        'test@example.com',
+        'Payment Received',
+        'payment-receipt',
+        {
+          fullName: 'Jane',
+          bookingCode: 'FLY-002',
+          amount: '300',
+          currency: 'USD',
+          invoiceNumber: 'INV-20260904-AB12',
+          invoiceUrl: 'https://flyngo.world/pay/FLY-002',
+        },
+      );
+
+      const html = mockSendMail.mock.calls[0][0].html;
+      expect(html).toContain('INV-20260904-AB12');
+      expect(html).toContain('has been generated');
+      expect(html).toContain('https://flyngo.world/pay/FLY-002');
+    });
+
     it('should render booking-cancelled template', async () => {
       await service.sendEmail(
         'test@example.com',

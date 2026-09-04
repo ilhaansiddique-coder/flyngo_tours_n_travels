@@ -203,6 +203,10 @@ export class NotificationsService {
         break;
       case 'payment-receipt':
         lines.push(`Payment of ${data.amount} ${data.currency ?? 'BDT'} received for booking ${data.bookingCode ?? ''}.`);
+        if (data.invoiceNumber) {
+          lines.push('Your invoice ' + String(data.invoiceNumber) + ' has been generated.');
+          if (data.invoiceUrl) lines.push('View & print your invoice: ' + data.invoiceUrl);
+        }
         break;
       case 'invoice':
         lines.push(`Your invoice ${data.invoiceNumber ?? ''} is ready.`);

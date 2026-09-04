@@ -20,14 +20,14 @@ export class InvoicesController {
   }
 
   @Get('admin/all')
-  @Roles('admin', 'super_admin')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'List all invoices (admin)' })
   adminAll(@CurrentTenantId() tenantId: string, @Query() pagination: PaginationDto) {
     return this.invoices.listAdmin(tenantId, pagination.page, pagination.limit);
   }
 
   @Patch('admin/:id/void')
-  @Roles('admin', 'super_admin')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Void an invoice (admin)' })
   voidInvoice(@Param('id') id: string, @CurrentTenantId() tenantId: string) {
     return this.invoices.voidInvoice(id, tenantId);
@@ -42,7 +42,7 @@ export class InvoicesController {
     @CurrentUser('roleCode') roleCode?: string,
     @Body() body?: { email?: string },
   ) {
-    const isAdmin = roleCode === 'admin' || roleCode === 'super_admin';
+    const isAdmin = roleCode === 'admin' || roleCode === 'super_admin' || roleCode === 'manager' || roleCode === 'moderator';
     return this.invoices.sendByEmail(id, tenantId, isAdmin ? body?.email : undefined, isAdmin ? undefined : userId);
   }
 
@@ -55,7 +55,7 @@ export class InvoicesController {
     @CurrentUser('id') userId: string,
     @Res() res: Response,
   ) {
-    const isAdmin = roleCode === 'admin' || roleCode === 'super_admin';
+    const isAdmin = roleCode === 'admin' || roleCode === 'super_admin' || roleCode === 'manager' || roleCode === 'moderator';
     const pdfAndInfo = await this.invoices.getPdf(id, tenantId, isAdmin ? undefined : userId);
     const pdf = pdfAndInfo.buffer;
     res.setHeader('Content-Type', 'application/pdf');
@@ -74,7 +74,7 @@ export class InvoicesController {
     @CurrentUser('id') userId: string,
     @CurrentUser('roleCode') roleCode?: string,
   ) {
-    const isAdmin = roleCode === 'admin' || roleCode === 'super_admin';
+    const isAdmin = roleCode === 'admin' || roleCode === 'super_admin' || roleCode === 'manager' || roleCode === 'moderator';
     return this.invoices.getOne(id, tenantId, isAdmin ? undefined : userId);
   }
 }

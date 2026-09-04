@@ -110,7 +110,7 @@ export class PaymentsController {
 
   @Post('admin/record')
   @ApiBearerAuth()
-  @Roles('admin', 'super_admin')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Record a received payment against a booking (admin)' })
   record(
     @CurrentTenantId() tenantId: string,
@@ -122,7 +122,7 @@ export class PaymentsController {
 
   @Get('admin/all')
   @ApiBearerAuth()
-  @Roles('admin', 'super_admin')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'List all payments (admin)' })
   async listAll(
     @CurrentTenantId() tenantId: string,
@@ -135,7 +135,7 @@ export class PaymentsController {
 
   @Get('admin/stats')
   @ApiBearerAuth()
-  @Roles('admin', 'super_admin')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Get payment statistics (admin)' })
   async stats(@CurrentTenantId() tenantId: string) {
     return this.paymentsService.getPaymentStats(tenantId);
@@ -143,7 +143,7 @@ export class PaymentsController {
 
   @Patch('admin/:id/status')
   @ApiBearerAuth()
-  @Roles('admin', 'super_admin')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Update payment status (admin)' })
   async updateStatus(
     @Param('id') id: string,

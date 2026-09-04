@@ -15,6 +15,7 @@ import {
 import { useState, useEffect, useRef } from 'react';
 import { Check, Loader2, Sparkles, MapPin, Wallet, Users as UsersIcon, Heart, ArrowRight, ArrowLeft, AlertCircle, Compass, Building2, Plane, Briefcase, Banknote, Building, Smartphone, Copy, Upload, X, FileText, Info } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLocale } from '@/contexts/locale-context';
 import { loadContact, saveContact } from '@/lib/contact-persist';
 
@@ -260,6 +261,7 @@ export default function BookingPage() {
   const { createBooking, getPaymentMethods, uploadPaymentReceipt, submitPaymentConfirmation, uploadMedia, getVisaServices } = useApi();
   const { t, locale } = useLocale();
   const isBn = locale === 'bn';
+  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingCode, setBookingCode] = useState('');
@@ -371,6 +373,12 @@ export default function BookingPage() {
       mounted = false;
     };
   }, [isPresetBooking, bookingType, selectedItem, getVisaServices, setTotalAmount]);
+
+  useEffect(() => {
+    if (!bookingSuccess) return;
+    const timer = setTimeout(() => router.push('/'), 5000);
+    return () => clearTimeout(timer);
+  }, [bookingSuccess, router]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard?.writeText(text).catch(() => {});

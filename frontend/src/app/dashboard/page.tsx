@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useApi } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
+import { BOOKING_STATUSES } from '@/lib/booking-statuses';
 import {
   User, Mail, Phone, Calendar, MapPin, Heart, Receipt, CreditCard,
   CheckCircle2, Clock, XCircle, X, LogOut, Edit3, FileText, Plane, Building2, Compass,
@@ -72,6 +73,7 @@ const STATUS_STYLES: Record<string, { label: string; cls: string; icon: typeof C
   in_progress:{ label: 'In progress',cls: 'text-purple-600 bg-purple-500/10 border-purple-500/30', icon: Plane },
   completed:  { label: 'Completed',  cls: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/30', icon: CheckCircle2 },
   cancelled:  { label: 'Cancelled',  cls: 'text-red-600 bg-red-500/10 border-red-500/30',         icon: XCircle },
+  paid:       { label: 'Paid',       cls: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/30', icon: CheckCircle2 },
 };
 
 const TYPE_ICONS: Record<string, typeof Compass> = {

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useApi } from '@/hooks/use-api';
 import { formatDate, formatCurrency } from '@/lib/utils';
+import { HAJJ_UMRAH_BOOKING_STATUSES, HAJJ_UMRAH_STATUS_VARIANT } from '@/lib/booking-statuses';
 import { Moon, Search, Phone, Mail, Users, Calendar, Plane, BadgeCheck } from 'lucide-react';
 
 interface Pilgrim {
@@ -38,13 +39,10 @@ interface HUBooking {
   customerEmail?: string | null;
 }
 
-const STATUSES = [
-  { value: 'pending', label: 'Pending', variant: 'default' as const },
-  { value: 'confirmed', label: 'Confirmed', variant: 'info' as const },
-  { value: 'paid', label: 'Paid', variant: 'cyan' as const },
-  { value: 'completed', label: 'Completed', variant: 'success' as const },
-  { value: 'cancelled', label: 'Cancelled', variant: 'danger' as const },
-];
+const STATUSES = HAJJ_UMRAH_BOOKING_STATUSES.map((s) => ({
+  ...s,
+  variant: HAJJ_UMRAH_STATUS_VARIANT[s.value],
+}));
 
 export default function AdminHajjUmrahBookingsPage() {
   const { getHajjUmrahBookings, updateHajjUmrahBookingStatus } = useApi();

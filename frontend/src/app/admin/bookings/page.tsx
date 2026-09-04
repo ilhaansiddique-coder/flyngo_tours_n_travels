@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog, Modal, FormField, FormInput, FormSelect, FormTextarea } from '@/components/admin/ui';
 import { useApi } from '@/hooks/use-api';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { BOOKING_STATUSES, STATUS_BADGE_VARIANT } from '@/lib/booking-statuses';
 import { Search, Plus, Eye, Trash2, RotateCcw, Copy, Check, Banknote, Smartphone, Building, Upload, X, FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -66,16 +67,10 @@ interface User {
   email: string;
 }
 
-const STATUS_FILTERS = ['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'] as const;
+const STATUS_FILTERS = ['all', ...BOOKING_STATUSES.map((s) => s.value)] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
-const AVAILABLE_STATUSES = [
-  { label: 'Pending', value: 'pending' },
-  { label: 'Confirmed', value: 'confirmed' },
-  { label: 'In Progress', value: 'in_progress' },
-  { label: 'Completed', value: 'completed' },
-  { label: 'Cancelled', value: 'cancelled' },
-];
+const AVAILABLE_STATUSES = BOOKING_STATUSES;
 
 // Types the admin can create a booking for (item picker). hajj/umrah are
 // created through their own package flow, so they're intentionally excluded.
@@ -103,14 +98,7 @@ const TYPE_FILTERS = [
 type TypeFilter = (typeof TYPE_FILTERS)[number]['value'];
 
 function statusBadge(status: string) {
-  const map: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'default'> = {
-    confirmed: 'success',
-    pending: 'warning',
-    in_progress: 'info',
-    completed: 'info',
-    cancelled: 'danger',
-  };
-  return <Badge variant={map[status] || 'default'}>{status.replace('_', ' ')}</Badge>;
+  return <Badge variant={STATUS_BADGE_VARIANT[status] || 'default'}>{status.replace('_', ' ')}</Badge>;
 }
 
 const GUEST_TEMP_PASSWORD = '12345678';

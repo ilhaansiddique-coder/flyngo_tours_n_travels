@@ -3,8 +3,13 @@ import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PDFDocument, PDFImage, StandardFonts, rgb } from 'pdf-lib';
 import { randomBytes } from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 
 type LineItem = { description: string; quantity: number; unitPrice: number; amount: number };
+
+/** Bundled fallback brand logo used when the tenant has no logoUrl configured. */
+const DEFAULT_LOGO_PATH = path.resolve(__dirname, '../../../assets/flyngo_logo.png');
 
 @Injectable()
 export class InvoicesService {
@@ -216,7 +221,6 @@ export class InvoicesService {
     if (!invoice) throw new NotFoundException('Invoice not found');
     const settings = await this.prisma.tenantSettings.findUnique({ where: { tenantId } });
     const company = settings?.companyName || 'Flyngo Tours & Travels';
-    const logoUrl = this.absoluteUrl(settings?.logoUrl);
 
     const doc = await PDFDocument.create();
     const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -230,30 +234,26 @@ export class InvoicesService {
 
     // Load and embed the company logo (if any) so it can be drawn in the
     // header bar. Graceful: any failure just means the logo is omitted.
+    const logoSource = await this.loadLogo(settings?.logoUrl);
     let logoImage: { img: PDFImage; width: number; height: number } | undefined;
-    if (logoUrl) {
+    if (logoSource) {
       try {
-        const res = await fetch(logoUrl, { signal: AbortSignal.timeout(5000) });
-        if (res.ok) {
-          const buf = Buffer.from(await res.arrayBuffer());
-          const ctype = (res.headers.get('content-type') || '').toLowerCase();
-          const img = ctype.includes('svg')
-            ? undefined
-            : ctype.includes('png')
-              ? await doc.embedPng(buf)
-              : await doc.embedJpg(buf);
-          if (img) {
-            const maxH = 40;
-            const ratio = img.height / img.width;
-            logoImage = {
-              img,
-              width: maxH / ratio,
-              height: maxH,
-            };
-          }
+        const img = logoSource.mime === 'image/svg+xml'
+          ? undefined
+          : logoSource.mime.includes('png')
+            ? await doc.embedPng(logoSource.buffer)
+            : await doc.embedJpg(logoSource.buffer);
+        if (img) {
+          const maxH = 40;
+          const ratio = img.height / img.width;
+          logoImage = {
+            img,
+            width: maxH / ratio,
+            height: maxH,
+          };
         }
       } catch (err: any) {
-        this.logger.warn(`Invoice logo fetch failed: ${err.message}`);
+        this.logger.warn(`Invoice logo embed failed: ${err.message}`);
       }
     }
 
@@ -296,16 +296,15 @@ export class InvoicesService {
       }
     };
 
-    // Header bar (blue) with optional logo on the left, company name, invoice label.
+    // Header bar (blue): company logo replaces the company name text when available.
     currentPage.drawRectangle({ x: 0, y: pageHeight - 70, width: pageWidth, height: 70, color: blue });
-    let companyX = margin;
     if (logoImage) {
       const logoY = pageHeight - 55;
       currentPage.drawImage(logoImage.img, { x: margin, y: logoY, width: logoImage.width, height: logoImage.height });
-      companyX = margin + logoImage.width + 16;
+    } else {
+      const companyLines = wrapText(company, pageWidth - 2 * margin - 100, 22, bold);
+      currentPage.drawText(companyLines[0] || company, { x: margin, y: pageHeight - 44, size: 22, font: bold, color: rgb(1, 1, 1) });
     }
-    const companyLines = wrapText(company, pageWidth - 2 * margin - 100 - (companyX - margin), 22, bold);
-    currentPage.drawText(companyLines[0] || company, { x: companyX, y: pageHeight - 44, size: 22, font: bold, color: rgb(1, 1, 1) });
     currentPage.drawText('INVOICE', { x: pageWidth - margin - 70, y: pageHeight - 44, size: 18, font: bold, color: rgb(1, 1, 1) });
 
     y = pageHeight - 100;
@@ -531,7 +530,10 @@ export class InvoicesService {
     const address = settings?.companyAddress || '';
     const phone = settings?.companyPhone || '';
     const email = settings?.companyEmail || '';
-    const logo = this.absoluteUrl(settings?.logoUrl);
+    const logoSource = await this.loadLogo(settings?.logoUrl);
+    const logoDataUri = logoSource
+      ? `data:${logoSource.mime};base64,${logoSource.buffer.toString('base64')}`
+      : '';
     const items: LineItem[] = Array.isArray(invoice.lineItems) ? invoice.lineItems : [];
     const bookingCode = invoice.booking?.bookingCode || invoice.hajjUmrahBooking?.bookingCode || '—';
     const service = invoice.booking?.bookingType || invoice.hajjUmrahBooking?.kind || 'booking';
@@ -561,8 +563,7 @@ export class InvoicesService {
 <body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
     <div>
-      ${logo ? `<div style="margin-bottom:8px"><img src="${this.esc(logo)}" alt="${this.esc(company)}" style="max-height:56px;max-width:180px;display:block" /></div>` : ''}
-      <h1>${this.esc(company)}</h1>
+      ${logoDataUri ? `<img src="${logoDataUri}" alt="${this.esc(company)}" style="max-height:56px;max-width:180px;display:block" />` : `<h1>${this.esc(company)}</h1>`}
       <div class="muted">${this.esc(address)}</div>
       <div class="muted">${this.esc([phone, email].filter(Boolean).join(' · '))}</div>
     </div>
@@ -624,6 +625,34 @@ export class InvoicesService {
       return `${process.env.NEXT_PUBLIC_SITE_URL || 'https://flyngo.world'}${value}`;
     }
     return value;
+  }
+
+  /**
+   * Load the logo image for invoices. Prefers the tenant-configured logoUrl;
+   * falls back to the bundled brand logo so invoices always carry the logo.
+   * Returns null if nothing can be loaded.
+   */
+  private async loadLogo(logoUrl?: string | null): Promise<{ buffer: Buffer; mime: string } | null> {
+    const absolute = this.absoluteUrl(logoUrl);
+    if (absolute) {
+      try {
+        const res = await fetch(absolute, { signal: AbortSignal.timeout(5000) });
+        if (res.ok) {
+          const mime = (res.headers.get('content-type') || '').toLowerCase();
+          if (mime) return { buffer: Buffer.from(await res.arrayBuffer()), mime };
+        }
+      } catch (err: any) {
+        this.logger.warn(`Invoice logo fetch failed: ${err.message}`);
+      }
+    }
+    try {
+      if (fs.existsSync(DEFAULT_LOGO_PATH)) {
+        return { buffer: fs.readFileSync(DEFAULT_LOGO_PATH), mime: 'image/png' };
+      }
+    } catch (err: any) {
+      this.logger.warn(`Invoice default logo unavailable: ${err.message}`);
+    }
+    return null;
   }
 
   private async resolveItemTitle(tenantId: string, type: string, itemId: string, fallback?: string | null) {

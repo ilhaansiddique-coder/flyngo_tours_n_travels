@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { randomBytes } from 'crypto';
 
 type LineItem = { description: string; quantity: number; unitPrice: number; amount: number };
@@ -8,7 +9,10 @@ type LineItem = { description: string; quantity: number; unitPrice: number; amou
 export class InvoicesService {
   private readonly logger = new Logger(InvoicesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async generateForPayment(paymentId: string, tenantId: string) {
     const existing = await this.prisma.invoice.findFirst({ where: { paymentId, tenantId } });
@@ -139,6 +143,44 @@ export class InvoicesService {
     const invoice = await this.prisma.invoice.findFirst({ where: { id, tenantId } });
     if (!invoice) throw new NotFoundException('Invoice not found');
     return this.prisma.invoice.update({ where: { id }, data: { status: 'void' } });
+  }
+
+  async sendByEmail(id: string, tenantId: string, targetEmail?: string) {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { id, tenantId },
+      include: {
+        user: { select: { id: true, fullName: true, email: true, phone: true } },
+        payment: true,
+        booking: true,
+        hajjUmrahBooking: true,
+      },
+    });
+    if (!invoice) throw new NotFoundException('Invoice not found');
+
+    const email = targetEmail || invoice.user?.email;
+    if (!email) throw new NotFoundException('No email address found for this user');
+
+    const html = await this.renderHtml(invoice);
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://flyngo.world';
+    const bookingCode = invoice.booking?.bookingCode || invoice.hajjUmrahBooking?.bookingCode || '';
+    const payUrl = bookingCode ? `${siteUrl}/pay/${bookingCode}` : siteUrl;
+
+    const wrappedHtml = `
+      <div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+        <p style="color:#333;font-size:14px">Hi ${invoice.user?.fullName || 'there'},</p>
+        <p style="color:#333;font-size:14px">Please find your invoice <strong>${invoice.invoiceNumber}</strong> below.</p>
+        <div style="margin:20px 0;padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#f8fafc">
+          <p style="margin:0;font-size:13px;color:#666">Invoice ${invoice.invoiceNumber}</p>
+          <p style="margin:4px 0 0;font-size:20px;font-weight:700">${invoice.currency} ${Number(invoice.total).toLocaleString('en-BD', { minimumFractionDigits: 2 })}</p>
+        </div>
+        <p style="font-size:13px;color:#666">You can view, print, or download your invoice anytime from your dashboard.</p>
+        <a href="${payUrl}" style="display:inline-block;padding:10px 24px;background:linear-gradient(90deg,#1881FF,#F36523);color:#fff;text-decoration:none;border-radius:12px;font-weight:600;font-size:14px;margin:12px 0">View Invoice</a>
+        ${html}
+        <p style="color:#999;font-size:12px;margin-top:32px">Thank you for travelling with Flyngo.</p>
+      </div>`;
+
+    await this.notifications.sendRawHtmlEmail(email, `Invoice ${invoice.invoiceNumber} — Flyngo`, wrappedHtml);
+    return { sent: true, email };
   }
 
   async renderHtml(invoice: {

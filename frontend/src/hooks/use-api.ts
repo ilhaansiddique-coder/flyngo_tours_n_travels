@@ -301,6 +301,7 @@ export function useApi() {
     api.delete(`/payments/admin/mobile-wallets/${id}`, auth()), [auth]);
   const getMyInvoices = useCallback(async () => api.get('/invoices/my', auth()), [auth]);
   const getInvoice = useCallback(async (id: string) => api.get(`/invoices/${id}`, auth()), [auth]);
+  const sendInvoiceEmail = useCallback(async (id: string) => api.post(`/invoices/${id}/send-email`, {}, auth()), [auth]);
   const getAdminInvoices = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/invoices/admin/all' + qs, auth());
@@ -546,7 +547,7 @@ export function useApi() {
     getPaymentMethods, getBookingPayment, uploadPaymentReceipt, submitPaymentConfirmation,
     getBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount,
     getMobileWallets, createMobileWallet, updateMobileWallet, deleteMobileWallet,
-    getMyInvoices, getInvoice, getAdminInvoices,
+    getMyInvoices, getInvoice, sendInvoiceEmail, getAdminInvoices,
     getTransport, createTransport, updateTransport, deleteTransport,
     getHajjPackages, createHajjPackage, updateHajjPackage, deleteHajjPackage,
     getUmrahPackages, createUmrahPackage, updateUmrahPackage, deleteUmrahPackage,

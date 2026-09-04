@@ -7,6 +7,7 @@ import { useApi } from '@/hooks/use-api';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { InvoiceShareMenu } from '@/components/shared/invoice-share-menu';
 import {
   Check, Copy, Loader2, AlertCircle, Building, Smartphone, Banknote,
   Upload, X, Image as ImageIcon,
@@ -88,7 +89,7 @@ export default function PayPage() {
   const { t, locale } = useLocale();
   const isBn = locale === 'bn';
   const {
-    getPaymentMethods, getBookingPayment, uploadPaymentReceipt, submitPaymentConfirmation, getInvoice,
+    getPaymentMethods, getBookingPayment, uploadPaymentReceipt, submitPaymentConfirmation, getInvoice, sendInvoiceEmail,
   } = useApi();
 
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -416,9 +417,19 @@ export default function PayPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold uppercase">{p.status}</span>
                   {p.invoice && (
-                    <Button variant="ghost" size="sm" onClick={() => printInvoice(p.invoice!.id)}>
-                      {p.invoice.invoiceNumber}
-                    </Button>
+                    <>
+                      <Button variant="ghost" size="sm" onClick={() => printInvoice(p.invoice!.id)}>
+                        {p.invoice.invoiceNumber}
+                      </Button>
+                      <InvoiceShareMenu
+                        invoiceId={p.invoice.id}
+                        invoiceNumber={p.invoice.invoiceNumber}
+                        bookingCode={summary?.bookingCode}
+                        currency={summary?.currency}
+                        total={Number(p.amount)}
+                        onSendEmail={sendInvoiceEmail}
+                      />
+                    </>
                   )}
                 </div>
               </div>

@@ -12,6 +12,7 @@ import {
   Gift, Trophy, Upload, Download, Trash2, Camera, Image as ImageIcon, Loader2,
 } from 'lucide-react';
 import TierBadge from '@/components/ui/tier-badge';
+import { InvoiceShareMenu } from '@/components/shared/invoice-share-menu';
 import {
   COUNTRY_DIALS,
   DEFAULT_COUNTRY_CODE,
@@ -140,7 +141,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, logout, hasHydrated } = useAuthStore();
   const {
-    getMyBookings, getMyProfile, getMyPayments, getMyInvoices, getInvoice, cancelMyBooking, updateMyProfile, getLoyaltyOverview,
+    getMyBookings, getMyProfile, getMyPayments, getMyInvoices, getInvoice, sendInvoiceEmail, cancelMyBooking, updateMyProfile, getLoyaltyOverview,
     uploadMyAvatar, getMyDocuments, uploadMyDocument, deleteMyDocument,
   } = useApi();
   const [tab, setTab] = useState<Tab>('bookings');
@@ -538,20 +539,30 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border">{inv.status}</span>
-                      <button
-                        className="block mt-2 text-[10px] text-brand-600 hover:underline"
-                        onClick={async () => {
-                          const full = (await getInvoice(inv.id)) as { html?: string };
-                          if (!full?.html) return;
-                          const w = window.open('', '_blank');
-                          if (!w) return;
-                          w.document.write(full.html);
-                          w.document.close();
-                          w.print();
-                        }}
-                      >
-                        Print invoice
-                      </button>
+                      <div className="mt-2 flex items-center justify-end gap-3">
+                        <button
+                          className="text-[10px] text-brand-600 hover:underline"
+                          onClick={async () => {
+                            const full = (await getInvoice(inv.id)) as { html?: string };
+                            if (!full?.html) return;
+                            const w = window.open('', '_blank');
+                            if (!w) return;
+                            w.document.write(full.html);
+                            w.document.close();
+                            w.print();
+                          }}
+                        >
+                          Print
+                        </button>
+                        <InvoiceShareMenu
+                          invoiceId={inv.id}
+                          invoiceNumber={inv.invoiceNumber}
+                          bookingCode={inv.booking?.bookingCode}
+                          currency={inv.currency}
+                          total={Number(inv.total)}
+                          onSendEmail={sendInvoiceEmail}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

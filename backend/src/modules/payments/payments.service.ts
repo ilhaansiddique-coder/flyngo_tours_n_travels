@@ -219,10 +219,59 @@ export class PaymentsService {
       this.logger.warn(`No payment found for transactionId=${transactionId}`);
       return;
     }
+    const prev = payment.status;
     await this.prisma.payment.update({
       where: { id: payment.id },
       data: { status, ...extra },
     });
+
+    // When a webhook completes a payment, run the same side-effects as the
+    // admin path: update booking paidAmount, generate invoice, send email/SMS.
+    if (status === 'completed' && prev !== 'completed') {
+      const full = await this.prisma.payment.findFirst({
+        where: { id: payment.id },
+        include: {
+          booking: true,
+          hajjUmrahBooking: true,
+          user: { select: { id: true, fullName: true, email: true, phone: true } },
+        },
+      });
+      if (full) {
+        await this.applyCompletedPayment(payment.tenantId, full);
+
+        // Best-effort confirmation email
+        try {
+          const email = full.user?.email;
+          const code = full.booking?.bookingCode ?? full.hajjUmrahBooking?.bookingCode ?? full.id;
+          if (email && full.user) {
+            await this.emailQueueService.addEmail(email, `Payment Received — ${code}`, 'payment-receipt', {
+              customerName: full.user.fullName || 'Customer',
+              bookingCode: code,
+              amount: `${full.currency || 'BDT'} ${full.amount}`,
+            });
+          }
+        } catch (err: any) {
+          this.logger.warn(`Webhook payment confirmation email failed: ${err.message}`);
+        }
+
+        // Best-effort confirmation SMS
+        try {
+          const phone = full.booking?.customerPhone || full.user?.phone;
+          if (phone) {
+            const code = full.booking?.bookingCode ?? full.id;
+            const amount = full.booking
+              ? `${full.booking.currency || 'BDT'} ${full.booking.totalAmount}`
+              : `${full.currency || 'BDT'} ${full.amount}`;
+            await this.notificationsService.sendSms(
+              phone,
+              `Payment received for your ${full.booking?.bookingType || 'Flyngo'} booking ${code}. Amount: ${amount}. Thank you for choosing Flyngo.`,
+            );
+          }
+        } catch (err: any) {
+          this.logger.warn(`Webhook payment receipt SMS failed: ${err.message}`);
+        }
+      }
+    }
   }
 
   /**

@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Param, Query, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { InvoicesService } from './invoices.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -30,6 +30,19 @@ export class InvoicesController {
   @ApiOperation({ summary: 'Void an invoice (admin)' })
   voidInvoice(@Param('id') id: string, @CurrentTenantId() tenantId: string) {
     return this.invoices.voidInvoice(id, tenantId);
+  }
+
+  @Post(':id/send-email')
+  @ApiOperation({ summary: 'Send invoice to email' })
+  async sendEmail(
+    @Param('id') id: string,
+    @CurrentTenantId() tenantId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('roleCode') roleCode?: string,
+    @Body() body?: { email?: string },
+  ) {
+    const isAdmin = roleCode === 'admin' || roleCode === 'super_admin';
+    return this.invoices.sendByEmail(id, tenantId, isAdmin ? body?.email : undefined);
   }
 
   @Get(':id')

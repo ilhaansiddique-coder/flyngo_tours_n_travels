@@ -4,7 +4,7 @@ import * as admin from 'firebase-admin';
 import { PrismaService } from '../../database/prisma.service';
 import { ConfigService } from '../../config/config.service';
 
-export type EmailTemplate = 'booking-confirmation' | 'password-reset' | 'welcome' | 'booking-cancelled' | 'payment-receipt' | 'referral_signup' | 'custom';
+export type EmailTemplate = 'booking-confirmation' | 'password-reset' | 'welcome' | 'booking-cancelled' | 'payment-receipt' | 'invoice' | 'referral_signup' | 'custom';
 
 // bulkSMSbd.net — a Bangladeshi SMS gateway. Submitting an SMS returns one of
 // their codes (https://bulksmsbd.net); 202 means the message was handed to the
@@ -113,6 +113,52 @@ export class NotificationsService {
     return { sent: true, provider: 'log' };
   }
 
+  /**
+   * Send an email with arbitrary HTML body (used for invoice HTML).
+   */
+  async sendRawHtmlEmail(
+    to: string,
+    subject: string,
+    html: string,
+  ): Promise<{ sent: boolean; provider: 'resend' | 'smtp' | 'log'; id?: string }> {
+    const from =
+      this.configService.getOrNull('EMAIL_FROM') ||
+      this.configService.getOrNull('SMTP_FROM') ||
+      'noreply@flyngo.world';
+    const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
+    const resendKey = this.configService.getOrNull('RESEND_API_KEY');
+    if (resendKey) {
+      try {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ from, to, subject, html, text }),
+        });
+        if (!res.ok) throw new Error(`Resend HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+        const json: any = await res.json().catch(() => ({}));
+        this.logger.log(`Raw HTML email sent via Resend to ${to} (id=${json?.id ?? '?'})`);
+        return { sent: true, provider: 'resend', id: json?.id };
+      } catch (err) {
+        this.logger.error(`Resend raw email to ${to} failed: ${(err as Error).message}`);
+      }
+    }
+
+    if (this.mailer) {
+      try {
+        const info = await this.mailer.sendMail({ from, to, subject, html, text });
+        this.logger.log(`Raw HTML email sent to ${to} (messageId=${info.messageId})`);
+        return { sent: true, provider: 'smtp', id: info.messageId };
+      } catch (err) {
+        this.logger.error(`SMTP raw email to ${to} failed: ${(err as Error).message}`);
+        throw err;
+      }
+    }
+
+    this.logger.log(`[email:log] to=${to} subject="${subject}" (raw HTML)`);
+    return { sent: true, provider: 'log' };
+  }
+
   private renderEmailTemplate(template: EmailTemplate, subject: string, data: Record<string, any>) {
     const brand = 'Flyngo';
     const greeting = data.fullName ? `Hi ${data.fullName},` : 'Hi,';
@@ -135,6 +181,11 @@ export class NotificationsService {
         break;
       case 'payment-receipt':
         lines.push(`Payment of ${data.amount} ${data.currency ?? 'BDT'} received for booking ${data.bookingCode ?? ''}.`);
+        break;
+      case 'invoice':
+        lines.push(`Your invoice ${data.invoiceNumber ?? ''} is ready.`);
+        if (data.amount) lines.push(`Amount: ${data.amount}`);
+        if (data.viewUrl) lines.push(`View & print: ${data.viewUrl}`);
         break;
       case 'custom':
       default:

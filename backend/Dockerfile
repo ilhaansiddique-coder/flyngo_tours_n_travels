@@ -51,6 +51,7 @@ RUN npm prune --omit=dev
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/assets ./assets
 COPY docker-entrypoint.sh ./
 
 RUN chmod +x docker-entrypoint.sh && \

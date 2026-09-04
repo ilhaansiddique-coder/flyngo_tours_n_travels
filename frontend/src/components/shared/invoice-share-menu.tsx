@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Share2, MessageCircle, Mail, Facebook, Check, Send, Loader2 } from 'lucide-react';
+import { Share2, MessageCircle, Mail, Facebook, Check, Send, Loader2, FileDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface InvoiceShareMenuProps {
@@ -11,6 +11,7 @@ interface InvoiceShareMenuProps {
   currency?: string;
   total?: number;
   onSendEmail?: (id: string) => Promise<unknown>;
+  onDownloadPdf?: (id: string) => Promise<void>;
   className?: string;
 }
 
@@ -21,10 +22,14 @@ export function InvoiceShareMenu({
   currency = 'BDT',
   total = 0,
   onSendEmail,
+  onDownloadPdf,
   className,
 }: InvoiceShareMenuProps) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
   const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
@@ -48,14 +53,31 @@ export function InvoiceShareMenu({
   const handleSendEmail = async () => {
     if (!onSendEmail) return;
     setSending(true);
+    setSendError(null);
     try {
       await onSendEmail(invoiceId);
       setSent(true);
       setTimeout(() => setSent(false), 3000);
-    } catch {
-      // silent
+    } catch (err: any) {
+      setSendError(err?.message || 'Failed to send email');
+      setTimeout(() => setSendError(null), 5000);
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!onDownloadPdf) return;
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      await onDownloadPdf(invoiceId);
+    } catch (err: any) {
+      setDownloadError(err?.message || 'Failed to download PDF');
+      setTimeout(() => setDownloadError(null), 5000);
+    } finally {
+      setDownloading(false);
+      setOpen(false);
     }
   };
 
@@ -106,6 +128,25 @@ export function InvoiceShareMenu({
               Email (link)
             </button>
 
+            {onDownloadPdf && (
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={downloading}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container/70 transition-colors disabled:opacity-50"
+              >
+                {downloading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileDown className="w-4 h-4 text-on-surface-variant" />
+                )}
+                Download PDF
+              </button>
+            )}
+            {downloadError && (
+              <div className="px-3 py-1 text-xs text-red-500">{downloadError}</div>
+            )}
+
             {onSendEmail && (
               <>
                 <div className="border-t border-outline-variant/60 my-1" />
@@ -124,6 +165,9 @@ export function InvoiceShareMenu({
                   )}
                   {sent ? 'Sent!' : 'Send to my email'}
                 </button>
+                {sendError && (
+                  <div className="px-3 py-1 text-xs text-red-500">{sendError}</div>
+                )}
               </>
             )}
           </div>

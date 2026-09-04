@@ -302,6 +302,14 @@ export function useApi() {
   const getMyInvoices = useCallback(async () => api.get('/invoices/my', auth()), [auth]);
   const getInvoice = useCallback(async (id: string) => api.get(`/invoices/${id}`, auth()), [auth]);
   const sendInvoiceEmail = useCallback(async (id: string) => api.post(`/invoices/${id}/send-email`, {}, auth()), [auth]);
+  const downloadInvoicePdf = useCallback(async (id: string) => {
+    const { accessToken } = useAuthStore.getState();
+    const headers: Record<string, string> = {};
+    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+    const res = await fetch(`/api/v1/invoices/${id}/pdf`, { headers });
+    if (!res.ok) throw new Error('Could not download invoice');
+    return await res.blob();
+  }, []);
   const getAdminInvoices = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/invoices/admin/all' + qs, auth());
@@ -547,7 +555,7 @@ export function useApi() {
     getPaymentMethods, getBookingPayment, uploadPaymentReceipt, submitPaymentConfirmation,
     getBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount,
     getMobileWallets, createMobileWallet, updateMobileWallet, deleteMobileWallet,
-    getMyInvoices, getInvoice, sendInvoiceEmail, getAdminInvoices,
+    getMyInvoices, getInvoice, sendInvoiceEmail, downloadInvoicePdf, getAdminInvoices,
     getTransport, createTransport, updateTransport, deleteTransport,
     getHajjPackages, createHajjPackage, updateHajjPackage, deleteHajjPackage,
     getUmrahPackages, createUmrahPackage, updateUmrahPackage, deleteUmrahPackage,

@@ -89,7 +89,7 @@ export default function PayPage() {
   const { t, locale } = useLocale();
   const isBn = locale === 'bn';
   const {
-    getPaymentMethods, getBookingPayment, uploadPaymentReceipt, submitPaymentConfirmation, getInvoice, sendInvoiceEmail,
+    getPaymentMethods, getBookingPayment, uploadPaymentReceipt, submitPaymentConfirmation, getInvoice, sendInvoiceEmail, downloadInvoicePdf,
   } = useApi();
 
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -428,6 +428,15 @@ export default function PayPage() {
                         currency={summary?.currency}
                         total={Number(p.amount)}
                         onSendEmail={sendInvoiceEmail}
+                        onDownloadPdf={async (id) => {
+                          const blob = await downloadInvoicePdf(id);
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `invoice-${p.invoice!.invoiceNumber}.pdf`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
                       />
                     </>
                   )}

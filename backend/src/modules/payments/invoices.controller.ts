@@ -1,10 +1,11 @@
-import { Controller, Get, Patch, Post, Param, Query, Body } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Param, Query, Body, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { InvoicesService } from './invoices.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import type { Response } from 'express';
 
 @ApiTags('Invoices')
 @ApiBearerAuth()
@@ -42,7 +43,27 @@ export class InvoicesController {
     @Body() body?: { email?: string },
   ) {
     const isAdmin = roleCode === 'admin' || roleCode === 'super_admin';
-    return this.invoices.sendByEmail(id, tenantId, isAdmin ? body?.email : undefined);
+    return this.invoices.sendByEmail(id, tenantId, isAdmin ? body?.email : undefined, isAdmin ? undefined : userId);
+  }
+
+  @Get(':id/pdf')
+  @ApiOperation({ summary: 'Download invoice as PDF' })
+  async getPdf(
+    @Param('id') id: string,
+    @CurrentTenantId() tenantId: string,
+    @CurrentUser('roleCode') roleCode: string | undefined,
+    @CurrentUser('id') userId: string,
+    @Res() res: Response,
+  ) {
+    const isAdmin = roleCode === 'admin' || roleCode === 'super_admin';
+    const pdfAndInfo = await this.invoices.getPdf(id, tenantId, isAdmin ? undefined : userId);
+    const pdf = pdfAndInfo.buffer;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="invoice-${pdfAndInfo.invoiceNumber}.pdf"`,
+    );
+    res.send(pdf);
   }
 
   @Get(':id')

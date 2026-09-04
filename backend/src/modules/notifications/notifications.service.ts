@@ -114,12 +114,14 @@ export class NotificationsService {
   }
 
   /**
-   * Send an email with arbitrary HTML body (used for invoice HTML).
+   * Send an email with arbitrary HTML body (used for invoice HTML), optionally
+   * with an attachment (e.g. the invoice PDF).
    */
   async sendRawHtmlEmail(
     to: string,
     subject: string,
     html: string,
+    attachment?: { filename: string; content: Buffer; contentType: string },
   ): Promise<{ sent: boolean; provider: 'resend' | 'smtp' | 'log'; id?: string }> {
     const from =
       this.configService.getOrNull('EMAIL_FROM') ||
@@ -130,10 +132,21 @@ export class NotificationsService {
     const resendKey = this.configService.getOrNull('RESEND_API_KEY');
     if (resendKey) {
       try {
+        const body: any = { from, to, subject, html, text };
+        if (attachment) {
+          body.attachments = [
+            {
+              filename: attachment.filename,
+              content: attachment.content.toString('base64'),
+              encoding: 'base64',
+              contentType: attachment.contentType || 'application/pdf',
+            },
+          ];
+        }
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ from, to, subject, html, text }),
+          body: JSON.stringify(body),
         });
         if (!res.ok) throw new Error(`Resend HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
         const json: any = await res.json().catch(() => ({}));
@@ -146,7 +159,16 @@ export class NotificationsService {
 
     if (this.mailer) {
       try {
-        const info = await this.mailer.sendMail({ from, to, subject, html, text });
+        const mailOpts: any = { from, to, subject, html, text };
+        if (attachment) {
+          mailOpts.attachments = [
+            {
+              filename: attachment.filename,
+              content: attachment.content,
+            },
+          ];
+        }
+        const info = await this.mailer.sendMail(mailOpts);
         this.logger.log(`Raw HTML email sent to ${to} (messageId=${info.messageId})`);
         return { sent: true, provider: 'smtp', id: info.messageId };
       } catch (err) {

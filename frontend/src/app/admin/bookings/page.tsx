@@ -147,7 +147,7 @@ async function copyGuestCredentials(b: Booking, setCopiedId: (id: string | null)
 
 export default function BookingsPage() {
   const { getBookings, updateBookingStatus, adminCreateBooking, getUsers, getTours, getHotels, getFlights, getVisaServices, getTransport,
-    deleteBooking, getTrashedBookings, restoreBooking, purgeBooking, recordAdminPayment, getPaymentMethods, uploadPaymentReceipt, getInvoice } = useApi();
+    deleteBooking, getTrashedBookings, restoreBooking, purgeBooking, recordAdminPayment, getPaymentMethods, uploadPaymentReceipt, openInvoicePdf } = useApi();
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [meta, setMeta] = useState<BookingsMeta | null>(null);
@@ -252,16 +252,11 @@ export default function BookingsPage() {
     }
   };
 
-  // Opens the invoice in a new window and triggers the browser print dialog.
+  // Opens the invoice PDF in a new tab (browser viewer) where it can be
+  // printed or saved.
   const openInvoice = async (invoiceId: string) => {
     try {
-      const full = (await getInvoice(invoiceId)) as { html?: string };
-      if (!full?.html) return;
-      const w = window.open('', '_blank');
-      if (!w) return;
-      w.document.write(full.html);
-      w.document.close();
-      w.print();
+      await openInvoicePdf(invoiceId);
     } catch (err: any) {
       setError(err.message || 'Failed to open invoice');
     }

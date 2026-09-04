@@ -60,16 +60,17 @@ export class InvoicesController {
     @CurrentTenantId() tenantId: string,
     @CurrentUser('roleCode') roleCode: string | undefined,
     @CurrentUser('id') userId: string,
+    @Query('inline') inline: string | undefined,
     @Res() res: Response,
   ) {
     const isAdmin = roleCode === 'admin' || roleCode === 'super_admin' || roleCode === 'manager' || roleCode === 'moderator';
     const pdfAndInfo = await this.invoices.getPdf(id, tenantId, isAdmin ? undefined : userId);
     const pdf = pdfAndInfo.buffer;
+    const disposition = inline === '1' || inline === 'true'
+      ? `inline; filename="invoice-${pdfAndInfo.invoiceNumber}.pdf"`
+      : `attachment; filename="invoice-${pdfAndInfo.invoiceNumber}.pdf"`;
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="invoice-${pdfAndInfo.invoiceNumber}.pdf"`,
-    );
+    res.setHeader('Content-Disposition', disposition);
     res.send(pdf);
   }
 

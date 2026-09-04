@@ -40,6 +40,7 @@ export default [
         URL: 'readonly',
         URLSearchParams: 'readonly',
         fetch: 'readonly',
+        AbortSignal: 'readonly',
         Express: 'readonly',
         Multer: 'readonly',
         NodeJS: 'readonly',

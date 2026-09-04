@@ -143,7 +143,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, logout, hasHydrated } = useAuthStore();
   const {
-    getMyBookings, getMyProfile, getMyPayments, getMyInvoices, getInvoice, sendInvoiceEmail, downloadInvoicePdf, cancelMyBooking, updateMyProfile, getLoyaltyOverview,
+    getMyBookings, getMyProfile, getMyPayments, getMyInvoices, getInvoice, sendInvoiceEmail, openInvoicePdf, cancelMyBooking, updateMyProfile, getLoyaltyOverview,
     uploadMyAvatar, getMyDocuments, uploadMyDocument, deleteMyDocument,
   } = useApi();
   const [tab, setTab] = useState<Tab>('bookings');
@@ -564,13 +564,7 @@ export default function DashboardPage() {
                           total={Number(inv.total)}
                           onSendEmail={sendInvoiceEmail}
                           onDownloadPdf={async (id) => {
-                            const blob = await downloadInvoicePdf(id);
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `invoice-${inv.invoiceNumber}.pdf`;
-                            a.click();
-                            URL.revokeObjectURL(url);
+                            await openInvoicePdf(id);
                           }}
                         />
                       </div>

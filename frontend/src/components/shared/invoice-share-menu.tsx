@@ -128,21 +128,21 @@ export function InvoiceShareMenu({
               Email (link)
             </button>
 
-            {onDownloadPdf && (
-              <button
-                type="button"
-                onClick={handleDownloadPdf}
-                disabled={downloading}
-                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container/70 transition-colors disabled:opacity-50"
-              >
-                {downloading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <FileDown className="w-4 h-4 text-on-surface-variant" />
-                )}
-                Download PDF
-              </button>
-            )}
+                onDownloadPdf && (
+                  <button
+                    type="button"
+                    onClick={handleDownloadPdf}
+                    disabled={downloading}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container/70 transition-colors disabled:opacity-50"
+                  >
+                    {downloading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FileDown className="w-4 h-4 text-on-surface-variant" />
+                    )}
+                    View / Download PDF
+                  </button>
+                )
             {downloadError && (
               <div className="px-3 py-1 text-xs text-red-500">{downloadError}</div>
             )}

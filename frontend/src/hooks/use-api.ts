@@ -310,6 +310,13 @@ export function useApi() {
     if (!res.ok) throw new Error('Could not download invoice');
     return await res.blob();
   }, []);
+  const openInvoicePdf = useCallback(async (id: string) => {
+    const blob = await downloadInvoicePdf(id);
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    // Revoke the object URL once the new window has had a chance to load it.
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }, [downloadInvoicePdf]);
   const getAdminInvoices = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/invoices/admin/all' + qs, auth());
@@ -555,7 +562,7 @@ export function useApi() {
     getPaymentMethods, getBookingPayment, uploadPaymentReceipt, submitPaymentConfirmation,
     getBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount,
     getMobileWallets, createMobileWallet, updateMobileWallet, deleteMobileWallet,
-    getMyInvoices, getInvoice, sendInvoiceEmail, downloadInvoicePdf, getAdminInvoices,
+    getMyInvoices, getInvoice, sendInvoiceEmail, downloadInvoicePdf, openInvoicePdf, getAdminInvoices,
     getTransport, createTransport, updateTransport, deleteTransport,
     getHajjPackages, createHajjPackage, updateHajjPackage, deleteHajjPackage,
     getUmrahPackages, createUmrahPackage, updateUmrahPackage, deleteUmrahPackage,

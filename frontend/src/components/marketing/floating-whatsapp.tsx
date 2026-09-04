@@ -13,7 +13,6 @@ interface TrackingPublicSettings {
 export function FloatingWhatsApp() {
   const [settings, setSettings] = useState<TrackingPublicSettings | null>(null);
   const [open, setOpen] = useState(false);
-  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -26,19 +25,8 @@ export function FloatingWhatsApp() {
     return () => { mounted = false; };
   }, []);
 
-  // Show after a small scroll so it doesn't cover the hero CTA
-  useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 400);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  if (!settings?.whatsappNumber) return null;
-  if (!visible) return null;
-
-  const phone = settings.whatsappNumber.replace(/[^\d]/g, '');
-  const greeting = settings.whatsappGreeting || 'Hi! I am interested in your Hajj/Umrah/travel packages. Could you share more details?';
+  const phone = (settings?.whatsappNumber || '8801322913530').replace(/[^\d]/g, '');
+  const greeting = settings?.whatsappGreeting || 'Hi! I am interested in your Hajj/Umrah/travel packages. Could you share more details?';
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(greeting)}`;
 
   return (

@@ -32,6 +32,7 @@ interface Booking {
   customerPhone?: string | null;
   user?: BookingUser | null;
   payments?: any[];
+  invoices?: { id: string; invoiceNumber: string; status: string; total: number; paidAmount: number; currency: string; issuedAt: string; paidAt?: string | null }[];
   // Flow-specific answers: the visa application (passport, DOB, purpose,
   // document checklist) or the custom-quote brief. Without this the booking
   // detail showed only a name and phone, and staff had to call the customer
@@ -586,6 +587,15 @@ export default function BookingsPage() {
                       <div className="text-[10px] font-semibold text-error">Due {formatCurrency(bookingDue(b), b.currency || 'BDT')}</div>
                     ) : (
                       <div className="text-[10px] text-on-surface-variant">Paid {formatCurrency(Number(b.paidAmount || 0), b.currency || 'BDT')}</div>
+                    )}
+                    {b.invoices && b.invoices.length > 0 && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <FileText className="w-3 h-3 text-primary" />
+                        <span className="text-[10px] font-mono text-primary">{b.invoices[0].invoiceNumber}</span>
+                        <span className={`text-[10px] font-semibold ${b.invoices[0].status === 'paid' ? 'text-green-600' : 'text-amber-600'}`}>
+                          {b.invoices[0].status === 'paid' ? 'Paid' : 'Issued'}
+                        </span>
+                      </div>
                     )}
                   </td>
                   <td className="p-4">{statusBadge(b.status)}</td>

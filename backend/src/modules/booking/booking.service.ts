@@ -214,6 +214,11 @@ export class BookingService {
               transactionId: true, bkashTrxId: true, createdAt: true,
             },
           },
+          invoices: {
+            select: {
+              id: true, invoiceNumber: true, status: true, total: true, paidAmount: true, currency: true, issuedAt: true, paidAt: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
       }),

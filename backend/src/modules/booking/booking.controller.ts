@@ -46,7 +46,7 @@ export class BookingController {
   }
 
   @Get('admin/all')
-  @Roles('admin', 'super_admin')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'List all bookings (admin)' })
   async listAllBookings(
     @CurrentTenantId() tenantId: string,
@@ -63,7 +63,7 @@ export class BookingController {
 
   // Trash — declared before @Get(':id') so 'admin/trash' isn't captured as an id.
   @Get('admin/trash')
-  @Roles('admin', 'super_admin')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'List trashed (soft-deleted) bookings (admin)' })
   async listTrashed(
     @CurrentTenantId() tenantId: string,
@@ -93,35 +93,35 @@ export class BookingController {
   }
 
   @Patch('admin/:id/status')
-  @Roles('admin', 'super_admin')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Update booking status (admin)' })
   async updateStatus(@Param('id') id: string, @CurrentTenantId() tenantId: string, @Body('status') status: string) {
     return this.bookingService.updateStatus(id, tenantId, status);
   }
 
   @Delete('admin/:id')
-  @Roles('admin', 'super_admin')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Move a booking to the trash (admin, reversible)' })
   async softDelete(@Param('id') id: string, @CurrentTenantId() tenantId: string) {
     return this.bookingService.softDeleteBooking(id, tenantId);
   }
 
   @Post('admin/:id/restore')
-  @Roles('admin', 'super_admin')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Restore a trashed booking (admin)' })
   async restore(@Param('id') id: string, @CurrentTenantId() tenantId: string) {
     return this.bookingService.restoreBooking(id, tenantId);
   }
 
   @Delete('admin/:id/purge')
-  @Roles('admin', 'super_admin')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Permanently delete a trashed booking (admin, irreversible)' })
   async purge(@Param('id') id: string, @CurrentTenantId() tenantId: string) {
     return this.bookingService.purgeBooking(id, tenantId);
   }
 
   @Post('admin')
-  @Roles('admin', 'super_admin')
+  @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Create a booking on behalf of a user (admin)' })
   async adminCreate(
     @CurrentTenantId() tenantId: string,

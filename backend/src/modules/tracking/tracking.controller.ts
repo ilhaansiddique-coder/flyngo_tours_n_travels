@@ -71,6 +71,14 @@ export class TrackingController {
 
   // Admin leads -----------------------------------------------------------
 
+  @Get('admin/leads/unread-count')
+  @ApiBearerAuth()
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: 'Count leads with status new' })
+  async unreadLeadCount(@CurrentTenantId() tenantId: string) {
+    return { count: await this.trackingService.countUnreadLeads(tenantId) };
+  }
+
   @Get('admin/leads')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

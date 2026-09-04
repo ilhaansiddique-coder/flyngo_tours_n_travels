@@ -482,6 +482,12 @@ export class TrackingService {
     });
   }
 
+  async countUnreadLeads(tenantId: string) {
+    return this.prisma.lead.count({
+      where: { tenantId, status: 'new' },
+    });
+  }
+
   async updateLead(tenantId: string, id: string, body: { status?: string; assignedTo?: string; notes?: string }) {
     const lead = await this.prisma.lead.findFirst({ where: { id, tenantId } });
     if (!lead) throw new NotFoundException('Lead not found');

@@ -12,9 +12,14 @@ interface TrackingPublicSettings {
   whatsappGreeting?: string | null;
 }
 
+interface UnreadCountResponse {
+  count: number;
+}
+
 export function FloatingWhatsApp() {
   const [settings, setSettings] = useState<TrackingPublicSettings | null>(null);
   const [open, setOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -23,6 +28,18 @@ export function FloatingWhatsApp() {
         const res = (await api.get('/tracking/settings/public')) as TrackingPublicSettings;
         if (mounted) setSettings(res);
       } catch { /* silent */ }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  // Fetch unread lead count for admin users (silently ignored if not logged in)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = (await api.get('/tracking/admin/leads/unread-count')) as UnreadCountResponse;
+        if (mounted && typeof res?.count === 'number') setUnreadCount(res.count);
+      } catch { /* not admin or not logged in — ignore */ }
     })();
     return () => { mounted = false; };
   }, []);
@@ -64,13 +81,15 @@ export function FloatingWhatsApp() {
       )}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="bg-[#25D366] hover:bg-[#1FB358] text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110"
+        className="bg-[#25D366] hover:bg-[#1FB358] text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 relative"
         aria-label="Chat on WhatsApp"
       >
         <img src={WHATSAPP_ICON} alt="WhatsApp" className="w-7 h-7" />
-        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
-          1
-        </span>
+        {unreadCount !== null && unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center px-1 animate-pulse">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
       </button>
     </div>
   );

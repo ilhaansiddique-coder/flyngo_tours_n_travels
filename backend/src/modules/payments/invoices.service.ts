@@ -11,6 +11,9 @@ type LineItem = { description: string; quantity: number; unitPrice: number; amou
 /** Bundled fallback brand logo used when the tenant has no logoUrl configured. */
 const DEFAULT_LOGO_PATH = path.resolve(__dirname, '../../../assets/flyngo_logo.png');
 
+/** White brand logo used on the blue invoice header (PDF + HTML). */
+const DEFAULT_WHITE_LOGO_PATH = path.resolve(__dirname, '../../../assets/flyngo_logo_white.png');
+
 @Injectable()
 export class InvoicesService {
   private readonly logger = new Logger(InvoicesService.name);
@@ -232,9 +235,9 @@ export class InvoicesService {
     let currentPage = doc.addPage([pageWidth, pageHeight]);
     let y = pageHeight - margin;
 
-    // Load and embed the company logo (if any) so it can be drawn in the
-    // header bar. Graceful: any failure just means the logo is omitted.
-    const logoSource = await this.loadLogo(settings?.logoUrl);
+    // Load and embed the white company logo for the blue header bar.
+    // Graceful: any failure just means the logo is omitted.
+    const logoSource = await this.loadLogo(settings?.logoUrl, DEFAULT_WHITE_LOGO_PATH);
     let logoImage: { img: PDFImage; width: number; height: number } | undefined;
     if (logoSource) {
       try {
@@ -530,7 +533,7 @@ export class InvoicesService {
     const address = settings?.companyAddress || '';
     const phone = settings?.companyPhone || '';
     const email = settings?.companyEmail || '';
-    const logoSource = await this.loadLogo(settings?.logoUrl);
+    const logoSource = await this.loadLogo(settings?.logoUrl, DEFAULT_WHITE_LOGO_PATH);
     const logoDataUri = logoSource
       ? `data:${logoSource.mime};base64,${logoSource.buffer.toString('base64')}`
       : '';
@@ -561,18 +564,20 @@ export class InvoicesService {
   @media print{body{margin:16px}}
 </style></head>
 <body>
-  <div style="display:flex;justify-content:space-between;align-items:flex-start">
+  <div style="background:#1881FF;border-radius:12px 12px 0 0;padding:20px 24px;display:flex;justify-content:space-between;align-items:center">
     <div>
-      ${logoDataUri ? `<img src="${logoDataUri}" alt="${this.esc(company)}" style="max-height:56px;max-width:180px;display:block" />` : `<h1>${this.esc(company)}</h1>`}
-      <div class="muted">${this.esc(address)}</div>
-      <div class="muted">${this.esc([phone, email].filter(Boolean).join(' · '))}</div>
+      ${logoDataUri ? `<img src="${logoDataUri}" alt="${this.esc(company)}" style="height:44px;width:auto;display:block" />` : `<div style="color:#fff;font-size:22px;font-weight:800">${this.esc(company)}</div>`}
     </div>
-    <div style="text-align:right">
-      <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#64748b">Invoice</div>
-      <div style="font-weight:700;font-size:18px">${this.esc(invoice.invoiceNumber)}</div>
-      <div class="muted">${new Date(invoice.issuedAt).toLocaleDateString()}</div>
-      <div class="badge">${this.esc(invoice.status)}</div>
+    <div style="text-align:right;color:#fff">
+      <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.85">Invoice</div>
+      <div style="font-weight:700;font-size:18px;color:#fff">${this.esc(invoice.invoiceNumber)}</div>
+      <div style="font-size:12px;opacity:.85">${new Date(invoice.issuedAt).toLocaleDateString()}</div>
+      <div style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(255,255,255,.2)">${this.esc(invoice.status)}</div>
     </div>
+  </div>
+  <div style="padding:12px 24px 0">
+    <div class="muted">${this.esc(address)}</div>
+    <div class="muted">${this.esc([phone, email].filter(Boolean).join(' · '))}</div>
   </div>
   <div style="display:flex;gap:48px;margin-top:28px">
     <div>
@@ -629,10 +634,13 @@ export class InvoicesService {
 
   /**
    * Load the logo image for invoices. Prefers the tenant-configured logoUrl;
-   * falls back to the bundled brand logo so invoices always carry the logo.
-   * Returns null if nothing can be loaded.
+   * falls back to the given bundled brand logo. Returns null if nothing can be
+   * loaded.
    */
-  private async loadLogo(logoUrl?: string | null): Promise<{ buffer: Buffer; mime: string } | null> {
+  private async loadLogo(
+    logoUrl?: string | null,
+    fallbackPath: string = DEFAULT_LOGO_PATH,
+  ): Promise<{ buffer: Buffer; mime: string } | null> {
     const absolute = this.absoluteUrl(logoUrl);
     if (absolute) {
       try {
@@ -646,8 +654,8 @@ export class InvoicesService {
       }
     }
     try {
-      if (fs.existsSync(DEFAULT_LOGO_PATH)) {
-        return { buffer: fs.readFileSync(DEFAULT_LOGO_PATH), mime: 'image/png' };
+      if (fs.existsSync(fallbackPath)) {
+        return { buffer: fs.readFileSync(fallbackPath), mime: 'image/png' };
       }
     } catch (err: any) {
       this.logger.warn(`Invoice default logo unavailable: ${err.message}`);

@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MessageCircle, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { trackEvent } from '@/lib/tracking-client';
+
+const WHATSAPP_ICON = 'https://img.icons8.com/?size=100&id=16713&format=png&color=000000';
 
 interface TrackingPublicSettings {
   whatsappNumber?: string | null;
@@ -52,7 +54,7 @@ export function FloatingWhatsApp() {
             onClick={() => trackEvent('contact', { contentName: 'whatsapp_click' })}
             className="block text-center bg-[#25D366] hover:bg-[#1FB358] text-white font-semibold py-2.5 rounded-xl transition-colors"
           >
-            <MessageCircle className="w-4 h-4 inline mr-2" />
+            <img src={WHATSAPP_ICON} alt="WhatsApp" className="w-4 h-4 inline mr-2" />
             Start WhatsApp chat
           </a>
           <p className="text-[10px] text-center text-on-surface-variant mt-2">
@@ -65,7 +67,7 @@ export function FloatingWhatsApp() {
         className="bg-[#25D366] hover:bg-[#1FB358] text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110"
         aria-label="Chat on WhatsApp"
       >
-        <MessageCircle className="w-7 h-7" />
+        <img src={WHATSAPP_ICON} alt="WhatsApp" className="w-7 h-7" />
         <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
           1
         </span>

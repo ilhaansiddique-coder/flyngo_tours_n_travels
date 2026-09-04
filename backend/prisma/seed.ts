@@ -65,7 +65,10 @@ async function main() {
   // ===========================================================================
   const trackingSettings = await prisma.trackingSettings.upsert({
     where: { tenantId: TENANT_ID },
-    update: {},
+    update: {
+      whatsappNumber: '+8801322913530',
+      whatsappGreeting: 'Hi! I am interested in your Hajj/Umrah/travel packages. Could you share more details?',
+    },
     create: {
       tenantId: TENANT_ID,
       whatsappNumber: '+8801322913530',

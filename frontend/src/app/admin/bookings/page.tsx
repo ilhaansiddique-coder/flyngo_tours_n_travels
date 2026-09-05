@@ -98,10 +98,26 @@ function bookingFileCount(b: Booking): number {
 }
 
 interface BookingsMeta {
+  page: number;
+  limit: number;
   total: number;
-  per_page: number;
-  current_page: number;
-  last_page: number;
+  totalPages: number;
+}
+
+// Page numbers for the pager: 1 … neighbours … last, with gaps collapsed to "…".
+function pagerPages(current: number, total: number): Array<number | '…'> {
+  const out: Array<number | '…'> = [];
+  const addNum = (p: number) => { if (out[out.length - 1] !== p) out.push(p); };
+  const addGap = () => { if (out[out.length - 1] !== '…') out.push('…'); };
+  if (total <= 1) return [1];
+  const from = Math.max(2, current - 2);
+  const to = Math.min(total - 1, current + 2);
+  addNum(1);
+  if (from > 2) addGap();
+  for (let p = from; p <= to; p++) addNum(p);
+  if (to < total - 1) addGap();
+  addNum(total);
+  return out;
 }
 
 interface BookingsResponse {
@@ -203,9 +219,11 @@ export default function BookingsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
@@ -254,29 +272,45 @@ export default function BookingsPage() {
     if (!opts?.silent) setLoading(true);
     try {
       if (viewTrash) {
-        const result = (await getTrashedBookings({ page: String(page), limit: '10' })) as any;
+        const result = (await getTrashedBookings({ page: String(page), limit: String(perPage) })) as any;
         setBookings(result?.items ?? result?.data ?? []);
         setMeta(result?.meta ?? null);
         return;
       }
-      const params: Record<string, string> = { page: String(page), per_page: '10' };
+      const params: Record<string, string> = { page: String(page), per_page: String(perPage) };
       if (statusFilter !== 'all') params.status = statusFilter;
       if (typeFilter !== 'all') params.type = typeFilter;
+      if (debouncedSearch) params.search = debouncedSearch;
       const result = (await getBookings(params)) as BookingsResponse;
       setBookings(result.data ?? []);
       setMeta(result.meta ?? null);
+      // If the dataset shrank (trash, delete, filter, smaller per-page), fall
+      // back to the last valid page instead of showing an empty table.
+      const m = result.meta;
+      if (m && m.totalPages > 0 && page > m.totalPages) setPage(m.totalPages);
+      else if (m && m.totalPages === 0 && page !== 1) setPage(1);
     } catch (err: any) {
       if (!opts?.silent) setError(err.message || 'Failed to load bookings');
     } finally {
       fetchInFlight.current = false;
       if (!opts?.silent) setLoading(false);
     }
-  }, [getBookings, getTrashedBookings, page, statusFilter, typeFilter, viewTrash]);
+  }, [getBookings, getTrashedBookings, page, perPage, debouncedSearch, statusFilter, typeFilter, viewTrash]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadBookings();
   }, [loadBookings]);
+
+  // Debounce the server-side search so typing doesn't fire a request per
+  // keystroke, and restart from page 1 so a search covers the whole dataset.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -514,7 +548,9 @@ export default function BookingsPage() {
     }
   };
 
-  const filtered = searchQuery
+  // Main view: search is server-side across all pages. Trash has no server
+  // search, so filter that small page set on the client only.
+  const filtered = viewTrash && searchQuery
     ? bookings.filter((b) => {
         const q = searchQuery.toLowerCase();
         return [
@@ -573,7 +609,7 @@ export default function BookingsPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
             <Input
-              placeholder="Search bookings..."
+              placeholder="Search by code, customer, or phone…"
               className="pl-9 w-full sm:w-64"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -776,11 +812,23 @@ export default function BookingsPage() {
         </div>
 
         {meta && (
-          <div className="flex items-center justify-between p-4 border-t border-outline-variant">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-t border-outline-variant">
+            <div className="flex items-center gap-4 flex-wrap">
             <p className="text-sm text-on-surface-variant">
-              Showing {bookings.length} of {meta.total} bookings
+              {meta.total === 0
+                ? 'No bookings match'
+                : `Showing ${(meta.page - 1) * meta.limit + 1}–${Math.min(meta.page * meta.limit, meta.total)} of ${meta.total} bookings`}
             </p>
+            <select
+              value={perPage}
+              onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+              className="px-2 py-1 rounded-lg text-xs bg-surface-container-high text-on-surface border border-outline-variant focus:outline-none"
+              title="Bookings per page"
+            >
+              <option value={10}>10 / page</option>
+              <option value={25}>25 / page</option>
+              <option value={50}>50 / page</option>
+            </select>
             <span className="inline-flex items-center gap-1.5 text-xs text-on-surface-variant" title="Auto-refreshes every 10 seconds">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60 animate-ping" />
@@ -789,21 +837,35 @@ export default function BookingsPage() {
               Live
             </span>
           </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-wrap items-center">
               <button
                 onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                disabled={meta.current_page <= 1}
-                className="px-3 py-1 rounded-lg text-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={meta.page <= 1}
+                className="px-3 py-1 rounded-lg text-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Prev
               </button>
-              <span className="px-3 py-1 rounded-lg text-sm bg-primary text-on-primary">
-                {meta.current_page}
-              </span>
+              {pagerPages(meta.page, meta.totalPages).map((p, i) =>
+                p === '…' ? (
+                  <span key={`gap-${i}`} className="px-1 text-sm text-on-surface-variant">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                      p === meta.page
+                        ? 'bg-primary text-on-primary'
+                        : 'bg-surface-container-high hover:bg-surface-container-highest text-on-surface'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ),
+              )}
               <button
-                onClick={() => setPage((p) => Math.min(p + 1, meta.last_page))}
-                disabled={meta.current_page >= meta.last_page}
-                className="px-3 py-1 rounded-lg text-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setPage((p) => Math.min(p + 1, meta.totalPages))}
+                disabled={meta.page >= meta.totalPages}
+                className="px-3 py-1 rounded-lg text-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next
               </button>

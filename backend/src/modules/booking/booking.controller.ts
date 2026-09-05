@@ -55,10 +55,11 @@ export class BookingController {
     @Query('per_page') perPage?: string,
     @Query('status') status?: string,
     @Query('type') type?: string,
+    @Query('search') search?: string,
   ) {
     const pageNum = parseInt(page || '1', 10);
     const limitNum = parseInt(limit || perPage || '20', 10);
-    return this.bookingService.listAllBookings(tenantId, pageNum, limitNum, status, type);
+    return this.bookingService.listAllBookings(tenantId, pageNum, limitNum, status, type, search);
   }
 
   // Trash — declared before @Get(':id') so 'admin/trash' isn't captured as an id.

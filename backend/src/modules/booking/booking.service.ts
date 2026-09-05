@@ -191,7 +191,7 @@ export class BookingService {
     return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
-  async listAllBookings(tenantId: string, page = 1, limit = 20, status?: string, type?: string) {
+  async listAllBookings(tenantId: string, page = 1, limit = 20, status?: string, type?: string, search?: string) {
     const where: any = {
       tenantId,
       deletedAt: null,
@@ -201,6 +201,18 @@ export class BookingService {
     }
     if (type) {
       where.bookingType = type;
+    }
+    // Search spans the booking code, customer name/phone and the linked
+    // account's name/email, so admins can hunt past-page bookings by typing.
+    const q = (search || '').trim();
+    if (q) {
+      where.OR = [
+        { bookingCode: { contains: q, mode: 'insensitive' } },
+        { customerName: { contains: q, mode: 'insensitive' } },
+        { customerPhone: { contains: q } },
+        { user: { is: { fullName: { contains: q, mode: 'insensitive' } } } },
+        { user: { is: { email: { contains: q, mode: 'insensitive' } } } },
+      ];
     }
     const [items, total] = await Promise.all([
       this.prisma.booking.findMany({

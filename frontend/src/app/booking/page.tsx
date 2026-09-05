@@ -296,34 +296,28 @@ export default function BookingPage() {
     const sp = new URLSearchParams(window.location.search);
     const urlType = sp.get('type');
     const urlId = sp.get('id');
-      if (urlType) {
-        const mapped: BookingType | null = urlType in URL_TYPE_MAP ? URL_TYPE_MAP[urlType] : null;
-        if (mapped) {
-          setIsPresetBooking(true);
-          setBookingType(mapped);
-          setTypeLocked(true);
+    // The booking store is a module-level singleton, so a previous booking's
+    // step/form data would otherwise leak into the next one and jump straight
+    // to the submission step. Every visit to /booking starts a fresh booking,
+    // so always begin at step 1 and clear stale traveler details.
+    useBookingStore.getState().reset();
+    if (urlType) {
+      const mapped: BookingType | null = urlType in URL_TYPE_MAP ? URL_TYPE_MAP[urlType] : null;
+      if (mapped) {
+        setIsPresetBooking(true);
+        setBookingType(mapped);
+        setTypeLocked(true);
         sentType.current = urlType in URL_TYPE_SENT ? URL_TYPE_SENT[urlType] : urlType;
       }
     }
     if (urlId) {
-      const currentSelected = useBookingStore.getState().selectedItem;
-      const currentId =
-        typeof currentSelected === 'string'
-          ? currentSelected
-          : (currentSelected as any)?.id;
-      if (!currentId) {
-        useBookingStore.getState().setSelectedItem(urlId);
-      }
+      useBookingStore.getState().setSelectedItem(urlId);
     }
 
     const saved = loadContact();
     if (saved.firstName || saved.lastName || saved.phone || saved.email) {
       setFormData({
-        ...formData,
-        firstName: saved.firstName || formData.firstName || '',
-        lastName: saved.lastName || formData.lastName || '',
-        phone: saved.phone || formData.phone || '',
-        email: saved.email || formData.email || '',
+        ...saved,
       });
     }
   }, []);

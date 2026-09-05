@@ -9,7 +9,7 @@ import { useApi } from '@/hooks/use-api';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { BOOKING_STATUSES, STATUS_BADGE_VARIANT } from '@/lib/booking-statuses';
 import { Search, Plus, Eye, Trash2, RotateCcw, Copy, Check, Banknote, Smartphone, Building, Upload, X, FileText, Paperclip } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface BookingUser {
   fullName: string;
@@ -214,7 +214,6 @@ export default function BookingsPage() {
   const [viewTrash, setViewTrash] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Booking | null>(null);
   const [purgeTarget, setPurgeTarget] = useState<Booking | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const [detailTarget, setDetailTarget] = useState<Booking | null>(null);
   const [payTarget, setPayTarget] = useState<Booking | null>(null);
@@ -242,34 +241,56 @@ export default function BookingsPage() {
   const [userOptions, setUserOptions] = useState<{ label: string; value: string }[]>([]);
   const [itemOptions, setItemOptions] = useState<{ label: string; value: string }[]>([]);
 
-  useEffect(() => {
-  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+  // Guard against overlapping fetches when background polling and a manual
+  // refresh race each other.
+  const fetchInFlight = useRef(false);
 
-    const fetch = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        if (viewTrash) {
-          const result = (await getTrashedBookings({ page: String(page), limit: '10' })) as any;
-          setBookings(result?.items ?? result?.data ?? []);
-          setMeta(result?.meta ?? null);
-          return;
-        }
-        const params: Record<string, string> = { page: String(page), per_page: '10' };
-        if (statusFilter !== 'all') params.status = statusFilter;
-        if (typeFilter !== 'all') params.type = typeFilter;
-
-        const result = (await getBookings(params)) as BookingsResponse;
-        setBookings(result.data ?? []);
-        setMeta(result.meta ?? null);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load bookings');
-      } finally {
-        setLoading(false);
+  // Background auto-refresh every N seconds so new customer bookings and
+  // payments appear on this page without a manual reload. Silent refreshes
+  // skip the loading spinner and don't clobber an existing error message.
+  const loadBookings = useCallback(async (opts?: { silent?: boolean }) => {
+    if (fetchInFlight.current) return;
+    fetchInFlight.current = true;
+    if (!opts?.silent) setLoading(true);
+    try {
+      if (viewTrash) {
+        const result = (await getTrashedBookings({ page: String(page), limit: '10' })) as any;
+        setBookings(result?.items ?? result?.data ?? []);
+        setMeta(result?.meta ?? null);
+        return;
       }
+      const params: Record<string, string> = { page: String(page), per_page: '10' };
+      if (statusFilter !== 'all') params.status = statusFilter;
+      if (typeFilter !== 'all') params.type = typeFilter;
+      const result = (await getBookings(params)) as BookingsResponse;
+      setBookings(result.data ?? []);
+      setMeta(result.meta ?? null);
+    } catch (err: any) {
+      if (!opts?.silent) setError(err.message || 'Failed to load bookings');
+    } finally {
+      fetchInFlight.current = false;
+      if (!opts?.silent) setLoading(false);
+    }
+  }, [getBookings, getTrashedBookings, page, statusFilter, typeFilter, viewTrash]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadBookings();
+  }, [loadBookings]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (!document.hidden) loadBookings({ silent: true });
+    }, 10000);
+    const onVisible = () => {
+      if (!document.hidden) loadBookings({ silent: true });
     };
-    fetch();
-  }, [getBookings, getTrashedBookings, page, statusFilter, typeFilter, viewTrash, refreshKey]);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [loadBookings]);
 
   useEffect(() => {
     let mounted = true;
@@ -316,7 +337,7 @@ export default function BookingsPage() {
     try {
       await deleteBooking(deleteTarget.id);
       setDeleteTarget(null);
-      setRefreshKey((k) => k + 1);
+      loadBookings({ silent: true });
     } catch (err: any) {
       setError(err.message || 'Failed to delete booking');
       setDeleteTarget(null);
@@ -326,7 +347,7 @@ export default function BookingsPage() {
   const handleRestore = async (id: string) => {
     try {
       await restoreBooking(id);
-      setRefreshKey((k) => k + 1);
+      loadBookings({ silent: true });
     } catch (err: any) {
       setError(err.message || 'Failed to restore booking');
     }
@@ -337,7 +358,7 @@ export default function BookingsPage() {
     try {
       await purgeBooking(purgeTarget.id);
       setPurgeTarget(null);
-      setRefreshKey((k) => k + 1);
+      loadBookings({ silent: true });
     } catch (err: any) {
       setError(err.message || 'Failed to permanently delete booking');
       setPurgeTarget(null);
@@ -393,7 +414,7 @@ export default function BookingsPage() {
       setPayTarget(null);
       setPayForm({ method: 'cash', amount: '', bkashTrxId: '', senderName: '', bankAccountId: '', mobileWalletId: '', notes: '' });
       setPayReceiptUrls([]);
-      setRefreshKey((k) => k + 1);
+      loadBookings({ silent: true });
     } catch (err: any) {
       setPayError(err.message || 'Failed to record payment');
     } finally {
@@ -485,15 +506,7 @@ export default function BookingsPage() {
       if (createForm.endDate) body.endDate = createForm.endDate;
       await adminCreateBooking(body);
       setCreateOpen(false);
-      setRefreshKey((k) => k + 1);
-      setTimeout(async () => {
-        const params: Record<string, string> = { page: '1', per_page: '10' };
-        if (statusFilter !== 'all') params.status = statusFilter;
-        if (typeFilter !== 'all') params.type = typeFilter;
-        const result = (await getBookings(params)) as BookingsResponse;
-        setBookings(result.data ?? []);
-        setMeta(result.meta ?? null);
-      }, 5000);
+      loadBookings({ silent: true });
     } catch {
       // silently fail
     } finally {
@@ -764,9 +777,18 @@ export default function BookingsPage() {
 
         {meta && (
           <div className="flex items-center justify-between p-4 border-t border-outline-variant">
+            <div className="flex items-center gap-4">
             <p className="text-sm text-on-surface-variant">
               Showing {bookings.length} of {meta.total} bookings
             </p>
+            <span className="inline-flex items-center gap-1.5 text-xs text-on-surface-variant" title="Auto-refreshes every 10 seconds">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60 animate-ping" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+              </span>
+              Live
+            </span>
+          </div>
             <div className="flex gap-1">
               <button
                 onClick={() => setPage((p) => Math.max(p - 1, 1))}

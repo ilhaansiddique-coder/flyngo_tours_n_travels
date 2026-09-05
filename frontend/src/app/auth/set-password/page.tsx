@@ -48,6 +48,12 @@ export default function SetPasswordPage() {
     const cb = params.get('callbackUrl');
     // Same-origin relative paths only — never an open redirect.
     setCallbackUrl(cb && cb.startsWith('/') && !cb.startsWith('//') ? cb : null);
+    // Pre-fill the temporary password the user just signed in with (stashed at
+    // login) so they don't have to retype it. Falls back to an empty field.
+    try {
+      const saved = sessionStorage.getItem('flyngo_temp_password');
+      if (saved) setTempPassword(saved);
+    } catch { /* ignore */ }
     setReady(true);
   }, []);
 

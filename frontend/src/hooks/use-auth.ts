@@ -75,6 +75,10 @@ export function useAuth() {
       // returned, only a token scoped to the change-password endpoint. Send
       // them to the forced change rather than a dead end.
       if (tokens.mustChangePassword && tokens.changePasswordToken) {
+        // Carry the just-entered temporary password to the change screen so
+        // the user sees it pre-filled instead of having to retype it.
+        // Session-scoped storage only, cleared after a successful change.
+        try { sessionStorage.setItem('flyngo_temp_password', password); } catch { /* ignore */ }
         const params = new URLSearchParams({ token: tokens.changePasswordToken });
         const cb = redirectTarget();
         if (cb) params.set('callbackUrl', cb);

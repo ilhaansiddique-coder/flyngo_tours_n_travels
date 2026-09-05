@@ -19,8 +19,8 @@ export function HomePageClient() {
       <CuratedExperiences />
       <StatsSection />
       <DestinationsShowcase />
-      <ServicesGrid />
       <PopularPackages />
+      <ServicesGrid />
       <HowItWorks />
       <Testimonials />
       <NewsletterCTA />

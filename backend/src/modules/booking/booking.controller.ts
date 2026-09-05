@@ -131,6 +131,13 @@ export class BookingController {
     return this.bookingService.adminCreateBooking(tenantId, body);
   }
 
+  @Post('admin/repair-customers')
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: 'Create/link customer accounts for bookings that have a phone but no linked user (admin)' })
+  async repairCustomers(@CurrentTenantId() tenantId: string) {
+    return this.bookingService.repairMissingCustomerAccounts(tenantId);
+  }
+
   @Post(':id/cancel')
   @ApiOperation({ summary: 'Cancel a booking' })
   async cancel(@Param('id') id: string, @CurrentTenantId() tenantId: string, @CurrentUser('id') userId: string) {

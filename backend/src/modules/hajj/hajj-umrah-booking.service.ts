@@ -9,6 +9,7 @@ import { TrackingService } from '../tracking/tracking.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ReferralService } from '../referral/referral.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
+import { AuthService } from '../auth/auth.service';
 
 export interface PilgrimInput {
   fullName: string;
@@ -52,6 +53,7 @@ export class HajjUmrahBookingService {
     private readonly notificationsService: NotificationsService,
     private readonly referralService: ReferralService,
     private readonly loyaltyService: LoyaltyService,
+    private readonly authService: AuthService,
   ) {}
 
   /**
@@ -150,11 +152,22 @@ export class HajjUmrahBookingService {
     // name + phone in the admin table instead of a blank cell.
     const contact = await this.resolveLeadContact(userId, input.leadGuest, input.pilgrims);
 
+    // Same capture-first identity as the main booking flow: a guest Hajj/Umrah
+    // booking creates (or reuses) a provisional customer account keyed on the
+    // lead pilgrim's phone, so the booking has a customer record and the phone
+    // can later log in with the well-known temporary password.
+    const account = await this.authService.resolveBookingAccount(tenantId, userId, {
+      fullName: contact.name,
+      phone: contact.phone,
+      email: contact.email,
+    });
+    const bookingUserId = account.userId;
+
     const booking = await this.prisma.$transaction(async (tx) => {
       const created = await tx.hajjUmrahBooking.create({
         data: {
           tenantId,
-          userId,
+          userId: bookingUserId,
           bookingCode: this.generateBookingCode(),
           customerName: contact.name,
           customerPhone: contact.phone,

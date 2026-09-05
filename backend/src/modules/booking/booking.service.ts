@@ -702,6 +702,60 @@ export class BookingService {
     }
   }
 
+  /**
+   * Self-heal: any booking that has a phone but no linked account gets its
+   * customer account created (or linked) via the same capture-first path as a
+   * new booking — so an old booking (or one made on a flow that didn't
+   * auto-provision, e.g. hotels before the upgrade) still ends up with a
+   * customer ID the phone can log in with. Covers generic + Hajj/Umrah rows.
+   */
+  async repairMissingCustomerAccounts(tenantId: string) {
+    const generic = await this.prisma.booking.findMany({
+      where: { tenantId, userId: null, customerPhone: { not: null }, deletedAt: null },
+      select: { id: true, customerName: true, customerPhone: true },
+    });
+    const pilgrimage = await this.prisma.hajjUmrahBooking.findMany({
+      where: { tenantId, userId: null, customerPhone: { not: null } },
+      select: { id: true, customerName: true, customerPhone: true, customerEmail: true },
+    });
+
+    let created = 0;
+    let linked = 0;
+    for (const b of generic) {
+      try {
+        const acc = await this.authService.resolveBookingAccount(tenantId, null, {
+          fullName: b.customerName,
+          phone: b.customerPhone,
+          email: null,
+        });
+        if (acc.userId) {
+          await this.prisma.booking.update({ where: { id: b.id }, data: { userId: acc.userId } });
+          if (acc.created) created++;
+          else linked++;
+        }
+      } catch (err: any) {
+        this.logger.warn(`Repair customer for booking ${b.id} failed: ${err.message}`);
+      }
+    }
+    for (const b of pilgrimage) {
+      try {
+        const acc = await this.authService.resolveBookingAccount(tenantId, null, {
+          fullName: b.customerName,
+          phone: b.customerPhone,
+          email: b.customerEmail,
+        });
+        if (acc.userId) {
+          await this.prisma.hajjUmrahBooking.update({ where: { id: b.id }, data: { userId: acc.userId } });
+          if (acc.created) created++;
+          else linked++;
+        }
+      } catch (err: any) {
+        this.logger.warn(`Repair customer for Hajj/Umrah booking ${b.id} failed: ${err.message}`);
+      }
+    }
+    return { scanned: generic.length + pilgrimage.length, created, linked };
+  }
+
   async createHotelBooking(tenantId: string, userId: string, dto: CreateHotelBookingDto) {
     const checkIn = new Date(dto.checkInDate);
     const checkOut = new Date(dto.checkOutDate);

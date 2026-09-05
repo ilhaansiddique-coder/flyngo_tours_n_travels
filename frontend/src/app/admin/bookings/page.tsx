@@ -8,7 +8,7 @@ import { ConfirmDialog, Modal, FormField, FormInput, FormSelect, FormTextarea } 
 import { useApi } from '@/hooks/use-api';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { BOOKING_STATUSES, STATUS_BADGE_VARIANT } from '@/lib/booking-statuses';
-import { Search, Plus, Eye, Trash2, RotateCcw, Copy, Check, Banknote, Smartphone, Building, Upload, X, FileText, Paperclip } from 'lucide-react';
+import { Search, Plus, Eye, Trash2, RotateCcw, Copy, Check, Banknote, Smartphone, Building, Upload, X, FileText, Paperclip, UserRound } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface BookingUser {
@@ -211,7 +211,7 @@ async function copyGuestCredentials(b: Booking, setCopiedId: (id: string | null)
 
 export default function BookingsPage() {
   const { getBookings, updateBookingStatus, adminCreateBooking, getUsers, getTours, getHotels, getFlights, getVisaServices, getTransport,
-    deleteBooking, getTrashedBookings, restoreBooking, purgeBooking, recordAdminPayment, getPaymentMethods, uploadPaymentReceipt, openInvoicePdf } = useApi();
+    deleteBooking, getTrashedBookings, restoreBooking, purgeBooking, recordAdminPayment, getPaymentMethods, uploadPaymentReceipt, openInvoicePdf, repairMissingBookingCustomers } = useApi();
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [meta, setMeta] = useState<BookingsMeta | null>(null);
@@ -232,6 +232,8 @@ export default function BookingsPage() {
   const [viewTrash, setViewTrash] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Booking | null>(null);
   const [purgeTarget, setPurgeTarget] = useState<Booking | null>(null);
+  const [repairing, setRepairing] = useState(false);
+  const [repairMsg, setRepairMsg] = useState<string | null>(null);
 
   const [detailTarget, setDetailTarget] = useState<Booking | null>(null);
   const [payTarget, setPayTarget] = useState<Booking | null>(null);
@@ -503,6 +505,22 @@ export default function BookingsPage() {
     }
   };
 
+  const runRepairCustomers = async () => {
+    setRepairing(true);
+    setRepairMsg(null);
+    try {
+      const res = (await repairMissingBookingCustomers()) as any;
+      const data = res?.data ?? res;
+      setRepairMsg(
+        `Done — ${Number(data?.scanned ?? 0).toLocaleString()} bookings scanned, ${Number(data?.created ?? 0).toLocaleString()} customers created, ${Number(data?.linked ?? 0).toLocaleString()} linked.`,
+      );
+    } catch (err: any) {
+      setRepairMsg(`Failed: ${err?.message || 'unknown error'}`);
+    } finally {
+      setRepairing(false);
+    }
+  };
+
   const openCreateModal = async () => {
     setCreateForm({
       userId: '',
@@ -628,7 +646,17 @@ export default function BookingsPage() {
               <Plus className="w-4 h-4" /> New Booking
             </Button>
           )}
+          {!viewTrash && (
+            <Button size="md" variant="outline" className="gap-2" onClick={runRepairCustomers} disabled={repairing}>
+              <UserRound className="w-4 h-4" /> {repairing ? 'Repairing…' : 'Repair missing customers'}
+            </Button>
+          )}
         </div>
+        {repairMsg && (
+          <p className={`text-sm mt-2 ${repairMsg.startsWith('Failed') ? 'text-rose-500' : 'text-emerald-500'}`}>
+            {repairMsg}
+          </p>
+        )}
       </div>
 
       <div className="flex gap-2 flex-wrap">

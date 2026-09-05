@@ -273,6 +273,7 @@ export function useApi() {
   }, [auth]);
   const restoreBooking = useCallback(async (id: string) => api.post(`/bookings/admin/${id}/restore`, {}, auth()), [auth]);
   const purgeBooking = useCallback(async (id: string) => api.delete(`/bookings/admin/${id}/purge`, auth()), [auth]);
+  const repairMissingBookingCustomers = useCallback(async () => api.post('/bookings/admin/repair-customers', {}, auth()), [auth]);
 
   const getPayments = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
@@ -440,8 +441,8 @@ export function useApi() {
   // Media library
   const listMedia = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-    return api.get('/media' + qs);
-  }, []);
+    return api.get('/media' + qs, auth());
+  }, [auth]);
   const uploadMedia = useCallback(async (file: File, opts?: { folder?: string; alt?: string }) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -566,7 +567,7 @@ export function useApi() {
     getUsers, getUserById, createUser, updateUser, deleteUser, uploadCustomerNationalIdFront, uploadCustomerNationalIdBack, uploadCustomerPassport,
     passwordResetOptions, sendPasswordReset, resetPassword,
     getBookings, createBooking, createHotelBooking, createHajjUmrahBooking, trackBooking, adminCreateBooking, cancelBooking, updateBookingStatus,
-    deleteBooking, getTrashedBookings, restoreBooking, purgeBooking,
+    deleteBooking, getTrashedBookings, restoreBooking, purgeBooking, repairMissingBookingCustomers,
     getPayments, getPaymentStats, updatePaymentStatus, recordAdminPayment,
     getPaymentMethods, getBookingPayment, uploadPaymentReceipt, submitPaymentConfirmation,
     getBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount,

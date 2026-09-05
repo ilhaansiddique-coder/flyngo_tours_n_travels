@@ -4,6 +4,7 @@ import { InvoicesService } from './invoices.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import type { Response } from 'express';
 
@@ -51,6 +52,47 @@ export class InvoicesController {
   ) {
     const isAdmin = roleCode === 'admin' || roleCode === 'super_admin' || roleCode === 'manager' || roleCode === 'moderator';
     return this.invoices.sendByEmail(id, tenantId, isAdmin ? body?.email : undefined, isAdmin ? undefined : userId);
+  }
+
+  // Public, keyed on the booking code (the capability token the /pay/{code}
+  // page already exposes). Declared before @Get(':id') so 'public' is never
+  // captured as an invoice id.
+  @Get('public/:bookingCode/:invoiceId')
+  @Public()
+  @ApiOperation({ summary: 'Get invoice HTML for a booking code (public)' })
+  async getPublicOne(
+    @Param('bookingCode') bookingCode: string,
+    @Param('invoiceId') invoiceId: string,
+    @CurrentTenantId() tenantId: string,
+  ) {
+    const invoice = await this.invoices.getByBookingCode(tenantId, bookingCode, invoiceId);
+    let html: string;
+    try {
+      html = await this.invoices.renderHtml(invoice);
+    } catch {
+      html = `<p>Invoice ${invoice.invoiceNumber}</p><p>Total: ${invoice.currency} ${invoice.total}</p>`;
+    }
+    return { ...invoice, html };
+  }
+
+  @Get('public/:bookingCode/:invoiceId/pdf')
+  @Public()
+  @ApiOperation({ summary: 'Get invoice PDF for a booking code (public, inline when ?inline=1)' })
+  async getPublicPdf(
+    @Param('bookingCode') bookingCode: string,
+    @Param('invoiceId') invoiceId: string,
+    @CurrentTenantId() tenantId: string,
+    @Query('inline') inline: string | undefined,
+    @Res() res: Response,
+  ) {
+    const invoice = await this.invoices.getByBookingCode(tenantId, bookingCode, invoiceId);
+    const pdfAndInfo = await this.invoices.buildPdf(invoice);
+    const disposition = inline === '1' || inline === 'true'
+      ? `inline; filename="invoice-${pdfAndInfo.invoiceNumber}.pdf"`
+      : `attachment; filename="invoice-${pdfAndInfo.invoiceNumber}.pdf"`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', disposition);
+    res.send(pdfAndInfo.buffer);
   }
 
   @Get(':id/pdf')

@@ -320,10 +320,17 @@ export function useApi() {
     return await res.blob();
   }, []);
   const openInvoicePdf = useCallback(async (id: string) => {
+    // Open the window synchronously (before any await) so the browser does not
+    // treat it as a popup, then navigate it to the downloaded blob once ready.
+    const win = window.open('', '_blank');
     const blob = await downloadInvoicePdf(id);
     const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-    // Revoke the object URL once the new window has had a chance to load it.
+    if (win) {
+      win.location.href = url;
+    } else {
+      window.location.href = url;
+    }
+    // Revoke the object URL once the window has had a chance to load it.
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }, [downloadInvoicePdf]);
   const getAdminInvoices = useCallback(async (params?: Record<string, string>) => {

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useApi } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
-import { formatCurrency, formatDate, cn } from '@/lib/utils';
+import { formatCurrency, formatDate, cn, shortPaymentRef } from '@/lib/utils';
 import { BOOKING_STATUSES } from '@/lib/booking-statuses';
 import {
   User, Mail, Phone, Calendar, MapPin, Heart, Receipt, CreditCard,
@@ -591,7 +591,7 @@ export default function DashboardPage() {
                       <CreditCard className="w-5 h-5 text-muted" />
                       <div>
                         <div className="font-semibold">{formatCurrency(p.amount, p.currency)}</div>
-                        <div className="text-xs text-muted font-mono">{p.transactionId} · {p.method}</div>
+                        <div className="text-xs text-muted font-mono" title={p.transactionId}>{shortPaymentRef(p.transactionId)} · {p.method}</div>
                         <div className="text-xs text-muted">For {p.booking?.bookingType} booking {p.booking?.bookingCode}</div>
                       </div>
                     </div>

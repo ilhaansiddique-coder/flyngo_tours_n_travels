@@ -34,3 +34,14 @@ export function absoluteUrl(path: string): string {
 export function apiUrl(path: string): string {
   return `/api/v1${path}`;
 }
+
+/** Shorten a system payment reference (PAY-<uuid>) for display — e.g.
+ *  PAY-700156bd-7909-4904-8893-93eeff8a5ba5 → PAY-700156bd. The full value is
+ *  kept in the `title` attribute at each call site. */
+export function shortPaymentRef(ref?: string | null): string {
+  if (!ref) return '';
+  if (ref.startsWith('PAY-') && ref.length > 12) {
+    return `PAY-${ref.slice(4, 12)}`;
+  }
+  return ref;
+}

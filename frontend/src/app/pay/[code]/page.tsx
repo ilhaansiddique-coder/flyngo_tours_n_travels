@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { InvoiceShareMenu } from '@/components/shared/invoice-share-menu';
 import {
   Check, Copy, Loader2, AlertCircle, Building, Smartphone, Banknote,
-  Upload, X, Image as ImageIcon,
+  Upload, X, Image as ImageIcon, FileText,
 } from 'lucide-react';
 import { useLocale } from '@/contexts/locale-context';
 
@@ -89,7 +89,7 @@ export default function PayPage() {
   const { t, locale } = useLocale();
   const isBn = locale === 'bn';
   const {
-    getPaymentMethods, getBookingPayment, uploadPaymentReceipt, submitPaymentConfirmation, getInvoice, sendInvoiceEmail, openInvoicePdf,
+    getPaymentMethods, getBookingPayment, uploadPaymentReceipt, submitPaymentConfirmation, sendInvoiceEmail,
   } = useApi();
 
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -183,21 +183,6 @@ export default function PayPage() {
       setError(err.message || 'Could not submit payment');
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const printInvoice = async (id: string) => {
-    try {
-      const inv = (await getInvoice(id)) as { html?: string };
-      if (!inv?.html) return;
-      const w = window.open('', '_blank');
-      if (!w) return;
-      w.document.write(inv.html);
-      w.document.close();
-      w.focus();
-      w.print();
-    } catch {
-      // ignore
     }
   };
 
@@ -418,9 +403,16 @@ export default function PayPage() {
                   <span className="text-[10px] font-bold uppercase">{p.status}</span>
                   {p.invoice && (
                     <>
-                      <Button variant="ghost" size="sm" onClick={() => printInvoice(p.invoice!.id)}>
+                      <a
+                        href={`/api/v1/invoices/public/${encodeURIComponent(summary?.bookingCode || '')}/${p.invoice.id}/pdf?inline=1`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-soft text-[10px] font-mono font-semibold text-primary hover:underline transition-colors"
+                        title={`Open ${p.invoice.invoiceNumber}`}
+                      >
+                        <FileText className="w-3 h-3" />
                         {p.invoice.invoiceNumber}
-                      </Button>
+                      </a>
                       <InvoiceShareMenu
                         invoiceId={p.invoice.id}
                         invoiceNumber={p.invoice.invoiceNumber}
@@ -429,7 +421,7 @@ export default function PayPage() {
                         total={Number(p.amount)}
                         onSendEmail={sendInvoiceEmail}
                         onDownloadPdf={async (id) => {
-                          await openInvoicePdf(id);
+                          window.open(`/api/v1/invoices/public/${encodeURIComponent(summary?.bookingCode || '')}/${id}/pdf?inline=1`, '_blank');
                         }}
                       />
                     </>

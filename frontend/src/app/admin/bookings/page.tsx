@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog, Modal, FormField, FormInput, FormSelect, FormTextarea } from '@/components/admin/ui';
 import { useApi } from '@/hooks/use-api';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, shortPaymentRef } from '@/lib/utils';
 import { BOOKING_STATUSES, STATUS_BADGE_VARIANT } from '@/lib/booking-statuses';
 import { Search, Plus, Eye, Trash2, RotateCcw, Copy, Check, Banknote, Smartphone, Building, Upload, X, FileText, Paperclip, UserRound } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -1039,7 +1039,7 @@ export default function BookingsPage() {
                   {detailTarget.payments.map((p: any) => (
                     <div key={p.id} className="text-xs bg-surface-container p-2 rounded">
                       <div className="flex flex-wrap justify-between gap-2 items-center">
-                        <span className="font-mono">{p.transactionId}</span>
+                        <span className="font-mono" title={p.transactionId}>{shortPaymentRef(p.transactionId)}</span>
                         <span className="capitalize">{p.method}</span>
                         <span>{formatCurrency(Number(p.amount), p.currency)}</span>
                         <Badge variant={p.status === 'completed' ? 'success' : 'warning'}>{p.status}</Badge>

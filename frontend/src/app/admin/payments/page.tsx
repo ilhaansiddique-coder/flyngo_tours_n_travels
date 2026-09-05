@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, shortPaymentRef } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import { useEffect, useState } from 'react';
 import { CreditCard, Search, DollarSign, AlertCircle, CheckCircle, Download } from 'lucide-react';
@@ -299,7 +299,7 @@ export default function PaymentsPage() {
                     <tr key={p.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
                       <td className="p-4 text-xs text-gray-500">{new Date(p.createdAt).toLocaleDateString()}</td>
                       <td className="p-4 font-mono text-xs">
-                        <div>{p.bkashTrxId || p.transactionId}</div>
+                        <div title={p.bkashTrxId || p.transactionId}>{p.bkashTrxId || shortPaymentRef(p.transactionId)}</div>
                         {p.invoice && (
                         <button
                           type="button"

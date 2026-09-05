@@ -222,6 +222,47 @@ export class InvoicesService {
       },
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
+    return this.buildPdf(invoice);
+  }
+
+  /**
+   * Public access keyed on the booking code — the same capability token the
+   * shareable /pay/{code} page already uses. Lets a guest (or the person an
+   * invoice was shared with) open the PDF without an account, while still
+   * requiring knowledge of the booking code.
+   */
+  async getByBookingCode(tenantId: string, bookingCode: string, invoiceId: string) {
+    const booking = await this.prisma.booking.findFirst({
+      where: { tenantId, bookingCode, deletedAt: null },
+      select: { id: true },
+    });
+    const hajj = booking
+      ? null
+      : await this.prisma.hajjUmrahBooking.findFirst({
+          where: { tenantId, bookingCode },
+          select: { id: true },
+        });
+    if (!booking && !hajj) throw new NotFoundException('Invoice not found');
+    const invoice = await this.prisma.invoice.findFirst({
+      where: {
+        tenantId,
+        id: invoiceId,
+        ...(booking ? { bookingId: booking!.id } : { hajjUmrahBookingId: hajj!.id }),
+      },
+      include: {
+        user: { select: { id: true, fullName: true, email: true, phone: true } },
+        payment: true,
+        booking: true,
+        hajjUmrahBooking: true,
+      },
+    });
+    if (!invoice) throw new NotFoundException('Invoice not found');
+    return invoice;
+  }
+
+  /** PDF bytes for an already-loaded invoice (shared by authed + booking-code endpoints). */
+  async buildPdf(invoice: any) {
+    const tenantId = invoice.tenantId;
     const settings = await this.prisma.tenantSettings.findUnique({ where: { tenantId } });
     const company = settings?.companyName || 'Flyngo Tours & Travels';
 

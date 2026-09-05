@@ -10,6 +10,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { ReferralService } from '../referral/referral.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { AuthService } from '../auth/auth.service';
+import { randomBytes } from 'crypto';
 
 export interface PilgrimInput {
   fullName: string;
@@ -354,6 +355,6 @@ export class HajjUmrahBookingService {
 
   /** Same FLY-XXXX-XXXX shape as the generic booking flow, so /track works. */
   private generateBookingCode(): string {
-    return `FLY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    return `FLY-${randomBytes(4).toString('hex').toUpperCase()}`;
   }
 }

@@ -150,7 +150,7 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [invoices, setInvoices] = useState<{ id: string; invoiceNumber: string; total: number; currency: string; status: string; issuedAt: string; booking?: { bookingCode: string } | null }[]>([]);
+  const [invoices, setInvoices] = useState<{ id: string; invoiceNumber: string; total: number; paidAmount: number; currency: string; status: string; issuedAt: string; booking?: { bookingCode: string } | null }[]>([]);
   const [loyalty, setLoyalty] = useState<{
     lifetimePoints: number;
     availablePoints: number;
@@ -549,6 +549,11 @@ export default function DashboardPage() {
                           {inv.invoiceNumber}
                         </button>
                         <div className="text-xs text-muted">{formatCurrency(Number(inv.total), inv.currency)} · {inv.booking?.bookingCode || ''}</div>
+                        {Number(inv.paidAmount || 0) < Number(inv.total) && (
+                          <div className="text-xs font-semibold text-amber-600">
+                            Pending: {formatCurrency(Number(inv.total) - Number(inv.paidAmount || 0), inv.currency)}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">

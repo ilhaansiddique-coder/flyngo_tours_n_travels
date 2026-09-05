@@ -9,6 +9,7 @@ import { EmailQueueService } from '../notifications/email-queue.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MarketingService } from '../marketing/marketing.service';
 import { AuthService } from '../auth/auth.service';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class BookingService {
@@ -593,7 +594,7 @@ export class BookingService {
   }
 
   private generateBookingCode(): string {
-    return `FLY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    return `FLY-${randomBytes(4).toString('hex').toUpperCase()}`;
   }
 
   /**

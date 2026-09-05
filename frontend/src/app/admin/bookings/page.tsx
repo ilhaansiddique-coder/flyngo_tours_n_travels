@@ -1068,12 +1068,15 @@ export default function BookingsPage() {
                     >
                       {detailTarget.invoices[0].invoiceNumber}
                     </button>
-                    <p className="text-xs text-on-surface-variant">
+                                        <p className="text-xs text-on-surface-variant">
                       {formatCurrency(Number(detailTarget.invoices[0].total), detailTarget.invoices[0].currency)}
                       {' · '}
                       <span className={detailTarget.invoices[0].status === 'paid' ? 'text-green-600' : 'text-amber-600'}>
                         {detailTarget.invoices[0].status === 'paid' ? 'Paid' : 'Issued'}
                       </span>
+                      {Number(detailTarget.invoices[0].paidAmount || 0) < Number(detailTarget.invoices[0].total) && (
+                        <span className="text-amber-600"> · Pending {formatCurrency(Number(detailTarget.invoices[0].total) - Number(detailTarget.invoices[0].paidAmount || 0), detailTarget.invoices[0].currency)}</span>
+                      )}
                     </p>
                   </div>
                   <Button

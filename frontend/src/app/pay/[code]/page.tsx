@@ -104,6 +104,7 @@ export default function PayPage() {
   const [bkashTrxId, setBkashTrxId] = useState('');
   const [bankAccountId, setBankAccountId] = useState('');
   const [senderName, setSenderName] = useState('');
+  const [cashAmount, setCashAmount] = useState('');
   const [receiptUrls, setReceiptUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -171,6 +172,7 @@ export default function PayPage() {
       await submitPaymentConfirmation({
         bookingCode: summary.bookingCode,
         method,
+        amount: method === 'cash' && cashAmount.trim() ? Number(cashAmount) : undefined,
         bkashTrxId: wallets.some((w) => w.provider === method) ? bkashTrxId : undefined,
         mobileWalletId: wallets.some((w) => w.provider === method) && selectedWalletId ? selectedWalletId : undefined,
         bankAccountId: method === 'bank_transfer' ? bankAccountId : undefined,
@@ -342,9 +344,22 @@ export default function PayPage() {
             )}
 
             {method === 'cash' && (
-              <p className="text-sm text-muted">
-                {isBn ? 'নগদ পরিশোধের অনুরোধ জমা দিন। আমাদের টিম যোগাযোগ করবে।' : 'Submit a cash payment request. Our team will contact you to collect.'}
-              </p>
+              <div className="space-y-3">
+                <Input
+                  label={isBn ? 'পরিশোধের পরিমাণ' : 'Amount to pay'}
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={cashAmount}
+                  onChange={(e) => setCashAmount(e.target.value)}
+                  placeholder={`${isBn ? 'যে পরিমাণ পরিশোধ করবেন' : 'How much you will pay'} (${formatCurrency(summary?.balanceDue || 0, summary?.currency || 'BDT')})`}
+                />
+                <p className="text-sm text-muted">
+                  {isBn
+                    ? 'নগদ পরিশোধের অনুরোধ জমা দিন। আমাদের টিম যোগাযোগ করবে। সম্পূর্ণ বা আংশিক যে কোনো পরিমাণ লিখুন।'
+                    : 'Submit a cash payment request. Our team will contact you to collect. Enter the full balance or any partial amount.'}
+                </p>
+              </div>
             )}
 
             <div>

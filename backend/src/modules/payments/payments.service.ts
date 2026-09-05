@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import Stripe from 'stripe';
 import * as crypto from 'crypto';
-import { randomUUID } from 'crypto';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
 import { ConfigService } from '../../config/config.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
@@ -91,7 +91,7 @@ export class PaymentsService {
         currency: booking.currency,
         method,
         status: 'pending',
-        transactionId: `PAY-${randomUUID()}`,
+        transactionId: `PAY-${randomBytes(4).toString('hex').toUpperCase()}`,
       },
     });
 
@@ -640,7 +640,7 @@ export class PaymentsService {
           currency: target.currency,
           method,
           status: 'pending',
-          transactionId: `PAY-${randomUUID()}`,
+          transactionId: `PAY-${randomBytes(4).toString('hex').toUpperCase()}`,
           bkashTrxId,
           bankAccountId,
           mobileWalletId,
@@ -754,7 +754,7 @@ export class PaymentsService {
           currency: target.currency,
           method,
           status: 'pending',
-          transactionId: `PAY-${randomUUID()}`,
+          transactionId: `PAY-${randomBytes(4).toString('hex').toUpperCase()}`,
           bkashTrxId,
           bankAccountId,
           mobileWalletId,

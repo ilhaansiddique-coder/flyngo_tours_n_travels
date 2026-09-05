@@ -650,9 +650,7 @@ export class InvoicesService {
   }
 
   private nextInvoiceNumber() {
-    const d = new Date();
-    const ymd = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
-    return `INV-${ymd}-${randomBytes(3).toString('hex').toUpperCase()}`;
+    return `INV-${randomBytes(3).toString('hex').toUpperCase()}`;
   }
 
   private esc(s: string) {

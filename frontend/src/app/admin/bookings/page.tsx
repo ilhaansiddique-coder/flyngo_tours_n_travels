@@ -1060,7 +1060,14 @@ export default function BookingsPage() {
                 <p className="text-on-surface-variant text-xs mb-1">Invoice</p>
                 <div className="flex items-center justify-between bg-surface-container p-3 rounded-lg">
                   <div>
-                    <p className="font-mono font-medium">{detailTarget.invoices[0].invoiceNumber}</p>
+                    <button
+                      type="button"
+                      onClick={() => openInvoice(detailTarget.invoices![0].id)}
+                      className="font-mono font-medium text-primary hover:underline"
+                      title={`Open ${detailTarget.invoices[0].invoiceNumber}`}
+                    >
+                      {detailTarget.invoices[0].invoiceNumber}
+                    </button>
                     <p className="text-xs text-on-surface-variant">
                       {formatCurrency(Number(detailTarget.invoices[0].total), detailTarget.invoices[0].currency)}
                       {' · '}

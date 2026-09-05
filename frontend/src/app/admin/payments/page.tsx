@@ -57,7 +57,7 @@ const METHOD_LABELS: Record<string, string> = {
 };
 
 export default function PaymentsPage() {
-  const { getPayments, getPaymentStats, updatePaymentStatus } = useApi();
+  const { getPayments, getPaymentStats, updatePaymentStatus, openInvoicePdf } = useApi();
 
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -300,7 +300,16 @@ export default function PaymentsPage() {
                       <td className="p-4 text-xs text-gray-500">{new Date(p.createdAt).toLocaleDateString()}</td>
                       <td className="p-4 font-mono text-xs">
                         <div>{p.bkashTrxId || p.transactionId}</div>
-                        {p.invoice && <div className="text-[10px] text-gray-400 mt-1">{p.invoice.invoiceNumber}</div>}
+                        {p.invoice && (
+                        <button
+                          type="button"
+                          onClick={() => openInvoicePdf(p.invoice!.id)}
+                          className="text-[10px] text-primary hover:underline font-mono mt-1"
+                          title={`Open ${p.invoice.invoiceNumber}`}
+                        >
+                          {p.invoice.invoiceNumber}
+                        </button>
+                      )}
                       </td>
                       <td className="p-4 text-sm">
                         <div>

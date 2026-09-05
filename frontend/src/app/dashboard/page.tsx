@@ -540,7 +540,14 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-3">
                       <Receipt className="w-5 h-5 text-muted" />
                       <div>
-                        <div className="font-semibold font-mono">{inv.invoiceNumber}</div>
+                        <button
+                          type="button"
+                          onClick={() => openInvoicePdf(inv.id)}
+                          className="font-semibold font-mono text-brand-600 hover:underline"
+                          title={`Open ${inv.invoiceNumber}`}
+                        >
+                          {inv.invoiceNumber}
+                        </button>
                         <div className="text-xs text-muted">{formatCurrency(Number(inv.total), inv.currency)} · {inv.booking?.bookingCode || ''}</div>
                       </div>
                     </div>

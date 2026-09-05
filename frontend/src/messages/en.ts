@@ -10,6 +10,7 @@ export const en = {
   nav_blog: 'Blog',
   nav_visa: 'Visa',
   nav_hajj: 'Hajj & Umrah',
+  nav_track: 'Track Booking',
   nav_signin: 'Sign In',
   nav_book: 'Book Now',
   slogan: 'Your Trusted Travel Partner',

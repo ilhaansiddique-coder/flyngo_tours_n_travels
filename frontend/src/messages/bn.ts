@@ -12,6 +12,7 @@ export const bn: Messages = {
   nav_blog: 'ব্লগ',
   nav_visa: 'ভিসা',
   nav_hajj: 'হজ্জ ও ওমরাহ',
+  nav_track: 'বুকিং ট্র্যাক করুন',
   nav_signin: 'সাইন ইন',
   nav_book: 'বুক করুন',
   slogan: 'আপনার বিশ্বস্ত পার্টনার',

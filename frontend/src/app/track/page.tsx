@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '@/hooks/use-api';
 import { useFormatCurrency, formatDate } from '@/lib/utils';
-import { Search, PackageCheck, Clock, CheckCircle2, XCircle, Loader2, Ticket } from 'lucide-react';
+import Link from 'next/link';
+import { Search, PackageCheck, Clock, CheckCircle2, XCircle, Loader2, Ticket, Banknote } from 'lucide-react';
 
 interface TrackedBooking {
   bookingCode: string;
@@ -13,6 +14,7 @@ interface TrackedBooking {
   endDate?: string | null;
   createdAt: string;
   totalAmount: number | string;
+  paidAmount?: number | string;
   currency: string;
 }
 
@@ -59,6 +61,8 @@ export default function TrackPage() {
 
   const cancelled = booking?.status === 'cancelled';
   const activeIdx = booking ? Math.max(0, STEPS.findIndex((s) => s.key === booking.status)) : -1;
+  const paid = Number(booking?.paidAmount || 0);
+  const due = booking ? Math.max(0, Number(booking.totalAmount) - paid) : 0;
 
   return (
     <main className="min-h-screen surface-page pt-28 pb-20 px-4 sm:px-6">
@@ -148,6 +152,35 @@ export default function TrackPage() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {!cancelled && (
+              <div
+                className={`mt-6 rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 ${
+                  due > 0 ? 'border border-error/30 bg-error-container/40' : 'border border-success/30 bg-success-container/40'
+                }`}
+              >
+                <div className="text-sm">
+                  <span className="text-muted">
+                    {due > 0 ? 'Balance due: ' : 'Paid: '}
+                  </span>
+                  <span className="font-bold text-on-surface">
+                    {fmt(due > 0 ? due : paid, booking?.currency)}
+                  </span>
+                  {due > 0 && paid > 0 && (
+                    <span className="text-xs text-muted ml-2">({fmt(paid, booking?.currency)} paid)</span>
+                  )}
+                </div>
+                {due > 0 && (
+                  <Link
+                    href={`/pay/${encodeURIComponent(booking?.bookingCode || '')}`}
+                    className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-[var(--color-on-primary)]"
+                    style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-tertiary))' }}
+                  >
+                    <Banknote className="w-4 h-4" /> Pay now
+                  </Link>
+                )}
               </div>
             )}
 

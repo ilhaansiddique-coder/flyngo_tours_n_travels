@@ -489,7 +489,12 @@ export default function DashboardPage() {
                       </div>
                       <div className="text-right shrink-0">
                         <div className="text-lg font-bold">{formatCurrency(b.totalAmount, b.currency)}</div>
-                        <div className="text-[10px] text-muted">Paid: {formatCurrency(b.paidAmount, b.currency)}</div>
+                        <div className="text-[10px] text-muted">
+                          Paid: {formatCurrency(b.paidAmount, b.currency)}
+                          {Number(b.paidAmount) < Number(b.totalAmount) && (
+                            <span className="text-error/80"> · Due: {formatCurrency(Math.max(0, Number(b.totalAmount) - Number(b.paidAmount)), b.currency)}</span>
+                          )}
+                        </div>
                         <span className={cn('mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border', status.cls)}>
                           <StatusIcon className="w-3 h-3" /> {status.label}
                         </span>

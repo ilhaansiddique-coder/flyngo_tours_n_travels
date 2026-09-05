@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Menu, X, LogOut, ChevronDown, LogIn } from 'lucide-react';
+import { Menu, X, LogOut, ChevronDown, LogIn, Search } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
@@ -33,6 +33,7 @@ const defaultNavItems: StaticNavItem[] = [
   { key: 'nav_hajj', href: '/hajj' },
   { key: 'nav_hotels', href: '/hotels' },
   { key: 'nav_tickets', href: '/flights' },
+  { key: 'nav_track', href: '/track' },
   { key: 'nav_blog', href: '/blog' },
 ];
 
@@ -396,6 +397,21 @@ export function Header() {
           )}
 
           <Link
+            href="/track"
+            className="hidden xl:inline-flex items-center gap-2 mr-3 px-5 py-2.5 rounded-full text-sm font-bold tracking-wider transition-colors whitespace-nowrap"
+            style={{ color: 'var(--color-header-text-muted)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--color-header-text)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--color-header-text-muted)';
+            }}
+          >
+            <Search className="w-4 h-4" />
+            {t('nav_track')}
+          </Link>
+
+          <Link
             href="/booking"
             className="hidden xl:inline-flex mr-3 px-5 py-2.5 rounded-full text-sm font-bold tracking-wider transition-all duration-300 shadow-lg whitespace-nowrap"
             style={{
@@ -587,6 +603,22 @@ export function Header() {
                   </Link>
                 );
               })}
+              <Link
+                href="/track"
+                className="px-4 py-2.5 rounded-xl text-base font-semibold transition-colors"
+                style={{ color: 'var(--color-mobile-nav-text)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--color-nav-hover)';
+                  e.currentTarget.style.backgroundColor = 'var(--color-mobile-nav-hover-bg)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--color-mobile-nav-text)';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {t('nav_track')}
+              </Link>
               <Link
                 href="/booking"
                 className="mt-1 px-4 py-2.5 rounded-xl text-base font-bold tracking-wider text-center transition-colors"

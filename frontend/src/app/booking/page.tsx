@@ -266,6 +266,7 @@ export default function BookingPage() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingCode, setBookingCode] = useState('');
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingType, setBookingType] = useState<BookingType>('tour');
   const [paymentMethod, setPaymentMethod] = useState<string>('');
@@ -376,7 +377,10 @@ export default function BookingPage() {
 
   useEffect(() => {
     if (!bookingSuccess) return;
-    const timer = setTimeout(() => router.push('/'), 5000);
+    // Keep the confirmation card visible for 5 minutes so the customer can
+    // save the reference code and decide to pay now or later — never kick
+    // them home after just a few seconds.
+    const timer = setTimeout(() => router.push('/'), 300000);
     return () => clearTimeout(timer);
   }, [bookingSuccess, router]);
 
@@ -927,8 +931,32 @@ export default function BookingPage() {
                   : 'Payment recorded and your invoice has been generated. You can view and download it from the invoice/payment page.'}
               </p>
             )}
+            {isPresetBooking && bookingCode && bookingCode !== 'FLY-XXXX-XXXX' && !paymentConfirmed && (
+              <p className="text-xs text-muted rounded-xl p-3 bg-surface-container/60">
+                {isBn
+                  ? 'আপনি এখনো পেমেন্ট করেননি। এখনই পরিশোধ করুন, অথবা পরে আপনার প্রোফাইল/বুকিং কোড দিয়ে ট্র্যাক করে পরিশোধ করতে পারবেন।'
+                  : "You haven't paid yet. Pay now, or later from your account or by tracking your booking code."}
+              </p>
+            )}
             <p className="text-[10px] uppercase tracking-widest font-bold text-muted mt-4">{t('booking_booking_code')}</p>
-            <p className="font-mono text-lg font-bold text-on-surface mb-8">{bookingCode}</p>
+            <div className="flex items-center justify-center gap-2 mb-8">
+              <p className="font-mono text-lg font-bold text-on-surface">{bookingCode}</p>
+              {bookingCode && bookingCode !== 'FLY-XXXX-XXXX' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    copyToClipboard(bookingCode);
+                    setCodeCopied(true);
+                    setTimeout(() => setCodeCopied(false), 2000);
+                  }}
+                  className="inline-flex items-center gap-1 p-1.5 rounded-lg text-[10px] font-semibold transition-colors text-[var(--color-primary)] hover:bg-surface-container"
+                  title={isBn ? 'কোড কপি করুন' : 'Copy code'}
+                >
+                  {codeCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {codeCopied ? (isBn ? 'কপি হয়েছে' : 'Copied') : (isBn ? 'কপি' : 'Copy')}
+                </button>
+              )}
+            </div>
             <div className="flex gap-3">
               <Link href="/track" className="flex-1">
                 <Button variant="ghost" size="lg" className="w-full">

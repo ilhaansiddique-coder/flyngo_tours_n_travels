@@ -208,7 +208,7 @@ export function Header() {
           compact ? 'px-4 sm:px-6 lg:px-8 xl:px-12' : 'px-4 sm:px-6 lg:px-8 xl:px-16',
         )}
       >
-        <div className="flex items-center gap-6 xl:gap-8">
+        <div className="flex items-center gap-4 xl:gap-5 2xl:gap-7">
           <Link href="/" className="flex items-center leading-none">
             <Image
               src={logoImg}
@@ -218,11 +218,11 @@ export function Header() {
               priority
               className={cn(
                 'object-contain w-auto transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
-                compact ? 'h-7' : 'h-10',
+                compact ? 'h-7' : 'h-8 2xl:h-10',
               )}
             />
           </Link>
-          <nav className="hidden xl:flex gap-6 items-center">
+          <nav className="hidden xl:flex gap-4 xl:gap-5 2xl:gap-7 items-center">
             {navItems.map((item) => {
               if (item.kind === 'submenu') {
                 const isOpen = openDropdown === item.key;
@@ -239,7 +239,7 @@ export function Header() {
                     <button
                       type="button"
                       className={cn(
-                        'flex items-center gap-1 whitespace-nowrap text-sm tracking-[0.05em] font-semibold transition-colors',
+                        'flex items-center gap-1 whitespace-nowrap text-[13px] tracking-[0.03em] 2xl:text-sm 2xl:tracking-[0.05em] font-semibold transition-colors',
                         anyActive ? 'font-bold border-b-2 pb-1' : ''
                       )}
                       style={{
@@ -334,7 +334,7 @@ export function Header() {
                   target={item.target}
                   rel={item.target ? 'noopener noreferrer' : undefined}
                   className={cn(
-                    'whitespace-nowrap text-sm tracking-[0.05em] font-semibold transition-colors',
+                    'whitespace-nowrap text-[13px] tracking-[0.03em] 2xl:text-sm 2xl:tracking-[0.05em] font-semibold transition-colors',
                     active
                       ? 'font-bold border-b-2 pb-1'
                       : 'hover:opacity-100'
@@ -359,13 +359,13 @@ export function Header() {
 
         <div className="flex items-center ml-auto">
           {isAuthenticated() && user ? (
-            <div className="hidden xl:flex items-center gap-3 mr-3">
+            <div className="hidden xl:flex items-center gap-2 2xl:gap-3 mr-2 2xl:mr-3">
               <Link
                 href={user.role === 'customer' ? '/dashboard' : '/admin/dashboard'}
                 className="flex flex-col leading-tight transition-colors"
                 style={{ color: 'var(--color-header-text)' }}
               >
-                <span className="text-sm font-semibold">{user.fullName}</span>
+                <span className="text-[13px] 2xl:text-sm font-semibold">{user.fullName}</span>
                 <span
                   className="text-[9px] font-bold tracking-[0.18em] uppercase"
                   style={{ color: 'var(--color-header-text-muted)' }}
@@ -385,20 +385,20 @@ export function Header() {
           ) : (
             <Link
               href="/auth/login"
-              className="hidden xl:inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-[var(--color-on-primary)] shadow-lg transition hover:opacity-95 active:scale-[0.98] mr-3"
+              className="hidden xl:inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-[var(--color-on-primary)] shadow-lg transition hover:opacity-95 active:scale-[0.98] mr-2 2xl:mr-3 2xl:gap-2 2xl:px-6 2xl:py-3 2xl:text-sm"
               style={{
                 background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-tertiary) 100%)',
                 boxShadow: '0 14px 30px -12px color-mix(in oklab, var(--color-primary) 60%, transparent), inset 0 1px 0 color-mix(in oklab, #fff 25%, transparent)',
               }}
             >
-              <LogIn className="w-4 h-4" />
+              <LogIn className="w-3.5 h-3.5 2xl:w-4 2xl:h-4" />
               {t('nav_signin')}
             </Link>
           )}
 
           <Link
             href="/track"
-            className="hidden xl:inline-flex items-center gap-2 mr-3 px-5 py-2.5 rounded-full text-sm font-bold tracking-wider transition-colors whitespace-nowrap"
+            className="hidden xl:inline-flex items-center gap-1.5 mr-2 2xl:mr-3 px-4 py-2 rounded-full text-[13px] font-bold tracking-wider transition-colors whitespace-nowrap 2xl:gap-2 2xl:px-5 2xl:py-2.5 2xl:text-sm"
             style={{ color: 'var(--color-header-text-muted)' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = 'var(--color-header-text)';
@@ -407,13 +407,13 @@ export function Header() {
               e.currentTarget.style.color = 'var(--color-header-text-muted)';
             }}
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-3.5 h-3.5 2xl:w-4 2xl:h-4" />
             {t('nav_track')}
           </Link>
 
           <Link
             href="/booking"
-            className="hidden xl:inline-flex mr-3 px-5 py-2.5 rounded-full text-sm font-bold tracking-wider transition-all duration-300 shadow-lg whitespace-nowrap"
+            className="hidden xl:inline-flex mr-2 2xl:mr-3 px-4 py-2 rounded-full text-[13px] font-bold tracking-wider transition-all duration-300 shadow-lg whitespace-nowrap 2xl:px-5 2xl:py-2.5 2xl:text-sm"
             style={{
               backgroundColor: 'var(--color-header-btn-bg)',
               color: 'var(--color-header-btn-text)',

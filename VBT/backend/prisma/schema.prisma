@@ -1,0 +1,345 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Site / CMS content
+// ============================================================================
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+model Hero {
+  id                 String   @id @default(cuid())
+  enabled            Boolean  @default(true)
+  titleEn            String
+  titleBn            String?
+  descriptionEn      String
+  descriptionBn      String?
+  taglineEn          String?
+  taglineBn          String?
+  highlightEn        String?
+  highlightBn        String?
+  ctaPrimaryText     String   @default("Know More")
+  ctaPrimaryLink     String   @default("/about")
+  ctaSecondaryText   String   @default("All Projects")
+  ctaSecondaryLink   String   @default("/activities")
+  backgroundImage    String   @default("/images/home/hero-bg.svg")
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
+}
+
+model AboutSection {
+  id        String   @id @default(cuid())
+  enabled   Boolean  @default(true)
+  taglineEn String?
+  taglineBn String?
+  titleEn   String?
+  titleBn   String?
+  contentEn String?
+  contentBn String?
+  image     String?
+  items     Json?
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+model Institution {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  website     String
+  description String?
+  logo        String?
+  order       Int      @default(0)
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  titleEn   String
+  titleBn   String?
+  tagEn     String?
+  tagBn     String?
+  excerptEn String?
+  excerptBn String?
+  contentEn String?
+  contentBn String?
+  image     String?
+  order     Int      @default(0)
+  featured  Boolean  @default(false)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Fund {
+  id                String   @id @default(cuid())
+  titleEn           String
+  titleBn           String?
+  descriptionEn     String?
+  descriptionBn     String?
+  target            Decimal? @db.Decimal(14, 2)
+  raised            Decimal? @db.Decimal(14, 2)
+  image             String?
+  order             Int      @default(0)
+  enabled           Boolean  @default(true)
+  countdownEnabled  Boolean  @default(false)
+  endAt             DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model HomeVideo {
+  id         String   @id @default(cuid())
+  badgeEn    String?
+  badgeBn    String?
+  titleEn    String?
+  titleBn    String?
+  youtubeUrl String?
+  enabled    Boolean  @default(true)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model GalleryImage {
+  id        String   @id @default(cuid())
+  titleEn   String?
+  titleBn   String?
+  category  String   @default("General")
+  image     String
+  order     Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  titleEn     String
+  titleBn     String?
+  excerptEn   String?
+  excerptBn   String?
+  contentEn   String?
+  contentBn   String?
+  image       String?
+  author      String?
+  publishedAt DateTime @default(now())
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Notice {
+  id          String   @id @default(cuid())
+  titleEn     String
+  titleBn     String?
+  contentEn   String?
+  contentBn   String?
+  publishedAt DateTime @default(now())
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Faq {
+  id         String   @id @default(cuid())
+  questionEn String
+  questionBn String?
+  answerEn   String
+  answerBn   String?
+  order      Int      @default(0)
+  published  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+enum ProductType {
+  REGULAR
+  ZAKAT
+  QURBANI
+  MEMBERSHIP
+}
+
+model Product {
+  id            String      @id @default(cuid())
+  type          ProductType @default(REGULAR)
+  titleEn       String
+  titleBn       String?
+  descriptionEn String?
+  descriptionBn String?
+  price         Decimal?    @db.Decimal(14, 2)
+  order         Int         @default(0)
+  published     Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// ============================================================================
+// Submissions
+// ============================================================================
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model Donation {
+  id            String   @id @default(cuid())
+  name          String?
+  phoneOrEmail  String
+  amount        Decimal  @db.Decimal(14, 2)
+  type          String   @default("REGULAR")
+  txnId         String?
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+}
+
+model Application {
+  id        String   @id @default(cuid())
+  type      String
+  fullName  String
+  email     String
+  phone     String?
+  address   String?
+  data      Json?
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+}
+
+// ============================================================================
+// Membership
+// ============================================================================
+
+enum MemberStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Member {
+  id                  String       @id @default(cuid())
+  memberId            String       @unique
+  category            String
+  categoryLabelEn     String?
+  categoryLabelBn     String?
+  fee                 Decimal?     @db.Decimal(14, 2)
+  fullName            String
+  fatherName          String?
+  motherName          String?
+  nidNo               String?
+  birthDate           String?
+  gender              String?
+  bloodGroup          String?
+  mobile              String
+  email               String
+  presentAddress      String?
+  permanentAddress    String?
+  education           String?
+  profession          String?
+  institution         String?
+  emergencyContact    String?
+  emergencyMobile     String?
+  volunteerExperience String?
+  reference           String?
+  fbLink              String?
+  photo               String?
+  consent             Boolean      @default(false)
+  status              MemberStatus @default(PENDING)
+  adminNote           String?
+  approvedById        String?
+  approvedAt          DateTime?
+  userId              String?
+  user                User?        @relation(fields: [userId], references: [id])
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([status])
+  @@index([email])
+  @@index([category])
+}
+
+// ============================================================================
+// Site users / portal auth
+// ============================================================================
+
+model User {
+  id           String    @id @default(cuid())
+  email        String?   @unique
+  name         String
+  phone        String    @unique
+  passwordHash String
+  role         String    @default("USER")
+  members      Member[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  email     String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+}
+
+// ============================================================================
+// Landing pages (dynamic builder)
+// ============================================================================
+
+model LandingPage {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  titleEn    String
+  titleBn    String?
+  subtitleEn String?
+  subtitleBn String?
+  coverPhoto String?
+  sections   Json?
+  published  Boolean  @default(true)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ============================================================================
+// Admin
+// ============================================================================
+
+model Admin {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String?
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}

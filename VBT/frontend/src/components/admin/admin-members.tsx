@@ -1,0 +1,363 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import {
+  CheckCircle2,
+  Eye,
+  Loader2,
+  Search,
+  Trash2,
+  XCircle,
+} from 'lucide-react';
+import { adminFetch } from '@/lib/admin-api';
+import { cn } from '@/lib/utils';
+
+interface MemberRow {
+  id: string;
+  memberId: string;
+  category: string;
+  categoryLabelEn: string | null;
+  categoryLabelBn: string | null;
+  fee: string | null;
+  fullName: string;
+  email: string;
+  mobile: string;
+  gender: string | null;
+  bloodGroup: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+}
+
+interface MemberDetail extends MemberRow {
+  fatherName?: string | null;
+  motherName?: string | null;
+  nidNo?: string | null;
+  dob?: string | null;
+  presentAddress?: string | null;
+  permanentAddress?: string | null;
+  education?: string | null;
+  profession?: string | null;
+  institution?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactNumber?: string | null;
+  fbLink?: string | null;
+  volunteerExperience?: string | null;
+  photo?: string | null;
+  adminNote?: string | null;
+  approvedAt?: string | null;
+  user?: { id: string; email: string; name: string } | null;
+}
+
+interface ListResponse {
+  items: MemberRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+const FILTERS: Array<{ key: string; label: string }> = [
+  { key: '', label: 'All' },
+  { key: 'PENDING', label: 'Pending' },
+  { key: 'APPROVED', label: 'Approved' },
+  { key: 'REJECTED', label: 'Rejected' },
+];
+
+function categoryLabel(m: MemberRow): string {
+  return m.categoryLabelEn || m.category;
+}
+
+export function AdminMembers() {
+  const [status, setStatus] = useState('');
+  const [search, setSearch] = useState('');
+  const [list, setList] = useState<ListResponse>({ items: [], total: 0, page: 1, pageSize: 50 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [detail, setDetail] = useState<MemberDetail | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    setError('');
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (search) params.set('search', search);
+    adminFetch<ListResponse>(`/admin/members?${params.toString()}`)
+      .then(setList)
+      .catch((e) => setError((e as Error).message))
+      .finally(() => setLoading(false));
+  }, [status, search]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const setMemberStatus = async (id: string, next: 'APPROVED' | 'REJECTED') => {
+    setBusyId(id);
+    try {
+      await adminFetch(`/admin/members/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: next }),
+      });
+      setDetail((d) => (d && d.id === id ? { ...d, status: next } : d));
+      load();
+      if (status && status !== '' && status !== next) {
+        // row left the current filter; refresh screen state
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const removeMember = async (id: string) => {
+    if (!window.confirm('Delete this member application? This cannot be undone.')) return;
+    setBusyId(id);
+    try {
+      await adminFetch(`/admin/members/${id}`, { method: 'DELETE' });
+      if (detail?.id === id) setDetail(null);
+      load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const photoSrc = detail?.photo;
+  const photoHref = photoSrc && /^data:image/.test(photoSrc) ? photoSrc : undefined;
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold">Members</h1>
+      <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
+        Approve, reject and review membership applications.
+      </p>
+
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap gap-1 rounded-xl bg-white p-1 shadow-[var(--shadow-card)]">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setStatus(f.key)}
+              className={cn(
+                'rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
+                status === f.key ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--color-ink-soft)]',
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="relative min-w-56 flex-1">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)]" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search name, email, phone or ref…"
+            className="w-full rounded-xl border border-black/10 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]"
+          />
+        </div>
+      </div>
+
+      {error ? <p className="mt-3 text-sm text-[var(--color-crimson)]">{error}</p> : null}
+
+      {loading ? (
+        <div className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-black/5 bg-white p-16 text-[var(--color-ink-soft)] shadow-[var(--shadow-card)]">
+          <Loader2 size={18} className="animate-spin" /> Loading…
+        </div>
+      ) : (
+        <div className="mt-6 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[var(--shadow-card)]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-black/5 text-xs font-bold uppercase tracking-wide text-[var(--color-ink-muted)]">
+                  <th className="px-4 py-3">Ref</th>
+                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Contact</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Applied</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.items.map((m) => (
+                  <tr key={m.id} className="border-b border-black/5 last:border-0 hover:bg-[var(--color-mist)]/60">
+                    <td className="px-4 py-3 font-mono text-xs font-bold text-[var(--color-royal)]">{m.memberId}</td>
+                    <td className="px-4 py-3">
+                      <p className="font-semibold">{m.fullName}</p>
+                      <p className="text-xs text-[var(--color-ink-muted)]">{m.email}</p>
+                    </td>
+                    <td className="px-4 py-3">{categoryLabel(m)}</td>
+                    <td className="px-4 py-3 text-[var(--color-ink-soft)]">{m.mobile || '—'}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={cn(
+                          'inline-block rounded-full px-2.5 py-0.5 text-xs font-bold',
+                          m.status === 'APPROVED' && 'bg-[var(--color-primary-light)] text-[var(--color-primary-dark)]',
+                          m.status === 'REJECTED' && 'bg-[var(--color-crimson-light)] text-[var(--color-crimson)]',
+                          m.status === 'PENDING' && 'bg-[var(--color-gold-lighter)] text-[var(--color-gold-deep)]',
+                        )}
+                      >
+                        {m.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[var(--color-ink-muted)]">
+                      {new Date(m.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1.5">
+                        <button
+                          onClick={() =>
+                            adminFetch<MemberDetail>(`/admin/members/${m.id}`).then(setDetail).catch((e) => setError((e as Error).message))
+                          }
+                          className="rounded-lg bg-[var(--color-mist)] p-2 text-[var(--color-ink-soft)] hover:text-[var(--color-royal)]"
+                          title="View"
+                        >
+                          <Eye size={15} />
+                        </button>
+                        {m.status === 'PENDING' ? (
+                          <>
+                            <button
+                              onClick={() => setMemberStatus(m.id, 'APPROVED')}
+                              disabled={busyId === m.id}
+                              className="rounded-lg bg-[var(--color-primary-light)] p-2 text-[var(--color-primary-dark)] hover:bg-[var(--color-primary)] hover:text-white"
+                              title="Approve"
+                            >
+                              <CheckCircle2 size={15} />
+                            </button>
+                            <button
+                              onClick={() => setMemberStatus(m.id, 'REJECTED')}
+                              disabled={busyId === m.id}
+                              className="rounded-lg bg-[var(--color-crimson-light)] p-2 text-[var(--color-crimson)] hover:bg-[var(--color-crimson)] hover:text-white"
+                              title="Reject"
+                            >
+                              <XCircle size={15} />
+                            </button>
+                          </>
+                        ) : null}
+                        <button
+                          onClick={() => removeMember(m.id)}
+                          disabled={busyId === m.id}
+                          className="rounded-lg bg-[var(--color-crimson-light)] p-2 text-[var(--color-crimson)] hover:bg-[var(--color-crimson)] hover:text-white"
+                          title="Delete"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {list.items.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-12 text-center text-sm text-[var(--color-ink-muted)]">
+                      No members match the current filter.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+          <div className="border-t border-black/5 px-4 py-3 text-xs text-[var(--color-ink-muted)]">
+            {list.total} total{list.items.length !== list.total ? ` • showing ${list.items.length}` : ''}
+          </div>
+        </div>
+      )}
+
+      {detail ? (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm">
+          <div className="mt-8 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold">{detail.fullName}</h2>
+                <p className="font-mono text-xs font-bold text-[var(--color-royal)]">{detail.memberId}</p>
+                <span
+                  className={cn(
+                    'mt-2 inline-block rounded-full px-3 py-1 text-xs font-bold',
+                    detail.status === 'APPROVED' && 'bg-[var(--color-primary-light)] text-[var(--color-primary-dark)]',
+                    detail.status === 'REJECTED' && 'bg-[var(--color-crimson-light)] text-[var(--color-crimson)]',
+                    detail.status === 'PENDING' && 'bg-[var(--color-gold-lighter)] text-[var(--color-gold-deep)]',
+                  )}
+                >
+                  {detail.status}
+                </span>
+              </div>
+              <button
+                onClick={() => setDetail(null)}
+                className="rounded-lg bg-[var(--color-mist)] px-3 py-1.5 text-sm font-semibold text-[var(--color-ink-soft)]"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+              <DetailRow label="Category" value={`${categoryLabel(detail)}${detail.fee ? ` • ৳${Number(detail.fee).toLocaleString()}` : ''}`} />
+              <DetailRow label="Email" value={detail.email} />
+              <DetailRow label="Mobile" value={detail.mobile} />
+              <DetailRow label="Date of birth" value={detail.dob ? new Date(detail.dob).toLocaleDateString() : '—'} />
+              <DetailRow label="Gender" value={detail.gender || '—'} />
+              <DetailRow label="Blood group" value={detail.bloodGroup || '—'} />
+              <DetailRow label="Father's name" value={detail.fatherName || '—'} />
+              <DetailRow label="Mother's name" value={detail.motherName || '—'} />
+              <DetailRow label="NID no." value={detail.nidNo || '—'} />
+              <DetailRow label="Profession" value={detail.profession || '—'} />
+              <DetailRow label="Institution" value={detail.institution || '—'} />
+              <DetailRow label="Education" value={detail.education || '—'} />
+              <DetailRow label="Present address" value={detail.presentAddress || '—'} />
+              <DetailRow label="Permanent address" value={detail.permanentAddress || '—'} />
+              <DetailRow label="Emergency contact" value={`${detail.emergencyContactName || ''} ${detail.emergencyContactNumber ? `(${detail.emergencyContactNumber})` : ''}`.trim() || '—'} />
+              <DetailRow label="Facebook" value={detail.fbLink || '—'} />
+              <DetailRow label="Volunteer experience" value={detail.volunteerExperience || '—'} />
+              <DetailRow label="Linked account" value={detail.user ? `${detail.user.name} <${detail.user.email}>` : 'None'} />
+              <DetailRow label="Admin note" value={detail.adminNote || '—'} />
+              <DetailRow label="Applied" value={new Date(detail.createdAt).toLocaleString()} />
+            </div>
+
+            {photoHref ? (
+              <div className="mt-5">
+                <p className="text-sm font-semibold text-[var(--color-ink-soft)]">Photo</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photoHref} alt={detail.fullName} className="mt-2 h-40 w-40 rounded-xl object-cover" />
+              </div>
+            ) : null}
+
+            <div className="mt-6 flex flex-wrap justify-end gap-2">
+              {detail.status === 'PENDING' ? (
+                <>
+                  <button
+                    onClick={() => setMemberStatus(detail.id, 'APPROVED')}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--color-primary-dark)]"
+                  >
+                    <CheckCircle2 size={16} /> Approve
+                  </button>
+                  <button
+                    onClick={() => setMemberStatus(detail.id, 'REJECTED')}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-crimson)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--color-crimson-dark)]"
+                  >
+                    <XCircle size={16} /> Reject
+                  </button>
+                </>
+              ) : null}
+              <button
+                onClick={() => removeMember(detail.id)}
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-crimson-light)] px-5 py-2.5 text-sm font-bold text-[var(--color-crimson)] hover:bg-[var(--color-crimson)] hover:text-white"
+              >
+                <Trash2 size={16} /> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase tracking-wide text-[var(--color-ink-muted)]">{label}</p>
+      <p className="mt-0.5 break-words text-[var(--color-ink)]">{value}</p>
+    </div>
+  );
+}

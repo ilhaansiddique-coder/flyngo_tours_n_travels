@@ -1,0 +1,77 @@
+# VBT — Production stack (Coolify default)
+# The backend connects to a separate PostgreSQL database. If you do not point
+# DATABASE_URL at a Coolify-managed database, the bundled `postgres` service
+# below is used so the stack stays self-contained.
+#
+# Local dev with build-from-source:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+  backend:
+    image: ghcr.io/ilhaansiddique-coder/vbt-backend:main
+    pull_policy: always
+    container_name: vbt-backend
+    restart: always
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 4000
+      DATABASE_URL: ${DATABASE_URL:-postgresql://vbt:vbt@postgres:5432/vbt?schema=public}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change-me-vbt-access}
+      JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-24h}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@vbt.world}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+    ports:
+      - '4000:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'node -e "const h=require(\"http\");h.get(\"http://localhost:4000/api/v1/health\",r=>{let d=\"\";r.on(\"data\",c=>d+=c);r.on(\"end\",()=>{try{const j=JSON.parse(d);process.exit(j.status===\"ok\"?0:1)}catch{process.exit(1)}})}).on(\"error\",()=>process.exit(1))"']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    image: ghcr.io/ilhaansiddique-coder/vbt-frontend:main
+    pull_policy: always
+    container_name: vbt-frontend
+    restart: always
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://backend:4000}
+      NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-http://localhost:3000}
+      NEXT_PUBLIC_VBT_BASE_PATH: ${NEXT_PUBLIC_VBT_BASE_PATH:-/VBT}
+      NEXT_PUBLIC_VBT_USE_BASEPATH: ${NEXT_PUBLIC_VBT_USE_BASEPATH:-true}
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    ports:
+      - '3000:3000'
+    depends_on:
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ['CMD-SHELL', 'node -e "const h=require(\"http\");h.get(\"http://localhost:3000/VBT\",r=>{process.exit(r.statusCode===200?0:1)}).on(\"error\",()=>process.exit(1))"']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: vbt-postgres
+    environment:
+      POSTGRES_USER: vbt
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vbt}
+      POSTGRES_DB: vbt
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U vbt']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

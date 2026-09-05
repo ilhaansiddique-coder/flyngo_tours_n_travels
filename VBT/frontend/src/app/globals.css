@@ -1,0 +1,140 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: var(--font-public), var(--font-bengali), ui-sans-serif, system-ui;
+
+  /* Brand palette extracted from the VBT/Volunteer Bangladesh Trust logo. */
+  --color-primary: #09904a;
+  --color-primary-dark: #087a40;
+  --color-primary-darker: #06562f;
+  --color-primary-deep: #043c21;
+  --color-primary-light: #cef5e3;
+  --color-primary-lighter: #eef5f0;
+
+  /* Secondary accents from the logo (blue + teal). */
+  --color-royal: #303b98;
+  --color-royal-dark: #242c72;
+  --color-royal-light: #e6e8f6;
+  --color-teal: #38a46a;
+  --color-teal-soft: #61ae98;
+
+  /* Alert / highlight red from the logo. */
+  --color-crimson: #ed1d25;
+  --color-crimson-light: #fdebec;
+
+  /* Gold used for the donation card / CTA accents. */
+  --color-gold: #f8de9e;
+  --color-gold-deep: #e8b65d;
+  --color-gold-lighter: #fdf7df;
+
+  /* Neutral ramp (MUI grey scale) */
+  --color-ink: #1c252e;
+  --color-ink-soft: #637381;
+  --color-ink-muted: #919eab;
+  --color-ink-faint: #c4cdd5;
+  --color-surface: #ffffff;
+  --color-canvas: #ffffff;
+  --color-mist: #f4f6f8;
+
+  --shadow-card: 0 1px 2px rgba(28, 37, 46, 0.04), 0 12px 32px -12px rgba(28, 37, 46, 0.14);
+  --shadow-card-hover: 0 4px 12px -2px rgba(28, 37, 46, 0.1), 0 24px 48px -12px rgba(28, 37, 46, 0.22);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  background: #ffffff;
+  line-height: 1.55;
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--color-ink);
+  line-height: 1.2;
+  margin: 0;
+}
+
+button:not(:disabled),
+a[href],
+label[for],
+[role='button'] {
+  cursor: pointer;
+}
+
+/* Thin branded progress bar for the top loader */
+#nprogress {
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2.5px;
+  z-index: 9999;
+}
+#nprogress .bar {
+  height: 100%;
+  background: var(--color-primary);
+}
+#nprogress .peg {
+  box-shadow: 0 0 8px var(--color-primary);
+}
+
+.container-site {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+.section-pad {
+  padding-block: 4.5rem;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.7s ease-out both;
+}

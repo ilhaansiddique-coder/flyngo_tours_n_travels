@@ -1,0 +1,20 @@
+# Override for local development — build from source instead of pulling ghcr.io images.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: vbt-backend:dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        BACKEND_URL: http://backend:4000
+        NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-http://localhost:3000}
+        NEXT_PUBLIC_VBT_BASE_PATH: ${NEXT_PUBLIC_VBT_BASE_PATH:-/VBT}
+        NEXT_PUBLIC_VBT_USE_BASEPATH: ${NEXT_PUBLIC_VBT_USE_BASEPATH:-true}
+    image: vbt-frontend:dev

@@ -88,6 +88,8 @@ interface Settings {
   fixedCommissionType?: string;
   fixedCommissionValue?: number;
   commissionlessSignupPoints?: number;
+  signupBonusPoints?: number;
+  referrerSignupPoints?: number;
   refereeRewardType: string;
   refereeRewardValue: number;
   refereeMaxReward: number | null;
@@ -221,6 +223,8 @@ export default function AdminAffiliatesPage() {
         fixedCommissionType: settings.fixedCommissionType ?? 'percentage',
         fixedCommissionValue: settings.fixedCommissionValue ?? 5,
         commissionlessSignupPoints: settings.commissionlessSignupPoints ?? 500,
+        signupBonusPoints: settings.signupBonusPoints ?? 100,
+        referrerSignupPoints: settings.referrerSignupPoints ?? 0,
         refereeRewardType: settings.refereeRewardType,
         refereeRewardValue: settings.refereeRewardValue,
         refereeMaxReward: settings.refereeMaxReward ?? '',
@@ -318,6 +322,8 @@ export default function AdminAffiliatesPage() {
         fixedCommissionType: settingsForm.fixedCommissionType,
         fixedCommissionValue: Number(settingsForm.fixedCommissionValue),
         commissionlessSignupPoints: Number(settingsForm.commissionlessSignupPoints),
+        signupBonusPoints: Number(settingsForm.signupBonusPoints),
+        referrerSignupPoints: Number(settingsForm.referrerSignupPoints),
         refereeRewardType: settingsForm.refereeRewardType,
         refereeRewardValue: Number(settingsForm.refereeRewardValue),
         cookieWindowDays: Number(settingsForm.cookieWindowDays),
@@ -923,6 +929,33 @@ export default function AdminAffiliatesPage() {
                 </FormField>
                 <p className="text-[11px] text-on-surface-variant mt-1">
                   No cash commissions and no payout requests — these referrers earn loyalty points only.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-surface-container/60 border border-outline-variant">
+                <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-3">
+                  03 · Loyalty points
+                </p>
+                <FormField label="Signup bonus points (every new user)">
+                  <FormInput
+                    type="number"
+                    value={String(settingsForm.signupBonusPoints)}
+                    onChange={(v: string) => setSettingsForm({ ...settingsForm, signupBonusPoints: v })}
+                  />
+                </FormField>
+                <p className="text-[11px] text-on-surface-variant mt-1">
+                  Loyalty points every new account receives the moment it is created (default 100).
+                  Set 0 to disable.
+                </p>
+                <FormField label="Referrer points per referred signup">
+                  <FormInput
+                    type="number"
+                    value={String(settingsForm.referrerSignupPoints)}
+                    onChange={(v: string) => setSettingsForm({ ...settingsForm, referrerSignupPoints: v })}
+                  />
+                </FormField>
+                <p className="text-[11px] text-on-surface-variant mt-1">
+                  Loyalty points the referrer earns when a user they referred signs up and verifies.
+                  Default 0 (off) — the referrer earns commission on actual purchases instead.
                 </p>
               </div>
 

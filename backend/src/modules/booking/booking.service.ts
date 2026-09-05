@@ -789,10 +789,20 @@ export class BookingService {
       })),
     ];
 
+    // Same capture-first identity as the main booking flow: a guest hotel
+    // booking creates (or reuses) a provisional account keyed on the lead
+    // guest's phone so the booking has a customer record staff can act on.
+    const account = await this.authService.resolveBookingAccount(tenantId, userId, {
+      fullName: `${leadGuest.firstName} ${leadGuest.lastName}`.trim(),
+      phone: leadGuest.phone ?? null,
+      email: leadGuest.email ?? null,
+    });
+    const bookingUserId = account.userId;
+
     const booking = await this.prisma.booking.create({
       data: {
         tenantId,
-        userId,
+        userId: bookingUserId,
         bookingType: 'hotel',
         itemId: dto.hotelId,
         bookingCode: this.generateBookingCode(),

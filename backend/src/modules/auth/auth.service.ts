@@ -492,10 +492,11 @@ export class AuthService {
     if (!key) return { userId: null, created: false, provisional: false };
 
     // Guest accounts are provisioned with a well-known temporary password so
-    // staff can share it with the customer over WhatsApp immediately.
+    // staff can share it with the customer over WhatsApp immediately. It never
+    // expires (tempPasswordExpiresAt stays null) — first login still forces a
+    // change, so the well-known password is only ever used to claim the account.
     const GUEST_TEMP_PASSWORD = '12345678';
     const tempHash = await bcryptjs.hash(GUEST_TEMP_PASSWORD, 12);
-    const tempExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
     const existing = await this.prisma.user.findFirst({
       where: { tenantId, phoneKey: key, deletedAt: null },
@@ -514,7 +515,7 @@ export class AuthService {
           patch.passwordHash = tempHash;
           patch.accountStatus = 'invited';
           patch.mustChangePassword = true;
-          patch.tempPasswordExpiresAt = tempExpires;
+          patch.tempPasswordExpiresAt = null;
         }
         if (Object.keys(patch).length) {
           await this.prisma.user.update({ where: { id: existing.id }, data: patch });
@@ -542,10 +543,16 @@ export class AuthService {
           passwordHash: tempHash,
           accountStatus: 'invited',
           mustChangePassword: true,
-          tempPasswordExpiresAt: tempExpires,
+          tempPasswordExpiresAt: null,
         },
         select: { id: true },
       });
+      // Every new account is credited the signup bonus (default 100 points).
+      try {
+        await this.referralService.awardSignupBonus(tenantId, user.id);
+      } catch (err: any) {
+        this.logger.warn(`Signup bonus for provisioned user ${user.id} failed: ${err.message}`);
+      }
       return { userId: user.id, created: true, provisional: true };
     } catch (err: any) {
       // Unique violation: another booking for the same number landed first.
@@ -566,12 +573,19 @@ export class AuthService {
                   passwordHash: tempHash,
                   accountStatus: 'invited',
                   mustChangePassword: true,
-                  tempPasswordExpiresAt: tempExpires,
+                  tempPasswordExpiresAt: null,
                 },
               });
             } catch (e: any) {
               this.logger.warn(`Backfill temp password failed for ${raced.id}: ${e.message}`);
             }
+          }
+          // The raced account was just (re)provisioned for this customer — grant
+          // the signup bonus if it somehow never received it.
+          try {
+            await this.referralService.awardSignupBonus(tenantId, raced.id);
+          } catch (e: any) {
+            this.logger.warn(`Signup bonus for raced user ${raced.id} failed: ${e.message}`);
           }
           return { userId: raced.id, created: false, provisional: raced.accountStatus === 'provisional' || raced.accountStatus === 'invited' };
         }

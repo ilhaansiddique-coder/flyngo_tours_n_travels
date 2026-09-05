@@ -302,7 +302,9 @@ describe('AuthService', () => {
       expect(data.passwordHash).toBeTruthy();
       expect(data.accountStatus).toBe('invited');
       expect(data.mustChangePassword).toBe(true);
-      expect(data.tempPasswordExpiresAt).toBeInstanceOf(Date);
+      // Never expires — the well-known password stays usable until the first
+      // login forces a change.
+      expect(data.tempPasswordExpiresAt).toBeNull();
       // Canonicalised, so the same number in another format won't duplicate.
       expect(data.phoneKey).toBe('1711223344');
     });

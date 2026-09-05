@@ -161,6 +161,7 @@ export function useApi() {
   const getLoyaltyTransactions = useCallback(async (params?: Record<string, string>) => api.get('/loyalty/admin/transactions' + (params ? '?' + new URLSearchParams(params).toString() : ''), auth()), [auth]);
   const getLoyaltyStats = useCallback(async () => api.get('/loyalty/admin/stats', auth()), [auth]);
   const adjustLoyaltyPoints = useCallback(async (userId: string, body: { points: number; reason: string; reference?: string }) => api.post(`/loyalty/admin/adjust/${userId}`, body, auth()), [auth]);
+  const backfillLoyaltySignupBonus = useCallback(async () => api.post('/loyalty/admin/backfill-signup-bonus', {}, auth()), [auth]);
 
   // Refer & Earn (referrals/loyalty program)
   const getReferralProgram = useCallback(async () => api.get('/referrals/program', auth()), [auth]);
@@ -553,7 +554,7 @@ export function useApi() {
     getMyLoyalty, previewLoyaltyRedemption, redeemLoyaltyPoints,
     getLoyaltyTiers, upsertLoyaltyTier, updateLoyaltyTier, deleteLoyaltyTier,
     getLoyaltyProductRules, upsertLoyaltyProductRule, deleteLoyaltyProductRule,
-    getLoyaltyMembers, getLoyaltyTransactions, getLoyaltyStats, adjustLoyaltyPoints,
+    getLoyaltyMembers, getLoyaltyTransactions, getLoyaltyStats, adjustLoyaltyPoints, backfillLoyaltySignupBonus,
     getReferralProgram, lookupReferralCode, getMyReferralSummary, requestReferralPayout,
     getReferralSettings, updateReferralSettings, getReferralOverview,
     getReferralAdminReferrals, getReferralPayouts, updateReferralPayout,

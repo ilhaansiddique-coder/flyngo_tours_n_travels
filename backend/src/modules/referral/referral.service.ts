@@ -121,6 +121,8 @@ export class ReferralService {
       fixedCommissionType: body.fixedCommissionType,
       fixedCommissionValue: body.fixedCommissionValue,
       commissionlessSignupPoints: body.commissionlessSignupPoints,
+      signupBonusPoints: body.signupBonusPoints,
+      referrerSignupPoints: body.referrerSignupPoints,
       refereeRewardType: body.refereeRewardType,
       refereeRewardValue: body.refereeRewardValue,
       refereeMaxReward: body.refereeMaxReward,

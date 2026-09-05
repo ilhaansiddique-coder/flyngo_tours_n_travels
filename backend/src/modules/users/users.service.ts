@@ -1,8 +1,15 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { MediaService } from '../media/media.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
+import { phoneKey } from '../../common/utils/phone.util';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
+
+/** Well-known guest password used when the admin does not supply one — same
+ *  constant the booking auto-provisioning uses, so the created account is
+ *  immediately usable (first login forces a password change). */
+const GUEST_TEMP_PASSWORD = '12345678';
 
 @Injectable()
 export class UsersService {
@@ -11,6 +18,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly media: MediaService,
+    private readonly loyalty: LoyaltyService,
   ) {}
 
   async createUser(tenantId: string, data: any) {
@@ -23,25 +31,70 @@ export class UsersService {
       if (existing) throw new ConflictException('A user with this email already exists');
     }
 
-    const passwordHash = data.password
+    // Phone is normalized to a shared key so login-by-phone and the booking
+    // auto-provisioning agree on identity, and duplicates are caught regardless
+    // of how the number was typed.
+    const phone = typeof data.phone === 'string' ? data.phone.trim() || null : null;
+    const key = phoneKey(phone);
+    if (key) {
+      const dup = await this.prisma.user.findFirst({ where: { tenantId, phoneKey: key, deletedAt: null } });
+      if (dup) throw new ConflictException('A user with this phone number already exists');
+    }
+
+    // `fullName` is required at the schema level — never 500 on a blank form.
+    const fullName = typeof data.fullName === 'string' && data.fullName.trim()
+      ? data.fullName.trim()
+      : 'Guest';
+
+    // `roleId` is required and must belong to this tenant. If the caller sent
+    // an empty/invalid id (e.g. the admin form failed to load roles), fall back
+    // to the tenant's customer role so creation never fails on a FK violation.
+    let roleId = typeof data.roleId === 'string' && data.roleId ? data.roleId : '';
+    if (roleId) {
+      const role = await this.prisma.role.findFirst({ where: { id: roleId, tenantId } });
+      if (!role) roleId = '';
+    }
+    if (!roleId) {
+      const customerRole = await this.prisma.role.findFirst({ where: { tenantId, code: 'customer' } });
+      roleId = customerRole?.id || '';
+      if (!roleId) throw new BadRequestException('No customer role is configured for this tenant');
+    }
+
+    // When the admin supplies a password the account is fully active; otherwise
+    // provision the well-known guest password (must change on first login) so
+    // the created customer can actually sign in with their phone/email.
+    const providedPassword = typeof data.password === 'string' && data.password.trim();
+    const passwordHash = providedPassword
       ? await bcrypt.hash(data.password, 12)
-      : null;
+      : await bcrypt.hash(GUEST_TEMP_PASSWORD, 12);
 
     const user = await this.prisma.user.create({
       data: {
         tenantId,
         email: email || null,
-        fullName: data.fullName,
-        phone: data.phone,
+        fullName,
+        phone,
+        phoneKey: key,
         nationalId: data.nationalId || null,
         passportNumber: data.passportNumber || null,
         passwordHash,
-        roleId: data.roleId,
+        roleId,
+        accountStatus: providedPassword ? 'active' : 'invited',
+        mustChangePassword: !providedPassword,
         isActive: data.isActive ?? true,
       },
       include: { role: true },
     });
     const { passwordHash: _ph, ...rest } = user;
+
+    // Every new user is credited the signup bonus (default 100 points). Same
+    // idempotent path as self-registration — non-fatal if it fails.
+    try {
+      await this.loyalty.awardSignupBonus(tenantId, user.id);
+    } catch (err: any) {
+      this.logger.warn(`Signup bonus for admin-created user ${user.id} failed: ${err.message}`);
+    }
+
     return rest;
   }
 
@@ -175,16 +228,31 @@ export class UsersService {
         ? await bcrypt.hash(data.password, 12)
         : undefined;
 
+    // Re-normalize the phone key whenever the phone changes, so login-by-phone
+    // and booking auto-provisioning keep matching the updated number.
+    const phone = typeof data.phone === 'string' ? data.phone.trim() || null : existing.phone;
+    const key = phoneKey(phone);
+    if (key) {
+      const dup = await this.prisma.user.findFirst({
+        where: { tenantId, phoneKey: key, deletedAt: null, id: { not: id } },
+        select: { id: true },
+      });
+      if (dup) throw new ConflictException('That phone number is already used by another account');
+    }
+
     const user = await this.prisma.user.update({
       where: { id },
       data: {
-        fullName: data.fullName,
-        phone: data.phone,
-        roleId: data.roleId,
+        fullName: typeof data.fullName === 'string' && data.fullName.trim()
+          ? data.fullName.trim()
+          : existing.fullName,
+        phone,
+        phoneKey: key,
+        roleId: data.roleId ?? existing.roleId,
         isActive: data.isActive,
         nationalId: data.nationalId,
         passportNumber: data.passportNumber,
-        ...(passwordHash ? { passwordHash } : {}),
+        ...(passwordHash ? { passwordHash, mustChangePassword: false } : {}),
       },
       include: { role: true },
     });

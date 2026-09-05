@@ -261,7 +261,8 @@ export default function CustomersPage() {
 
   const openCreateModal = () => {
     setEditingUser(null);
-    setForm({ ...initialForm, roleId: roles[0]?.id || '' });
+    const customerRole = roles.find((r) => r.code === 'customer') || roles[0];
+    setForm({ ...initialForm, roleId: customerRole?.id || '' });
     setNidFrontFile(null);
     setNidBackFile(null);
     setPassportFile(null);
@@ -338,8 +339,9 @@ export default function CustomersPage() {
 
       setModalOpen(false);
       fetchUsers(1);
-    } catch {
-      // error handled silently
+      setActionError(null);
+    } catch (err: any) {
+      setActionError(err?.message || 'Could not save this customer. Please try again.');
     } finally {
       setSubmitting(false);
       setUploadingDoc(null);
@@ -659,6 +661,12 @@ export default function CustomersPage() {
         title={editingUser ? 'Edit Customer' : 'Add Customer'}
       >
         <form onSubmit={handleSubmit}>
+          {actionError && (
+            <div className="mb-4 flex items-start justify-between gap-2 rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-sm text-red-700 dark:text-red-300">
+              <span>{actionError}</span>
+              <button className="shrink-0 font-medium hover:underline" onClick={() => setActionError(null)}>×</button>
+            </div>
+          )}
           <FormField label="Full Name" required>
             <FormInput
               value={form.fullName}

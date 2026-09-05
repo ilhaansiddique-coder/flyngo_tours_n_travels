@@ -66,7 +66,7 @@ export default function AdminLoyaltyPage() {
   const {
     getLoyaltyStats, getLoyaltyTiers, upsertLoyaltyTier, updateLoyaltyTier, deleteLoyaltyTier,
     getLoyaltyProductRules, upsertLoyaltyProductRule, deleteLoyaltyProductRule,
-    getLoyaltyMembers, getLoyaltyTransactions, adjustLoyaltyPoints,
+    getLoyaltyMembers, getLoyaltyTransactions, adjustLoyaltyPoints, backfillLoyaltySignupBonus,
   } = useApi();
 
   const [tab, setTab] = useState<Tab>('overview');
@@ -97,6 +97,27 @@ export default function AdminLoyaltyPage() {
   // Adjust points modal
   const [adjustModal, setAdjustModal] = useState<{ open: boolean; member: Member | null }>({ open: false, member: null });
   const [adjustForm, setAdjustForm] = useState({ points: '', reason: '' });
+
+  // Signup bonus backfill
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<string | null>(null);
+
+  const runBackfill = async () => {
+    setBackfilling(true);
+    setBackfillResult(null);
+    try {
+      const res = (await backfillLoyaltySignupBonus()) as any;
+      const data = res?.data ?? res;
+      setBackfillResult(
+        `Done — ${Number(data?.total ?? 0).toLocaleString()} users scanned, ${Number(data?.credited ?? 0).toLocaleString()} granted the signup bonus.`,
+      );
+      fetchAll();
+    } catch (err: any) {
+      setBackfillResult(`Failed: ${err?.message || 'unknown error'}`);
+    } finally {
+      setBackfilling(false);
+    }
+  };
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -311,6 +332,34 @@ export default function AdminLoyaltyPage() {
               <p className="text-2xl font-bold">{stats.totalTransactions.toLocaleString()}</p>
             </Card>
           </div>
+
+          {/* Signup bonus backfill */}
+          <Card hover={false} className="mt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h3 className="font-bold">100-point signup bonus</h3>
+                <p className="text-sm text-on-surface-variant mt-0.5">
+                  Every user is supposed to start with the signup bonus. Grant it to any existing user who never received it (idempotent).
+                </p>
+                {backfillResult && (
+                  <p className={`text-sm mt-1 ${backfillResult.startsWith('Failed') ? 'text-rose-500' : 'text-emerald-500'}`}>
+                    {backfillResult}
+                  </p>
+                )}
+              </div>
+              <Button onClick={runBackfill} disabled={backfilling} className="shrink-0">
+                {backfilling ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Running…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" /> Backfill signup bonus
+                  </>
+                )}
+              </Button>
+            </div>
+          </Card>
 
           {/* Tier distribution */}
           <Card hover={false}>

@@ -177,11 +177,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Sidebar */}
       <aside className={cn(
-        'fixed left-0 top-0 z-50 h-screen bg-surface-container-low border-r border-outline-variant',
+        'fixed left-0 top-0 z-50 h-screen w-64 bg-surface-container-low border-r border-outline-variant',
         'transition-all duration-300 flex flex-col',
         'lg:translate-x-0',
         collapsed ? 'lg:w-20' : 'lg:w-64',
-        mobileOpen ? 'translate-x-0' : 'w-64 -translate-x-full lg:w-64',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full',
       )}>
         {/* Logo */}
         <div className={cn('h-16 flex items-center border-b border-outline-variant px-4', collapsed ? 'lg:justify-center' : 'gap-3')}>

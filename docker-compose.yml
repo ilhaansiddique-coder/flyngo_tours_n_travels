@@ -15,12 +15,16 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       BACKEND_HOST: 0.0.0.0
       BACKEND_PORT: 4000
-      DATABASE_URL: ${DATABASE_URL:-postgresql://flyngo:flyngo@postgres:5432/flyngo?schema=public}
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change-me-access}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-refresh}
+      # JWT signing keys MUST be supplied. There is deliberately NO public
+      # default here: leaving one out is a root-access vulnerability that is
+      # far worse than a loud startup failure. The backend also refuses to
+      # boot in production with weak/known secrets.
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-24h}
       JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-24h}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
@@ -101,7 +105,7 @@ services:
     container_name: flyngo-postgres
     environment:
       POSTGRES_USER: flyngo
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flyngo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: flyngo
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -126,8 +130,8 @@ services:
     image: getmeili/meilisearch:v1.12
     container_name: flyngo-meilisearch
     environment:
-      MEILI_MASTER_KEY: ${MEILISEARCH_API_KEY:-masterKey}
-      MEILI_ENV: development
+      MEILI_MASTER_KEY: ${MEILISEARCH_API_KEY}
+      MEILI_ENV: production
     volumes:
       - meilisearch_data:/meili_data
 

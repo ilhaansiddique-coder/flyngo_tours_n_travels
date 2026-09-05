@@ -9,9 +9,15 @@
 #      The two migrations in MIGRATE_TARGETS are pure DropIndex statements
 #      that are already idempotent (DROP INDEX IF EXISTS) — marking them
 #      applied lets the rest of the chain run.
-#   3. Seed the database on every boot (idempotent upserts) so demo content
-#      and loyalty points stay in sync — never fatal to startup.
+#   3. Seed the database on every boot (idempotent upserts) so role/permission
+#      scaffolding, the admin account and demo content stay in sync — never
+#      fatal to startup.
 #   4. Start the API.
+#
+# Migration failures are FATAL by default: silently running the API on a
+# partial schema causes opaque 500s (the exact incident we fixed) and blocks
+# every future migration. Set ALLOW_START_WITHOUT_MIGRATIONS=true only as a
+# last-resort manual override.
 # =============================================================================
 
 set -e
@@ -38,24 +44,31 @@ if ! run_migrations; then
   attempt_recovery
   echo "==> Retrying migrate deploy..."
   if ! run_migrations; then
-    # Never let a migration issue take the whole API down (that produces a
-    # 502 for every request). Best-effort: warn and start anyway. The schema
-    # mismatch (if any) only affects the endpoints that touch the missing
-    # column, and migrations can be reconciled manually/from a fresh deploy.
-    echo "==> WARNING: migrations failed to apply; starting API anyway (best-effort)."
+    if [ "${ALLOW_START_WITHOUT_MIGRATIONS:-false}" = "true" ]; then
+      echo "==> WARNING: migrations failed, but ALLOW_START_WITHOUT_MIGRATIONS=true — starting anyway (best-effort)."
+    else
+      echo "==> ERROR: migrations failed to apply. Refusing to boot on a partial schema." >&2
+      echo "    Fix the migration (e.g. 'prisma migrate resolve --rolled-back <name>' for" >&2
+      echo "    an orphaned/failed migration) and redeploy. See the audit notes." >&2
+      exit 1
+    fi
   fi
 fi
 
 # Seed on every boot. The seed is fully idempotent (upsert / find-or-create),
-# so this keeps demo content + loyalty points in sync without a manual step.
-# It only ever creates/updates its own known rows — services you add in the
-# admin panel are untouched. Non-fatal: a seed failure (e.g. a transient
-# network blip during the country fetch) must never stop the API from starting.
+# so this keeps content + loyalty points in sync without a manual step. It only
+# ever creates/updates its own known rows — services you add in the admin panel
+# are untouched. Non-fatal: a seed failure (e.g. a transient network blip during
+# the country fetch) must never stop the API from starting.
 echo "==> Seeding database (idempotent)..."
 if node prisma/seed.js; then
   echo "==> Seed complete"
 else
   echo "==> Seed failed (non-fatal) — continuing to start API"
+  if [ -z "${SUPER_ADMIN_PASSWORD:-}" ] && [ "${NODE_ENV:-production}" = "production" ]; then
+    echo "==> WARNING: SUPER_ADMIN_PASSWORD is not set. The seed will not create an" >&2
+    echo "    admin account in production. Set this env var to bootstrap the admin." >&2
+  fi
 fi
 
 echo "==> Starting Flyngo backend..."

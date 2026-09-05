@@ -724,10 +724,17 @@ export class AuthService {
       }),
     ]);
 
+    // Report the ACTUAL access-token lifetime (seconds) to the client instead
+    // of a hardcoded value that silently disagrees with the configured expiry.
+    const accessExpiry = this.configService.get('JWT_ACCESS_EXPIRY', '24h');
+    const seconds = String(accessExpiry).endsWith('h')
+      ? Number(accessExpiry.replace(/h$/, '')) * 3600
+      : Number(accessExpiry);
+
     return {
       accessToken,
       refreshToken,
-      expiresIn: 86400,
+      expiresIn: Number.isFinite(seconds) && seconds > 0 ? seconds : 86400,
     };
   }
 }

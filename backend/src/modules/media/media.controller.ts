@@ -5,7 +5,6 @@ import {
   Delete,
   Param,
   Query,
-  UseGuards,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
@@ -14,7 +13,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { MediaService } from './media.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
-import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
@@ -24,8 +22,9 @@ export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
 
   @Get()
-  @Public()
-  @ApiOperation({ summary: 'List media uploads (public, for media library)' })
+  @ApiBearerAuth()
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: 'List media uploads (admin, for media library)' })
   async list(
     @CurrentTenantId() tenantId: string,
     @Query() pagination: PaginationDto,

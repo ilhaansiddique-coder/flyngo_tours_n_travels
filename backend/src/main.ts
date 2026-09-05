@@ -11,11 +11,34 @@ import { resolve } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    // Capture the raw request body so Stripe / bKash webhook signature
+    // verification can hash the exact bytes that were signed. Without this,
+    // req.rawBody is undefined and online payment confirmations never settle.
+    rawBody: true,
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
   });
 
   const configService = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
+
+  // Refuse to boot with well-known public JWT secrets in production. The
+  // signing keys are read from the DB by sub, so anyone who knows a default
+  // secret can mint a token that resolves to a super-admin account.
+  if (configService.isProduction) {
+    const access = configService.getOrNull('JWT_ACCESS_SECRET') || '';
+    const refresh = configService.getOrNull('JWT_REFRESH_SECRET') || '';
+    const knownDefaults = ['change-me-access', 'change-me-refresh', 'change-me-access-secret', 'change-me-refresh-secret'];
+    if (
+      access.length < 32 ||
+      refresh.length < 32 ||
+      knownDefaults.some((d) => access.includes(d) || refresh.includes(d))
+    ) {
+      throw new Error(
+        'Refusing to start in production: JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be ' +
+          'strong (>= 32 chars) secrets, not the public defaults.',
+      );
+    }
+  }
 
   app.use(helmet());
   app.use(cookieParser());

@@ -104,7 +104,12 @@ export class MediaService {
         `File too large. Maximum allowed is ${Math.round(MAX_FILE_SIZE / 1024 / 1024)}MB`,
       );
     }
-    const allowed = allowDocuments ? new Set([...ALLOWED_MIME, ...DOCUMENT_MIME]) : ALLOWED_MIME;
+    // Documents (receipts, NID/passport copies) must never be SVG — SVGs can
+    // carry active script content and are not a real scanned-document format.
+    // SVG stays allowed only for the authenticated admin media library.
+    const baseImages = new Set([...ALLOWED_MIME]);
+    if (allowDocuments) baseImages.delete('image/svg+xml');
+    const allowed = allowDocuments ? new Set([...baseImages, ...DOCUMENT_MIME]) : ALLOWED_MIME;
     // Accept the file if EITHER the reported mimetype is allowed OR the
     // filename extension maps to an allowed type. Some OS/browser combinations
     // report files as application/octet-stream (notably Windows / GNOME file

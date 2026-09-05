@@ -1,0 +1,22 @@
+# Secrets — never send real credentials into the Docker build context
+.env
+.env.*
+!.env.example
+
+# Dependencies & build output (recreated inside the image)
+node_modules
+.next
+out
+coverage
+
+# Runtime data / local state
+.data
+*.log
+npm-debug.log*
+
+# VCS / editor
+.git
+.gitignore
+.gitattributes
+.idea
+.vscode

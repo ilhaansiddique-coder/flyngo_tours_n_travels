@@ -20,6 +20,7 @@ describe('PaymentsService', () => {
       create: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       update: jest.fn(),
       count: jest.fn(),
       groupBy: jest.fn(),
@@ -278,15 +279,35 @@ describe('PaymentsService', () => {
   });
 
   describe('submitConfirmation', () => {
-    it('creates a pending bKash payment with trx ID', async () => {
+    it('auto-completes a bKash payment submitted by the customer', async () => {
       mockPrisma.booking.findFirst.mockResolvedValue({
         id: 'booking-1', userId: 'user-1', bookingCode: 'FLY-ABC123', bookingType: 'tour',
         status: 'pending', totalAmount: 5000, paidAmount: 0, referralDiscount: 0,
         pointsRedemptionBdt: 0, currency: 'BDT', customerName: 'Ada',
       });
-      mockPrisma.payment.findFirst.mockResolvedValue(null);
+      // First findFirst is the duplicate trx check → null. The second is the
+      // completion lookup inside updatePaymentStatus → the full payment row.
+      mockPrisma.payment.findFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          id: 'pay-1', tenantId: 'tenant-1', amount: 5000, currency: 'BDT',
+          userId: 'user-1', bookingId: 'booking-1',
+          booking: {
+            id: 'booking-1', userId: 'user-1', status: 'pending', totalAmount: 5000,
+            paidAmount: 0, referralDiscount: 0, pointsRedemptionBdt: 0, currency: 'BDT',
+          },
+          hajjUmrahBooking: null,
+          user: { email: 'ada@example.com', fullName: 'Ada', phone: '123' },
+        });
       mockPrisma.payment.create.mockResolvedValue({
         id: 'pay-1', method: 'bkash', status: 'pending', bkashTrxId: '9J3ABCDE',
+      });
+      mockPrisma.payment.update.mockResolvedValue({
+        id: 'pay-1', method: 'bkash', status: 'completed', bkashTrxId: '9J3ABCDE',
+      });
+      mockPrisma.booking.update.mockResolvedValue({ id: 'booking-1', paidAmount: 5000, status: 'paid' });
+      mockPrisma.payment.findUnique.mockResolvedValue({
+        id: 'pay-1', method: 'bkash', status: 'completed', bkashTrxId: '9J3ABCDE',
       });
 
       const result = await service.submitConfirmation('tenant-1', 'user-1', {
@@ -295,7 +316,15 @@ describe('PaymentsService', () => {
         bkashTrxId: '9J3ABCDE',
       });
 
-      expect(result.status).toBe('pending');
+      // No longer left pending for manual admin verification — paid immediately.
+      expect(result?.status).toBe('completed');
+      expect(mockPrisma.payment.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: 'completed' }) }),
+      );
+      expect(mockPrisma.booking.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ paidAmount: 5000, status: 'paid' }) }),
+      );
+      expect(mockInvoices.generateForPayment).toHaveBeenCalledWith('pay-1', 'tenant-1');
       expect(mockPrisma.payment.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({

@@ -251,7 +251,7 @@ export default function PayPage() {
           <div className="mb-6 p-4 rounded-xl border text-sm" style={{ backgroundColor: 'color-mix(in oklab, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in oklab, var(--color-primary) 30%, transparent)' }}>
             <div className="flex items-center gap-2 font-semibold">
               <Check className="w-4 h-4" />
-              {isBn ? 'পেমেন্ট জমা হয়েছে। আমরা রসিদ যাচাই করে নিশ্চিত করব।' : 'Payment submitted. We will verify your receipt and confirm.'}
+              {isBn ? 'পেমেন্ট রেকর্ড হয়েছে এবং ইনভয়েস তৈরি হয়েছে।' : 'Payment recorded and your invoice has been generated.'}
             </div>
           </div>
         )}

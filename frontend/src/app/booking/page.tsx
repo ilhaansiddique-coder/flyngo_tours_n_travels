@@ -13,7 +13,7 @@ import {
   findDialByCode,
 } from '@/lib/country-dial-codes';
 import { useState, useEffect, useRef } from 'react';
-import { Check, Loader2, Sparkles, MapPin, Wallet, Users as UsersIcon, Heart, ArrowRight, ArrowLeft, AlertCircle, Compass, Building2, Plane, Briefcase, Banknote, Building, Smartphone, Copy, Upload, X, FileText, Info } from 'lucide-react';
+import { Check, Loader2, Sparkles, MapPin, Wallet, Users as UsersIcon, Heart, ArrowRight, ArrowLeft, AlertCircle, Compass, Building2, Plane, Briefcase, Banknote, Building, Smartphone, Copy, Upload, X, FileText, Info, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/contexts/locale-context';
@@ -771,13 +771,11 @@ export default function BookingPage() {
       if (typeof window !== 'undefined') window.scrollTo({ top: 200, behavior: 'smooth' });
       return;
     }
-    // Checkout step: require payment method selection (only for preset bookings)
+    // Checkout step: payment is optional for preset bookings — only validate
+    // the chosen method's fields when one has been selected (booking can be
+    // submitted without payment and paid later via the invoice page).
     const max = bookingType === 'custom' ? 5 : bookingType === 'visa' ? (isPresetBooking ? 3 : 4) : bookingType === 'tour' ? (isPresetBooking ? 3 : 2) : (isPresetBooking ? 4 : 3);
-    if (currentStep === max && bookingType !== 'custom' && isPresetBooking) {
-      if (!paymentMethod) {
-        setError(isBn ? 'অনুগ্রহ করে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Please select a payment method');
-        return;
-      }
+    if (currentStep === max && bookingType !== 'custom' && isPresetBooking && paymentMethod) {
       const isWalletMethod = wallets.some((w) => w.provider === paymentMethod);
       if (isWalletMethod && !bkashTrxId.trim()) {
         const label = WALLET_LABELS[paymentMethod] || paymentMethod;
@@ -925,8 +923,8 @@ export default function BookingPage() {
             {paymentConfirmed && (
               <p className="text-xs text-muted rounded-xl p-3 bg-surface-container/60">
                 {isBn
-                  ? 'পেমেন্ট তথ্য জমা হয়েছে। আমাদের টিম রসিদ যাচাই করে নিশ্চিত করবে এবং ইনভয়েস তৈরি করবে।'
-                  : 'Payment details submitted. Our team will verify your receipt and generate the invoice after confirmation.'}
+                  ? 'পেমেন্ট রেকর্ড হয়েছে এবং ইনভয়েস তৈরি হয়েছে। আপনার ইনভয়েস ড্যাশবোর্ড/ইনভয়েস পেজ থেকে দেখতে ও ডাউনলোড করতে পারবেন।'
+                  : 'Payment recorded and your invoice has been generated. You can view and download it from the invoice/payment page.'}
               </p>
             )}
             <p className="text-[10px] uppercase tracking-widest font-bold text-muted mt-4">{t('booking_booking_code')}</p>
@@ -1570,7 +1568,7 @@ export default function BookingPage() {
                       </span>
                     </div>
                     <div className="text-xs text-muted">
-                      {isBn ? 'পেমেন্ট পরিষেবার মাধ্যমে পরিশোধ করুন' : 'Pay now to confirm your booking'}
+                      {isBn ? 'পেমেন্ট ঐচ্ছিক — এখনই বা পরে পরিশোধ করতে পারবেন' : 'Payment is optional — pay now or later'}
                     </div>
                   </div>
 
@@ -1624,9 +1622,35 @@ export default function BookingPage() {
                           )}
                         </button>
                       ))}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPaymentMethod('');
+                          setSelectedWalletId('');
+                        }}
+                        className={`flex items-start gap-3 p-4 rounded-xl border text-left transition ${
+                          !paymentMethod
+                            ? 'border-[var(--color-primary)]'
+                            : 'border-soft hover:border-medium'
+                        }`}
+                        style={!paymentMethod ? { backgroundColor: 'color-mix(in oklab, var(--color-primary) 12%, transparent)' } : { backgroundColor: 'var(--color-surface-container)' }}
+                      >
+                        <Clock
+                          className="w-5 h-5 mt-0.5 shrink-0"
+                          style={{ color: !paymentMethod ? 'var(--color-primary)' : 'var(--color-muted)' }}
+                        />
+                        <div>
+                          <div className="text-sm font-semibold text-on-surface">{isBn ? 'পরে পরিশোধ করুন' : 'Pay Later'}</div>
+                          <div className="text-xs text-muted mt-0.5">{isBn ? 'এখনই পেমেন্ট ছাড়াই বুকিং জমা দিন' : 'Submit booking now and pay later'}</div>
+                        </div>
+                        {!paymentMethod && (
+                          <Check className="w-4 h-4 ml-auto mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
+                        )}
+                      </button>
                     </div>
                     {!paymentMethod && (
-                      <p className="text-xs text-muted mt-3 text-center">{isBn ? 'চালিয়ে যেতে একটি পেমেন্ট পদ্ধতি নির্বাচন করুন' : 'Select a payment method to continue'}</p>
+                      <p className="text-xs text-muted mt-3 text-center">{isBn ? 'পেমেন্ট ঐচ্ছিক — আপনি পরে পরিশোধ করতে পারবেন' : 'Payment is optional — you can pay later'}</p>
                     )}
 
                     {renderPaymentDetailInputs()}
@@ -1701,6 +1725,32 @@ export default function BookingPage() {
                           )}
                         </button>
                       ))}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPaymentMethod('');
+                          setSelectedWalletId('');
+                        }}
+                        className={`flex items-start gap-3 p-4 rounded-xl border text-left transition ${
+                          !paymentMethod
+                            ? 'border-[var(--color-primary)]'
+                            : 'border-soft hover:border-medium'
+                        }`}
+                        style={!paymentMethod ? { backgroundColor: 'color-mix(in oklab, var(--color-primary) 12%, transparent)' } : { backgroundColor: 'var(--color-surface-container)' }}
+                      >
+                        <Clock
+                          className="w-5 h-5 mt-0.5 shrink-0"
+                          style={{ color: !paymentMethod ? 'var(--color-primary)' : 'var(--color-muted)' }}
+                        />
+                        <div>
+                          <div className="text-sm font-semibold text-on-surface">{isBn ? 'পরে পরিশোধ করুন' : 'Pay Later'}</div>
+                          <div className="text-xs text-muted mt-0.5">{isBn ? 'এখনই পেমেন্ট ছাড়াই বুকিং জমা দিন' : 'Submit booking now and pay later'}</div>
+                        </div>
+                        {!paymentMethod && (
+                          <Check className="w-4 h-4 ml-auto mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
+                        )}
+                      </button>
                     </div>
                   </div>
 

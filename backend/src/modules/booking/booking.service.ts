@@ -212,6 +212,7 @@ export class BookingService {
             select: {
               id: true, amount: true, currency: true, method: true, status: true,
               transactionId: true, bkashTrxId: true, createdAt: true,
+              receiptUrls: true, senderName: true, senderAccount: true, payerPhone: true, notes: true, verifiedAt: true,
             },
           },
           invoices: {
@@ -360,12 +361,12 @@ export class BookingService {
     }
 
     // Emit purchase event when status becomes "confirmed" — fires Meta CAPI + GA4
-    if (status === 'confirmed' || status === 'completed') {
+    if (status === 'confirmed' || status === 'completed' || status === 'paid') {
       // Loyalty points: 50% on confirmation, remaining 50% on completion (Q4)
       if (booking.userId) {
         try {
           const productPoints = await this.loyaltyService.getProductPoints(tenantId, booking.bookingType, booking.itemId);
-          if (status === 'confirmed') {
+          if (status === 'confirmed' || status === 'paid') {
             await this.loyaltyService.awardBookingConfirmation(tenantId, id, booking.userId, booking.bookingType, productPoints);
           } else if (status === 'completed') {
             await this.loyaltyService.awardBookingCompletion(tenantId, id, booking.userId, booking.bookingType, productPoints);

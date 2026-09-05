@@ -44,7 +44,7 @@ export const en = {
   booking_step_review: 'Review',
   booking_step_confirm: 'Confirm & pay',
   booking_step_checkout: 'Checkout',
-  booking_checkout_help: 'Select your preferred payment method to complete the booking.',
+  booking_checkout_help: 'Payment is optional — you can pay now or later.',
   booking_step_applicant: 'Applicant',
   booking_step_travel: 'Travel',
   booking_step_documents: 'Documents',

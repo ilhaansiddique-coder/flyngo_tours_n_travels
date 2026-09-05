@@ -46,7 +46,7 @@ export const bn: Messages = {
   booking_step_review: 'পর্যালোচনা',
   booking_step_confirm: 'নিশ্চিত ও পেমেন্ট',
   booking_step_checkout: 'চেকআউট',
-  booking_checkout_help: 'বুকিং সম্পূর্ণ করতে আপনার পছন্দের পেমেন্ট পদ্ধতি নির্বাচন করুন।',
+  booking_checkout_help: 'পেমেন্ট ঐচ্ছিক — আপনি এখনই বা পরে পরিশোধ করতে পারবেন।',
   booking_step_applicant: 'আবেদনকারী',
   booking_step_travel: 'ভ্রমণ',
   booking_step_documents: 'ডকুমেন্টস',

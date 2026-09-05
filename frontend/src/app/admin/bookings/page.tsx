@@ -8,7 +8,7 @@ import { ConfirmDialog, Modal, FormField, FormInput, FormSelect, FormTextarea } 
 import { useApi } from '@/hooks/use-api';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { BOOKING_STATUSES, STATUS_BADGE_VARIANT } from '@/lib/booking-statuses';
-import { Search, Plus, Eye, Trash2, RotateCcw, Copy, Check, Banknote, Smartphone, Building, Upload, X, FileText } from 'lucide-react';
+import { Search, Plus, Eye, Trash2, RotateCcw, Copy, Check, Banknote, Smartphone, Building, Upload, X, FileText, Paperclip } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface BookingUser {
@@ -47,6 +47,54 @@ function formatMetaLabel(key: string): string {
   const withoutPrefix = key.startsWith('doc_') ? key.slice(4) : key;
   const spaced = withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ');
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+// Uploaded files (visa documents etc.) are stored in the booking meta as a
+// comma-joined string of URLs under each doc_* key. Extract the real URLs so
+// the admin can open them — a plain 'yes' is just a checklist tick.
+function metaFileUrls(value: string | number | boolean): string[] {
+  if (typeof value !== 'string') return [];
+  return value
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => /^https?:\/\//i.test(s));
+}
+
+// Clickable thumbnail for an uploaded image/PDF (visa docs, payment receipts).
+function FileThumb({ url }: { url: string }) {
+  const isImage = /\.(jpe?g|png|gif|webp)(\?|$)/i.test(url);
+  return (
+    <a
+      key={url}
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="block w-14 h-14 rounded-lg overflow-hidden border border-outline-variant bg-surface-container"
+      title={decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'File')}
+    >
+      {isImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt="upload" className="w-full h-full object-cover" />
+      ) : (
+        <span className="w-full h-full flex items-center justify-center text-on-surface-variant">
+          <FileText className="w-5 h-5" />
+        </span>
+      )}
+    </a>
+  );
+}
+
+// Total uploaded files attached to a booking (visa docs in meta + payment
+// receipts) so the table can show an "attachment count" indicator.
+function bookingFileCount(b: Booking): number {
+  let count = 0;
+  if (b.meta) {
+    for (const v of Object.values(b.meta)) count += metaFileUrls(v).length;
+  }
+  if (b.payments) {
+    for (const p of b.payments) count += Array.isArray(p?.receiptUrls) ? p.receiptUrls.length : 0;
+  }
+  return count;
 }
 
 interface BookingsMeta {
@@ -562,6 +610,7 @@ export default function BookingsPage() {
                 <th className="p-4 font-medium">Status</th>
                 <th className="p-4 font-medium">Start Date</th>
                 <th className="p-4 font-medium">Credentials</th>
+                <th className="p-4 font-medium">Files</th>
                 <th className="p-4 font-medium">Actions</th>
               </tr>
             </thead>
@@ -615,6 +664,19 @@ export default function BookingsPage() {
                         ) : (
                           <><Copy className="w-3.5 h-3.5" /> Copy</>
                         )}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-on-surface-variant">—</span>
+                    )}
+                  </td>
+                  <td className="p-4">
+                    {bookingFileCount(b) > 0 ? (
+                      <button
+                        onClick={() => setDetailTarget(b)}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                        title="View uploaded files"
+                      >
+                        <Paperclip className="w-4 h-4" /> {bookingFileCount(b)}
                       </button>
                     ) : (
                       <span className="text-xs text-on-surface-variant">—</span>
@@ -691,7 +753,7 @@ export default function BookingsPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-on-surface-variant">
+                  <td colSpan={8} className="p-8 text-center text-on-surface-variant">
                     {viewTrash ? 'Trash is empty — no deleted bookings.' : 'No bookings found'}
                   </td>
                 </tr>
@@ -832,16 +894,29 @@ export default function BookingsPage() {
                 <p className="text-on-surface-variant text-xs mb-1">
                   {detailTarget.bookingType === 'visa' ? 'Visa application' : 'Request details'}
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 bg-surface-container p-3 rounded-lg">
-                  {Object.entries(detailTarget.meta).map(([key, value]) => (
-                    <div key={key} className="flex justify-between gap-3 text-xs">
-                      <span className="text-on-surface-variant">{formatMetaLabel(key)}</span>
-                      <span className="font-medium text-on-surface text-right break-words">
-                        {/* Document checklist entries are stored as 'yes'. */}
-                        {key.startsWith('doc_') ? (value === 'yes' ? '✓' : '—') : String(value)}
-                      </span>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 bg-surface-container p-3 rounded-lg">
+                  {Object.entries(detailTarget.meta).map(([key, value]) => {
+                    const files = metaFileUrls(value);
+                    if (files.length > 0) {
+                      return (
+                        <div key={key} className="flex flex-col gap-1.5 text-xs sm:col-span-2">
+                          <span className="text-on-surface-variant">{formatMetaLabel(key)}</span>
+                          <span className="flex flex-wrap gap-1.5">
+                            {files.map((url) => <FileThumb key={url} url={url} />)}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={key} className="flex justify-between gap-3 text-xs">
+                        <span className="text-on-surface-variant">{formatMetaLabel(key)}</span>
+                        <span className="font-medium text-on-surface text-right break-words">
+                          {/* Document checklist entries are stored as 'yes'. */}
+                          {key.startsWith('doc_') ? (value === 'yes' ? '✓' : '—') : String(value)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -850,11 +925,19 @@ export default function BookingsPage() {
                 <p className="text-on-surface-variant text-xs mb-1">Payments</p>
                 <div className="space-y-1">
                   {detailTarget.payments.map((p: any) => (
-                    <div key={p.id} className="flex justify-between text-xs bg-surface-container p-2 rounded">
-                      <span className="font-mono">{p.transactionId}</span>
-                      <span className="capitalize">{p.method}</span>
-                      <span>{formatCurrency(Number(p.amount), p.currency)}</span>
-                      <Badge variant={p.status === 'completed' ? 'success' : 'warning'}>{p.status}</Badge>
+                    <div key={p.id} className="text-xs bg-surface-container p-2 rounded">
+                      <div className="flex flex-wrap justify-between gap-2 items-center">
+                        <span className="font-mono">{p.transactionId}</span>
+                        <span className="capitalize">{p.method}</span>
+                        <span>{formatCurrency(Number(p.amount), p.currency)}</span>
+                        <Badge variant={p.status === 'completed' ? 'success' : 'warning'}>{p.status}</Badge>
+                      </div>
+                      {p.senderName && <div className="text-on-surface-variant mt-0.5">Sender: {p.senderName}</div>}
+                      {Array.isArray(p.receiptUrls) && p.receiptUrls.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {p.receiptUrls.map((url: string) => <FileThumb key={url} url={url} />)}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

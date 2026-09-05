@@ -239,6 +239,17 @@ export class PaymentsService {
       if (full) {
         const invoice = await this.applyCompletedPayment(payment.tenantId, full);
 
+        if (!invoice) {
+          try {
+            const hasInvoice = await this.prisma.invoice.findFirst({ where: { paymentId: payment.id, tenantId: payment.tenantId } });
+            if (!hasInvoice) {
+              await this.invoices.generateForPayment(payment.id, payment.tenantId);
+            }
+          } catch (err: any) {
+            this.logger.warn(`Invoice recovery in webhook path failed: ${err.message}`);
+          }
+        }
+
         // Best-effort confirmation email
         try {
           const email = full.user?.email;
@@ -617,8 +628,9 @@ export class PaymentsService {
       }
     }
 
+    let created;
     try {
-      return await this.prisma.payment.create({
+      created = await this.prisma.payment.create({
         data: {
           tenantId,
           userId: target.userId,
@@ -649,6 +661,24 @@ export class PaymentsService {
       }
       throw err;
     }
+
+    // Customer-initiated payments count as paid immediately: credit the
+    // booking's paid amount, flip it to 'paid' when fully settled, generate the
+    // invoice and fire the receipt notifications — no manual admin verification
+    // step required.
+    try {
+      await this.updatePaymentStatus(created.id, tenantId, 'completed');
+    } catch (err: any) {
+      this.logger.error(`Auto-complete of payment ${created.id} failed: ${err.message}`);
+    }
+
+    return this.prisma.payment.findUnique({
+      where: { id: created.id },
+      include: {
+        bankAccount: { select: { id: true, bankName: true, accountName: true, accountNumber: true } },
+        mobileWallet: { select: { id: true, provider: true, accountName: true, walletNumber: true } },
+      },
+    });
   }
 
   async recordAdminPayment(tenantId: string, adminUserId: string, input: RecordAdminPaymentInput) {
@@ -859,12 +889,12 @@ export class PaymentsService {
       );
       const fullyPaid = paid + 0.01 >= due;
       const nextStatus =
-        fullyPaid && payment.booking.status === 'pending' ? 'confirmed' : payment.booking.status;
+        fullyPaid && payment.booking.status === 'pending' ? 'paid' : payment.booking.status;
       await this.prisma.booking.update({
         where: { id: payment.booking.id },
         data: { paidAmount: paid, ...(nextStatus !== payment.booking.status ? { status: nextStatus } : {}) },
       });
-      if (nextStatus === 'confirmed' && payment.booking.status !== 'confirmed' && payment.booking.userId) {
+      if ((nextStatus === 'paid' || nextStatus === 'confirmed') && payment.booking.status !== 'paid' && payment.booking.status !== 'confirmed' && payment.booking.userId) {
         try {
           const productPoints = await this.loyaltyService.getProductPoints(
             tenantId,
@@ -891,7 +921,7 @@ export class PaymentsService {
       const paymentStatus = paid <= 0 ? 'unpaid' : balance <= 0.01 ? 'paid' : 'partial';
       const nextStatus =
         paymentStatus === 'paid' && payment.hajjUmrahBooking.status === 'pending'
-          ? 'confirmed'
+          ? 'paid'
           : payment.hajjUmrahBooking.status;
       await this.prisma.hajjUmrahBooking.update({
         where: { id: payment.hajjUmrahBooking.id },
@@ -902,7 +932,7 @@ export class PaymentsService {
           ...(nextStatus !== payment.hajjUmrahBooking.status ? { status: nextStatus } : {}),
         },
       });
-      if (nextStatus === 'confirmed' && payment.hajjUmrahBooking.status !== 'confirmed' && payment.hajjUmrahBooking.userId) {
+      if ((nextStatus === 'paid' || nextStatus === 'confirmed') && payment.hajjUmrahBooking.status !== 'paid' && payment.hajjUmrahBooking.status !== 'confirmed' && payment.hajjUmrahBooking.userId) {
         try {
           const productPoints = await this.loyaltyService.getProductPoints(
             tenantId,

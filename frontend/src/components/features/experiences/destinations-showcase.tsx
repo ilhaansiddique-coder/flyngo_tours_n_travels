@@ -14,23 +14,7 @@ interface ApiDestination {
   continent?: string | null;
   imageUrl?: string | null;
   coverImageUrl?: string | null;
-  isFeatured?: boolean;
   _count?: { tours?: number; hotels?: number };
-}
-
-function Tag({ tone, children }: { tone: 'accent' | 'tertiary'; children: React.ReactNode }) {
-  const styles: Record<typeof tone, React.CSSProperties> = {
-    accent: { backgroundColor: 'var(--color-accent)', color: 'var(--color-on-accent)' },
-    tertiary: { backgroundColor: 'var(--color-tertiary)', color: 'var(--color-on-tertiary)' },
-  };
-  return (
-    <span
-      className="px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase"
-      style={styles[tone]}
-    >
-      {children}
-    </span>
-  );
 }
 
 export function DestinationsShowcase() {
@@ -43,7 +27,7 @@ export function DestinationsShowcase() {
     let cancelled = false;
     const fetchDestinations = async () => {
       try {
-        const data: any = await getDestinations();
+        const data: any = await getDestinations({ featured: 'true' });
         const items = data.data ?? data ?? [];
         if (!cancelled) setDestinations(Array.isArray(items) ? items : []);
       } catch {
@@ -148,11 +132,6 @@ export function DestinationsShowcase() {
                       <div className="absolute inset-0 bg-grid opacity-50" />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                    {d.isFeatured && (
-                      <div className="absolute top-4 left-4 z-10">
-                        <Tag tone="accent">Featured</Tag>
-                      </div>
-                    )}
                     <div className="absolute top-4 right-4 z-10">
                       <div
                         className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"

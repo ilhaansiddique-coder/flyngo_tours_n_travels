@@ -18,8 +18,9 @@ export class DestinationsController {
     @CurrentTenantId() tenantId: string,
     @Query() pagination: PaginationDto,
     @Query('toursOnly') toursOnly?: string,
+    @Query('featured') featured?: string,
   ) {
-    return this.destinationsService.findAll(tenantId, pagination.page, pagination.limit, pagination.q, toursOnly === 'true');
+    return this.destinationsService.findAll(tenantId, pagination.page, pagination.limit, pagination.q, toursOnly === 'true', featured === 'true');
   }
 
   @Get('autocomplete')

@@ -75,8 +75,9 @@ export class DestinationsService {
     return created;
   }
 
-  async findAll(tenantId: string, page = 1, limit = 50, q?: string, toursOnly = false) {
+  async findAll(tenantId: string, page = 1, limit = 50, q?: string, toursOnly = false, featured = false) {
     const where: any = { tenantId, deletedAt: null };
+    if (featured) where.isFeatured = true;
     if (q && q.trim()) {
       const term = q.trim();
       where.OR = [

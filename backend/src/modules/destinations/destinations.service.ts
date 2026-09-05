@@ -57,6 +57,25 @@ export class DestinationsService {
    * is auto-created so the typed value is never lost. Used by the autocomplete
    * "create if not found" behaviour.
    */
+  /**
+   * Derive a flag for a destination from its country. Looks for a sibling
+   * destination row matching the country name (seeded for every ISO country)
+   * and reuses its flag so city entries like "Bangkok" get the Thai flag.
+   */
+  private async resolveFlagUrl(tenantId: string, country?: string | null): Promise<string | null> {
+    if (!country) return null;
+    const match = await this.prisma.destination.findFirst({
+      where: {
+        tenantId,
+        deletedAt: null,
+        name: { equals: country, mode: 'insensitive' },
+        flagUrl: { not: null },
+      },
+      select: { flagUrl: true },
+    });
+    return match?.flagUrl ?? null;
+  }
+
   async resolve(tenantId: string, name: string) {
     const trimmed = String(name || '').trim();
     if (!trimmed) throw new BadRequestException('A country / destination name is required');
@@ -69,7 +88,13 @@ export class DestinationsService {
     if (existing) return existing;
 
     const created = await this.prisma.destination.create({
-      data: { tenantId, name: trimmed, slug, country: trimmed },
+      data: {
+        tenantId,
+        name: trimmed,
+        slug,
+        country: trimmed,
+        flagUrl: await this.resolveFlagUrl(tenantId, trimmed),
+      },
       select: { id: true, name: true, slug: true, flagUrl: true, country: true, continent: true },
     });
     return created;
@@ -135,7 +160,7 @@ export class DestinationsService {
         continent: data.continent,
         description: data.description,
         imageUrl: data.imageUrl,
-        flagUrl: data.flagUrl,
+        flagUrl: data.flagUrl ?? (await this.resolveFlagUrl(tenantId, data.country)),
         coverImageUrl: data.coverImageUrl,
         latitude: data.latitude,
         longitude: data.longitude,

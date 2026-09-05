@@ -3,6 +3,7 @@
 import { Section, Container } from '@/components/ui/section';
 import { Card } from '@/components/ui/card';
 import { PageHero } from '@/components/ui/page-hero';
+import { countryFlag } from '@/lib/country-flag';
 import Link from 'next/link';
 import { ArrowUpRight, MapPin } from 'lucide-react';
 import { useApi } from '@/hooks/use-api';
@@ -84,9 +85,13 @@ export function DestinationsPageClient() {
                           <>
                             <div className="absolute inset-0 bg-grid opacity-50" />
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="font-display text-5xl font-extrabold text-on-bg/30 group-hover:text-on-bg/60 transition-colors">
-                                {dest.name[0]}{dest.country[0]}
-                              </span>
+                              {countryFlag(dest.country) ? (
+                                <span className="text-6xl drop-shadow">{countryFlag(dest.country)}</span>
+                              ) : (
+                                <span className="font-display text-5xl font-extrabold text-on-bg/30 group-hover:text-on-bg/60 transition-colors">
+                                  {dest.name[0]}{dest.country[0]}
+                                </span>
+                              )}
                             </div>
                           </>
                         )}
@@ -109,6 +114,7 @@ export function DestinationsPageClient() {
                           </h3>
                           <p className="text-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
                             <MapPin className="w-3 h-3" />
+                            <span className="mr-0.5">{countryFlag(dest.country)}</span>
                             {dest.country}
                           </p>
                         </div>

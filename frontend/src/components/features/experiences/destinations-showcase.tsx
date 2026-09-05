@@ -4,6 +4,7 @@ import { ArrowUpRight, MapPin } from 'lucide-react';
 import { SectionHeading } from '@/components/ui/section-heading';
 import { useApi } from '@/hooks/use-api';
 import { destinationImage } from '@/lib/entity-image';
+import { countryFlag } from '@/lib/country-flag';
 import { useEffect, useMemo, useState } from 'react';
 
 interface ApiDestination {
@@ -145,8 +146,11 @@ export function DestinationsShowcase() {
                     </div>
                     <div className="absolute bottom-4 left-4 right-4 z-10">
                       <div className="flex items-center gap-1.5 text-xs text-white/80 mb-1.5">
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span className="font-medium">{d.country}</span>
+                        <MapPin className="w-3.5 h-3.5 shrink-0" />
+                        <span className="font-medium">
+                          <span className="mr-1">{countryFlag(d.country)}</span>
+                          {d.country}
+                        </span>
                       </div>
                       <h3 className="text-2xl font-bold text-white tracking-tight">
                         {d.name}

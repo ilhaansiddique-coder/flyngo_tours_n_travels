@@ -5,6 +5,127 @@ import { PrismaService } from '../../database/prisma.service';
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Registry of content entities that are soft-deleted (deletedAt) and can be
+   * restored from the admin Trash. Keyed by the slug used in the trash API.
+   */
+  private readonly TRASH_ENTITIES: Array<{
+    key: string;
+    label: string;
+    model: string;
+    title: string;
+    subtitle?: string;
+    isActive?: boolean;
+  }> = [
+    { key: 'destination', label: 'Destination', model: 'destination', title: 'name', subtitle: 'country', isActive: true },
+    { key: 'tour', label: 'Tour', model: 'tour', title: 'title', isActive: true },
+    { key: 'hotel', label: 'Hotel', model: 'hotel', title: 'name', isActive: true },
+    { key: 'flight', label: 'Flight', model: 'flight', title: 'airline', subtitle: 'destinationCode', isActive: true },
+    { key: 'visa', label: 'Visa Service', model: 'visaService', title: 'title', isActive: true },
+    { key: 'transport', label: 'Transport', model: 'transport', title: 'title', isActive: true },
+    { key: 'hajj', label: 'Hajj Package', model: 'hajjPackage', title: 'title', isActive: true },
+    { key: 'umrah', label: 'Umrah Package', model: 'umrahPackage', title: 'title', isActive: true },
+    { key: 'visa-country', label: 'Visa Country', model: 'visaCountry', title: 'name', isActive: true },
+    { key: 'blog', label: 'Blog Post', model: 'blogPost', title: 'title' },
+    { key: 'cms-page', label: 'CMS Page', model: 'cmsPage', title: 'title' },
+    { key: 'testimonial', label: 'Testimonial', model: 'testimonial', title: 'content' },
+    { key: 'faq', label: 'FAQ', model: 'faq', title: 'question' },
+    { key: 'coupon', label: 'Coupon', model: 'coupon', title: 'code', isActive: true },
+    { key: 'bank-account', label: 'Bank Account', model: 'bankAccount', title: 'bankName', subtitle: 'accountName', isActive: true },
+    { key: 'mobile-wallet', label: 'Mobile Wallet', model: 'mobileWallet', title: 'accountName', isActive: true },
+    { key: 'user', label: 'User', model: 'user', title: 'fullName', subtitle: 'email', isActive: true },
+    { key: 'review', label: 'Review', model: 'review', title: 'title' },
+  ];
+
+  private findTrashEntity(key: string) {
+    const def = this.TRASH_ENTITIES.find((e) => e.key === key);
+    if (!def) throw new NotFoundException(`Unknown trash entity: ${key}`);
+    return def;
+  }
+
+  /**
+   * List soft-deleted items across the registered entities. Can be filtered to
+   * a single entity. Returns a merged, newest-first feed with per-entity counts.
+   */
+  async getTrash(tenantId: string, page = 1, limit = 20, entity?: string, q?: string) {
+    const targets = entity ? [this.findTrashEntity(entity)] : this.TRASH_ENTITIES;
+    const perEntity: Record<string, number> = {};
+    const rows: Array<{
+      entity: string;
+      entityLabel: string;
+      id: string;
+      title: string;
+      subtitle: string;
+      deletedAt: Date;
+    }> = [];
+
+    for (const def of targets) {
+      const where: any = { tenantId, deletedAt: { not: null } };
+      if (q && q.trim()) {
+        where.OR = [{ [def.title]: { contains: q.trim(), mode: 'insensitive' } }];
+        if (def.subtitle) where.OR.push({ [def.subtitle]: { contains: q.trim(), mode: 'insensitive' } });
+      }
+      const select: any = { id: true, deletedAt: true, [def.title]: true };
+      if (def.subtitle) select[def.subtitle] = true;
+
+      const model = (this.prisma as any)[def.model];
+      const [count, items] = await Promise.all([
+        model.count({ where }),
+        model.findMany({ where, orderBy: { deletedAt: 'desc' }, take: 300, select }),
+      ]);
+      perEntity[def.key] = count;
+      for (const item of items || []) {
+        rows.push({
+          entity: def.key,
+          entityLabel: def.label,
+          id: item.id,
+          title: String(item[def.title] ?? '').trim() || `(${def.label} #${item.id.slice(0, 8)})`,
+          subtitle: def.subtitle ? String(item[def.subtitle] ?? '').trim() : '',
+          deletedAt: item.deletedAt,
+        });
+      }
+    }
+
+    rows.sort((a, b) => (b.deletedAt?.getTime() ?? 0) - (a.deletedAt?.getTime() ?? 0));
+    const total = rows.length;
+    const start = (page - 1) * limit;
+    return {
+      items: rows.slice(start, start + limit),
+      meta: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
+      perEntity,
+    };
+  }
+
+  /** Restore a soft-deleted item back into the active list. */
+  async restoreTrashItem(tenantId: string, entity: string, id: string) {
+    const def = this.findTrashEntity(entity);
+    const model = (this.prisma as any)[def.model];
+    const row = await model.findFirst({ where: { id, tenantId, deletedAt: { not: null } } });
+    if (!row) throw new NotFoundException(`${def.label} not found in trash`);
+    try {
+      await model.update({
+        where: { id },
+        data: { deletedAt: null, ...(def.isActive ? { isActive: true } : {}) },
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        throw new ConflictException(`${def.label} conflicts with an existing active record (unique field) — try editing that one first`);
+      }
+      throw err;
+    }
+    return { restored: true, entity, id };
+  }
+
+  /** Permanently remove a trashed item. Irreversible. */
+  async purgeTrashItem(tenantId: string, entity: string, id: string) {
+    const def = this.findTrashEntity(entity);
+    const model = (this.prisma as any)[def.model];
+    const row = await model.findFirst({ where: { id, tenantId, deletedAt: { not: null } } });
+    if (!row) throw new NotFoundException(`${def.label} not found in trash`);
+    await model.delete({ where: { id } });
+    return { purged: true, entity, id };
+  }
+
   async createRole(tenantId: string, data: { name: string; code: string; isSystem?: boolean; permissionIds?: string[] }) {
     const existing = await this.prisma.role.findFirst({ where: { tenantId, code: data.code } });
     if (existing) throw new ConflictException('A role with this code already exists');

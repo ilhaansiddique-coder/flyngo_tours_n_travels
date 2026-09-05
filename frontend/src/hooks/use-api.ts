@@ -115,6 +115,13 @@ export function useApi() {
   const updateRole = useCallback(async (id: string, body: any) => api.patch(`/admin/roles/${id}`, body, auth()), [auth]);
   const deleteRole = useCallback(async (id: string) => api.delete(`/admin/roles/${id}`, auth()), [auth]);
   const getPermissions = useCallback(async () => api.get('/admin/permissions', auth()), [auth]);
+
+  const getTrash = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/admin/trash' + qs, auth());
+  }, [auth]);
+  const restoreTrashItem = useCallback(async (entity: string, id: string) => api.post(`/admin/trash/${entity}/${id}/restore`, {}, auth()), [auth]);
+  const purgeTrashItem = useCallback(async (entity: string, id: string) => api.delete(`/admin/trash/${entity}/${id}`, auth()), [auth]);
   const createPermission = useCallback(async (body: any) => api.post('/admin/permissions', body, auth()), [auth]);
   const updatePermission = useCallback(async (id: string, body: any) => api.patch(`/admin/permissions/${id}`, body, auth()), [auth]);
   const deletePermission = useCallback(async (id: string) => api.delete(`/admin/permissions/${id}`, auth()), [auth]);
@@ -539,6 +546,7 @@ export function useApi() {
     getDashboard, getAuditLogs,
     getRoles, createRole, updateRole, deleteRole,
     getPermissions, createPermission, updatePermission, deletePermission,
+    getTrash, restoreTrashItem, purgeTrashItem,
     getCoupons, createCoupon, updateCoupon, deleteCoupon,
     getAffiliates, createAffiliate, updateAffiliate, deleteAffiliate,
     getLoyaltyOverview, getLoyaltyReferralLink, getLoyaltyReferrals, getLoyaltyHistory,

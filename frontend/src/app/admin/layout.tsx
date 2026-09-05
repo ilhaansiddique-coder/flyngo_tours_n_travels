@@ -10,7 +10,7 @@ import {
   FileText as FileIcon, Image, Search as SearchIcon, Star, HelpCircle,
   Megaphone, Car, MessageSquare, Bell, CreditCard, Sparkles, FileCheck,
   Languages, MessageCircle, Info, Menu as MenuIcon, LayoutGrid, Target, Coins,
-  Smartphone,
+  Smartphone, Trash2 as TrashIcon,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { AdminTopbar } from '@/components/admin/admin-topbar';
@@ -46,6 +46,7 @@ const navigation = [
   { label: 'Settings', href: '/admin/settings', icon: Settings },
   { label: 'Users & Roles', href: '/admin/users', icon: Shield },
   { label: 'Audit Logs', href: '/admin/audit-logs', icon: FileText },
+  { label: 'Trash', href: '/admin/trash', icon: TrashIcon },
   { label: 'Notifications', href: '/admin/notifications', icon: Bell },
   // CMS
   { label: 'CMS Pages', href: '/admin/cms/pages', icon: FileIcon },

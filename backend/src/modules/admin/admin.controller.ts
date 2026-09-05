@@ -67,6 +67,37 @@ export class AdminController {
     return this.adminService.getPermissions();
   }
 
+  @Get('trash')
+  @ApiOperation({ summary: 'List soft-deleted items (admin trash). Supports entity + q filters.' })
+  async getTrash(
+    @CurrentTenantId() tenantId: string,
+    @Query() pagination: PaginationDto,
+    @Query('entity') entity?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.adminService.getTrash(tenantId, pagination.page, pagination.limit, entity, q);
+  }
+
+  @Post('trash/:entity/:id/restore')
+  @ApiOperation({ summary: 'Restore a soft-deleted item back into the active list' })
+  async restoreTrashItem(
+    @Param('entity') entity: string,
+    @Param('id') id: string,
+    @CurrentTenantId() tenantId: string,
+  ) {
+    return this.adminService.restoreTrashItem(tenantId, entity, id);
+  }
+
+  @Delete('trash/:entity/:id')
+  @ApiOperation({ summary: 'Permanently delete a trashed item (irreversible)' })
+  async purgeTrashItem(
+    @Param('entity') entity: string,
+    @Param('id') id: string,
+    @CurrentTenantId() tenantId: string,
+  ) {
+    return this.adminService.purgeTrashItem(tenantId, entity, id);
+  }
+
   @Post('permissions')
   @Roles('super_admin')
   @ApiOperation({ summary: 'Create a permission' })

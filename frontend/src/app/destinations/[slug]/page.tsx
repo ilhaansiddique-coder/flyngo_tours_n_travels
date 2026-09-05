@@ -180,8 +180,8 @@ export default function DestinationDetailPage() {
               Start planning your trip with one of our travel experts.
             </p>
           </div>
-          <Button as="a" href={`/booking?type=destination&id=${destination.id}`} size="lg" className="shrink-0">
-            Book Now
+          <Button as="a" href={`/contact?subject=${encodeURIComponent(`Travel enquiry — ${destination.name}`)}`} size="lg" className="shrink-0">
+            Plan my trip
           </Button>
         </div>
       </aside>

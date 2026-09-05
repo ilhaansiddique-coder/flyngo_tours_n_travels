@@ -138,6 +138,61 @@ const URL_TYPE_SENT: Record<string, string> = {
   destination: 'destination',
 };
 
+function asList(res: any): any[] {
+  if (Array.isArray(res)) return res;
+  return res?.items ?? res?.data ?? [];
+}
+
+type ResolvableType = 'tour' | 'hotel' | 'flight' | 'visa' | 'transport' | 'hajj' | 'umrah';
+
+type ItemResolvers = {
+  getTours: (p?: Record<string, string>) => Promise<any>;
+  getHotels: (p?: Record<string, string>) => Promise<any>;
+  getFlights: (p?: Record<string, string>) => Promise<any>;
+  getVisaServices: (p?: Record<string, string>) => Promise<any>;
+  getTransport: (p?: Record<string, string>) => Promise<any>;
+  getHajjPackages: (p?: Record<string, string>) => Promise<any>;
+  getUmrahPackages: (p?: Record<string, string>) => Promise<any>;
+};
+
+/**
+ * Resolve the bookable package from the server for `?type=…&id=…` so review /
+ * checkout can show the exact amount set on the package (the same fields the
+ * backend prices with: tour/flight/visa/transport/hajj/umrah use `price`,
+ * hotel uses `pricePerNight`) instead of a placeholder 0.00.
+ */
+async function resolveBookedItem(
+  type: ResolvableType,
+  id: string,
+  fetchers: ItemResolvers,
+): Promise<Record<string, unknown> | null> {
+  let list: any[] = [];
+  try {
+    switch (type) {
+      case 'tour': list = asList(await fetchers.getTours({ limit: '250' })); break;
+      case 'hotel': list = asList(await fetchers.getHotels({ limit: '250' })); break;
+      case 'flight': list = asList(await fetchers.getFlights({ limit: '250' })); break;
+      case 'visa': list = asList(await fetchers.getVisaServices({ limit: '250' })); break;
+      case 'transport': list = asList(await fetchers.getTransport({ limit: '250' })); break;
+      case 'hajj': list = asList(await fetchers.getHajjPackages({ limit: '250' })); break;
+      case 'umrah': list = asList(await fetchers.getUmrahPackages({ limit: '250' })); break;
+      default: return null;
+    }
+  } catch {
+    return null;
+  }
+  const raw = list.find((r: any) => r?.id === id);
+  if (!raw) return null;
+
+  const unitPrice = Number(raw.salePrice ?? raw.price ?? raw.pricePerNight ?? 0);
+  const name =
+    type === 'flight'
+      ? [raw.airline, raw.flightNumber].filter(Boolean).join(' · ') || raw.title || raw.name || ''
+      : raw.title || raw.name || '';
+
+  return { ...raw, title: name, name, price: unitPrice, currency: raw.currency || 'BDT' };
+}
+
 function ItemSummaryCard({ t }: { t: (k: any) => string }) {
   const { selectedItem } = useBookingStore();
   const item = (selectedItem as any) || {};
@@ -167,7 +222,7 @@ function ItemSummaryCard({ t }: { t: (k: any) => string }) {
               </span>
             </div>
           )}
-          {item.price != null && (
+          {item.price != null && Number(item.price) > 0 && (
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-[10px] uppercase tracking-widest text-muted">From</span>
               <span className="font-display text-base font-bold text-on-surface">
@@ -258,7 +313,7 @@ function SectionHeading({ title, help }: { title: string; help?: string }) {
 
 export default function BookingPage() {
   const { currentStep, setStep, selectedItem, totalAmount, reset, setFormData, formData } = useBookingStore();
-  const { createBooking, getPaymentMethods, uploadPaymentReceipt, submitPaymentConfirmation, uploadMedia, getVisaServices } = useApi();
+  const { createBooking, getPaymentMethods, uploadPaymentReceipt, submitPaymentConfirmation, uploadMedia, getVisaServices, getTours, getHotels, getFlights, getTransport, getHajjPackages, getUmrahPackages } = useApi();
   const { t, locale } = useLocale();
   const isBn = locale === 'bn';
   const router = useRouter();
@@ -272,9 +327,10 @@ export default function BookingPage() {
   const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [typeLocked, setTypeLocked] = useState<boolean>(false);
   const [isPresetBooking, setIsPresetBooking] = useState<boolean>(false);
-  const [visaCurrency, setVisaCurrency] = useState<string>('BDT');
+  const [packageCurrency, setPackageCurrency] = useState<string>('BDT');
   const setTotalAmount = useBookingStore((s) => s.setTotalAmount);
   const sentType = useRef<string | null>(null);
+  const itemFetchers = useRef<ItemResolvers>({ getTours, getHotels, getFlights, getVisaServices, getTransport, getHajjPackages, getUmrahPackages });
 
   const [wallets, setWallets] = useState<MobileWallet[]>([]);
   const [selectedWalletId, setSelectedWalletId] = useState('');
@@ -314,12 +370,39 @@ export default function BookingPage() {
       useBookingStore.getState().setSelectedItem(urlId);
     }
 
+    // Resolve the real package from the server so review/checkout can show the
+    // exact amount set on it instead of a placeholder 0.00. Non-fatal — if the
+    // lookup fails the summary falls back to "Quote on request".
+    const resolveType = urlType && urlType in URL_TYPE_SENT ? URL_TYPE_SENT[urlType] : urlType;
+    let resolveCancelled = false;
+    if ((resolveType === 'tour' || resolveType === 'hotel' || resolveType === 'flight' || resolveType === 'visa' || resolveType === 'transport' || resolveType === 'hajj' || resolveType === 'umrah') && urlId) {
+      (async () => {
+        try {
+          const found = await resolveBookedItem(resolveType as ResolvableType, urlId, {
+            getTours: (p) => itemFetchers.current.getTours(p),
+            getHotels: (p) => itemFetchers.current.getHotels(p),
+            getFlights: (p) => itemFetchers.current.getFlights(p),
+            getVisaServices: (p) => itemFetchers.current.getVisaServices(p),
+            getTransport: (p) => itemFetchers.current.getTransport(p),
+            getHajjPackages: (p) => itemFetchers.current.getHajjPackages(p),
+            getUmrahPackages: (p) => itemFetchers.current.getUmrahPackages(p),
+          });
+          if (!resolveCancelled && found) useBookingStore.getState().setSelectedItem(found);
+        } catch {
+          // non-fatal — summary shows "Quote on request" until a package is selected
+        }
+      })();
+    }
+
     const saved = loadContact();
     if (saved.firstName || saved.lastName || saved.phone || saved.email) {
       setFormData({
         ...saved,
       });
     }
+    return () => {
+      resolveCancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -357,7 +440,7 @@ export default function BookingPage() {
         if (mounted && service) {
           const price = Number((service as any)?.price) || 0;
           const currency = (service as any)?.currency || 'BDT';
-          setVisaCurrency(currency);
+          setPackageCurrency(currency);
           setTotalAmount(price);
         }
       } catch {
@@ -896,6 +979,23 @@ export default function BookingPage() {
     item?.title ||
     item?.name ||
     (bookingType === 'custom' ? (isBn ? 'কাস্টম প্যাকেজ' : 'Custom Package') : 'Your Booking');
+
+  // Amount from the resolved package — the same fields the backend prices with
+  // (tour/hajj/umrah/transport/flight/visa: price, hotel: pricePerNight), in
+  // the package's own currency. Mirror it into totalAmount so the existing
+  // summary UI works, and never render a fabricated 0.00.
+  const amountUnitPrice = Number(item?.salePrice ?? item?.price ?? item?.pricePerNight ?? 0);
+  const amountGuestCount = Math.max(1, Number(formData.guests) || 1);
+  const amountChargeable = bookingType === 'hotel' ? amountUnitPrice : amountUnitPrice * amountGuestCount;
+  const hasAmount = amountUnitPrice > 0 && !!item?.id;
+  const packageCurrencyValue = item?.currency || 'BDT';
+  useEffect(() => {
+    if (!isPresetBooking || bookingType === 'visa' || !hasAmount) return;
+    // Derived render state synced into the store mirror — see visa effect above.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPackageCurrency(packageCurrencyValue);
+    setTotalAmount(hasAmount ? amountChargeable : 0);
+  }, [isPresetBooking, bookingType, hasAmount, amountChargeable, packageCurrencyValue, setPackageCurrency, setTotalAmount]);
 
   if (bookingSuccess) {
     return (
@@ -1554,7 +1654,7 @@ export default function BookingPage() {
                       )}
                       <div className="rounded-2xl border border-soft p-5 mt-2 bg-surface-container/60">
                         <div className="text-[10px] uppercase tracking-widest text-muted mb-2">{t('booking_field_service_fee')}</div>
-                        <div className="font-display text-3xl font-bold text-on-surface">{formatCurrency(totalAmount || 0, 'BDT')}</div>
+                        <div className="font-display text-3xl font-bold text-on-surface">{totalAmount > 0 ? formatCurrency(totalAmount, packageCurrency) : isBn ? 'কোটেশন: অনুরোধ সাপেক্ষে' : 'Quote on request'}</div>
                         <p className="text-xs text-muted mt-2">{t('booking_field_embassy_help')}</p>
                       </div>
                     </div>
@@ -1586,7 +1686,7 @@ export default function BookingPage() {
                     <div className="flex items-baseline justify-between mb-2">
                       <span className="text-sm text-muted">{displayName}</span>
                       <span className="font-display text-xl font-bold text-on-surface">
-                        {formatCurrency(totalAmount || 0, 'BDT')}
+                        {totalAmount > 0 ? formatCurrency(totalAmount, packageCurrency) : isBn ? 'কোটেশন: অনুরোধ সাপেক্ষে' : 'Quote on request'}
                       </span>
                     </div>
                     <div className="text-xs text-muted">
@@ -1698,7 +1798,7 @@ export default function BookingPage() {
                     <div className="flex items-baseline justify-between mb-2">
                       <span className="text-sm text-muted">{displayName}</span>
                       <span className="font-display text-xl font-bold text-on-surface">
-                        {formatCurrency(totalAmount || 0, visaCurrency)}
+                        {totalAmount > 0 ? formatCurrency(totalAmount, packageCurrency) : isBn ? 'কোটেশন: অনুরোধ সাপেক্ষে' : 'Quote on request'}
                       </span>
                     </div>
                     <p className="text-xs text-muted">{t('booking_field_embassy_help')}</p>

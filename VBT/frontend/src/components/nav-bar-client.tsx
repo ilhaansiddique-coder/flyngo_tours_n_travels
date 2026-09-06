@@ -32,7 +32,7 @@ export function NavBarClient({
   siteName,
   donateLabel,
   membershipLabel,
-  adminLabel,
+  loginLabel,
   menuLabel,
 }: {
   items: NavItem[];
@@ -40,7 +40,7 @@ export function NavBarClient({
   siteName: string;
   donateLabel: string;
   membershipLabel: string;
-  adminLabel: string;
+  loginLabel: string;
   menuLabel: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -66,9 +66,6 @@ export function NavBarClient({
           </span>
           <div className="flex items-center gap-3">
             <LangToggle className="hover:bg-white/10" />
-            <Link href="/admin/login" className="hover:text-[var(--color-gold-deep)]">
-              {adminLabel}
-            </Link>
             <span className="hidden items-center gap-3 sm:flex">
               <a
                 href="https://www.facebook.com/volunteerbdtrust"
@@ -116,6 +113,9 @@ export function NavBarClient({
           <Button href="/membership" variant="ghost" size="sm" className="hidden lg:inline-flex">
             {membershipLabel}
           </Button>
+          <Button href="/admin/login" variant="ghost" size="sm" className="hidden sm:inline-flex">
+            {loginLabel}
+          </Button>
           <Button href="/donate" size="sm" className="hidden sm:inline-flex">
             {donateLabel}
           </Button>
@@ -150,13 +150,9 @@ export function NavBarClient({
               <Button href="/donate" size="sm" className="w-full">
                 {donateLabel}
               </Button>
-              <Link
-                href="/admin/login"
-                onClick={() => setOpen(false)}
-                className="rounded-lg px-4 py-2.5 text-sm font-semibold text-[var(--color-royal)] underline"
-              >
-                {adminLabel}
-              </Link>
+              <Button href="/admin/login" variant="ghost" size="sm" className="w-full">
+                {loginLabel}
+              </Button>
             </div>
           </nav>
         </div>

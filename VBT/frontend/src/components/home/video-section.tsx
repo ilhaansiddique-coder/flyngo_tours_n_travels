@@ -1,11 +1,13 @@
 import { pickField } from '@/lib/lang';
 import { getServerLang } from '@/lib/server-lang';
+import { toYouTubeEmbed } from '@/lib/youtube';
 import type { HomeVideo } from '@/types';
 
 export async function VideoSection({ videos }: { videos: HomeVideo[] }) {
   const lang = await getServerLang();
   const video = videos?.[0];
-  if (!video?.youtubeUrl) return null;
+  const embedUrl = toYouTubeEmbed(video?.youtubeUrl);
+  if (!video?.youtubeUrl || !embedUrl) return null;
 
   const badge = pickField(lang, video.badgeEn, video.badgeBn);
   const title = pickField(lang, video.titleEn, video.titleBn);
@@ -26,10 +28,12 @@ export async function VideoSection({ videos }: { videos: HomeVideo[] }) {
         </div>
         <div className="mx-auto mt-10 max-w-3xl overflow-hidden rounded-2xl shadow-[var(--shadow-card)]">
           <iframe
-            src={video.youtubeUrl}
+            src={embedUrl}
             title={title}
             className="aspect-video w-full border-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            referrerPolicy="strict-origin-when-cross-origin"
+            loading="lazy"
             allowFullScreen
           />
         </div>

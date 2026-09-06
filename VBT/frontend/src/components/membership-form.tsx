@@ -142,7 +142,19 @@ export function MembershipForm() {
             {bn ? 'সদস্য রেফারেন্স' : 'Member reference'}
           </p>
           <p className="mt-1 font-mono text-2xl font-bold text-[var(--color-royal)]">{result.memberId}</p>
-          <div className="mt-3 flex justify-center">{statusChip(result.status)}</div>
+          <div className={cn('mt-3 flex justify-center', statusChip(result.status))}>
+            {result.status === 'APPROVED'
+              ? bn
+                ? 'অনুমোদিত'
+                : 'Approved'
+              : result.status === 'REJECTED'
+                ? bn
+                  ? 'বাতিল করা হয়েছে'
+                  : 'Rejected'
+                : bn
+                  ? 'বিবেচনাধীন'
+                  : 'Pending review'}
+          </div>
           <p className="mt-3 text-xs text-[var(--color-ink-soft)]">
             {bn
               ? 'এই রেফারেন্স দিয়ে /membership পৃষ্ঠায় স্থিতি দেখুন। অনুমোদনের পর সদস্য ফি প্রদান করুন।'

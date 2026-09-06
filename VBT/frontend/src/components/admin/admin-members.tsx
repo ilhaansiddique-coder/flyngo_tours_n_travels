@@ -436,9 +436,10 @@ export function AdminMembers() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-black/5 text-xs font-bold uppercase tracking-wide text-[var(--color-ink-muted)]">
+                  <th className="px-4 py-3">Photo</th>
                   <th className="px-4 py-3">Ref</th>
                   <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Tag</th>
+                  <th className="px-4 py-3">Blood</th>
                   <th className="px-4 py-3">Contact</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Registered</th>
@@ -448,16 +449,29 @@ export function AdminMembers() {
               <tbody>
                 {regList.items.map((r) => (
                   <tr key={r.id} className="border-b border-black/5 last:border-0 hover:bg-[var(--color-mist)]/60">
+                    <td className="px-4 py-3">
+                      {r.photo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={r.photo} alt={r.name} className="h-10 w-10 rounded-xl border border-black/10 object-cover" />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-mist)] text-sm font-bold text-[var(--color-ink-soft)]">
+                          {(r.name || '?').trim().slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs font-bold text-[var(--color-royal)]">{r.id.slice(0, 8)}</td>
                     <td className="px-4 py-3">
                       <p className="font-semibold">{r.name}</p>
                       {r.organization ? <p className="text-xs text-[var(--color-ink-muted)]">{r.organization}</p> : null}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="inline-block rounded-full bg-[var(--color-primary-light)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-primary-dark)]">
-                        #{r.tag}
-                      </span>
-                      {r.bloodGroup ? <span className="ml-1.5 text-xs text-[var(--color-ink-muted)]">{r.bloodGroup}</span> : null}
+                      {r.bloodGroup ? (
+                        <span className="inline-block rounded-md bg-[var(--color-royal-light)] px-2 py-0.5 text-xs font-bold text-[var(--color-royal)]">
+                          {r.bloodGroup}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-[var(--color-ink-muted)]">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-[var(--color-ink-soft)]">{r.mobile}</td>
                     <td className="px-4 py-3">
@@ -491,7 +505,7 @@ export function AdminMembers() {
                 ))}
                 {regList.items.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-sm text-[var(--color-ink-muted)]">
+                    <td colSpan={8} className="px-4 py-12 text-center text-sm text-[var(--color-ink-muted)]">
                       No Saint Martin registrations yet.
                     </td>
                   </tr>

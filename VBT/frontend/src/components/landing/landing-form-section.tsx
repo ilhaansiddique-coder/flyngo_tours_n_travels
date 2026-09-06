@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Camera, CheckCircle2, Copy, FileText, Loader2, Phone } from 'lucide-react';
+import { Camera, CheckCircle2, Copy, FileText, Loader2, Maximize2, Phone, X } from 'lucide-react';
 import { assetUrl, clientApi } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -69,6 +69,7 @@ export function LandingFormSection({
   const receiptInput = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
   const [paymentType, setPaymentType] = useState('');
+  const [qrPreview, setQrPreview] = useState(false);
 
   const copyBkash = async () => {
     try {
@@ -388,11 +389,23 @@ export function LandingFormSection({
                 </p>
                 <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <div className="shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={assetUrl('/images/landing/payment.jpeg')}
                     alt="bKash QR code"
-                    className="h-64 w-64 shrink-0 rounded-xl border border-black/10 bg-white object-contain p-2"
+                    onClick={() => setQrPreview(true)}
+                    className="h-64 w-64 cursor-zoom-in rounded-xl border border-black/10 bg-white object-contain p-2 transition hover:opacity-90"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setQrPreview(true)}
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+                  >
+                    <Maximize2 size={14} />
+                    {f('Click to enlarge', 'বড় করে দেখুন')}
+                  </button>
+                </div>
                   <div className="min-w-0 flex-1 rounded-xl border border-black/10 bg-white px-4 py-3">
                     <p className="text-xs font-bold uppercase tracking-wide text-[var(--color-ink-muted)]">{f('bKash Merchant Number', 'বিকাশ মার্চেন্ট নম্বর')}</p>
                     <p className="mt-0.5 text-lg font-bold tracking-wide text-[var(--color-primary-dark)]">{BKASH_MERCHANT}</p>
@@ -546,6 +559,36 @@ export function LandingFormSection({
           </form>
         )}
       </div>
+
+      {qrPreview ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={() => setQrPreview(false)}
+        >
+          <div
+            className="relative max-w-full rounded-2xl bg-white p-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setQrPreview(false)}
+              className="absolute -right-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary)] text-white shadow-lg hover:bg-[var(--color-primary-dark)]"
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={assetUrl('/images/landing/payment.jpeg')}
+              alt="bKash QR code"
+              className="max-h-[85vh] max-w-[85vw] rounded-xl object-contain"
+            />
+            <p className="mt-3 text-center text-sm font-semibold text-[var(--color-ink-soft)]">
+              {f('Scan this QR code with your bKash app to send payment.', 'পেমেন্ট পাঠাতে বিকাশ অ্যাপ দিয়ে এই QR কোডটি স্ক্যান করুন।')}
+            </p>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

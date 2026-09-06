@@ -26,6 +26,8 @@ export async function NavBar() {
       logo="/images/brand/logo.png"
       siteName={lang === 'bn' ? settings.nameBn || 'ভলান্টিয়ার বাংলাদেশ ট্রাস্ট' : settings.name || 'Volunteer Bangladesh Trust'}
       donateLabel={t('donate', 'Donate', 'দান করুন')}
+      membershipLabel={t('membershipBtn', 'Membership', 'সদস্যপদ')}
+      adminLabel={t('admin', 'Admin Login', 'অ্যাডমিন লগইন')}
       menuLabel={t('menu', 'Menu', 'মেনু')}
     />
   );

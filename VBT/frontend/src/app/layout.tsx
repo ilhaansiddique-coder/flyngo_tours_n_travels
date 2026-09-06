@@ -4,6 +4,7 @@ import { I18nProvider } from '@/lib/i18n';
 import { getServerLang } from '@/lib/server-lang';
 import { NavBar } from '@/components/nav-bar';
 import { Footer } from '@/components/footer';
+import { FloatingDonate } from '@/components/floating-donate';
 import './globals.css';
 
 const publicSans = Public_Sans({
@@ -52,6 +53,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <NavBar />
           <main className="flex-1">{children}</main>
           <Footer />
+          <FloatingDonate />
         </I18nProvider>
       </body>
     </html>

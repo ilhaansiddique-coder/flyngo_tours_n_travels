@@ -53,6 +53,20 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.vbt-frontend.entrypoints=https
+      - traefik.http.routers.vbt-frontend.rule=Host(`flyngo.world`) && PathPrefix(`/VBT`)
+      - traefik.http.routers.vbt-frontend.priority=100
+      - traefik.http.routers.vbt-frontend.service=vbt-frontend
+      - traefik.http.routers.vbt-frontend.tls=true
+      - traefik.http.routers.vbt-frontend.tls.certresolver=letsencrypt
+      - traefik.http.routers.vbt-frontend-http.entrypoints=http
+      - traefik.http.routers.vbt-frontend-http.rule=Host(`flyngo.world`) && PathPrefix(`/VBT`)
+      - traefik.http.routers.vbt-frontend-http.middlewares=redirect-to-https
+      - traefik.http.routers.vbt-frontend-http.service=vbt-frontend-http
+      - traefik.http.services.vbt-frontend.loadbalancer.server.port=3000
+      - traefik.http.services.vbt-frontend-http.loadbalancer.server.port=3000
 
   postgres:
     image: postgres:16-alpine

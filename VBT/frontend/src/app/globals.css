@@ -156,6 +156,10 @@ label[for],
   padding-block: 4.5rem;
 }
 
+.section-pad-sm {
+  padding-block: 2.5rem;
+}
+
 .text-balance {
   text-wrap: balance;
 }

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { FloatingRegister } from '@/components/floating-register';
 import { LandingFormSection } from '@/components/landing/landing-form-section';
 import { getLandingPage } from '@/lib/get-site';
 import { pickField } from '@/lib/lang';
@@ -31,7 +32,7 @@ export default async function LandingSlugPage({
     switch (s.type) {
       case 'text':
         return (
-          <section key={index} className="section-pad">
+          <section key={index} className="section-pad-sm">
             <div className="container-site max-w-3xl">
               {heading ? <h2 className="text-2xl font-bold">{heading}</h2> : null}
               {body ? <p className="mt-4 whitespace-pre-line leading-relaxed text-[var(--color-ink-soft)]">{body}</p> : null}
@@ -40,7 +41,7 @@ export default async function LandingSlugPage({
         );
       case 'split':
         return (
-          <section key={index} className="section-pad bg-[var(--color-mist)]">
+          <section key={index} className="section-pad-sm bg-[var(--color-mist)]">
             <div className="container-site max-w-3xl">
               {heading ? <h2 className="text-2xl font-bold">{heading}</h2> : null}
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -56,7 +57,7 @@ export default async function LandingSlugPage({
         );
       case 'cards':
         return (
-          <section key={index} className="section-pad">
+          <section key={index} className="section-pad-sm">
             <div className="container-site">
               {heading ? <h2 className="text-2xl font-bold">{heading}</h2> : null}
               <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -78,7 +79,7 @@ export default async function LandingSlugPage({
         );
       case 'cta':
         return (
-          <section key={index} className="section-pad bg-[var(--color-primary-darker)] text-white">
+          <section key={index} className="section-pad-sm bg-[var(--color-primary-darker)] text-white">
             <div className="container-site text-center">
               {heading ? <h2 className="text-2xl font-bold">{heading}</h2> : null}
               {body ? <p className="mx-auto mt-3 max-w-xl text-sm text-white/80">{body}</p> : null}
@@ -119,6 +120,8 @@ export default async function LandingSlugPage({
   const heroSrc =
     slug === 'saint-martin-trip-2026' ? assetUrl('/images/landing/saint-martin-hero.jpg') : coverSrc;
 
+  const hasForm = (page.sections || []).some((s) => s.type === 'form');
+
   return (
     <>
       <section className="relative overflow-hidden border-b border-black/5 bg-[var(--color-primary-darker)] text-white">
@@ -133,7 +136,7 @@ export default async function LandingSlugPage({
           </span>
         </div>
       </section>
-      <section className="section-pad">
+      <section className="section-pad-sm">
         <div className="container-site max-w-4xl text-center">
           <h1 className="mx-auto w-full text-balance text-center text-3xl font-bold tracking-tight sm:text-4xl">{title}</h1>
           {subtitle ? (
@@ -144,6 +147,7 @@ export default async function LandingSlugPage({
       <div className="divide-y divide-black/5">
         {(page.sections || []).filter((s) => s.type !== 'hero').map(renderSection)}
       </div>
+      {hasForm ? <FloatingRegister /> : null}
     </>
   );
 }

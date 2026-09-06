@@ -152,7 +152,7 @@ export function LandingFormSection({
   const f = (en: string, b: string) => (bn ? b : en);
 
   return (
-    <section id="register" className="section-pad bg-[var(--color-mist)]">
+    <section id="register" className="section-pad-sm bg-[var(--color-mist)]">
       <div className="container-site max-w-3xl">
         <h2 className="text-2xl font-bold">{headingEn || headingBn ? (bn ? headingBn : headingEn) : ''}</h2>
         {bodyEn || bodyBn ? (

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Pencil as PencilIcon, Plus, Search, Trash2, X } from 'lucide-react';
+import { PasswordInput } from '@/components/password-input';
 import { adminFetch } from '@/lib/admin-api';
 import { cn } from '@/lib/utils';
 
@@ -257,14 +258,24 @@ function Field({
   return (
     <label className="block text-sm font-semibold">
       {label}
-      <input
-        value={value}
-        required={required}
-        type={type}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="mt-1.5 w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm font-normal outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]"
-      />
+      {type === 'password' ? (
+        <PasswordInput
+          value={value}
+          required={required}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="mt-1.5 w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm font-normal outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]"
+        />
+      ) : (
+        <input
+          value={value}
+          required={required}
+          type={type}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="mt-1.5 w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm font-normal outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]"
+        />
+      )}
     </label>
   );
 }

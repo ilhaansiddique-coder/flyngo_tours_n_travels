@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { clientApi } from '@/lib/api';
+import { PasswordInput } from '@/components/password-input';
 import { setSession, type SessionUser } from '@/lib/session';
 import { useI18n } from '@/lib/i18n';
 
@@ -46,7 +47,7 @@ export function LoginForm() {
         </label>
         <label className="block text-sm font-semibold">
           {bn ? 'পাসওয়ার্ড' : 'Password'}
-          <input name="password" type="password" required className="mt-1.5 w-full rounded-xl border border-black/10 px-4 py-3 text-sm font-normal outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]" />
+          <PasswordInput name="password" required className="mt-1.5 w-full rounded-xl border border-black/10 px-4 py-3 text-sm font-normal outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]" />
         </label>
       </div>
       <div className="mt-2 text-right">

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Loader2, ShieldCheck } from 'lucide-react';
+import { PasswordInput } from '@/components/password-input';
 import { adminFetch, setAdminToken } from '@/lib/admin-api';
 
 export function AdminLoginForm() {
@@ -46,7 +47,7 @@ export function AdminLoginForm() {
         </label>
         <label className="block text-sm font-semibold">
           Password
-          <input name="password" type="password" required className="mt-1.5 w-full rounded-xl border border-black/10 px-4 py-3 text-sm font-normal outline-none focus:ring-2 focus:ring-[var(--color-royal-light)]" />
+          <PasswordInput name="password" required className="mt-1.5 w-full rounded-xl border border-black/10 px-4 py-3 text-sm font-normal outline-none focus:ring-2 focus:ring-[var(--color-royal-light)]" />
         </label>
         <button
           type="submit"

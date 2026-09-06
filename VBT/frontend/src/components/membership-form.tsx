@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Loader2, Upload } from 'lucide-react';
 import { clientApi } from '@/lib/api';
+import { PasswordInput } from '@/components/password-input';
 import { authHeaders } from '@/lib/session';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -317,7 +318,7 @@ export function MembershipForm() {
       </p>
       <div className="mt-3 max-w-sm">
         <Field label={bn ? 'পাসওয়ার্ড' : 'Password (min 6 chars)'}>
-          <input name="password" type="password" minLength={6} className={inputClass()} />
+          <PasswordInput name="password" minLength={6} className={inputClass()} />
         </Field>
       </div>
 

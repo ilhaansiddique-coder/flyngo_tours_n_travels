@@ -3,8 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   CheckCircle2,
+  Download,
   Eye,
+  FileSpreadsheet,
+  FileText,
   Loader2,
+  Printer,
   Search,
   Trash2,
   XCircle,
@@ -184,6 +188,64 @@ export function AdminMembers() {
   const photoSrc = detail?.photo;
   const photoHref = photoSrc && /^data:image/.test(photoSrc) ? photoSrc : undefined;
 
+  const buildExport = (): { name: string; headers: string[]; rows: string[][] } => {
+    const stamp = new Date().toISOString().slice(0, 10);
+    if (source === 'membership') {
+      return {
+        name: `vbt-members-${stamp}`,
+        headers: ['Ref', 'Name', 'Email', 'Mobile', 'Category', 'Fee (BDT)', 'Gender', 'Blood Group', 'Status', 'Applied'],
+        rows: list.items.map((m) => [
+          m.memberId,
+          m.fullName,
+          m.email,
+          m.mobile,
+          categoryLabel(m),
+          m.fee ?? '',
+          m.gender ?? '',
+          m.bloodGroup ?? '',
+          m.status,
+          new Date(m.createdAt).toLocaleString(),
+        ]),
+      };
+    }
+    return {
+      name: `vbt-saintmartin-${stamp}`,
+      headers: ['ID', 'Name', 'Organization', 'Mobile', 'Emergency', 'Blood Group', 'Address', 'Reference', 'FB Profile', 'Tag', 'Status', 'Registered'],
+      rows: regList.items.map((r) => [
+        r.id.slice(0, 8),
+        r.name,
+        r.organization ?? '',
+        r.mobile,
+        r.emergency ?? '',
+        r.bloodGroup ?? '',
+        r.address ?? '',
+        r.reference ?? '',
+        r.fbProfile ?? '',
+        r.tag,
+        r.status,
+        new Date(r.createdAt).toLocaleString(),
+      ]),
+    };
+  };
+
+  const exportCsv = () => {
+    const { name, headers, rows } = buildExport();
+    const csv = `\uFEFF${[headers, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n')}`;
+    downloadFile(csv, 'text/csv', `${name}.csv`);
+  };
+
+  const exportExcel = () => {
+    const { name, headers, rows } = buildExport();
+    const rowXml = (cells: string[]) =>
+      `<Row>${cells.map((c) => `<Cell><Data ss:Type="String">${xmlEsc(c)}</Data></Cell>`).join('')}</Row>`;
+    const xml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="VBT"><Table>${rowXml(headers)}${rows.map(rowXml).join('')}</Table></Worksheet></Workbook>`;
+    downloadFile(xml, 'application/vnd.ms-excel', `${name}.xls`);
+  };
+
+  const exportPdf = () => window.print();
+
   return (
     <div>
       <h1 className="text-2xl font-bold">Members &amp; Registrations</h1>
@@ -240,6 +302,29 @@ export function AdminMembers() {
             className="w-full rounded-xl border border-black/10 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]"
           />
         </div>
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          <button
+            onClick={exportCsv}
+            title="Download the table as CSV"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+          >
+            <Download size={15} /> CSV
+          </button>
+          <button
+            onClick={exportExcel}
+            title="Download the table as Excel (.xls)"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+          >
+            <FileSpreadsheet size={15} /> Excel
+          </button>
+          <button
+            onClick={exportPdf}
+            title="Print the table or save it as PDF"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+          >
+            <FileText size={15} /> PDF
+          </button>
+        </div>
       </div>
 
       {error ? <p className="mt-3 text-sm text-[var(--color-crimson)]">{error}</p> : null}
@@ -249,7 +334,7 @@ export function AdminMembers() {
           <Loader2 size={18} className="animate-spin" /> Loading…
         </div>
       ) : source === 'membership' ? (
-        <div className="mt-6 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[var(--shadow-card)]">
+        <div id="vbt-export-table" className="mt-6 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[var(--shadow-card)]">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
@@ -346,7 +431,7 @@ export function AdminMembers() {
           </div>
         </div>
       ) : (
-        <div className="mt-6 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[var(--shadow-card)]">
+        <div id="vbt-export-table" className="mt-6 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[var(--shadow-card)]">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
@@ -506,25 +591,43 @@ export function AdminMembers() {
       ) : null}
 
       {regDetail ? (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm">
-          <div className="mt-8 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold">{regDetail.name}</h2>
-                <p className="font-mono text-xs font-bold text-[var(--color-royal)]">{regDetail.id}</p>
-                <span className="mt-2 inline-block rounded-full bg-[var(--color-primary-light)] px-3 py-1 text-xs font-bold text-[var(--color-primary-dark)]">
-                  #{regDetail.tag}
-                </span>
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm print:static print:block print:overflow-visible print:bg-white print:p-0 print:backdrop-blur-none">
+          <div
+            id="reg-print-card"
+            className="mt-8 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl print:m-0 print:max-w-none print:rounded-none print:shadow-none"
+          >
+            <div className="flex items-start justify-between gap-5">
+              <div className="min-w-0">
+                <h2 className="text-2xl font-bold">{regDetail.name}</h2>
+                <p className="mt-1 font-mono text-xs font-bold uppercase tracking-wide text-[var(--color-royal)]">
+                  {regDetail.id.slice(0, 8)}
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className="inline-block rounded-full bg-[var(--color-primary-light)] px-3 py-1 text-xs font-bold text-[var(--color-primary-dark)]">
+                    #{regDetail.tag}
+                  </span>
+                  <span className="inline-block rounded-full bg-[var(--color-gold-lighter)] px-3 py-1 text-xs font-bold text-[var(--color-gold-deep)]">
+                    {regDetail.status}
+                  </span>
+                </div>
               </div>
-              <button
-                onClick={() => setRegDetail(null)}
-                className="rounded-lg bg-[var(--color-mist)] px-3 py-1.5 text-sm font-semibold text-[var(--color-ink-soft)]"
-              >
-                Close
-              </button>
+              <div className="shrink-0">
+                {regDetail.photo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={regDetail.photo}
+                    alt={regDetail.name}
+                    className="h-24 w-24 rounded-2xl border border-black/10 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-2xl border border-black/10 bg-[var(--color-mist)] text-2xl font-bold text-[var(--color-ink-soft)]">
+                    {(regDetail.name || '?').trim().slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="mt-5 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+            <div className="mt-6 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
               <DetailRow label="Status" value={regDetail.status} />
               <DetailRow label="Mobile" value={regDetail.mobile} />
               <DetailRow label="Organization" value={regDetail.organization || '—'} />
@@ -536,19 +639,19 @@ export function AdminMembers() {
               <DetailRow label="Registered" value={new Date(regDetail.createdAt).toLocaleString()} />
             </div>
 
-            {regDetail.photo ? (
-              <div className="mt-5">
-                <p className="text-sm font-semibold text-[var(--color-ink-soft)]">Profile photo</p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={regDetail.photo}
-                  alt={regDetail.name}
-                  className="mt-2 h-40 w-40 rounded-xl object-cover"
-                />
-              </div>
-            ) : null}
-
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-black/5 pt-4 print:hidden">
+              <button
+                onClick={() => setRegDetail(null)}
+                className="rounded-xl bg-[var(--color-mist)] px-4 py-2.5 text-sm font-semibold text-[var(--color-ink-soft)]"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-royal)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--color-royal-dark)]"
+              >
+                <Printer size={16} /> Print
+              </button>
               <button
                 onClick={() => removeRegistration(regDetail.id)}
                 className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-crimson-light)] px-5 py-2.5 text-sm font-bold text-[var(--color-crimson)] hover:bg-[var(--color-crimson)] hover:text-white"
@@ -570,4 +673,29 @@ function DetailRow({ label, value }: { label: string; value: string }) {
       <p className="mt-0.5 break-words text-[var(--color-ink)]">{value}</p>
     </div>
   );
+}
+
+function csvCell(v: unknown): string {
+  const s = v == null ? '' : String(v);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function xmlEsc(v: unknown): string {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function downloadFile(content: string, mime: string, filename: string): void {
+  const blob = new Blob([content], { type: `${mime};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

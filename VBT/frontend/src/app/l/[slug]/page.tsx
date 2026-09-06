@@ -134,10 +134,10 @@ export default async function LandingSlugPage({
         </div>
       </section>
       <section className="section-pad">
-        <div className="container-site max-w-3xl text-center">
-          <h1 className="mx-auto max-w-3xl text-balance text-3xl font-bold tracking-tight sm:text-4xl">{title}</h1>
+        <div className="container-site max-w-4xl text-center">
+          <h1 className="mx-auto w-full text-balance text-center text-3xl font-bold tracking-tight sm:text-4xl">{title}</h1>
           {subtitle ? (
-            <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[var(--color-ink-soft)] sm:text-lg">{subtitle}</p>
+            <p className="mx-auto mt-4 w-full max-w-3xl text-center text-base leading-relaxed text-[var(--color-ink-soft)] sm:text-lg">{subtitle}</p>
           ) : null}
         </div>
       </section>

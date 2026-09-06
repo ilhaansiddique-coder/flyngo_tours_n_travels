@@ -181,3 +181,38 @@ label[for],
 .animate-fade-in-up {
   animation: fadeInUp 0.7s ease-out both;
 }
+
+/* Print: show only the admin trip-registration card or the data table
+   (used by the Print / PDF buttons on the Members & Registrations page). */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  body * {
+    visibility: hidden;
+    height: 0;
+    overflow: hidden;
+  }
+  #vbt-export-table,
+  #vbt-export-table *,
+  #reg-print-card,
+  #reg-print-card * {
+    visibility: visible;
+    height: auto;
+    overflow: visible;
+  }
+  #vbt-export-table,
+  #reg-print-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  #vbt-export-table th {
+    background: #f4f6f8;
+  }
+}

@@ -11,7 +11,6 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     image: ghcr.io/ilhaansiddique-coder/flyngo-backend:main
-    pull_policy: always
     container_name: flyngo-backend
     restart: always
     environment:
@@ -91,7 +90,6 @@ services:
         NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-https://flyngo.world}
         BACKEND_URL: ${BACKEND_URL:-http://backend:4000}
     image: ghcr.io/ilhaansiddique-coder/flyngo-frontend:main
-    pull_policy: always
     container_name: flyngo-frontend
     restart: always
     environment:

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle2, ExternalLink, Loader2 } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -245,17 +245,6 @@ export function LandingFormSection({
                   f('Submit Registration', 'নিবন্ধন জমা দিন')
                 )}
               </button>
-              {formUrl ? (
-                <a
-                  href={formUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-primary)] hover:underline"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  {f('Open Google Form instead', 'বদলে Google ফর্ম খুলুন')}
-                </a>
-              ) : null}
             </div>
           </form>
         )}

@@ -23,6 +23,9 @@ const hindSiliguri = Hind_Siliguri({
 
 export const dynamic = 'force-dynamic';
 
+const USE_BASE_PATH = process.env.NEXT_PUBLIC_VBT_USE_BASEPATH !== 'false';
+const BASE_PATH = USE_BASE_PATH ? process.env.NEXT_PUBLIC_VBT_BASE_PATH || '/VBT' : '';
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: {
@@ -32,14 +35,14 @@ export const metadata: Metadata = {
   description:
     'Volunteer Bangladesh Trust — a registered Bangladeshi charity devoted to education, service, Dawah and human welfare. Membership, volunteering, Quran, Sunnah, articles, lectures and resources.',
   icons: {
-    icon: '/images/brand/favicon.png',
-    apple: '/images/brand/favicon.png',
+    icon: `${BASE_PATH}/images/brand/favicon.png`,
+    apple: `${BASE_PATH}/images/brand/favicon.png`,
   },
   openGraph: {
     title: 'Volunteer Bangladesh Trust',
     description:
       'Volunteer Bangladesh Trust — a registered Bangladeshi charity devoted to education, service, Dawah and human welfare. Membership, volunteering, Quran, Sunnah, articles, lectures and resources.',
-    images: ['/images/brand/logo.png'],
+    images: [`${BASE_PATH}/images/brand/logo.png`],
   },
 };
 

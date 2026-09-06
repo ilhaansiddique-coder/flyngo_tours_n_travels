@@ -14,8 +14,8 @@ export function FloatingDonate() {
 
   return (
     <motion.div
-      className="fixed bottom-6 right-5 z-40"
-      animate={{ y: [0, -12, 0] }}
+      className="fixed left-1/2 top-[86px] z-40 -translate-x-1/2"
+      animate={{ y: [0, -10, 0] }}
       transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
     >
       <motion.span

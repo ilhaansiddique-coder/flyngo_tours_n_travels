@@ -30,7 +30,6 @@ export function NavBarClient({
   items,
   logo,
   siteName,
-  donateLabel,
   membershipLabel,
   loginLabel,
   menuLabel,
@@ -38,7 +37,6 @@ export function NavBarClient({
   items: NavItem[];
   logo: string;
   siteName: string;
-  donateLabel: string;
   membershipLabel: string;
   loginLabel: string;
   menuLabel: string;
@@ -113,11 +111,8 @@ export function NavBarClient({
           <Button href="/membership" variant="ghost" size="sm" className="hidden lg:inline-flex">
             {membershipLabel}
           </Button>
-          <Button href="/admin/login" variant="ghost" size="sm" className="hidden sm:inline-flex">
+          <Button href="/admin/login" size="sm" className="hidden sm:inline-flex">
             {loginLabel}
-          </Button>
-          <Button href="/donate" size="sm" className="hidden sm:inline-flex">
-            {donateLabel}
           </Button>
           <button
             type="button"
@@ -147,10 +142,7 @@ export function NavBarClient({
               <Button href="/membership" size="sm" className="w-full">
                 {membershipLabel}
               </Button>
-              <Button href="/donate" size="sm" className="w-full">
-                {donateLabel}
-              </Button>
-              <Button href="/admin/login" variant="ghost" size="sm" className="w-full">
+              <Button href="/admin/login" size="sm" className="w-full">
                 {loginLabel}
               </Button>
             </div>

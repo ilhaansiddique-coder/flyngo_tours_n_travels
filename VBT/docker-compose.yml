@@ -19,9 +19,10 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql://vbt:vbt@postgres:5432/vbt?schema=public}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change-me-vbt-access}
       JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-24h}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-https://flyngo.world}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://flyngo.world,https://www.flyngo.world}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@vbt.world}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-VBT#2026#SecureAdmin}
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,7 +40,7 @@ services:
     restart: always
     environment:
       BACKEND_URL: ${BACKEND_URL:-http://backend:4000}
-      NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-http://localhost:3000}
+      NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-https://flyngo.world}
       NEXT_PUBLIC_VBT_BASE_PATH: ${NEXT_PUBLIC_VBT_BASE_PATH:-/VBT}
       NEXT_PUBLIC_VBT_USE_BASEPATH: ${NEXT_PUBLIC_VBT_USE_BASEPATH:-true}
       PORT: 3000

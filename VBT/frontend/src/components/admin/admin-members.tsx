@@ -67,6 +67,7 @@ interface RegistrationRow {
   address: string | null;
   reference: string | null;
   fbProfile: string | null;
+  photo: string | null;
   status: string;
   createdAt: string;
 }
@@ -534,6 +535,18 @@ export function AdminMembers() {
               <DetailRow label="FB profile" value={regDetail.fbProfile || '—'} />
               <DetailRow label="Registered" value={new Date(regDetail.createdAt).toLocaleString()} />
             </div>
+
+            {regDetail.photo ? (
+              <div className="mt-5">
+                <p className="text-sm font-semibold text-[var(--color-ink-soft)]">Profile photo</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={regDetail.photo}
+                  alt={regDetail.name}
+                  className="mt-2 h-40 w-40 rounded-xl object-cover"
+                />
+              </div>
+            ) : null}
 
             <div className="mt-6 flex justify-end">
               <button

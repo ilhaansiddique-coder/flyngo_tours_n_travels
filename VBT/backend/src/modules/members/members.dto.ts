@@ -279,6 +279,11 @@ export class RegistrationCreateDto {
   fbProfile?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(4_000_000)
+  photo?: string;
+
+  @IsOptional()
   @IsBoolean()
   consent?: boolean;
 

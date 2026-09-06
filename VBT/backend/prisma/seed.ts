@@ -235,24 +235,6 @@ async function main() {
         'এই সময়ে সেন্টমার্টিনে পর্যটকের চাপ তুলনামূলক কম থাকায়—\n• সামাজিক কাজ ও পরিচ্ছন্নতা কার্যক্রম সহজে করা যায়।\n• দ্বীপে ঘোরাফেরা আরও আনন্দদায়ক হয়।\n• ভিড় কম থাকায় খরচ তুলনামূলক কম।\n• অবসর সময়ে নিজের মতো করে ঘোরার সুযোগ।\n• নিরাপদ ও স্বাচ্ছন্দ্যময় পরিবেশ।\n• ভ্রমণ ও একাধিক সামাজিক কাজ একসঙ্গে করার সুযোগ।\nইতিপূর্বে যারা আমাদের সঙ্গে গিয়েছেন, তাদের অনেকেই বলেছেন— “এটি ছিল আমাদের জীবনের সেরা ট্রিপগুলোর একটি”।\nআমাদের টিমে সাধারণত প্রায় ৫০% নতুন এবং ৫০% পুরোনো সদস্য থাকেন। পাশাপাশি দলে নারী-পুরুষের অংশগ্রহণ থাকে একটি ভারসাম্যপূর্ণ পরিবেশে।\nকাজের সময় বাদে বাকি সময়ে নিজের মতো করে দ্বীপ ঘুরে দেখার সুযোগ থাকবে।',
     },
     {
-      type: 'split',
-      headingEn: 'Trip cost',
-      headingBn: 'ভ্রমণের খরচ',
-      items: [
-        { labelEn: 'Main trip (per person)', labelBn: 'মূল ভ্রমণ (প্রতি জন)', value: '৳৬,২৫০' },
-        { labelEn: 'Couple room', labelBn: 'কাপল রুম', value: '৳৭,২৫০' },
-      ],
-    },
-    {
-      type: 'text',
-      headingEn: 'Cost details',
-      headingBn: 'খরচের বিবরণ',
-      bodyEn:
-        'Main trip: ৳6,250 (AC bus, trawler, 4 people per room).\nCouple room: ৳7,250 (AC bus, trawler, 2 people per room). A separate bill will be added for children who take a bus seat and food.',
-      bodyBn:
-        'জনপ্রতি মূল ভ্রমণ: ৬,২৫০ টাকা (এসি বাস, ট্রলার, এক রুমে ৪ জন)।\nকাপল রুমে থাকলে: ৭,২৫০ টাকা (এসি বাস, ট্রলার, এক রুমে ২ জন)। শিশুদের জন্য বাসের সিট এবং খাবার গ্রহণ করলে আলাদা বিল যুক্ত হবে।',
-    },
-    {
       type: 'text',
       headingEn: 'Special instructions',
       headingBn: 'বিশেষ নির্দেশনা',
@@ -292,6 +274,15 @@ async function main() {
       googleFormResponseUrl:
         'https://docs.google.com/forms/d/e/1FAIpQLScYa6hk-0SXZxmnxTREHGl8N8t7g5U_uNsh9kBanzB_djGL4Q/formResponse',
       fbzx: '-4848356108472141880',
+    },
+    {
+      type: 'text',
+      headingEn: 'Trip cost',
+      headingBn: 'ভ্রমণ খরচ',
+      bodyEn:
+        'Regular: BDT 6,250/person (AC Bus, Trawler & 4-person room)\nCouple Room: BDT 7,250/person (AC Bus, Trawler & 2-person room)\nChildren: Bus seat & meals charged separately.',
+      bodyBn:
+        '• রেগুলার: ৬,২৫০ টাকা/জন (এসি বাস, ট্রলার ও ৪ জনের রুম)\n• কাপল রুম: ৭,২৫০ টাকা/জন (এসি বাস, ট্রলার ও ২ জনের রুম)\n• শিশু: বাসের সিট ও খাবার আলাদাভাবে চার্জ করা হবে।',
     },
     {
       type: 'text',

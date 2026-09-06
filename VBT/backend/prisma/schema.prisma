@@ -342,6 +342,7 @@ model Registration {
   address      String?
   reference    String?
   fbProfile    String?
+  photo        String?
   consent      Boolean  @default(true)
   status       String   @default("NEW")
   createdAt    DateTime @default(now())

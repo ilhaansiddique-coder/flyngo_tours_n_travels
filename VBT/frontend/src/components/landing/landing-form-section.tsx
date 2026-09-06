@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { CheckCircle2, Loader2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Camera, CheckCircle2, Loader2 } from 'lucide-react';
 import { clientApi } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -46,6 +46,28 @@ export function LandingFormSection({
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+  const [photo, setPhoto] = useState('');
+  const [photoError, setPhotoError] = useState('');
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const onPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!/^image\/(png|jpe?g|webp)$/i.test(file.type)) {
+      setPhotoError(f('Please choose a PNG, JPG or WebP image.', 'অনুগ্রহ করে PNG, JPG বা WebP ছবি নির্বাচন করুন।'));
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setPhotoError(f('Image must be under 2MB.', 'ছবির আকার ২ এমবির কম হতে হবে।'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhoto(String(reader.result || ''));
+      setPhotoError('');
+    };
+    reader.readAsDataURL(file);
+  };
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -62,6 +84,7 @@ export function LandingFormSection({
       address: String(data.address || '').trim(),
       reference: String(data.reference || '').trim(),
       fbProfile: String(data.fbProfile || '').trim(),
+      photo,
       consent: true,
       slug: 'saint-martin-trip-2026',
       tag: 'saintmartin',
@@ -245,6 +268,54 @@ export function LandingFormSection({
                   placeholder="https://facebook.com/your.profile"
                   className={inputClass()}
                 />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-sm font-semibold" htmlFor="photo">
+                  {f('Profile photo', 'প্রোফাইল ছবি')} <span className="font-normal text-[var(--color-ink-muted)]">({f('optional', 'ঐচ্ছিক')})</span>
+                </label>
+                <div className="mt-1.5 flex items-start gap-4">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-[var(--color-mist)]">
+                    {photo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={photo} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <Camera className="absolute inset-0 m-auto h-5 w-5 text-[var(--color-ink-muted)]" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <input
+                      ref={fileInput}
+                      id="photo"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={onPhotoChange}
+                      className="hidden"
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fileInput.current?.click()}
+                        className="rounded-lg border border-black/10 bg-[var(--color-mist)] px-4 py-2 text-sm font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+                      >
+                        {photo ? f('Change photo', 'ছবি পরিবর্তন করুন') : f('Upload photo', 'ছবি আপলোড করুন')}
+                      </button>
+                      {photo ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPhoto('');
+                            setPhotoError('');
+                            if (fileInput.current) fileInput.current.value = '';
+                          }}
+                          className="rounded-lg bg-[var(--color-crimson-light)] px-3 py-2 text-sm font-semibold text-[var(--color-crimson)]"
+                        >
+                          {f('Remove', 'মুছে ফেলুন')}
+                        </button>
+                      ) : null}
+                    </div>
+                    {photoError ? <p className="mt-1.5 text-xs font-medium text-red-600">{photoError}</p> : null}
+                  </div>
+                </div>
               </div>
               <div className="sm:col-span-2 rounded-xl border border-black/10 bg-[var(--color-mist)] p-4">
                 <label className="flex items-start gap-3 text-sm leading-relaxed">

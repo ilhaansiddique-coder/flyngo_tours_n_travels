@@ -286,6 +286,12 @@ export class RegistrationCreateDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @IsIn(['full_6250', 'full_7250', 'advance_2000'])
+  paymentType?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(80)
   bkashTrxId?: string;
 

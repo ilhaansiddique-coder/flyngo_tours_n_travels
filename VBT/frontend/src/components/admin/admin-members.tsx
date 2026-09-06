@@ -72,6 +72,7 @@ interface RegistrationRow {
   reference: string | null;
   fbProfile: string | null;
   photo: string | null;
+  paymentType: string | null;
   bkashTrxId: string | null;
   receipt: string | null;
   adminNote: string | null;
@@ -103,6 +104,19 @@ const FILTERS: Array<{ key: string; label: string }> = [
 
 function categoryLabel(m: MemberRow): string {
   return m.categoryLabelEn || m.category;
+}
+
+function paymentTypeLabel(v: string | null): string {
+  switch (v) {
+    case 'full_6250':
+      return 'Full — ৳6,250';
+    case 'full_7250':
+      return 'Full — ৳7,250 (Couple)';
+    case 'advance_2000':
+      return 'Advance — ৳2,000';
+    default:
+      return '—';
+  }
 }
 
 export function AdminMembers() {
@@ -495,16 +509,22 @@ export function AdminMembers() {
                       )}
                     </td>
                     <td className="px-4 py-3">
+                      <span className="text-xs font-semibold text-[var(--color-ink)]">{paymentTypeLabel(r.paymentType)}</span>
                       {r.bkashTrxId ? (
-                        <span className="font-mono text-xs font-bold text-[var(--color-primary-dark)]">{r.bkashTrxId}</span>
-                      ) : (
-                        <span className="text-xs text-[var(--color-ink-muted)]">—</span>
-                      )}
+                        <p className="mt-0.5 font-mono text-xs font-bold text-[var(--color-primary-dark)]">{r.bkashTrxId}</p>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 text-[var(--color-ink-soft)]">{r.mobile}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-block rounded-full bg-[var(--color-gold-lighter)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-gold-deep)]">
-                        {r.status}
+                      <span
+                        className={cn(
+                          'inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold',
+                          r.status === 'APPROVED' && 'bg-[var(--color-primary-light)] text-[var(--color-primary-dark)]',
+                          r.status === 'REJECTED' && 'bg-[var(--color-crimson-light)] text-[var(--color-crimson)]',
+                          r.status === 'NEW' && 'bg-[var(--color-gold-lighter)] text-[var(--color-gold-deep)]',
+                        )}
+                      >
+                        {r.status === 'APPROVED' ? 'Payment Confirmed' : r.status === 'REJECTED' ? 'Declined' : r.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-[var(--color-ink-muted)]">
@@ -679,6 +699,7 @@ export function AdminMembers() {
               <DetailRow label="Reference" value={regDetail.reference || '—'} />
               <DetailRow label="FB profile" value={regDetail.fbProfile || '—'} />
               <DetailRow label="bKash TrxID" value={regDetail.bkashTrxId || '—'} />
+              <DetailRow label="Payment type" value={paymentTypeLabel(regDetail.paymentType)} />
               <DetailRow label="Approved at" value={regDetail.approvedAt ? new Date(regDetail.approvedAt).toLocaleString() : '—'} />
               <DetailRow label="Admin note" value={regDetail.adminNote || '—'} />
               <DetailRow label="Registered" value={new Date(regDetail.createdAt).toLocaleString()} />

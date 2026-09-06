@@ -20,6 +20,18 @@ const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 const BKASH_MERCHANT = '01970534363';
 
+const CONTACT_NUMBER = '01681635657';
+
+const PAYMENT_TYPES: Array<{
+  value: string;
+  labelEn: string;
+  labelBn: string;
+}> = [
+  { value: 'full_6250', labelEn: 'Full payment — BDT 6,250', labelBn: 'সম্পূর্ণ টাকা পরিশোধ — ৬,২৫০ টাকা' },
+  { value: 'full_7250', labelEn: 'Full payment — BDT 7,250 (Couple Room)', labelBn: 'সম্পূর্ণ টাকা পরিশোধ — ৭,২৫০ টাকা (কাপল রুম)' },
+  { value: 'advance_2000', labelEn: 'Advance payment — BDT 2,000 (non-refundable)', labelBn: 'অগ্রিম পেমেন্ট — ২,০০০ টাকা (অফেরতযোগ্য)' },
+];
+
 function inputClass(extra = '') {
   return cn(
     'mt-1.5 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-normal text-[var(--color-ink)] outline-none transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-light)]',
@@ -56,6 +68,7 @@ export function LandingFormSection({
   const [receiptName, setReceiptName] = useState('');
   const receiptInput = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
+  const [paymentType, setPaymentType] = useState('');
 
   const copyBkash = async () => {
     try {
@@ -122,6 +135,7 @@ export function LandingFormSection({
       reference: String(data.reference || '').trim(),
       fbProfile: String(data.fbProfile || '').trim(),
       photo,
+      paymentType,
       bkashTrxId: String(data.bkashTrxId || '').trim(),
       receipt,
       consent: true,
@@ -129,6 +143,11 @@ export function LandingFormSection({
       tag: 'saintmartin',
     };
 
+    if (!paymentType) {
+      setError(f('Please select a payment type.', 'অনুগ্রহ করে একটি পেমেন্ট টাইপ নির্বাচন করুন।'));
+      setSending(false);
+      return;
+    }
     if (!payload.bkashTrxId || !receipt) {
       setError(f('Please enter your bKash transaction ID and upload the payment receipt.', 'অনুগ্রহ করে আপনার বিকাশ ট্রানজেকশন আইডি দিন এবং পেমেন্ট রিসিট আপলোড করুন।'));
       setSending(false);
@@ -372,7 +391,7 @@ export function LandingFormSection({
                   <img
                     src={assetUrl('/images/landing/payment.jpeg')}
                     alt="bKash QR code"
-                    className="h-40 w-40 shrink-0 rounded-xl border border-black/10 bg-white object-contain p-1"
+                    className="h-64 w-64 shrink-0 rounded-xl border border-black/10 bg-white object-contain p-2"
                   />
                   <div className="min-w-0 flex-1 rounded-xl border border-black/10 bg-white px-4 py-3">
                     <p className="text-xs font-bold uppercase tracking-wide text-[var(--color-ink-muted)]">{f('bKash Merchant Number', 'বিকাশ মার্চেন্ট নম্বর')}</p>
@@ -387,14 +406,46 @@ export function LandingFormSection({
                         {copied ? f('Copied!', 'কপি হয়েছে!') : f('Copy number', 'নম্বর কপি করুন')}
                       </button>
                       <a
-                        href={`tel:${BKASH_MERCHANT}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-[var(--color-mist)] px-3 py-1.5 text-sm font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+                        href={`tel:${CONTACT_NUMBER}`}
+                        title={CONTACT_NUMBER}
+                        aria-label={CONTACT_NUMBER}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-black/10 bg-[var(--color-mist)] text-[var(--color-ink-soft)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
                       >
                         <Phone size={15} />
-                        {f('Call', 'কল করুন')}
                       </a>
                     </div>
                   </div>
+                </div>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-sm font-semibold">
+                  {f('Payment Type', 'পেমেন্ট টাইপ')} <span className="text-red-600">*</span>
+                </label>
+                <div className="mt-2 grid gap-2 sm:grid-cols-1">
+                  {PAYMENT_TYPES.map((pt) => (
+                    <label
+                      key={pt.value}
+                      className={cn(
+                        'flex cursor-pointer items-center gap-3 rounded-xl border bg-white px-4 py-3 text-sm transition',
+                        paymentType === pt.value
+                          ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary-light)]'
+                          : 'border-black/10 hover:border-[var(--color-primary)]',
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentType"
+                        value={pt.value}
+                        required
+                        checked={paymentType === pt.value}
+                        onChange={() => setPaymentType(pt.value)}
+                        className="h-4 w-4 cursor-pointer accent-[var(--color-primary)]"
+                      />
+                      <span className="font-medium text-[var(--color-ink)]">
+                        {bn ? pt.labelBn : pt.labelEn}
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </div>
               <div>
@@ -484,8 +535,8 @@ export function LandingFormSection({
             <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row">
               <button
                 type="submit"
-                disabled={sending}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-8 py-3 text-sm font-bold text-white transition hover:bg-[var(--color-primary-darker)] disabled:opacity-60 sm:w-auto"
+                disabled={sending || !paymentType || !receipt}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-8 py-3 text-sm font-bold text-white transition hover:bg-[var(--color-primary-darker)] disabled:opacity-50 disabled:pointer-events-none sm:w-auto"
               >
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                   f('Submit Registration', 'নিবন্ধন জমা দিন')

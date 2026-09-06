@@ -343,6 +343,7 @@ model Registration {
   reference    String?
   fbProfile    String?
   photo        String?
+  paymentType  String?
   bkashTrxId   String?
   receipt      String?
   adminNote    String?

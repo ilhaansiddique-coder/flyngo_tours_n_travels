@@ -358,6 +358,13 @@ export class MembersService {
     if (!dto.bkashTrxId || !dto.receipt) {
       throw new BadRequestException('bKash transaction ID and payment receipt are required');
     }
+    if (!dto.paymentType) {
+      throw new BadRequestException('A payment type must be selected');
+    }
+    const VALID_PAYMENT_TYPES = ['full_6250', 'full_7250', 'advance_2000'];
+    if (!VALID_PAYMENT_TYPES.includes(dto.paymentType)) {
+      throw new BadRequestException('Invalid payment type selected');
+    }
     if (!isValidReceipt(dto.receipt)) {
       throw new BadRequestException('Receipt must be a PNG/JPG/WebP image or PDF under 5MB');
     }
@@ -372,6 +379,7 @@ export class MembersService {
         reference: dto.reference?.trim(),
         fbProfile: dto.fbProfile?.trim(),
         photo: dto.photo || null,
+        paymentType: dto.paymentType,
         bkashTrxId: dto.bkashTrxId.trim(),
         receipt: dto.receipt,
         consent: dto.consent ?? true,
@@ -428,6 +436,7 @@ export class MembersService {
           reference: true,
           fbProfile: true,
           photo: true,
+          paymentType: true,
           bkashTrxId: true,
           receipt: true,
           adminNote: true,

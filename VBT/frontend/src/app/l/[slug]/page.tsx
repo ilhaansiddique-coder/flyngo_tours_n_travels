@@ -34,7 +34,7 @@ export default async function LandingSlugPage({
           <section key={index} className="section-pad">
             <div className="container-site max-w-3xl">
               {heading ? <h2 className="text-2xl font-bold">{heading}</h2> : null}
-              {body ? <p className="mt-4 leading-relaxed text-[var(--color-ink-soft)]">{body}</p> : null}
+              {body ? <p className="mt-4 whitespace-pre-line leading-relaxed text-[var(--color-ink-soft)]">{body}</p> : null}
             </div>
           </section>
         );
@@ -116,20 +116,28 @@ export default async function LandingSlugPage({
     return /^data:image/.test(page.coverPhoto) ? page.coverPhoto : assetUrl(page.coverPhoto);
   })();
 
+  const heroSrc =
+    slug === 'saint-martin-trip-2026' ? assetUrl('/images/landing/saint-martin-hero.jpg') : coverSrc;
+
   return (
     <>
       <section className="relative overflow-hidden border-b border-black/5 bg-[var(--color-primary-darker)] text-white">
-        {coverSrc ? (
+        {heroSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={coverSrc} alt="" className="absolute inset-0 h-full w-full object-cover opacity-25" />
+          <img src={heroSrc} alt="" className="absolute inset-0 h-full w-full object-cover opacity-50" />
         ) : null}
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-primary-darker)]/70 via-transparent to-transparent" />
         <div className="container-site relative z-10 px-6 py-20 text-center sm:py-28">
           <span className="mb-4 inline-block rounded-full bg-white/15 px-4 py-1 text-xs font-bold uppercase tracking-widest">
             {lang === 'bn' ? 'ল্যান্ডিং পেজ' : 'Campaign'}
           </span>
-          <h1 className="mx-auto max-w-3xl text-balance text-3xl font-bold tracking-tight sm:text-5xl">{title}</h1>
+        </div>
+      </section>
+      <section className="section-pad">
+        <div className="container-site max-w-3xl text-center">
+          <h1 className="mx-auto max-w-3xl text-balance text-3xl font-bold tracking-tight sm:text-4xl">{title}</h1>
           {subtitle ? (
-            <p className="mx-auto mt-4 max-w-2xl text-base text-white/85 sm:text-lg">{subtitle}</p>
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[var(--color-ink-soft)] sm:text-lg">{subtitle}</p>
           ) : null}
         </div>
       </section>

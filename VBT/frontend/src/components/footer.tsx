@@ -45,7 +45,7 @@ export async function Footer() {
               : settings.footer?.about || 'A registered Bangladeshi charity devoted to education, Dawah and human welfare.'}
           </p>
           <p className="mt-3 text-sm font-semibold text-[var(--color-gold-deep)]">
-            {bn ? 'উম্মাহর স্বার্থে সুন্নাহর সাথে' : settings.sloganEn || 'For the Ummah, with the Sunnah'}
+            {bn ? 'পরিচ্ছন্নতা ঈমানের অর্ধেক — মানবতার জন্য' : settings.sloganEn || 'Cleanliness is half of faith — for Humanity'}
           </p>
           <div className="mt-4 flex items-center gap-3">
             <a href={settings.socials?.facebook} target="_blank" rel="noreferrer" aria-label="Facebook">

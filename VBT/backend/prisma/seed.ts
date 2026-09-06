@@ -33,8 +33,8 @@ async function main() {
   await upsertSetting('site', {
     name: 'Volunteer Bangladesh Trust',
     nameBn: 'ভলান্টিয়ার বাংলাদেশ ট্রাস্ট',
-    sloganEn: 'For the Ummah, with the Sunnah',
-    sloganBn: 'উম্মাহর স্বার্থে সুন্নাহর সাথে',
+    sloganEn: 'Cleanliness is half of faith — for Humanity',
+    sloganBn: 'পরিচ্ছন্নতা ঈমানের অর্ধেক — মানবতার জন্য',
     description:
       'A registered non-political, non-profit religious charity organisation devoted to education, Dawah and full-scale human welfare.',
     descriptionBn:
@@ -185,25 +185,106 @@ async function main() {
       headingEn: 'Details',
       headingBn: 'বিস্তারিত',
       bodyEn:
-        'Dates: Friday, 9 October – Sunday, 11 October 2026. Includes social work, cleanliness activities, free blood grouping, free medical camp and island sightseeing.',
+        'Dates: 9, 10 & 11 October 2026.\nDays: Friday, Saturday & Sunday.\nPlaces: Saint Martin | Teknaf | Cox’s Bazar.',
       bodyBn:
-        'তারিখ: শুক্রবার ০৯ – রবিবার ১১ অক্টোবর ২০২৬। সামাজিক কাজ, পরিচ্ছন্নতা, ফ্রি ব্লাড গ্রুপিং, ফ্রি মেডিকেল ক্যাম্প ও দ্বীপ ভ্রমণ।',
+        'তারিখ: ০৯, ১০ ও ১১ অক্টোবর ২০২৬\nরোজ: শুক্রবার, শনিবার ও রবিবার\nস্থান: সেন্টমার্টিন | টেকনাফ | কক্সবাজার',
+    },
+    {
+      type: 'text',
+      headingEn: 'What this 3-day trip includes',
+      headingBn: 'এই ৩ দিনের ট্রিপে থাকছে',
+      bodyEn:
+        'Social work, cleanliness activities, environmental awareness, free medical service, free blood grouping, island sightseeing, getting to know new people, food cooked by our own cook, and free time to explore on your own.',
+      bodyBn:
+        '• সামাজিক কাজ\n• পরিচ্ছন্নতা কার্যক্রম\n• পরিবেশ সচেতনতা\n• বিনামূল্যে মেডিকেল সেবা\n• ফ্রি ব্লাড গ্রুপিং\n• দ্বীপ ভ্রমণ\n• নতুন মানুষের সঙ্গে পরিচিত হওয়া\n• নিজস্ব বাবুর্চির রান্না\n• অবসর সময়ে নিজের মতো করে ঘোরাফেরা',
+    },
+    {
+      type: 'text',
+      headingEn: 'Our programmes',
+      headingBn: 'আমাদের কার্যক্রম',
+      bodyEn:
+        'Cleanliness, free blood grouping & medical camp campaign at Saint Martin Island: 9 October, 7:00 PM.\nOpen meeting on cleanliness at Saint Martin Island: 9 October, 10:00 PM.\nCleanliness drive at Saint Martin Island: 10 & 11 October, 5:00–8:00 AM.\nFree blood grouping & medical camp at Saint Martin Island: 10 October, 11:00 AM & 5:00 PM.\nFree blood grouping & medical camp at Shahpari Island: 11 October, 11:00 AM–2:00 PM.\nEnvironmental awareness rally at Cox’s Bazar: 11 October, 7:00 PM.',
+      bodyBn:
+        '• সেন্টমার্টিন দ্বীপে পরিচ্ছন্নতা, ফ্রি ব্লাড গ্রুপ ও মেডিকেল ক্যাম্প প্রচারণা: ০৯ অক্টোবর, সন্ধ্যা ৭ টায়।\n• সেন্টমার্টিন দ্বীপে পরিচ্ছন্নতা বিষয়ক খোলা বৈঠক: ০৯ অক্টোবর, রাত ১০ টায়।\n• সেন্টমার্টিন দ্বীপে পরিচ্ছন্নতা কার্যক্রম: ১০ ও ১১ অক্টোবর, ভোর ৫টা–সকাল ৮টা।\n• সেন্টমার্টিন দ্বীপে ফ্রি ব্লাড গ্রুপ ও মেডিকেল ক্যাম্প: ১০ অক্টোবর, সকাল ১১টা ও বিকেল ৫টা।\n• শাহপরীর দ্বীপে ফ্রি ব্লাড গ্রুপ ও মেডিকেল ক্যাম্প: ১১ অক্টোবর, সকাল ১১টা–দুপুর ২টা।\n• কক্সবাজারে পরিবেশ সচেতনতা শোভাযাত্রা: ১১ অক্টোবর, সন্ধ্যা ৭টা।',
+    },
+    {
+      type: 'text',
+      headingEn: 'Travel itinerary',
+      headingBn: 'ভ্রমণ সময়সূচি',
+      bodyEn:
+        'Departure Dhaka → Teknaf: 8 October, Thursday | 8:00 PM, Fakirapool (AC bus).\nTeknaf → Saint Martin: 9 October, Friday | 3:00 PM (trawler after lunch).\nArrive Saint Martin & campaign: 9 October, Friday | rest after dinner.\nSaint Martin → Shahpari Island: 11 October, Sunday | 10:00 AM.\nShahpari Island → Cox’s Bazar: 11 October, Sunday | 3:00 PM (after lunch).\nCox’s Bazar → Dhaka: 11 October, Sunday | 9:00 PM.',
+      bodyBn:
+        '• ঢাকা থেকে টেকনাফ যাত্রা: ০৮ অক্টোবর, বৃহস্পতিবার | রাত ৮টা, ফকিরাপুল (এসি বাস)\n• টেকনাফ থেকে সেন্টমার্টিন যাত্রা: ০৯ অক্টোবর, শুক্রবার | বিকাল ৩টা (দুপুরের খাবার শেষে ট্রলার)\n• সেন্টমার্টিন পৌঁছানো ও প্রচারণা: ০৯ অক্টোবর, শুক্রবার | রাতের খাবার শেষে বিশ্রাম\n• সেন্টমার্টিন থেকে শাহপরীর দ্বীপ যাত্রা: ১১ অক্টোবর, রবিবার | সকাল ১০টা\n• শাহপরীর দ্বীপ থেকে কক্সবাজার যাত্রা: ১১ অক্টোবর, রবিবার | দুপুর ৩টা (লাঞ্চ শেষে)\n• কক্সবাজার থেকে ঢাকা যাত্রা: ১১ অক্টোবর, রবিবার | রাত ৯টা',
+    },
+    {
+      type: 'text',
+      headingEn: 'Important note',
+      headingBn: 'বিশেষ দ্রষ্টব্য',
+      bodyEn:
+        'Those who wish to stay in Cox’s Bazar on the way back may do so at their own responsibility and cost. However, bus tickets will not be refunded.',
+      bodyBn:
+        'ফিরে আসার সময় যারা কক্সবাজারে থাকতে চান, তারা নিজ দায়িত্বে ও নিজ খরচে থাকতে পারবেন। তবে বাসের টিকিট রিফান্ড হবে না।',
+    },
+    {
+      type: 'text',
+      headingEn: 'Why go with us?',
+      headingBn: 'কেন আমাদের সঙ্গে যাবেন?',
+      bodyEn:
+        'This time there is comparatively less tourist pressure in Saint Martin, so:\n• Social and cleanliness work becomes easier.\n• Island sightseeing becomes more enjoyable.\n• With less crowd, the cost is comparatively lower.\n• Free time to roam around on your own.\n• A safe and comfortable environment.\n• The chance to combine travel and multiple social works.\nMany who have travelled with us before have said — “This was one of the best trips of our lives.”\nUsually around 50% of our team are new and 50% are returning members, with a balanced participation of men and women.\nApart from work time, there will be free time to roam the island on your own.',
+      bodyBn:
+        'এই সময়ে সেন্টমার্টিনে পর্যটকের চাপ তুলনামূলক কম থাকায়—\n• সামাজিক কাজ ও পরিচ্ছন্নতা কার্যক্রম সহজে করা যায়।\n• দ্বীপে ঘোরাফেরা আরও আনন্দদায়ক হয়।\n• ভিড় কম থাকায় খরচ তুলনামূলক কম।\n• অবসর সময়ে নিজের মতো করে ঘোরার সুযোগ।\n• নিরাপদ ও স্বাচ্ছন্দ্যময় পরিবেশ।\n• ভ্রমণ ও একাধিক সামাজিক কাজ একসঙ্গে করার সুযোগ।\nইতিপূর্বে যারা আমাদের সঙ্গে গিয়েছেন, তাদের অনেকেই বলেছেন— “এটি ছিল আমাদের জীবনের সেরা ট্রিপগুলোর একটি”।\nআমাদের টিমে সাধারণত প্রায় ৫০% নতুন এবং ৫০% পুরোনো সদস্য থাকেন। পাশাপাশি দলে নারী-পুরুষের অংশগ্রহণ থাকে একটি ভারসাম্যপূর্ণ পরিবেশে।\nকাজের সময় বাদে বাকি সময়ে নিজের মতো করে দ্বীপ ঘুরে দেখার সুযোগ থাকবে।',
     },
     {
       type: 'split',
-      headingEn: 'Cost',
-      headingBn: 'খরচ',
+      headingEn: 'Trip cost',
+      headingBn: 'ভ্রমণের খরচ',
       items: [
-        { labelEn: 'Main trip (per person)', labelBn: 'মূল ভ্রমণ (প্রতি জন)', value: '৳6,250' },
-        { labelEn: 'Couple room', labelBn: 'কাপল রুম', value: '৳7,250' },
+        { labelEn: 'Main trip (per person)', labelBn: 'মূল ভ্রমণ (প্রতি জন)', value: '৳৬,২৫০' },
+        { labelEn: 'Couple room', labelBn: 'কাপল রুম', value: '৳৭,২৫০' },
       ],
+    },
+    {
+      type: 'text',
+      headingEn: 'Cost details',
+      headingBn: 'খরচের বিবরণ',
+      bodyEn:
+        'Main trip: ৳6,250 (AC bus, trawler, 4 people per room).\nCouple room: ৳7,250 (AC bus, trawler, 2 people per room). A separate bill will be added for children who take a bus seat and food.',
+      bodyBn:
+        'জনপ্রতি মূল ভ্রমণ: ৬,২৫০ টাকা (এসি বাস, ট্রলার, এক রুমে ৪ জন)।\nকাপল রুমে থাকলে: ৭,২৫০ টাকা (এসি বাস, ট্রলার, এক রুমে ২ জন)। শিশুদের জন্য বাসের সিট এবং খাবার গ্রহণ করলে আলাদা বিল যুক্ত হবে।',
+    },
+    {
+      type: 'text',
+      headingEn: 'Special instructions',
+      headingBn: 'বিশেষ নির্দেশনা',
+      bodyEn:
+        '• Due to weather or adverse conditions the schedule may change.\n• The main purpose of the trip is participating in social work, so every participant must especially take part in the cleanliness drive.\n• Those who cannot take part due to dust allergy or any other reason will be charged an extra ৳500.\n• You must contribute to collecting at least 2 sacks of waste over the two days.\n• Special gifts await those with the greatest contribution to the cleanliness campaign.',
+      bodyBn:
+        '• কোনো কারণে আবহাওয়ার পরিবর্তন বা প্রতিকূল পরিস্থিতি সৃষ্টি হলে ভ্রমণের সময়সূচি পরিবর্তন হতে পারে।\n• সফরের অন্যতম প্রধান উদ্দেশ্য হলো সামাজিক কাজে অংশগ্রহণ করা। তাই প্রত্যেক অংশগ্রহণকারীর জন্য বিশেষ করে পরিচ্ছন্নতা অভিযানে অংশগ্রহণ করা আবশ্যক।\n• যারা ময়লার অ্যালার্জি বা অন্য কোনো কারণে পরিচ্ছন্নতা কার্যক্রমে অংশগ্রহণ করতে পারবেন না, তাদের জন্য অতিরিক্ত ৫০০ টাকা প্রযোজ্য হবে।\n• দুই দিনে কমপক্ষে ২ বস্তা বর্জ্য সংগ্রহে অবদান রাখার লক্ষ্য নিয়ে পরিচ্ছন্নতা কার্যক্রমে অংশগ্রহণ করতে হবে।\n• পরিচ্ছন্নতা অভিযানে যারা সর্বাধিক ও উল্লেখযোগ্য অবদান রাখবেন, তাদের জন্য থাকবে বিশেষ উপহার।',
+    },
+    {
+      type: 'text',
+      headingEn: 'Important rules',
+      headingBn: 'গুরুত্বপূর্ণ নিয়মাবলী',
+      bodyEn:
+        '• Participants must have the mindset to take part in social and specially cleanliness work.\n• People associated with social organisations will be given priority.\n• Last date to confirm a seat: 24 September 2026 (limited seats).\n• 50% advance of the total cost must be paid by 24 September; the rest is due at the start of the trip.\n• You must be ready for trawler travel.\n• Respectful and sympathetic behaviour between men and women is mandatory.\n• Not suitable for children (below 5), the elderly, the sick or pregnant women.\n• Bring a cap, gamcha, light clothes, sunglasses and sunscreen for the heat.\n• The trip may be cancelled or changed if the weather turns bad.\n• Social bodies may bring their own banners and festoons, but designs must be approved first.',
+      bodyBn:
+        '• অংশগ্রহণকারীদের সামাজিক কাজ বিশেষ করে পরিচ্ছন্নতা কাজে অংশগ্রহণের মানসিকতা থাকতে হবে।\n• সামাজিক সংগঠনের সঙ্গে যুক্ত ব্যক্তিদের অগ্রাধিকার দেওয়া হবে।\n• আসন নিশ্চিত করার শেষ তারিখ: ২৪ সেপ্টেম্বর ২০২৬। (সীমিত আসন)\n• ২৪ সেপ্টেম্বরের মধ্যে মোট খরচের ৫০% অগ্রিম প্রদান করতে হবে। বাকি টাকা ভ্রমণ শুরুর সময় প্রদান করতে হবে।\n• ট্রলারে ভ্রমণের মানসিকতা থাকতে হবে।\n• নারী ও পুরুষদের মধ্যে সম্মানসূচক ও সহানুভূতিশীল আচরণ আবশ্যক।\n• শিশু (৫ বছরের নিচে), বৃদ্ধ, অসুস্থ বা গর্ভবতী নারীদের জন্য সফর উপযোগী নয়।\n• গরমের জন্য ক্যাপ, গামছা, হালকা কাপড়, সানগ্লাস ও সানস্ক্রিন সাথে নিতে হবে।\n• আবহাওয়া খারাপ হলে যাত্রা বাতিল বা পরিবর্তন করা হতে পারে। এ বিষয়ে পরবর্তী সময়ে সিদ্ধান্ত জানানো হবে।\n• সামাজিক প্রতিষ্ঠান ও সংগঠনগুলো নিজস্ব ব্যানার ও ফেস্টুন বহন করতে পারবে। তবে ডিজাইন আগে অনুমোদন করাতে হবে।',
+    },
+    {
+      type: 'text',
+      headingEn: 'Registration',
+      headingBn: 'রেজিস্ট্রেশন',
+      bodyEn:
+        'Limited seats — so contact us quickly to confirm your seat.\nFor any need:\n• Shahadat – 01681635657\n• Sipon – 01745320041\n• Sohel – 01681845999',
+      bodyBn:
+        'সীমিত আসন। তাই আসন নিশ্চিত করতে দ্রুত যোগাযোগ করুন।\nযে কোনো প্রয়োজনে যোগাযোগ:\n• শাহাদাৎ – ০১৬৮১৬৩৫৬৫৭\n• সিপন – ০১৭৪৫৩২০০৪১\n• সোহেল – ০১৬৮১৮৪৫৯৯৯',
     },
     {
       type: 'form',
       headingEn: 'Register for the trip',
       headingBn: 'ভ্রমণের জন্য নিবন্ধন করুন',
       bodyEn:
-        'Fill in the form below. Limited seats — you must confirm your seat by 24 September 2026 with 50% advance payment.',
+        'Fill in the form below. Limited seats — confirm your seat by 24 September 2026 with 50% advance payment.',
       bodyBn:
         'নিচের ফরমটি পূরণ করুন। সীমিত আসন — ২৪ সেপ্টেম্বর ২০২৬-এর মধ্যে মোট খরচের ৫০% অগ্রিম প্রদান সাপেক্ষে আসন নিশ্চিত হবে।',
       googleFormUrl:
@@ -213,28 +294,35 @@ async function main() {
       fbzx: '-4848356108472141880',
     },
     {
-      type: 'cta',
-      headingEn: 'Ready to join?',
-      headingBn: 'যোগ দিতে প্রস্তুত?',
-      subtitleEn: 'Limited seats — register before 24 September 2026.',
-      subtitleBn: 'সীমিত আসন — ২৪ সেপ্টেম্বর ২০২৬-এর মধ্যে নিবন্ধন করুন।',
-      buttonLabelEn: 'Register now',
-      buttonLabelBn: 'এখনই নিবন্ধন করুন',
-      link: '#register',
+      type: 'text',
+      headingEn: 'Volunteer Bangladesh Trust',
+      headingBn: 'ভলান্টিয়ার বাংলাদেশ ট্রাস্ট',
+      bodyEn:
+        'May the trip be joyful, and the work for humanity.\n\nVolunteer Bangladesh Trust — for Humanity.',
+      bodyBn: 'ভ্রমণ হোক আনন্দের, কাজ হোক মানবতার।\n\nভলান্টিয়ার বাংলাদেশ ট্রাস্ট\nমানবতার জন্য',
     },
   ];
 
   await prisma.landingPage.upsert({
     where: { slug: 'saint-martin-trip-2026' },
-    update: { published: true, sections: saintMartinSections },
+    update: {
+      published: true,
+      titleEn: 'Saint Martin Cleanliness Drive & Free Medical Camp 2026',
+      titleBn: 'সেন্টমার্টিন পরিচ্ছন্নতা অভিযান ও ফ্রি মেডিকেল ক্যাম্প-২০২৬',
+      subtitleEn:
+        'Volunteer Bangladesh Trust presents Saint Martin Cleanliness Drive & Free Medical Camp 2026 — a 3-day trip (9, 10 & 11 October 2026) combining social service, environmental awareness, free blood grouping, free medical camp and island sightseeing at Saint Martin, Teknaf & Cox’s Bazar.',
+      subtitleBn:
+        'ভলান্টিয়ার বাংলাদেশ ট্রাস্টের আয়োজনে সেন্টমার্টিন পরিচ্ছন্নতা অভিযান ও ফ্রি মেডিকেল ক্যাম্প-২০২৬ — সেন্টমার্টিন, টেকনাফ ও কক্সবাজারে সামাজিক কাজ, পরিবেশ সচেতনতা, ফ্রি ব্লাড গ্রুপিং, ফ্রি মেডিকেল ক্যাম্প ও দ্বীপ ভ্রমণসহ ৩ দিনের (০৯, ১০ ও ১১ অক্টোবর ২০২৬) আনন্দময় সফর।',
+      sections: saintMartinSections,
+    },
     create: {
       slug: 'saint-martin-trip-2026',
       titleEn: 'Saint Martin Cleanliness Drive & Free Medical Camp 2026',
       titleBn: 'সেন্টমার্টিন পরিচ্ছন্নতা অভিযান ও ফ্রি মেডিকেল ক্যাম্প-২০২৬',
       subtitleEn:
-        'A 3-day social service, environmental awareness and free medical camp trip to Saint Martin, Teknaf & Cox’s Bazar.',
+        'Volunteer Bangladesh Trust presents Saint Martin Cleanliness Drive & Free Medical Camp 2026 — a 3-day trip (9, 10 & 11 October 2026) combining social service, environmental awareness, free blood grouping, free medical camp and island sightseeing at Saint Martin, Teknaf & Cox’s Bazar.',
       subtitleBn:
-        'সেন্টমার্টিন, টেকনাফ ও কক্সবাজারে সামাজিক কাজ, পরিবেশ সচেতনতা ও ফ্রি মেডিকেল সেবাসহ ৩ দিনের আনন্দময় সফর।',
+        'ভলান্টিয়ার বাংলাদেশ ট্রাস্টের আয়োজনে সেন্টমার্টিন পরিচ্ছন্নতা অভিযান ও ফ্রি মেডিকেল ক্যাম্প-২০২৬ — সেন্টমার্টিন, টেকনাফ ও কক্সবাজারে সামাজিক কাজ, পরিবেশ সচেতনতা, ফ্রি ব্লাড গ্রুপিং, ফ্রি মেডিকেল ক্যাম্প ও দ্বীপ ভ্রমণসহ ৩ দিনের (০৯, ১০ ও ১১ অক্টোবর ২০২৬) আনন্দময় সফর।',
       published: true,
       order: 0,
       sections: saintMartinSections,
@@ -303,8 +391,8 @@ async function main() {
     update: { items: aboutItems },
     create: {
       id: aboutSectionId,
-      taglineEn: 'For the Ummah, with the Sunnah',
-      taglineBn: 'উম্মাহর স্বার্থে সুন্নাহর সাথে',
+      taglineEn: 'Cleanliness is half of faith — for Humanity',
+      taglineBn: 'পরিচ্ছন্নতা ঈমানের অর্ধেক — মানবতার জন্য',
       titleEn: 'Who we are',
       titleBn: 'আমরা কারা',
       contentEn:

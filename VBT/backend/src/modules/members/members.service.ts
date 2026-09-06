@@ -7,7 +7,7 @@ import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { MemberStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import type { MemberCreateDto, MemberUpdateDto } from './members.dto';
+import type { MemberCreateDto, MemberUpdateDto, RegistrationCreateDto } from './members.dto';
 
 export interface Category {
   key: string;
@@ -342,6 +342,102 @@ export class MembersService {
     const member = await this.prisma.member.findUnique({ where: { id } });
     if (!member) throw new NotFoundException('Member not found');
     await this.prisma.member.delete({ where: { id } });
+    return { success: true };
+  }
+
+  async createRegistration(dto: RegistrationCreateDto) {
+    if (dto.consent !== undefined && dto.consent !== true) {
+      throw new BadRequestException('Consent to the declaration is required');
+    }
+    const registration = await this.prisma.registration.create({
+      data: {
+        name: dto.name.trim(),
+        mobile: dto.mobile.trim(),
+        emergency: dto.emergency?.trim(),
+        organization: dto.organization?.trim(),
+        bloodGroup: dto.bloodGroup,
+        address: dto.address?.trim(),
+        reference: dto.reference?.trim(),
+        fbProfile: dto.fbProfile?.trim(),
+        consent: dto.consent ?? true,
+        slug: dto.slug || 'saint-martin-trip-2026',
+        tag: dto.tag || 'saintmartin',
+      },
+    });
+    return {
+      success: true,
+      id: registration.id,
+      tag: registration.tag,
+      message:
+        'Registration recorded. Our team will contact you shortly to confirm your seat.',
+    };
+  }
+
+  async adminListRegistrations(options: {
+    tag?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+  }) {
+    const where: Prisma.RegistrationWhereInput = {
+      ...(options.tag ? { tag: options.tag } : {}),
+      ...(options.search
+        ? {
+            OR: [
+              { name: { contains: options.search, mode: 'insensitive' } },
+              { mobile: { contains: options.search } },
+              { organization: { contains: options.search, mode: 'insensitive' } },
+              { tag: { contains: options.search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+    const page = options.page ?? 1;
+    const pageSize = options.pageSize ?? 50;
+    const [items, total] = await Promise.all([
+      this.prisma.registration.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: pageSize,
+        skip: (page - 1) * pageSize,
+        select: {
+          id: true,
+          slug: true,
+          tag: true,
+          name: true,
+          mobile: true,
+          emergency: true,
+          organization: true,
+          bloodGroup: true,
+          address: true,
+          reference: true,
+          fbProfile: true,
+          status: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.registration.count({ where }),
+    ]);
+    return { items, total, page, pageSize };
+  }
+
+  async adminRegistrationStats() {
+    const [total, byTag, byStatus] = await Promise.all([
+      this.prisma.registration.count(),
+      this.prisma.registration.groupBy({ by: ['tag'], _count: true }),
+      this.prisma.registration.groupBy({ by: ['status'], _count: true }),
+    ]);
+    return {
+      total,
+      byTag: Object.fromEntries(byTag.map((t) => [t.tag, t._count])),
+      byStatus: Object.fromEntries(byStatus.map((s) => [s.status, s._count])),
+    };
+  }
+
+  async adminRemoveRegistration(id: string) {
+    const registration = await this.prisma.registration.findUnique({ where: { id } });
+    if (!registration) throw new NotFoundException('Registration not found');
+    await this.prisma.registration.delete({ where: { id } });
     return { success: true };
   }
 }

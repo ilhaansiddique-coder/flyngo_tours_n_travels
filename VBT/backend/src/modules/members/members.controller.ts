@@ -15,7 +15,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { MemberStatus } from '@prisma/client';
 import { AdminGuard } from '../admin/admin.guard';
 import { UserGuard, UserTokenPayload } from '../auth/user.guard';
-import { MemberCreateDto, MemberStatusDto, MemberUpdateDto } from './members.dto';
+import { MemberCreateDto, MemberStatusDto, MemberUpdateDto, RegistrationCreateDto } from './members.dto';
 import { MembersService } from './members.service';
 
 @ApiTags('members')
@@ -31,6 +31,11 @@ export class MembersController {
   @Post('public/members')
   create(@Body() dto: MemberCreateDto, @Req() req?: { user?: UserTokenPayload }) {
     return this.membersService.createMember(dto, req?.user?.sub);
+  }
+
+  @Post('public/registrations')
+  register(@Body() dto: RegistrationCreateDto) {
+    return this.membersService.createRegistration(dto);
   }
 
   @Get('public/members/status/:ref')
@@ -100,5 +105,31 @@ export class MembersController {
   @UseGuards(AdminGuard)
   remove(@Param('id') id: string) {
     return this.membersService.adminRemove(id);
+  }
+
+  @Get('admin/registrations/stats')
+  @ApiBearerAuth()
+  @UseGuards(AdminGuard)
+  registrationStats() {
+    return this.membersService.adminRegistrationStats();
+  }
+
+  @Get('admin/registrations')
+  @ApiBearerAuth()
+  @UseGuards(AdminGuard)
+  listRegistrations(
+    @Query('tag') tag?: string,
+    @Query('search') search?: string,
+    @Query('page', new ParseIntPipe({ optional: true })) page = 1,
+    @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize = 50,
+  ) {
+    return this.membersService.adminListRegistrations({ tag, search, page, pageSize });
+  }
+
+  @Delete('admin/registrations/:id')
+  @ApiBearerAuth()
+  @UseGuards(AdminGuard)
+  removeRegistration(@Param('id') id: string) {
+    return this.membersService.adminRemoveRegistration(id);
   }
 }

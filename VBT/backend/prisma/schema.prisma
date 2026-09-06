@@ -330,6 +330,27 @@ model LandingPage {
   updatedAt  DateTime @updatedAt
 }
 
+model Registration {
+  id           String   @id @default(cuid())
+  slug         String   @default("saint-martin-trip-2026")
+  tag          String   @default("saintmartin")
+  name         String
+  mobile       String
+  emergency    String?
+  organization String?
+  bloodGroup   String?
+  address      String?
+  reference    String?
+  fbProfile    String?
+  consent      Boolean  @default(true)
+  status       String   @default("NEW")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([slug])
+  @@index([tag])
+}
+
 // ============================================================================
 // Admin
 // ============================================================================

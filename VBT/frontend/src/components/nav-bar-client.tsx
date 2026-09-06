@@ -59,7 +59,7 @@ export function NavBarClient({
         <div className="container-site flex h-9 items-center justify-between text-xs">
           <span className="hidden items-center gap-4 sm:flex">
             <span className="inline-flex items-center gap-1.5 opacity-80">
-              ✦ welcome — for the Ummah, with the Sunnah
+              ✦ welcome — for Humanity
             </span>
           </span>
           <div className="flex items-center gap-3">

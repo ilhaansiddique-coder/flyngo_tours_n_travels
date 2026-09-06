@@ -55,6 +55,36 @@ interface ListResponse {
   pageSize: number;
 }
 
+interface RegistrationRow {
+  id: string;
+  slug: string;
+  tag: string;
+  name: string;
+  mobile: string;
+  emergency: string | null;
+  organization: string | null;
+  bloodGroup: string | null;
+  address: string | null;
+  reference: string | null;
+  fbProfile: string | null;
+  status: string;
+  createdAt: string;
+}
+
+interface RegistrationListResponse {
+  items: RegistrationRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+type Source = 'membership' | 'saintmartin';
+
+const SOURCES: Array<{ key: Source; label: string; hint: string }> = [
+  { key: 'membership', label: 'Membership', hint: 'Membership applications' },
+  { key: 'saintmartin', label: 'Saint Martin Trip', hint: 'Landing page registrations tagged "saintmartin"' },
+];
+
 const FILTERS: Array<{ key: string; label: string }> = [
   { key: '', label: 'All' },
   { key: 'PENDING', label: 'Pending' },
@@ -67,25 +97,37 @@ function categoryLabel(m: MemberRow): string {
 }
 
 export function AdminMembers() {
+  const [source, setSource] = useState<Source>('membership');
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [list, setList] = useState<ListResponse>({ items: [], total: 0, page: 1, pageSize: 50 });
+  const [regList, setRegList] = useState<RegistrationListResponse>({ items: [], total: 0, page: 1, pageSize: 50 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [detail, setDetail] = useState<MemberDetail | null>(null);
+  const [regDetail, setRegDetail] = useState<RegistrationRow | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
     setError('');
     const params = new URLSearchParams();
-    if (status) params.set('status', status);
-    if (search) params.set('search', search);
-    adminFetch<ListResponse>(`/admin/members?${params.toString()}`)
-      .then(setList)
-      .catch((e) => setError((e as Error).message))
-      .finally(() => setLoading(false));
-  }, [status, search]);
+    if (source === 'membership') {
+      if (status) params.set('status', status);
+      if (search) params.set('search', search);
+      adminFetch<ListResponse>(`/admin/members?${params.toString()}`)
+        .then(setList)
+        .catch((e) => setError((e as Error).message))
+        .finally(() => setLoading(false));
+    } else {
+      params.set('tag', 'saintmartin');
+      if (search) params.set('search', search);
+      adminFetch<RegistrationListResponse>(`/admin/registrations?${params.toString()}`)
+        .then(setRegList)
+        .catch((e) => setError((e as Error).message))
+        .finally(() => setLoading(false));
+    }
+  }, [source, status, search]);
 
   useEffect(() => {
     load();
@@ -124,37 +166,76 @@ export function AdminMembers() {
     }
   };
 
+  const removeRegistration = async (id: string) => {
+    if (!window.confirm('Delete this trip registration? This cannot be undone.')) return;
+    setBusyId(id);
+    try {
+      await adminFetch(`/admin/registrations/${id}`, { method: 'DELETE' });
+      if (regDetail?.id === id) setRegDetail(null);
+      load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const photoSrc = detail?.photo;
   const photoHref = photoSrc && /^data:image/.test(photoSrc) ? photoSrc : undefined;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold">Members</h1>
+      <h1 className="text-2xl font-bold">Members &amp; Registrations</h1>
       <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-        Approve, reject and review membership applications.
+        Review membership applications and landing page trip registrations.
       </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap gap-1 rounded-xl bg-white p-1 shadow-[var(--shadow-card)]">
-          {FILTERS.map((f) => (
+          {SOURCES.map((s) => (
             <button
-              key={f.key}
-              onClick={() => setStatus(f.key)}
+              key={s.key}
+              onClick={() => {
+                setSource(s.key);
+                setDetail(null);
+                setRegDetail(null);
+              }}
+              title={s.hint}
               className={cn(
                 'rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
-                status === f.key ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--color-ink-soft)]',
+                source === s.key ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--color-ink-soft)]',
               )}
             >
-              {f.label}
+              {s.label}
             </button>
           ))}
         </div>
+        {source === 'membership' ? (
+          <div className="flex flex-wrap gap-1 rounded-xl bg-white p-1 shadow-[var(--shadow-card)]">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setStatus(f.key)}
+                className={cn(
+                  'rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
+                  status === f.key ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--color-ink-soft)]',
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="relative min-w-56 flex-1">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)]" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, email, phone or ref…"
+            placeholder={
+              source === 'membership'
+                ? 'Search name, email, phone or ref…'
+                : 'Search trip registration name, phone or organization…'
+            }
             className="w-full rounded-xl border border-black/10 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]"
           />
         </div>
@@ -166,7 +247,7 @@ export function AdminMembers() {
         <div className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-black/5 bg-white p-16 text-[var(--color-ink-soft)] shadow-[var(--shadow-card)]">
           <Loader2 size={18} className="animate-spin" /> Loading…
         </div>
-      ) : (
+      ) : source === 'membership' ? (
         <div className="mt-6 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[var(--shadow-card)]">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -263,6 +344,79 @@ export function AdminMembers() {
             {list.total} total{list.items.length !== list.total ? ` • showing ${list.items.length}` : ''}
           </div>
         </div>
+      ) : (
+        <div className="mt-6 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[var(--shadow-card)]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-black/5 text-xs font-bold uppercase tracking-wide text-[var(--color-ink-muted)]">
+                  <th className="px-4 py-3">Ref</th>
+                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Tag</th>
+                  <th className="px-4 py-3">Contact</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Registered</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {regList.items.map((r) => (
+                  <tr key={r.id} className="border-b border-black/5 last:border-0 hover:bg-[var(--color-mist)]/60">
+                    <td className="px-4 py-3 font-mono text-xs font-bold text-[var(--color-royal)]">{r.id.slice(0, 8)}</td>
+                    <td className="px-4 py-3">
+                      <p className="font-semibold">{r.name}</p>
+                      {r.organization ? <p className="text-xs text-[var(--color-ink-muted)]">{r.organization}</p> : null}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-block rounded-full bg-[var(--color-primary-light)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-primary-dark)]">
+                        #{r.tag}
+                      </span>
+                      {r.bloodGroup ? <span className="ml-1.5 text-xs text-[var(--color-ink-muted)]">{r.bloodGroup}</span> : null}
+                    </td>
+                    <td className="px-4 py-3 text-[var(--color-ink-soft)]">{r.mobile}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-block rounded-full bg-[var(--color-gold-lighter)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-gold-deep)]">
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[var(--color-ink-muted)]">
+                      {new Date(r.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1.5">
+                        <button
+                          onClick={() => setRegDetail(r)}
+                          className="rounded-lg bg-[var(--color-mist)] p-2 text-[var(--color-ink-soft)] hover:text-[var(--color-royal)]"
+                          title="View"
+                        >
+                          <Eye size={15} />
+                        </button>
+                        <button
+                          onClick={() => removeRegistration(r.id)}
+                          disabled={busyId === r.id}
+                          className="rounded-lg bg-[var(--color-crimson-light)] p-2 text-[var(--color-crimson)] hover:bg-[var(--color-crimson)] hover:text-white"
+                          title="Delete"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {regList.items.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-12 text-center text-sm text-[var(--color-ink-muted)]">
+                      No Saint Martin registrations yet.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+          <div className="border-t border-black/5 px-4 py-3 text-xs text-[var(--color-ink-muted)]">
+            {regList.total} total{regList.items.length !== regList.total ? ` • showing ${regList.items.length}` : ''}
+          </div>
+        </div>
       )}
 
       {detail ? (
@@ -341,6 +495,49 @@ export function AdminMembers() {
               ) : null}
               <button
                 onClick={() => removeMember(detail.id)}
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-crimson-light)] px-5 py-2.5 text-sm font-bold text-[var(--color-crimson)] hover:bg-[var(--color-crimson)] hover:text-white"
+              >
+                <Trash2 size={16} /> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {regDetail ? (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm">
+          <div className="mt-8 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold">{regDetail.name}</h2>
+                <p className="font-mono text-xs font-bold text-[var(--color-royal)]">{regDetail.id}</p>
+                <span className="mt-2 inline-block rounded-full bg-[var(--color-primary-light)] px-3 py-1 text-xs font-bold text-[var(--color-primary-dark)]">
+                  #{regDetail.tag}
+                </span>
+              </div>
+              <button
+                onClick={() => setRegDetail(null)}
+                className="rounded-lg bg-[var(--color-mist)] px-3 py-1.5 text-sm font-semibold text-[var(--color-ink-soft)]"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+              <DetailRow label="Status" value={regDetail.status} />
+              <DetailRow label="Mobile" value={regDetail.mobile} />
+              <DetailRow label="Organization" value={regDetail.organization || '—'} />
+              <DetailRow label="Blood group" value={regDetail.bloodGroup || '—'} />
+              <DetailRow label="Emergency contact" value={regDetail.emergency || '—'} />
+              <DetailRow label="Address" value={regDetail.address || '—'} />
+              <DetailRow label="Reference" value={regDetail.reference || '—'} />
+              <DetailRow label="FB profile" value={regDetail.fbProfile || '—'} />
+              <DetailRow label="Registered" value={new Date(regDetail.createdAt).toLocaleString()} />
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => removeRegistration(regDetail.id)}
                 className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-crimson-light)] px-5 py-2.5 text-sm font-bold text-[var(--color-crimson)] hover:bg-[var(--color-crimson)] hover:text-white"
               >
                 <Trash2 size={16} /> Delete

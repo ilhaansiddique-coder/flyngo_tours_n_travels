@@ -237,6 +237,62 @@ export class MemberUpdateDto {
   status?: string;
 }
 
+export class RegistrationCreateDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  name!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(30)
+  mobile!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  emergency?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  organization?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(BLOOD_GROUPS)
+  bloodGroup?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(400)
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  reference?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  fbProfile?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  consent?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  slug?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  tag?: string;
+}
+
 export class MemberStatusDto {
   @IsString()
   @IsIn(['PENDING', 'APPROVED', 'REJECTED'])

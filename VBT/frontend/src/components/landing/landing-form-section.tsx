@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CheckCircle2, Loader2 } from 'lucide-react';
+import { clientApi } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -38,7 +39,6 @@ export function LandingFormSection({
   bodyEn,
   bodyBn,
   responseUrl,
-  formUrl,
   fbzx,
 }: LandingFormSectionProps) {
   const { lang } = useI18n();
@@ -47,16 +47,46 @@ export function LandingFormSection({
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
 
-  const submit = (e: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!responseUrl) {
-      if (formUrl) window.open(formUrl, '_blank', 'noopener');
-      return;
-    }
     const data = Object.fromEntries(new FormData(e.currentTarget).entries());
     setSending(true);
     setError('');
 
+    const payload = {
+      name: String(data.name || '').trim(),
+      mobile: String(data.mobile || '').trim(),
+      emergency: String(data.emergency || '').trim(),
+      organization: String(data.organization || '').trim(),
+      bloodGroup: String(data.bloodGroup || '').trim(),
+      address: String(data.address || '').trim(),
+      reference: String(data.reference || '').trim(),
+      fbProfile: String(data.fbProfile || '').trim(),
+      consent: true,
+      slug: 'saint-martin-trip-2026',
+      tag: 'saintmartin',
+    };
+
+    try {
+      await clientApi('/public/registrations', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      setSending(false);
+      setDone(true);
+      return;
+    } catch {
+      // fall back to the Google Form so no registration is ever lost
+      submitToGoogle(data);
+    }
+  };
+
+  const submitToGoogle = (data: Record<string, FormDataEntryValue>) => {
+    if (!responseUrl) {
+      setSending(false);
+      setError('Registration could not be submitted. Please try again.');
+      return;
+    }
     const iframe = document.createElement('iframe');
     iframe.name = 'vbt_gform_frame';
     iframe.style.display = 'none';

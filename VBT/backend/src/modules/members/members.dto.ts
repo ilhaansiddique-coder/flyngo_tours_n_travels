@@ -284,6 +284,17 @@ export class RegistrationCreateDto {
   photo?: string;
 
   @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(80)
+  bkashTrxId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(6_000_000)
+  receipt?: string;
+
+  @IsOptional()
   @IsBoolean()
   consent?: boolean;
 
@@ -301,6 +312,17 @@ export class RegistrationCreateDto {
 export class MemberStatusDto {
   @IsString()
   @IsIn(['PENDING', 'APPROVED', 'REJECTED'])
+  status!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
+}
+
+export class RegistrationStatusDto {
+  @IsString()
+  @IsIn(['NEW', 'APPROVED', 'REJECTED'])
   status!: string;
 
   @IsOptional()

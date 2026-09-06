@@ -15,7 +15,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { MemberStatus } from '@prisma/client';
 import { AdminGuard } from '../admin/admin.guard';
 import { UserGuard, UserTokenPayload } from '../auth/user.guard';
-import { MemberCreateDto, MemberStatusDto, MemberUpdateDto, RegistrationCreateDto } from './members.dto';
+import { MemberCreateDto, MemberStatusDto, MemberUpdateDto, RegistrationCreateDto, RegistrationStatusDto } from './members.dto';
 import { MembersService } from './members.service';
 
 @ApiTags('members')
@@ -124,6 +124,13 @@ export class MembersController {
     @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize = 50,
   ) {
     return this.membersService.adminListRegistrations({ tag, search, page, pageSize });
+  }
+
+  @Put('admin/registrations/:id/status')
+  @ApiBearerAuth()
+  @UseGuards(AdminGuard)
+  setRegistrationStatus(@Param('id') id: string, @Body() dto: RegistrationStatusDto) {
+    return this.membersService.adminSetRegistrationStatus(id, dto.status, dto.note);
   }
 
   @Delete('admin/registrations/:id')

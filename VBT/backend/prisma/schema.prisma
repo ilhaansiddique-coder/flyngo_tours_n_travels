@@ -343,6 +343,10 @@ model Registration {
   reference    String?
   fbProfile    String?
   photo        String?
+  bkashTrxId   String?
+  receipt      String?
+  adminNote    String?
+  approvedAt   DateTime?
   consent      Boolean  @default(true)
   status       String   @default("NEW")
   createdAt    DateTime @default(now())

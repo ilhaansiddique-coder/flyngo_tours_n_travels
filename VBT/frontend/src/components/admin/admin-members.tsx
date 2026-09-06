@@ -72,6 +72,10 @@ interface RegistrationRow {
   reference: string | null;
   fbProfile: string | null;
   photo: string | null;
+  bkashTrxId: string | null;
+  receipt: string | null;
+  adminNote: string | null;
+  approvedAt: string | null;
   status: string;
   createdAt: string;
 }
@@ -177,6 +181,22 @@ export function AdminMembers() {
     try {
       await adminFetch(`/admin/registrations/${id}`, { method: 'DELETE' });
       if (regDetail?.id === id) setRegDetail(null);
+      load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const setRegistrationStatus = async (id: string, next: 'APPROVED' | 'REJECTED') => {
+    setBusyId(id);
+    try {
+      await adminFetch(`/admin/registrations/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: next }),
+      });
+      setRegDetail((d) => (d && d.id === id ? { ...d, status: next } : d));
       load();
     } catch (e) {
       setError((e as Error).message);
@@ -440,6 +460,7 @@ export function AdminMembers() {
                   <th className="px-4 py-3">Ref</th>
                   <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3">Blood</th>
+                  <th className="px-4 py-3">Payment</th>
                   <th className="px-4 py-3">Contact</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Registered</th>
@@ -469,6 +490,13 @@ export function AdminMembers() {
                         <span className="inline-block rounded-md bg-[var(--color-royal-light)] px-2 py-0.5 text-xs font-bold text-[var(--color-royal)]">
                           {r.bloodGroup}
                         </span>
+                      ) : (
+                        <span className="text-xs text-[var(--color-ink-muted)]">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {r.bkashTrxId ? (
+                        <span className="font-mono text-xs font-bold text-[var(--color-primary-dark)]">{r.bkashTrxId}</span>
                       ) : (
                         <span className="text-xs text-[var(--color-ink-muted)]">—</span>
                       )}
@@ -505,7 +533,7 @@ export function AdminMembers() {
                 ))}
                 {regList.items.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-sm text-[var(--color-ink-muted)]">
+                    <td colSpan={9} className="px-4 py-12 text-center text-sm text-[var(--color-ink-muted)]">
                       No Saint Martin registrations yet.
                     </td>
                   </tr>
@@ -650,10 +678,58 @@ export function AdminMembers() {
               <DetailRow label="Address" value={regDetail.address || '—'} />
               <DetailRow label="Reference" value={regDetail.reference || '—'} />
               <DetailRow label="FB profile" value={regDetail.fbProfile || '—'} />
+              <DetailRow label="bKash TrxID" value={regDetail.bkashTrxId || '—'} />
+              <DetailRow label="Approved at" value={regDetail.approvedAt ? new Date(regDetail.approvedAt).toLocaleString() : '—'} />
+              <DetailRow label="Admin note" value={regDetail.adminNote || '—'} />
               <DetailRow label="Registered" value={new Date(regDetail.createdAt).toLocaleString()} />
             </div>
 
+            {regDetail.receipt ? (
+              <div className="mt-5">
+                <p className="text-sm font-semibold text-[var(--color-ink-soft)]">Payment receipt</p>
+                {regDetail.receipt.startsWith('data:application/pdf') ? (
+                  <a
+                    href={regDetail.receipt}
+                    target="_blank"
+                    rel="noreferrer"
+                    download="receipt"
+                    className="mt-2 inline-flex items-center gap-2 rounded-xl border border-black/10 bg-[var(--color-mist)] px-4 py-2.5 text-sm font-semibold text-[var(--color-crimson)] hover:border-[var(--color-crimson)]"
+                  >
+                    <FileText size={16} /> View PDF receipt
+                  </a>
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={regDetail.receipt} alt="Payment receipt" className="mt-2 max-h-72 rounded-xl border border-black/10 object-contain" />
+                )}
+              </div>
+            ) : null}
+
+            {regDetail.adminNote ? (
+              <div className="mt-5 rounded-xl border border-[var(--color-gold-deep)] bg-[var(--color-gold-lighter)] p-4">
+                <p className="text-sm font-semibold">Admin note</p>
+                <p className="mt-1 text-sm">{regDetail.adminNote}</p>
+              </div>
+            ) : null}
+
             <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-black/5 pt-4 print:hidden">
+              {regDetail.status === 'NEW' || regDetail.status === 'REJECTED' ? (
+                <button
+                  onClick={() => setRegistrationStatus(regDetail.id, 'APPROVED')}
+                  disabled={busyId === regDetail.id}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--color-primary-dark)] disabled:opacity-60"
+                >
+                  <CheckCircle2 size={16} /> Approve
+                </button>
+              ) : null}
+              {regDetail.status === 'NEW' || regDetail.status === 'APPROVED' ? (
+                <button
+                  onClick={() => setRegistrationStatus(regDetail.id, 'REJECTED')}
+                  disabled={busyId === regDetail.id}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-crimson)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--color-crimson-dark)] disabled:opacity-60"
+                >
+                  <XCircle size={16} /> Decline
+                </button>
+              ) : null}
               <button
                 onClick={() => setRegDetail(null)}
                 className="rounded-xl bg-[var(--color-mist)] px-4 py-2.5 text-sm font-semibold text-[var(--color-ink-soft)]"

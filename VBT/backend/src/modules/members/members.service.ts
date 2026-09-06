@@ -59,6 +59,12 @@ function isValidPhoto(photo?: string): boolean {
   return photo.length <= 3_000_000; // ~2.2MB decoded
 }
 
+function isValidReceipt(receipt?: string): boolean {
+  if (!receipt) return true;
+  if (!/^data:(image\/(png|jpeg|jpg|webp)|application\/pdf);base64,/.test(receipt)) return false;
+  return receipt.length <= 6_000_000; // ~4.5MB decoded
+}
+
 @Injectable()
 export class MembersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -349,6 +355,12 @@ export class MembersService {
     if (dto.consent !== undefined && dto.consent !== true) {
       throw new BadRequestException('Consent to the declaration is required');
     }
+    if (!dto.bkashTrxId || !dto.receipt) {
+      throw new BadRequestException('bKash transaction ID and payment receipt are required');
+    }
+    if (!isValidReceipt(dto.receipt)) {
+      throw new BadRequestException('Receipt must be a PNG/JPG/WebP image or PDF under 5MB');
+    }
     const registration = await this.prisma.registration.create({
       data: {
         name: dto.name.trim(),
@@ -360,6 +372,8 @@ export class MembersService {
         reference: dto.reference?.trim(),
         fbProfile: dto.fbProfile?.trim(),
         photo: dto.photo || null,
+        bkashTrxId: dto.bkashTrxId.trim(),
+        receipt: dto.receipt,
         consent: dto.consent ?? true,
         slug: dto.slug || 'saint-martin-trip-2026',
         tag: dto.tag || 'saintmartin',
@@ -370,7 +384,7 @@ export class MembersService {
       id: registration.id,
       tag: registration.tag,
       message:
-        'Registration recorded. Our team will contact you shortly to confirm your seat.',
+        'Registration recorded. Our team will verify your payment and contact you shortly to confirm your seat.',
     };
   }
 
@@ -414,6 +428,10 @@ export class MembersService {
           reference: true,
           fbProfile: true,
           photo: true,
+          bkashTrxId: true,
+          receipt: true,
+          adminNote: true,
+          approvedAt: true,
           status: true,
           createdAt: true,
         },
@@ -421,6 +439,26 @@ export class MembersService {
       this.prisma.registration.count({ where }),
     ]);
     return { items, total, page, pageSize };
+  }
+
+  async adminSetRegistrationStatus(id: string, status: string, note?: string) {
+    const registration = await this.prisma.registration.findUnique({ where: { id } });
+    if (!registration) throw new NotFoundException('Registration not found');
+    const updated = await this.prisma.registration.update({
+      where: { id },
+      data: {
+        status,
+        adminNote: note,
+        approvedAt: status === 'APPROVED' ? new Date() : null,
+      },
+    });
+    return {
+      success: true,
+      id: updated.id,
+      status: updated.status,
+      adminNote: updated.adminNote,
+      approvedAt: updated.approvedAt,
+    };
   }
 
   async adminRegistrationStats() {

@@ -1,8 +1,8 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Camera, CheckCircle2, Loader2 } from 'lucide-react';
-import { clientApi } from '@/lib/api';
+import { Camera, CheckCircle2, Copy, FileText, Loader2, Phone } from 'lucide-react';
+import { assetUrl, clientApi } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +17,8 @@ export interface LandingFormSectionProps {
 }
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+const BKASH_MERCHANT = '01970534363';
 
 function inputClass(extra = '') {
   return cn(
@@ -49,6 +51,41 @@ export function LandingFormSection({
   const [photo, setPhoto] = useState('');
   const [photoError, setPhotoError] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
+  const [receipt, setReceipt] = useState('');
+  const [receiptError, setReceiptError] = useState('');
+  const [receiptName, setReceiptName] = useState('');
+  const receiptInput = useRef<HTMLInputElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  const copyBkash = async () => {
+    try {
+      await navigator.clipboard.writeText(BKASH_MERCHANT);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const onReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!/^(image\/(png|jpe?g|webp)|application\/pdf)$/i.test(file.type)) {
+      setReceiptError(f('Please choose a PNG, JPG, WebP image or PDF.', 'অনুগ্রহ করে PNG, JPG, WebP ছবি বা PDF নির্বাচন করুন।'));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setReceiptError(f('Receipt must be under 5MB.', 'রিসিটের আকার ৫ এমবির কম হতে হবে।'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setReceipt(String(reader.result || ''));
+      setReceiptName(file.name);
+      setReceiptError('');
+    };
+    reader.readAsDataURL(file);
+  };
 
   const onPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,10 +122,18 @@ export function LandingFormSection({
       reference: String(data.reference || '').trim(),
       fbProfile: String(data.fbProfile || '').trim(),
       photo,
+      bkashTrxId: String(data.bkashTrxId || '').trim(),
+      receipt,
       consent: true,
       slug: 'saint-martin-trip-2026',
       tag: 'saintmartin',
     };
+
+    if (!payload.bkashTrxId || !receipt) {
+      setError(f('Please enter your bKash transaction ID and upload the payment receipt.', 'অনুগ্রহ করে আপনার বিকাশ ট্রানজেকশন আইডি দিন এবং পেমেন্ট রিসিট আপলোড করুন।'));
+      setSending(false);
+      return;
+    }
 
     try {
       await clientApi('/public/registrations', {
@@ -314,6 +359,106 @@ export function LandingFormSection({
                       ) : null}
                     </div>
                     {photoError ? <p className="mt-1.5 text-xs font-medium text-red-600">{photoError}</p> : null}
+                  </div>
+                </div>
+              </div>
+              <div className="sm:col-span-2 rounded-xl border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] p-4">
+                <p className="text-sm font-bold text-[var(--color-primary-dark)]">{f('Payment via bKash Merchant', 'বিকাশ মার্চেন্টের মাধ্যমে পেমেন্ট')}</p>
+                <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
+                  {f('Scan the QR code or send to the bKash merchant number below, then enter the transaction ID (TrxID) and upload the receipt.', 'QR কোড স্ক্যান করুন অথবা নিচের বিকাশ মার্চেন্ট নম্বরে পেমেন্ট পাঠান, তারপর TrxID দিন এবং রিসিট আপলোড করুন।')}
+                </p>
+                <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={assetUrl('/images/landing/payment.jpeg')}
+                    alt="bKash QR code"
+                    className="h-40 w-40 shrink-0 rounded-xl border border-black/10 bg-white object-contain p-1"
+                  />
+                  <div className="min-w-0 flex-1 rounded-xl border border-black/10 bg-white px-4 py-3">
+                    <p className="text-xs font-bold uppercase tracking-wide text-[var(--color-ink-muted)]">{f('bKash Merchant Number', 'বিকাশ মার্চেন্ট নম্বর')}</p>
+                    <p className="mt-0.5 text-lg font-bold tracking-wide text-[var(--color-primary-dark)]">{BKASH_MERCHANT}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={copyBkash}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-[var(--color-mist)] px-3 py-1.5 text-sm font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+                      >
+                        {copied ? <CheckCircle2 size={15} className="text-green-600" /> : <Copy size={15} />}
+                        {copied ? f('Copied!', 'কপি হয়েছে!') : f('Copy number', 'নম্বর কপি করুন')}
+                      </button>
+                      <a
+                        href={`tel:${BKASH_MERCHANT}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-[var(--color-mist)] px-3 py-1.5 text-sm font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+                      >
+                        <Phone size={15} />
+                        {f('Call', 'কল করুন')}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-semibold" htmlFor="bkashTrxId">
+                  {f('bKash Transaction ID (TrxID)', 'বিকাশ ট্রানজেকশন আইডি (TrxID)')} <span className="text-red-600">*</span>
+                </label>
+                <input
+                  id="bkashTrxId"
+                  name="bkashTrxId"
+                  required
+                  placeholder="e.g. 9HK4A6BD7C"
+                  className={inputClass()}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold" htmlFor="receipt">
+                  {f('Payment Receipt (image or PDF)', 'পেমেন্ট রিসিট (ছবি বা PDF)')} <span className="text-red-600">*</span>
+                </label>
+                <div className="mt-1.5 flex items-start gap-4">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-[var(--color-mist)]">
+                    {receipt && !receipt.startsWith('data:application/pdf') ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={receipt} alt="" className="h-full w-full object-cover" />
+                    ) : receipt && receipt.startsWith('data:application/pdf') ? (
+                      <FileText className="absolute inset-0 m-auto h-6 w-6 text-[var(--color-crimson)]" />
+                    ) : (
+                      <Camera className="absolute inset-0 m-auto h-5 w-5 text-[var(--color-ink-muted)]" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <input
+                      ref={receiptInput}
+                      id="receipt"
+                      name="receipt"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,application/pdf"
+                      onChange={onReceiptChange}
+                      className="hidden"
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => receiptInput.current?.click()}
+                        className="rounded-lg border border-black/10 bg-[var(--color-mist)] px-4 py-2 text-sm font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+                      >
+                        {receipt ? f('Change receipt', 'রিসিট পরিবর্তন করুন') : f('Upload receipt', 'রিসিট আপলোড করুন')}
+                      </button>
+                      {receipt ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReceipt('');
+                            setReceiptName('');
+                            setReceiptError('');
+                            if (receiptInput.current) receiptInput.current.value = '';
+                          }}
+                          className="rounded-lg bg-[var(--color-crimson-light)] px-3 py-2 text-sm font-semibold text-[var(--color-crimson)]"
+                        >
+                          {f('Remove', 'মুছে ফেলুন')}
+                        </button>
+                      ) : null}
+                    </div>
+                    {receiptName ? <p className="mt-1.5 truncate text-xs text-[var(--color-ink-muted)]">{receiptName}</p> : null}
+                    {receiptError ? <p className="mt-1.5 text-xs font-medium text-red-600">{receiptError}</p> : null}
                   </div>
                 </div>
               </div>

@@ -69,6 +69,7 @@ export function LandingFormSection({
   const receiptInput = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
   const [paymentType, setPaymentType] = useState('');
+  const [trxId, setTrxId] = useState('');
   const [qrPreview, setQrPreview] = useState(false);
 
   const copyBkash = async () => {
@@ -482,6 +483,8 @@ export function LandingFormSection({
                   id="bkashTrxId"
                   name="bkashTrxId"
                   required
+                  value={trxId}
+                  onChange={(e) => setTrxId(e.target.value)}
                   placeholder="e.g. 9HK4A6BD7C"
                   className={inputClass()}
                 />
@@ -561,7 +564,7 @@ export function LandingFormSection({
             <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row">
               <button
                 type="submit"
-                disabled={sending || !paymentType || !receipt}
+                disabled={sending || !paymentType || !trxId.trim()}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-8 py-3 text-sm font-bold text-white transition hover:bg-[var(--color-primary-darker)] disabled:opacity-50 disabled:pointer-events-none sm:w-auto"
               >
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : (

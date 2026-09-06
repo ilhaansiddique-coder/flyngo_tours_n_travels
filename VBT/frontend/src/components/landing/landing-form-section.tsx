@@ -326,8 +326,8 @@ export function LandingFormSection({
                   />
                   <span>
                     {f(
-                      'I agree to abide by all the terms, conditions and instructions of "Saint Martin Cleanup Campaign, Free Blood Grouping & Free Medical Camp 2026" and to actively take part in the cleanup and other social and humanitarian activities.',
-                      'আমি উপরোক্ত সকল শর্ত, নিয়ম ও নির্দেশনা মেনে চলতে সম্মত।',
+                      'UNDERTAKING AND DECLARATION, I hereby declare and undertake that I will duly comply with all the rules, terms, conditions, and instructions of the **“Saint Martin Cleanliness Campaign, Free Blood Grouping & Free Medical Camp 2026”** and will actively participate in the cleanliness campaign and other social and humanitarian activities organized as part of the event. I further declare that all information provided by me in the registration form is true, accurate, and complete. I voluntarily agree to participate in the event entirely at my own responsibility, including transportation to and from Saint Martin by trawler. During my participation in the event, I will remain responsible for my personal safety, health, and necessary precautions, and will act responsibly at all times. I hereby confirm that I have read, understood, and agreed to abide by all the above-mentioned terms, rules, and instructions.',
+                      'অঙ্গীকারনামা, আমি এই মর্মে ঘোষণা ও অঙ্গীকার করছি যে, “সেন্টমার্টিন পরিচ্ছন্নতা অভিযান, ফ্রি ব্লাড গ্রুপিং ও ফ্রি মেডিকেল ক্যাম্প ২০২৬”-এর সকল নিয়ম, শর্ত ও নির্দেশনা যথাযথভাবে মেনে চলব এবং পরিচ্ছন্নতা অভিযানসহ অন্যান্য সামাজিক ও মানবিক কার্যক্রমে সক্রিয়ভাবে অংশগ্রহণ করব। আমি আরও ঘোষণা করছি যে, রেজিস্ট্রেশন ফরমে আমার প্রদত্ত সকল তথ্য সঠিক ও সত্য। আমি স্বেচ্ছায় এবং সম্পূর্ণ নিজ দায়িত্বে ট্রলারযোগে যাতায়াতসহ উক্ত আয়োজনে অংশগ্রহণ করতে সম্মত। আয়োজনে অংশগ্রহণকালীন আমার ব্যক্তিগত নিরাপত্তা, স্বাস্থ্য ও প্রয়োজনীয় সতর্কতার বিষয়ে আমি নিজ দায়িত্বে সচেতন থাকব। আমি উপরোক্ত সকল শর্ত, নিয়ম ও নির্দেশনা মেনে চলতে সম্মত।',
                     )}
                   </span>
                 </label>

@@ -122,6 +122,19 @@ export default async function LandingSlugPage({
 
   const hasForm = (page.sections || []).some((s) => s.type === 'form');
 
+  const renderSections = (() => {
+    const out = (page.sections || []).filter((s) => s.type !== 'hero');
+    const formIdx = out.findIndex((s) => s.type === 'form');
+    const costIdx = out.findIndex(
+      (s) => s.type === 'text' && (s.headingEn === 'Trip cost' || s.headingBn === 'ভ্রমণ খরচ'),
+    );
+    if (formIdx !== -1 && costIdx !== -1 && formIdx < costIdx) {
+      const [form] = out.splice(formIdx, 1);
+      out.splice(costIdx, 0, form);
+    }
+    return out;
+  })();
+
   return (
     <>
       <section className="relative overflow-hidden border-b border-black/5 bg-[var(--color-primary-darker)] text-white">
@@ -145,7 +158,7 @@ export default async function LandingSlugPage({
         </div>
       </section>
       <div className="divide-y divide-black/5">
-        {(page.sections || []).filter((s) => s.type !== 'hero').map(renderSection)}
+        {renderSections.map(renderSection)}
       </div>
       {hasForm ? <FloatingRegister /> : null}
     </>

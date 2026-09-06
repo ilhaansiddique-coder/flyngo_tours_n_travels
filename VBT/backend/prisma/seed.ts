@@ -262,6 +262,15 @@ async function main() {
         'সীমিত আসন। তাই আসন নিশ্চিত করতে দ্রুত যোগাযোগ করুন।\nযে কোনো প্রয়োজনে যোগাযোগ:\n• শাহাদাৎ – ০১৬৮১৬৩৫৬৫৭\n• সিপন – ০১৭৪৫৩২০০৪১\n• সোহেল – ০১৬৮১৮৪৫৯৯৯',
     },
     {
+      type: 'text',
+      headingEn: 'Trip cost',
+      headingBn: 'ভ্রমণ খরচ',
+      bodyEn:
+        'Regular: BDT 6,250/person (AC Bus, Trawler & 4-person room)\nCouple Room: BDT 7,250/person (AC Bus, Trawler & 2-person room)\nChildren: Bus seat & meals charged separately.',
+      bodyBn:
+        '• রেগুলার: ৬,২৫০ টাকা/জন (এসি বাস, ট্রলার ও ৪ জনের রুম)\n• কাপল রুম: ৭,২৫০ টাকা/জন (এসি বাস, ট্রলার ও ২ জনের রুম)\n• শিশু: বাসের সিট ও খাবার আলাদাভাবে চার্জ করা হবে।',
+    },
+    {
       type: 'form',
       headingEn: 'Register for the trip',
       headingBn: 'ভ্রমণের জন্য নিবন্ধন করুন',
@@ -274,15 +283,6 @@ async function main() {
       googleFormResponseUrl:
         'https://docs.google.com/forms/d/e/1FAIpQLScYa6hk-0SXZxmnxTREHGl8N8t7g5U_uNsh9kBanzB_djGL4Q/formResponse',
       fbzx: '-4848356108472141880',
-    },
-    {
-      type: 'text',
-      headingEn: 'Trip cost',
-      headingBn: 'ভ্রমণ খরচ',
-      bodyEn:
-        'Regular: BDT 6,250/person (AC Bus, Trawler & 4-person room)\nCouple Room: BDT 7,250/person (AC Bus, Trawler & 2-person room)\nChildren: Bus seat & meals charged separately.',
-      bodyBn:
-        '• রেগুলার: ৬,২৫০ টাকা/জন (এসি বাস, ট্রলার ও ৪ জনের রুম)\n• কাপল রুম: ৭,২৫০ টাকা/জন (এসি বাস, ট্রলার ও ২ জনের রুম)\n• শিশু: বাসের সিট ও খাবার আলাদাভাবে চার্জ করা হবে।',
     },
     {
       type: 'text',

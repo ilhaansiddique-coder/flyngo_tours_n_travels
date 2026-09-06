@@ -22,8 +22,6 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@vbt.world}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
-    ports:
-      - '4000:4000'
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,8 +44,6 @@ services:
       NEXT_PUBLIC_VBT_USE_BASEPATH: ${NEXT_PUBLIC_VBT_USE_BASEPATH:-true}
       PORT: 3000
       HOSTNAME: 0.0.0.0
-    ports:
-      - '3000:3000'
     depends_on:
       backend:
         condition: service_started

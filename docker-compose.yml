@@ -7,6 +7,9 @@
 
 services:
   backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     image: ghcr.io/ilhaansiddique-coder/flyngo-backend:main
     pull_policy: always
     container_name: flyngo-backend
@@ -80,6 +83,13 @@ services:
       start_period: 30s
 
   frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.flyngo.world}
+        NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-https://flyngo.world}
+        BACKEND_URL: ${BACKEND_URL:-http://backend:4000}
     image: ghcr.io/ilhaansiddique-coder/flyngo-frontend:main
     pull_policy: always
     container_name: flyngo-frontend

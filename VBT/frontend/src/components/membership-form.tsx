@@ -212,7 +212,7 @@ export function MembershipForm() {
       </div>
       {selected ? (
         <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-[var(--color-gold-lighter)] px-4 py-1.5 text-sm font-bold text-[var(--color-gold-deep)]">
-          {bn ? 'লেবার ফি' : 'Membership fee'}: ৳{selected.fee?.toLocaleString('en-US')}
+          {bn ? 'সদস্যপদ ফি' : 'Membership fee'}: ৳{selected.fee?.toLocaleString('en-US')}
           {selected.key === 'volunteer' || selected.key === 'general' || selected.key === 'donor'
             ? bn ? ' / বছর' : ' / year'
             : bn ? ' (এককালীন)' : ' (one-time)'}

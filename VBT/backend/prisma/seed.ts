@@ -143,7 +143,7 @@ async function main() {
       key: 'donor',
       labelEn: 'Donor Member',
       labelBn: 'দাতা সদস্য',
-      fee: 5000,
+      fee: 500000,
       descEn: 'Annual donor membership',
       descBn: 'বাৎসরিক দাতা সদস্যপদ',
     },

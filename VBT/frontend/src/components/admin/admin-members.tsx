@@ -65,6 +65,7 @@ interface RegistrationRow {
   tag: string;
   name: string;
   mobile: string;
+  email: string | null;
   emergency: string | null;
   organization: string | null;
   bloodGroup: string | null;
@@ -244,10 +245,11 @@ export function AdminMembers() {
     }
     return {
       name: `vbt-saintmartin-${stamp}`,
-      headers: ['ID', 'Name', 'Organization', 'Mobile', 'Emergency', 'Blood Group', 'Address', 'Reference', 'FB Profile', 'Tag', 'Status', 'Registered'],
+      headers: ['ID', 'Name', 'Email', 'Organization', 'Mobile', 'Emergency', 'Blood Group', 'Address', 'Reference', 'FB Profile', 'Payment Type', 'bKash TrxID', 'Tag', 'Status', 'Registered'],
       rows: regList.items.map((r) => [
         r.id.slice(0, 8),
         r.name,
+        r.email ?? '',
         r.organization ?? '',
         r.mobile,
         r.emergency ?? '',
@@ -255,6 +257,8 @@ export function AdminMembers() {
         r.address ?? '',
         r.reference ?? '',
         r.fbProfile ?? '',
+        paymentTypeLabel(r.paymentType),
+        r.bkashTrxId ?? '',
         r.tag,
         r.status,
         new Date(r.createdAt).toLocaleString(),
@@ -692,6 +696,7 @@ export function AdminMembers() {
             <div className="mt-6 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
               <DetailRow label="Status" value={regDetail.status} />
               <DetailRow label="Mobile" value={regDetail.mobile} />
+              <DetailRow label="Email" value={regDetail.email || '—'} />
               <DetailRow label="Organization" value={regDetail.organization || '—'} />
               <DetailRow label="Blood group" value={regDetail.bloodGroup || '—'} />
               <DetailRow label="Emergency contact" value={regDetail.emergency || '—'} />

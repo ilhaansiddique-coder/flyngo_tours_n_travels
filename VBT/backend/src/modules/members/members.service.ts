@@ -368,32 +368,45 @@ export class MembersService {
     if (!isValidReceipt(dto.receipt)) {
       throw new BadRequestException('Receipt must be a PNG/JPG/WebP image or PDF under 5MB');
     }
-    const registration = await this.prisma.registration.create({
-      data: {
-        name: dto.name.trim(),
-        mobile: dto.mobile.trim(),
-        emergency: dto.emergency?.trim(),
-        organization: dto.organization?.trim(),
-        bloodGroup: dto.bloodGroup,
-        address: dto.address?.trim(),
-        reference: dto.reference?.trim(),
-        fbProfile: dto.fbProfile?.trim(),
-        photo: dto.photo || null,
-        paymentType: dto.paymentType,
-        bkashTrxId: dto.bkashTrxId.trim(),
-        receipt: dto.receipt,
-        consent: dto.consent ?? true,
-        slug: dto.slug || 'saint-martin-trip-2026',
-        tag: dto.tag || 'saintmartin',
-      },
-    });
-    return {
-      success: true,
-      id: registration.id,
-      tag: registration.tag,
-      message:
-        'Registration recorded. Our team will verify your payment and contact you shortly to confirm your seat.',
-    };
+    try {
+      const registration = await this.prisma.registration.create({
+        data: {
+          name: dto.name.trim(),
+          mobile: dto.mobile.trim(),
+          email: dto.email?.trim().toLowerCase() || null,
+          emergency: dto.emergency?.trim(),
+          organization: dto.organization?.trim(),
+          bloodGroup: dto.bloodGroup,
+          address: dto.address?.trim(),
+          reference: dto.reference?.trim(),
+          fbProfile: dto.fbProfile?.trim(),
+          photo: dto.photo || null,
+          paymentType: dto.paymentType,
+          bkashTrxId: dto.bkashTrxId.trim(),
+          receipt: dto.receipt,
+          consent: dto.consent ?? true,
+          slug: dto.slug || 'saint-martin-trip-2026',
+          tag: dto.tag || 'saintmartin',
+        },
+      });
+      return {
+        success: true,
+        id: registration.id,
+        tag: registration.tag,
+        message:
+          'Registration recorded. Our team will verify your payment and contact you shortly to confirm your seat.',
+      };
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        const target = (e.meta?.target as string[] | undefined) ?? [];
+        throw new BadRequestException(
+          target.includes('email')
+            ? 'This email address has already been used for a registration.'
+            : 'This mobile number has already been used for a registration. A single phone number can register only once.',
+        );
+      }
+      throw e;
+    }
   }
 
   async adminListRegistrations(options: {
@@ -429,6 +442,7 @@ export class MembersService {
           tag: true,
           name: true,
           mobile: true,
+          email: true,
           emergency: true,
           organization: true,
           bloodGroup: true,

@@ -249,6 +249,11 @@ export class RegistrationCreateDto {
   mobile!: string;
 
   @IsOptional()
+  @IsEmail()
+  @MaxLength(120)
+  email?: string;
+
+  @IsOptional()
   @IsString()
   @MaxLength(200)
   emergency?: string;

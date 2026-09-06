@@ -129,6 +129,7 @@ export function LandingFormSection({
     const payload = {
       name: String(data.name || '').trim(),
       mobile: String(data.mobile || '').trim(),
+      email: String(data.email || '').trim(),
       emergency: String(data.emergency || '').trim(),
       organization: String(data.organization || '').trim(),
       bloodGroup: String(data.bloodGroup || '').trim(),
@@ -256,6 +257,18 @@ export function LandingFormSection({
                   type="tel"
                   required
                   placeholder={bn ? 'আপনার মোবাইল নম্বর' : 'Your mobile number'}
+                  className={inputClass()}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold" htmlFor="email">
+                  {f('Email Address', 'ইমেইল ঠিকানা')} <span className="font-normal text-[var(--color-ink-muted)]">({f('optional', 'ঐচ্ছিক')})</span>
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder={bn ? 'আপনার ইমেইল' : 'Your email address'}
                   className={inputClass()}
                 />
               </div>

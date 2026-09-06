@@ -335,7 +335,8 @@ model Registration {
   slug         String   @default("saint-martin-trip-2026")
   tag          String   @default("saintmartin")
   name         String
-  mobile       String
+  mobile       String   @unique
+  email        String?  @unique
   emergency    String?
   organization String?
   bloodGroup   String?

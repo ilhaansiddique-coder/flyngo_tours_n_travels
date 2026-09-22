@@ -41,9 +41,9 @@ async function main() {
       settings: {
         create: {
           companyName: 'Flyngo Tours & Travels',
-          companyEmail: 'contact@flyngo.com',
-          companyPhone: '+1-800-FLYNGO',
-          companyAddress: '123 Travel Street, New York, NY 10001',
+          companyEmail: 'visaflyngo@gmail.com',
+          companyPhone: '+8801322913530',
+          companyAddress: 'HM Plaza (11th Floor), Rajlaxmi, Uttara, Dhaka',
           defaultCurrency: 'USD',
           defaultLanguage: 'en',
           timezone: 'America/New_York',

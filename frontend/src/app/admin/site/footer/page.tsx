@@ -639,7 +639,7 @@ export default function AdminFooterPage() {
             <FormInput
               value={footer.contactEmail}
               onChange={(v) => setFooter((f) => ({ ...f, contactEmail: v }))}
-              placeholder="contact@flyngo.com"
+              placeholder="visaflyngo@gmail.com"
               type="email"
             />
           </FormField>
@@ -647,7 +647,7 @@ export default function AdminFooterPage() {
             <FormInput
               value={footer.contactPhone}
               onChange={(v) => setFooter((f) => ({ ...f, contactPhone: v }))}
-              placeholder="+1-800-FLYNGO"
+              placeholder="+8801322913530"
             />
           </FormField>
           <FormField label="Contact note (EN)">

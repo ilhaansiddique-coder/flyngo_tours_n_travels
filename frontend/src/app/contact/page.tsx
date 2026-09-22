@@ -157,9 +157,9 @@ export default function ContactPage() {
             <div className="space-y-6">
               <h2 className="font-display text-2xl font-bold mb-6 text-on-surface">Reach the Team</h2>
               {[
-                { icon: Mail, label: 'Email', value: 'contact@flyngo.com' },
-                { icon: Phone, label: 'Phone', value: '+1-800-FLYNGO' },
-                { icon: MapPin, label: 'Office', value: '123 Travel Street, New York, NY 10001' },
+                { icon: Mail, label: 'Email', value: 'visaflyngo@gmail.com' },
+                { icon: Phone, label: 'Phone', value: '+8801322913530' },
+                { icon: MapPin, label: 'Office', value: 'HM Plaza (11th Floor), Rajlaxmi, Uttara, Dhaka' },
                 { icon: MessageSquare, label: '24/7 Concierge', value: 'Live chat available worldwide' },
               ].map(({ icon: Icon, label, value }) => (
                 <Card key={label} hover={false}>

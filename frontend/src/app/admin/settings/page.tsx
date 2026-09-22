@@ -138,13 +138,13 @@ export default function SettingsPage() {
             <FormInput value={settings.companyName} onChange={(v) => set('companyName', v)} placeholder="Flyngo Tours & Travels" />
           </FormField>
           <FormField label="Company Email">
-            <FormInput value={settings.companyEmail} onChange={(v) => set('companyEmail', v)} type="email" placeholder="contact@flyngo.com" />
+            <FormInput value={settings.companyEmail} onChange={(v) => set('companyEmail', v)} type="email" placeholder="visaflyngo@gmail.com" />
           </FormField>
           <FormField label="Company Phone">
-            <FormInput value={settings.companyPhone} onChange={(v) => set('companyPhone', v)} placeholder="+1-800-FLYNGO" />
+            <FormInput value={settings.companyPhone} onChange={(v) => set('companyPhone', v)} placeholder="+8801322913530" />
           </FormField>
           <FormField label="Company Address">
-            <FormInput value={settings.companyAddress} onChange={(v) => set('companyAddress', v)} placeholder="123 Travel Street, New York" />
+            <FormInput value={settings.companyAddress} onChange={(v) => set('companyAddress', v)} placeholder="HM Plaza (11th Floor), Rajlaxmi, Uttara, Dhaka" />
           </FormField>
           <FormField label="Default Currency">
             <FormSelect value={settings.defaultCurrency} onChange={(v) => set('defaultCurrency', v)} options={CURRENCIES} />

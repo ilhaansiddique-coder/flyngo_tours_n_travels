@@ -404,6 +404,7 @@ export default function AdminHotelsPage() {
           <FormField label="Destination" required>
             <CountryAutocomplete
               value={destName}
+              onQueryChange={setDestName}
               onChange={(opt) => {
                 setDestName(opt.name);
                 setForm((f) => ({ ...f, destinationId: opt.id || '' }));

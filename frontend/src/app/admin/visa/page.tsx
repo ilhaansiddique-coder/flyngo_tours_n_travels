@@ -389,6 +389,7 @@ export default function AdminVisaPage() {
         <FormField label="Country name" required>
           <CountryAutocomplete
             value={form.countryName}
+            onQueryChange={(q) => setForm((f) => ({ ...f, countryName: q }))}
             onChange={(opt) => setForm((f) => ({ ...f, countryName: opt.name }))}
             placeholder="e.g. Indonesia"
           />

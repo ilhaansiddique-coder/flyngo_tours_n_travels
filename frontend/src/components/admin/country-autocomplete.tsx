@@ -16,6 +16,7 @@ export interface CountryOption {
 interface Props {
   value: string;
   onChange: (next: CountryOption) => void;
+  onQueryChange?: (q: string) => void;
   onBlur?: () => void;
   placeholder?: string;
   required?: boolean;
@@ -29,6 +30,7 @@ const inputClass =
 export function CountryAutocomplete({
   value,
   onChange,
+  onQueryChange,
   onBlur,
   placeholder = 'Type a country…',
   required,
@@ -191,6 +193,7 @@ export function CountryAutocomplete({
         required={required}
         onChange={(e) => {
           setQuery(e.target.value);
+          onQueryChange?.(e.target.value);
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}

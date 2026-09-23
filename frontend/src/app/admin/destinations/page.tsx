@@ -335,6 +335,7 @@ export default function AdminDestinationsPage() {
         <FormField label="Country" required>
           <CountryAutocomplete
             value={form.country}
+            onQueryChange={(q) => setForm((f) => ({ ...f, country: q }))}
             onChange={(opt) => setForm((f) => ({ ...f, country: opt.name }))}
             placeholder="e.g. Indonesia"
           />

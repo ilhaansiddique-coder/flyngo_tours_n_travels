@@ -67,7 +67,29 @@ export class TransportService {
   async update(id: string, tenantId: string, data: any) {
     const existing = await this.prisma.transport.findFirst({ where: { id, tenantId } });
     if (!existing) throw new NotFoundException('Transport not found');
-    return this.prisma.transport.update({ where: { id }, data });
+    return this.prisma.transport.update({
+      where: { id },
+      data: {
+        ...(data.vehicleType !== undefined && { vehicleType: data.vehicleType }),
+        ...(data.operatorName !== undefined && { operatorName: data.operatorName }),
+        ...(data.title !== undefined && { title: data.title }),
+        ...(data.originCity !== undefined && { originCity: data.originCity }),
+        ...(data.destinationCity !== undefined && { destinationCity: data.destinationCity }),
+        ...(data.boardingPoints !== undefined && { boardingPoints: data.boardingPoints }),
+        ...(data.droppingPoints !== undefined && { droppingPoints: data.droppingPoints }),
+        ...(data.departureTime !== undefined && { departureTime: data.departureTime }),
+        ...(data.arrivalTime !== undefined && { arrivalTime: data.arrivalTime }),
+        ...(data.duration !== undefined && { duration: data.duration }),
+        ...(data.price !== undefined && { price: data.price }),
+        ...(data.currency !== undefined && { currency: data.currency }),
+        ...(data.totalSeats !== undefined && { totalSeats: data.totalSeats }),
+        ...(data.availableSeats !== undefined && { availableSeats: data.availableSeats }),
+        ...(data.amenities !== undefined && { amenities: data.amenities }),
+        ...(data.coverImageUrl !== undefined && { coverImageUrl: data.coverImageUrl }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+        ...(data.pointsAwarded !== undefined && { pointsAwarded: Number(data.pointsAwarded) }),
+      },
+    });
   }
 
   async remove(id: string, tenantId: string) {

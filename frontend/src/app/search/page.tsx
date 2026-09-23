@@ -8,7 +8,7 @@ import { useFormatCurrency } from '@/lib/utils';
 import { MapPin, Compass, Building2, Plane, Briefcase, Car, Globe2 } from 'lucide-react';
 
 type Section = {
-  key: 'tours' | 'hotels' | 'hajj' | 'umrah' | 'flights' | 'visa' | 'transport' | 'destinations';
+  key: 'tours' | 'hotels' | 'hajj' | 'umrah' | 'flights' | 'visa' | 'transport' | 'destinations' | 'visaCountries';
   label: string;
   Icon: typeof Compass;
   items: any[];
@@ -27,6 +27,7 @@ const SECTION_META: Record<Section['key'], { label: string; href: (item: any) =>
   visa: { label: 'Visa services', href: (i) => `/booking?type=visa&id=${i.id}`, Icon: Briefcase },
   transport: { label: 'Transport', href: (i) => `/booking?type=transport&id=${i.id}`, Icon: Car },
   destinations: { label: 'Destinations', href: (i) => `/destinations/${i.slug || i.id}`, Icon: Globe2 },
+  visaCountries: { label: 'Visa countries', href: (i) => `/visa/${i.slug || i.id}`, Icon: Briefcase },
 };
 
 function ResultCard({ section, item }: { section: Section['key']; item: any }) {
@@ -142,7 +143,7 @@ function SearchPageInner() {
   const sections: Section[] = useMemo(() => {
     if (!results) return [];
     return (Object.keys(SECTION_META) as Section['key'][])
-      .map((key) => ({ key, label: SECTION_META[key].label, Icon: SECTION_META[key].Icon, items: results[key] || [] }))
+      .map((key) => ({ key, label: SECTION_META[key].label, Icon: SECTION_META[key].Icon, items: (results as any)[key] || [] }))
       .filter((s) => s.items.length > 0);
   }, [results]);
 

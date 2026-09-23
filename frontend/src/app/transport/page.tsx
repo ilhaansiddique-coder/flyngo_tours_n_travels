@@ -65,7 +65,10 @@ export default function TransportPage() {
   }, [items, q]);
 
   useEffect(() => {
+    if (!ready) return;
     let cancelled = false;
+    setLoading(true);
+    setError(null);
     const fetchTransport = async () => {
       try {
         const params = { ...filtersToParams(filters), ...(q ? { q } : {}) };
@@ -82,7 +85,7 @@ export default function TransportPage() {
     return () => {
       cancelled = true;
     };
-  }, [getTransport]);
+  }, [getTransport, filters, q, ready]);
 
   return (
     <>

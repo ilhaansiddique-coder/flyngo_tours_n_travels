@@ -65,7 +65,7 @@ export default function AdminLoyaltyPage() {
   const router = useRouter();
   const {
     getLoyaltyStats, getLoyaltyTiers, upsertLoyaltyTier, updateLoyaltyTier, deleteLoyaltyTier,
-    getLoyaltyProductRules, upsertLoyaltyProductRule, deleteLoyaltyProductRule,
+    getLoyaltyProductRules, upsertLoyaltyProductRule, updateLoyaltyProductRule, deleteLoyaltyProductRule,
     getLoyaltyMembers, getLoyaltyTransactions, adjustLoyaltyPoints, backfillLoyaltySignupBonus,
   } = useApi();
 
@@ -244,8 +244,7 @@ export default function AdminLoyaltyPage() {
       if (ruleForm.maxPoints !== '') body.maxPoints = Number(ruleForm.maxPoints);
       if (ruleForm.minSpend !== '') body.minSpend = Number(ruleForm.minSpend);
       if (ruleModal.rule) {
-        await deleteLoyaltyProductRule(ruleModal.rule.id); // fallback - use upsert with id workaround
-        await upsertLoyaltyProductRule(body);
+        await updateLoyaltyProductRule(ruleModal.rule.id, body);
       } else {
         await upsertLoyaltyProductRule(body);
       }

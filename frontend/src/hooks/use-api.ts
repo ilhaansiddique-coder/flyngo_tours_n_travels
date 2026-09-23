@@ -134,13 +134,6 @@ export function useApi() {
   const updateCoupon = useCallback(async (id: string, body: any) => api.patch(`/marketing/admin/coupons/${id}`, body, auth()), [auth]);
   const deleteCoupon = useCallback(async (id: string) => api.delete(`/marketing/admin/coupons/${id}`, auth()), [auth]);
 
-  const getAffiliates = useCallback(async (params?: Record<string, string>) => {
-    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-    return api.get('/marketing/admin/affiliates' + qs, auth());
-  }, [auth]);
-  const createAffiliate = useCallback(async (body: any) => api.post('/marketing/admin/affiliates', body, auth()), [auth]);
-  const updateAffiliate = useCallback(async (id: string, body: any) => api.patch(`/marketing/admin/affiliates/${id}`, body, auth()), [auth]);
-  const deleteAffiliate = useCallback(async (id: string) => api.delete(`/marketing/admin/affiliates/${id}`, auth()), [auth]);
 
   // ---- Loyalty / Rewards ----
   const getLoyaltyOverview = useCallback(async () => api.get('/loyalty/overview', auth()), [auth]);
@@ -156,6 +149,7 @@ export function useApi() {
   const deleteLoyaltyTier = useCallback(async (id: string) => api.delete(`/loyalty/admin/tiers/${id}`, auth()), [auth]);
   const getLoyaltyProductRules = useCallback(async (params?: { productType?: string }) => api.get('/loyalty/admin/product-rules' + (params?.productType ? `?productType=${params.productType}` : ''), auth()), [auth]);
   const upsertLoyaltyProductRule = useCallback(async (body: any) => api.post('/loyalty/admin/product-rules', body, auth()), [auth]);
+  const updateLoyaltyProductRule = useCallback(async (id: string, body: any) => api.patch(`/loyalty/admin/product-rules/${id}`, body, auth()), [auth]);
   const deleteLoyaltyProductRule = useCallback(async (id: string) => api.delete(`/loyalty/admin/product-rules/${id}`, auth()), [auth]);
   const getLoyaltyMembers = useCallback(async (params?: Record<string, string>) => api.get('/loyalty/admin/members' + (params ? '?' + new URLSearchParams(params).toString() : ''), auth()), [auth]);
   const getLoyaltyTransactions = useCallback(async (params?: Record<string, string>) => api.get('/loyalty/admin/transactions' + (params ? '?' + new URLSearchParams(params).toString() : ''), auth()), [auth]);
@@ -557,11 +551,10 @@ export function useApi() {
     getPermissions, createPermission, updatePermission, deletePermission,
     getTrash, restoreTrashItem, purgeTrashItem,
     getCoupons, createCoupon, updateCoupon, deleteCoupon,
-    getAffiliates, createAffiliate, updateAffiliate, deleteAffiliate,
     getLoyaltyOverview, getLoyaltyReferralLink, getLoyaltyReferrals, getLoyaltyHistory,
     getMyLoyalty, previewLoyaltyRedemption, redeemLoyaltyPoints,
     getLoyaltyTiers, upsertLoyaltyTier, updateLoyaltyTier, deleteLoyaltyTier,
-    getLoyaltyProductRules, upsertLoyaltyProductRule, deleteLoyaltyProductRule,
+    getLoyaltyProductRules, upsertLoyaltyProductRule, updateLoyaltyProductRule, deleteLoyaltyProductRule,
     getLoyaltyMembers, getLoyaltyTransactions, getLoyaltyStats, adjustLoyaltyPoints, backfillLoyaltySignupBonus,
     getReferralProgram, lookupReferralCode, getMyReferralSummary, requestReferralPayout,
     getReferralSettings, updateReferralSettings, getReferralOverview,

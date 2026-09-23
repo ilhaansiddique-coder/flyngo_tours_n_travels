@@ -261,7 +261,7 @@ export class PaymentsService {
               amount: `${full.currency || 'BDT'} ${full.amount}`,
               invoiceNumber: invoice?.invoiceNumber,
               invoiceUrl: invoice
-                ? `${process.env.NEXT_PUBLIC_SITE_URL || 'https://flyngo.world'}/pay/${code}`
+                ? `${process.env.FRONTEND_URL || process.env.SITE_URL || 'https://flyngo.world'}/pay/${code}`
                 : undefined,
             });
           }
@@ -477,7 +477,7 @@ export class PaymentsService {
             amount: `${existing.currency || 'BDT'} ${existing.amount}`,
             invoiceNumber: invoice?.invoiceNumber,
             invoiceUrl: invoice
-              ? `${process.env.NEXT_PUBLIC_SITE_URL || 'https://flyngo.world'}/pay/${code}`
+              ? `${process.env.FRONTEND_URL || process.env.SITE_URL || 'https://flyngo.world'}/pay/${code}`
               : undefined,
           });
         }

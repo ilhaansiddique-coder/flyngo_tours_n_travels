@@ -939,7 +939,7 @@ export default function BookingPage() {
           : undefined,
       })) as any;
       const code = result?.bookingCode || (bookingType === 'custom' ? 'QUOTE-PENDING' : '');
-      setBookingCode(code || 'FLY-XXXX-XXXX');
+      setBookingCode(code || '');
       if (isPresetBooking && bookingType !== 'custom' && code) {
         const isWalletMethod = wallets.some((w) => w.provider === paymentMethod);
         if (paymentMethod && (isWalletMethod || paymentMethod === 'bank_transfer' || paymentMethod === 'cash')) {
@@ -1025,7 +1025,7 @@ export default function BookingPage() {
                   : 'Payment recorded and your invoice has been generated. You can view and download it from the invoice/payment page.'}
               </p>
             )}
-            {isPresetBooking && bookingCode && bookingCode !== 'FLY-XXXX-XXXX' && !paymentConfirmed && (
+            {isPresetBooking && bookingCode && !paymentConfirmed && (
               <p className="text-xs text-muted rounded-xl p-3 bg-surface-container/60">
                 {isBn
                   ? 'আপনি এখনো পেমেন্ট করেননি। এখনই পরিশোধ করুন, অথবা পরে আপনার প্রোফাইল/বুকিং কোড দিয়ে ট্র্যাক করে পরিশোধ করতে পারবেন।'
@@ -1035,7 +1035,7 @@ export default function BookingPage() {
             <p className="text-[10px] uppercase tracking-widest font-bold text-muted mt-4">{t('booking_booking_code')}</p>
             <div className="flex items-center justify-center gap-2 mb-8">
               <p className="font-mono text-lg font-bold text-on-surface">{bookingCode}</p>
-              {bookingCode && bookingCode !== 'FLY-XXXX-XXXX' && (
+              {bookingCode && (
                 <button
                   type="button"
                   onClick={() => {
@@ -1057,7 +1057,7 @@ export default function BookingPage() {
                   {isBn ? 'ট্র্যাক বুকিং' : 'Track booking'}
                 </Button>
               </Link>
-              {isPresetBooking && bookingCode && bookingCode !== 'FLY-XXXX-XXXX' && (
+              {isPresetBooking && bookingCode && (
                 <Link href={`/pay/${encodeURIComponent(bookingCode)}`} className="flex-1">
                   <Button size="lg" className="w-full">
                     {isBn ? 'ইনভয়েস / পেমেন্ট' : 'Invoice / Payment'}

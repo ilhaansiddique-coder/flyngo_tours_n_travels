@@ -343,7 +343,7 @@ export function DestinationAutocomplete({
           {filterForPackages ? (
             <>
               <p>These tour packages aren&apos;t available right now.</p>
-              <p className="mt-1">এই টুর প্যাকেজগুলো এখন উপলব্ধ নয়।</p>
+              <p className="mt-1">এই টুর প্যাকেজগুলো এখন চলমান নয়।</p>
             </>
           ) : (
             <>

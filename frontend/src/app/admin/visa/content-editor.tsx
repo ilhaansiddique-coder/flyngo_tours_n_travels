@@ -120,8 +120,7 @@ interface EditorModalProps {
 
 export function VisaContentEditor({ open, onClose, country, onSaved }: EditorModalProps) {
   const { updateVisaCountry } = useApi();
-  if (!country) return null;
-  const c = country.content ?? {};
+  const c = country?.content ?? {};
   const [intro, setIntro] = useState<string>(c.intro ?? '');
   const [processSteps, setProcessSteps] = useState<string[]>(c.processSteps ?? []);
   const [terms, setTerms] = useState<string[]>(c.terms ?? []);
@@ -133,6 +132,8 @@ export function VisaContentEditor({ open, onClose, country, onSaved }: EditorMod
   const [tiers, setTiers] = useState<FeeTier[]>(c.pricingTiers ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (!country) return null;
 
   const setTier = (i: number, patch: Partial<FeeTier>) =>
     setTiers((t) => t.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));

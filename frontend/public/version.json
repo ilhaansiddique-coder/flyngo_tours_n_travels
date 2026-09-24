@@ -1,6 +1,6 @@
 {
-  "version": "bdb83a1fdcbdc7ac50f3a6c81bfec9d67296fdf1",
-  "shortVersion": "bdb83a1",
-  "message": "feat(update): center right popover, remove later button, require refresh",
-  "builtAt": "2026-09-24T15:38:55.051Z"
+  "version": "ac9c56026d9fc14d2377f7d8e76e8c8f9bdebb3a",
+  "shortVersion": "ac9c560",
+  "message": "fix(admin-visa): fix country pages loading, editor crash, search, and error handling",
+  "builtAt": "2026-09-24T15:43:55.166Z"
 }

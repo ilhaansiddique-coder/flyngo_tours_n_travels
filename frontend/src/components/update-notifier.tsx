@@ -144,17 +144,17 @@ export function UpdateNotifier() {
 
   return createPortal(
     <div
-      className="fixed top-1/2 -translate-y-1/2 right-4 sm:right-6 z-[99999] w-[min(380px,calc(100vw-2rem))] animate-in slide-in-from-right-8 fade-in duration-300 pointer-events-auto"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300"
       role="alertdialog"
       aria-labelledby="update-dialog-title"
       aria-describedby="update-dialog-message"
     >
       <div
-        className="relative overflow-hidden rounded-2xl border-2 border-primary/50 shadow-2xl backdrop-blur-2xl"
+        className="relative w-full max-w-md overflow-hidden rounded-3xl border-2 border-primary/50 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95 duration-300 pointer-events-auto"
         style={{
           background:
             'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 14%, var(--color-surface)) 0%, var(--color-surface) 100%)',
-          boxShadow: '0 20px 45px -10px rgba(0,0,0,0.5), 0 0 25px -5px var(--accent-glow-strong)',
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6), 0 0 35px -5px var(--accent-glow-strong)',
         }}
       >
         {/* Ambient glow accent */}

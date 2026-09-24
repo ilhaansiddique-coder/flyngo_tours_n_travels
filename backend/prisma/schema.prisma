@@ -614,6 +614,8 @@ model VisaService {
 
   isActive Boolean @default(true) @map("is_active")
 
+  coverImageUrl String? @map("cover_image_url")
+
   // Loyalty: points awarded when this visa is processed
   pointsAwarded Int @default(0) @map("points_awarded")
 

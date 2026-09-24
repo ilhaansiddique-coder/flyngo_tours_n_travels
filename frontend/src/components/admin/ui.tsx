@@ -58,8 +58,8 @@ export function FormField({ label, children, required }: { label: string; childr
   );
 }
 
-export function FormInput({ value, onChange, placeholder, type = 'text', required, disabled, accept }: {
-  value?: string; onChange?: (v: string) => void; placeholder?: string; type?: string; required?: boolean; disabled?: boolean; accept?: string;
+export function FormInput({ value, onChange, onBlur, placeholder, type = 'text', required, disabled, accept }: {
+  value?: string; onChange?: (v: string) => void; onBlur?: () => void; placeholder?: string; type?: string; required?: boolean; disabled?: boolean; accept?: string;
 }) {
   const [visible, setVisible] = useState(false);
   const isPassword = type === 'password';
@@ -71,6 +71,7 @@ export function FormInput({ value, onChange, placeholder, type = 'text', require
         type={isPassword && visible ? 'text' : type}
         value={value ?? ''}
         onChange={(e) => onChange?.(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         required={required}
         disabled={disabled}
@@ -92,13 +93,14 @@ export function FormInput({ value, onChange, placeholder, type = 'text', require
   );
 }
 
-export function FormTextarea({ value, onChange, placeholder, rows = 3 }: {
-  value?: string; onChange?: (v: string) => void; placeholder?: string; rows?: number;
+export function FormTextarea({ value, onChange, onBlur, placeholder, rows = 3 }: {
+  value?: string; onChange?: (v: string) => void; onBlur?: () => void; placeholder?: string; rows?: number;
 }) {
   return (
     <textarea
       value={value ?? ''}
       onChange={(e) => onChange?.(e.target.value)}
+      onBlur={onBlur}
       placeholder={placeholder}
       rows={rows}
       className="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm bg-surface-container text-on-surface placeholder:text-on-surface-variant/60 focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none resize-none transition-colors"

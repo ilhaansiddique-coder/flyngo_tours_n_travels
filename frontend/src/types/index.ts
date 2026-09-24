@@ -1,8 +1,10 @@
 export interface Tour {
   id: string;
   title: string;
+  titleBn?: string;
   slug: string;
   description: string;
+  descriptionBn?: string;
   /** Serialised from Prisma Decimal — coerce with Number() before arithmetic */
   price: number | string;
   salePrice?: number | string | null;
@@ -20,7 +22,9 @@ export interface Tour {
   destination?: { id?: string; name: string; country: string; slug?: string } | null;
   additionalDestinations?: Array<{ destination?: { id?: string; name: string; country?: string } }>;
   highlights?: string[];
+  highlightsBn?: string[];
   inclusions?: string[];
+  inclusionsBn?: string[];
   exclusions?: string[];
   itinerary?: Array<{ id: string; day: number; title: string; description: string; activities: string[] }>;
   isActive?: boolean;

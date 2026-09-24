@@ -3,12 +3,15 @@ import { formatCurrency } from '@/lib/utils';
 import { tourImage } from '@/lib/entity-image';
 import Link from 'next/link';
 import { Clock, Users, MapPin, Star } from 'lucide-react';
+import { useLocale } from '@/contexts/locale-context';
 
 interface TourCardProps {
   id: string;
   slug: string;
   title: string;
+  titleBn?: string;
   description: string;
+  descriptionBn?: string;
   price: number | string;
   duration: number;
   maxGuests?: number;
@@ -19,7 +22,10 @@ interface TourCardProps {
   coverImageUrl?: string | null;
 }
 
-export function TourCard({ slug, title, price, duration, maxGuests, destination, additionalDestinations, imageUrl, coverImageUrl }: TourCardProps) {
+export function TourCard({ slug, title, titleBn, price, duration, maxGuests, destination, additionalDestinations, imageUrl, coverImageUrl }: TourCardProps) {
+  const { locale } = useLocale();
+  const isBn = locale === 'bn';
+  const displayTitle = isBn ? (titleBn || title) : title;
   const destinationBadges = [
     destination?.name ? { name: destination.name, label: destination.country && destination.country !== destination.name ? `${destination.name}, ${destination.country}` : destination.name } : null,
     ...(additionalDestinations || []).map((a) => {
@@ -42,7 +48,7 @@ export function TourCard({ slug, title, price, duration, maxGuests, destination,
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
         <div className="absolute bottom-4 left-4 right-4 z-20">
-          <h3 className="text-xl font-bold text-white leading-tight tracking-tight">{title}</h3>
+          <h3 className="text-xl font-bold text-white leading-tight tracking-tight">{displayTitle}</h3>
         </div>
       </div>
 

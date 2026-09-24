@@ -10,6 +10,7 @@ import { Clock, Sparkles, ArrowRight, Shield, Users, Plane, Heart } from 'lucide
 interface UmrahPackage {
   id: string;
   title: string;
+  titleBn?: string;
   slug?: string;
   durationDays: number;
   price: number;
@@ -18,7 +19,9 @@ interface UmrahPackage {
   madinahNights: number;
   addOnCity?: string;
   highlights: string[];
+  highlightsBn?: string[];
   inclusions: string[];
+  inclusionsBn?: string[];
   isFeatured: boolean;
   order: number;
 }
@@ -136,22 +139,30 @@ export function UmrahPageClient() {
                 </div>
 
                 <div className="p-5 flex-1 flex flex-col">
-                  <h3 className="font-display text-lg font-semibold text-on-surface mb-2 line-clamp-2">{pkg.title}</h3>
-                  <div className="flex items-center gap-2 text-xs text-on-surface-variant mb-3">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>
-                      {pkg.durationDays} {isBn ? 'দিন' : 'days'} · {pkg.makkahNights}N Makkah · {pkg.madinahNights}N Madinah
-                    </span>
-                  </div>
+                  {(() => {
+                    const displayTitle = (isBn && pkg.titleBn) ? pkg.titleBn : pkg.title;
+                    const displayHighlights = (isBn && pkg.highlightsBn && pkg.highlightsBn.length > 0) ? pkg.highlightsBn : pkg.highlights;
+                    return (
+                      <>
+                        <h3 className="font-display text-lg font-semibold text-on-surface mb-2 line-clamp-2">{displayTitle}</h3>
+                        <div className="flex items-center gap-2 text-xs text-on-surface-variant mb-3">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>
+                            {pkg.durationDays} {isBn ? 'দিন' : 'days'} · {pkg.makkahNights}N Makkah · {pkg.madinahNights}N Madinah
+                          </span>
+                        </div>
 
-                  <ul className="space-y-1 mb-4 text-xs text-on-surface/80 flex-1">
-                    {pkg.highlights.slice(0, 3).map((h, i) => (
-                      <li key={i} className="flex items-start gap-1.5">
-                        <span className="mt-1.5 h-1 w-1 rounded-full bg-emerald-500 flex-shrink-0" />
-                        <span className="line-clamp-1">{h}</span>
-                      </li>
-                    ))}
-                  </ul>
+                        <ul className="space-y-1 mb-4 text-xs text-on-surface/80 flex-1">
+                          {displayHighlights.slice(0, 3).map((h, i) => (
+                            <li key={i} className="flex items-start gap-1.5">
+                              <span className="mt-1.5 h-1 w-1 rounded-full bg-emerald-500 flex-shrink-0" />
+                              <span className="line-clamp-1">{h}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    );
+                  })()}
 
                   <div className="pt-3 border-t border-hairline flex items-center justify-between">
                     <div>

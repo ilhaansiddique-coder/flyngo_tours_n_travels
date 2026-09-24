@@ -1,6 +1,6 @@
 {
-  "version": "0c5d9c8bf29f86c37802f1075286552f2a1d251b",
-  "shortVersion": "0c5d9c8",
-  "message": "feat(ui): add global places indicator footer and illustrative placeholders to autocompletes",
-  "builtAt": "2026-09-24T17:40:08.162Z"
+  "version": "42ddce69307d38da7ced07510c961c13c1a1c50c",
+  "shortVersion": "42ddce6",
+  "message": "feat(visa): remove hardcoded seeded visa services and add bilingual EN/BN support",
+  "builtAt": "2026-09-24T20:01:37.481Z"
 }

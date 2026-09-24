@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ShareMenu } from '@/components/shared/share-menu';
 import { ReviewsSection } from '@/components/features/reviews/reviews-section';
 import { ArrowLeft, Clock, Users, MapPin, Check, X, CalendarDays } from 'lucide-react';
+import { useLocale } from '@/contexts/locale-context';
 
 interface TourImage {
   id: string;
@@ -28,10 +29,14 @@ interface ItineraryDay {
 interface TourDetail {
   id: string;
   title: string;
+  titleBn?: string;
   slug: string;
   description: string;
+  descriptionBn?: string;
   highlights: string[];
+  highlightsBn?: string[];
   inclusions: string[];
+  inclusionsBn?: string[];
   exclusions: string[];
   price: number | string;
   salePrice?: number | string | null;
@@ -50,6 +55,8 @@ interface TourDetail {
 }
 
 export default function TourDetailPage() {
+  const { locale } = useLocale();
+  const isBn = locale === 'bn';
   const params = useParams<{ slug: string }>();
   const slug = params?.slug;
   const [tour, setTour] = useState<TourDetail | null>(null);
@@ -121,6 +128,10 @@ export default function TourDetailPage() {
   const mainImage = gallery[activeImage % Math.max(gallery.length, 1)];
   const price = Number(tour.salePrice ?? tour.price);
   const basePrice = tour.salePrice != null ? Number(tour.price) : null;
+  const displayTitle = (isBn && tour.titleBn) ? tour.titleBn : tour.title;
+  const displayDescription = (isBn && tour.descriptionBn) ? tour.descriptionBn : tour.description;
+  const displayHighlights = (isBn && tour.highlightsBn && tour.highlightsBn.length > 0) ? tour.highlightsBn : tour.highlights;
+  const displayInclusions = (isBn && tour.inclusionsBn && tour.inclusionsBn.length > 0) ? tour.inclusionsBn : tour.inclusions;
 
   return (
     <main className="min-h-screen bg-background pt-28 pb-20 px-4 sm:px-6 lg:px-16 max-w-[1200px] mx-auto">
@@ -128,7 +139,7 @@ export default function TourDetailPage() {
         <Link href="/tours" className="inline-flex items-center gap-2 text-sm hover:underline text-accent">
           <ArrowLeft className="w-4 h-4" /> Back to tours
         </Link>
-        <ShareMenu path={`/tours/${slug}`} title={tour.title} />
+        <ShareMenu path={`/tours/${slug}`} title={displayTitle} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
@@ -137,7 +148,7 @@ export default function TourDetailPage() {
           <div className="relative h-72 sm:h-96 overflow-hidden rounded-2xl mb-3 bg-gradient-to-br from-primary to-tertiary">
             {mainImage && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={mainImage} alt={tour.title} className="w-full h-full object-cover" />
+              <img src={mainImage} alt={displayTitle} className="w-full h-full object-cover" />
             )}
           </div>
           {gallery.length > 1 && (
@@ -185,7 +196,7 @@ export default function TourDetailPage() {
             )}
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-display font-bold text-on-surface mb-4">{tour.title}</h1>
+          <h1 className="text-3xl sm:text-4xl font-display font-bold text-on-surface mb-4">{displayTitle}</h1>
 
           <div className="flex items-center gap-4 text-sm text-on-surface-variant mb-6">
             <span className="flex items-center gap-1.5">
@@ -203,14 +214,14 @@ export default function TourDetailPage() {
 
           <section className="mb-8">
             <h2 className="text-xl font-display font-semibold text-on-surface mb-3">About this tour</h2>
-            <p className="text-on-surface-variant leading-relaxed whitespace-pre-line">{tour.description}</p>
+            <p className="text-on-surface-variant leading-relaxed whitespace-pre-line">{displayDescription}</p>
           </section>
 
-          {tour.highlights?.length > 0 && (
+          {displayHighlights?.length > 0 && (
             <section className="mb-8">
               <h2 className="text-xl font-display font-semibold text-on-surface mb-4">Highlights</h2>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {tour.highlights.map((h, i) => (
+                {displayHighlights.map((h, i) => (
                   <li key={i} className="flex items-start gap-2">
                     <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-500" />
                     <span className="text-on-surface text-sm">{h}</span>
@@ -220,13 +231,13 @@ export default function TourDetailPage() {
             </section>
           )}
 
-          {(tour.inclusions?.length > 0 || tour.exclusions?.length > 0) && (
+          {(displayInclusions?.length > 0 || tour.exclusions?.length > 0) && (
             <section className="mb-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {tour.inclusions?.length > 0 && (
+              {displayInclusions?.length > 0 && (
                 <div className="glass-deep rounded-2xl p-6">
                   <h3 className="text-lg font-display font-semibold text-on-surface mb-3">What&apos;s included</h3>
                   <ul className="space-y-2">
-                    {tour.inclusions.map((inc, i) => (
+                    {displayInclusions.map((inc, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-500" />
                         <span className="text-on-surface-variant text-sm">{inc}</span>

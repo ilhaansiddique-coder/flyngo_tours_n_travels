@@ -132,6 +132,16 @@ export const BANGLA_DICTIONARY_MAP: Record<string, string> = MANUAL_BANGLA_WORDS
   {} as Record<string, string>,
 );
 
+export const ENGLISH_DICTIONARY_MAP: Record<string, string> = MANUAL_BANGLA_WORDS.reduce(
+  (acc, item) => {
+    if (item.bn && item.en) {
+      acc[item.bn.trim()] = item.en.trim();
+    }
+    return acc;
+  },
+  {} as Record<string, string>,
+);
+
 /**
  * Given an English string, attempts to find an exact manual Bangla translation
  * or performs intelligent phrase-level replacements based on the manual dictionary.
@@ -157,6 +167,36 @@ export function translateWithManualDictionary(input: string): string | null {
     const regex = new RegExp(`\\b${escapeRegExp(phrase)}\\b`, 'gi');
     if (regex.test(result)) {
       result = result.replace(regex, BANGLA_DICTIONARY_MAP[phrase]);
+      hasReplaced = true;
+    }
+  }
+
+  return hasReplaced ? result : null;
+}
+
+/**
+ * Given a Bangla string, attempts to find an exact manual English translation
+ * or performs phrase-level replacements back to English.
+ */
+export function translateWithBanglaToEnglishDictionary(input: string): string | null {
+  if (!input || !input.trim()) return '';
+  const trimmed = input.trim();
+
+  // 1. Direct match
+  if (ENGLISH_DICTIONARY_MAP[trimmed]) {
+    return ENGLISH_DICTIONARY_MAP[trimmed];
+  }
+
+  // 2. Multi-word phrase replacement
+  let result = trimmed;
+  let hasReplaced = false;
+
+  const sortedKeys = Object.keys(ENGLISH_DICTIONARY_MAP).sort((a, b) => b.length - a.length);
+
+  for (const phrase of sortedKeys) {
+    if (phrase.length < 2) continue;
+    if (result.includes(phrase)) {
+      result = result.split(phrase).join(ENGLISH_DICTIONARY_MAP[phrase]);
       hasReplaced = true;
     }
   }

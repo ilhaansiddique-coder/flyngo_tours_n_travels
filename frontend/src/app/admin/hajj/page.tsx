@@ -13,11 +13,13 @@ import { hajjImage } from '@/lib/entity-image';
 import { Sparkles, Plus, Pencil, Trash2, Search, Share2 } from 'lucide-react';
 import { ShareMenu } from '@/components/shared/share-menu';
 import { AutoTranslatePanel } from '@/components/admin/auto-translate-panel';
+import { useAutoTranslateSync } from '@/hooks/use-auto-translate-sync';
 
 interface HajjPackage {
   id: string;
   slug?: string;
   title: string;
+  titleBn?: string;
   tier: string;
   durationDays: number;
   price: number;
@@ -25,7 +27,9 @@ interface HajjPackage {
   makkahNights: number;
   madinahNights: number;
   inclusions: string[];
+  inclusionsBn?: string[];
   highlights: string[];
+  highlightsBn?: string[];
   imageUrl?: string;
   coverImageUrl?: string;
   isActive: boolean;
@@ -198,6 +202,7 @@ export default function AdminHajjPage() {
 function HajjForm({ initial, onClose, onSaved }: { initial: HajjPackage | null; onClose: () => void; onSaved: () => void }) {
   const { createHajjPackage, updateHajjPackage, uploadMedia } = useApi();
   const [title, setTitle] = useState(initial?.title ?? '');
+  const [titleBn, setTitleBn] = useState(initial?.titleBn ?? '');
   const [tier, setTier] = useState(initial?.tier ?? 'non_shifting');
   const [durationDays, setDurationDays] = useState(String(initial?.durationDays ?? 40));
   const [price, setPrice] = useState(String(initial?.price ?? 0));
@@ -205,7 +210,9 @@ function HajjForm({ initial, onClose, onSaved }: { initial: HajjPackage | null; 
   const [makkahNights, setMakkahNights] = useState(String(initial?.makkahNights ?? 0));
   const [madinahNights, setMadinahNights] = useState(String(initial?.madinahNights ?? 0));
   const [highlights, setHighlights] = useState((initial?.highlights ?? []).join('\n'));
+  const [highlightsBn, setHighlightsBn] = useState((initial?.highlightsBn ?? []).join('\n'));
   const [inclusions, setInclusions] = useState((initial?.inclusions ?? []).join('\n'));
+  const [inclusionsBn, setInclusionsBn] = useState((initial?.inclusionsBn ?? []).join('\n'));
   const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? '');
   const [coverImageUrl, setCoverImageUrl] = useState(initial?.coverImageUrl ?? '');
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
@@ -214,29 +221,41 @@ function HajjForm({ initial, onClose, onSaved }: { initial: HajjPackage | null; 
   const [pointsAwarded, setPointsAwarded] = useState(String(initial?.pointsAwarded ?? 0));
   const [totalSeats, setTotalSeats] = useState(String(initial?.totalSeats ?? 0));
   const [saving, setSaving] = useState(false);
+  const [formLang, setFormLang] = useState<'en' | 'bn'>('en');
+  const { isTranslating, translatingMessage, debouncedAutoTranslate, handleFieldBlur, ensureBilingualOnSubmit } = useAutoTranslateSync();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const body = {
-      title,
-      tier,
-      durationDays: Number(durationDays) || 0,
-      price: Number(price) || 0,
-      currency,
-      makkahNights: Number(makkahNights) || 0,
-      madinahNights: Number(madinahNights) || 0,
-      highlights: highlights.split('\n').map((s) => s.trim()).filter(Boolean),
-      inclusions: inclusions.split('\n').map((s) => s.trim()).filter(Boolean),
-      imageUrl: imageUrl || undefined,
-      coverImageUrl: coverImageUrl || undefined,
-      isActive,
-      isFeatured,
-      order: Number(order) || 0,
-      pointsAwarded: Number(pointsAwarded) || 0,
-      totalSeats: Number(totalSeats) || 0,
-    };
     try {
+      // Bi-directional translation sync: English <-> Bangla
+      const { english: syncedEn, bangla: syncedBn } = await ensureBilingualOnSubmit(
+        { title, highlights, inclusions },
+        { title: titleBn, highlights: highlightsBn, inclusions: inclusionsBn }
+      );
+
+      const body = {
+        title: syncedEn.title || syncedBn.title,
+        titleBn: syncedBn.title || undefined,
+        tier,
+        durationDays: Number(durationDays) || 0,
+        price: Number(price) || 0,
+        currency,
+        makkahNights: Number(makkahNights) || 0,
+        madinahNights: Number(madinahNights) || 0,
+        highlights: syncedEn.highlights ? syncedEn.highlights.split('\n').map((s) => s.trim()).filter(Boolean) : [],
+        highlightsBn: syncedBn.highlights ? syncedBn.highlights.split('\n').map((s) => s.trim()).filter(Boolean) : undefined,
+        inclusions: syncedEn.inclusions ? syncedEn.inclusions.split('\n').map((s) => s.trim()).filter(Boolean) : [],
+        inclusionsBn: syncedBn.inclusions ? syncedBn.inclusions.split('\n').map((s) => s.trim()).filter(Boolean) : undefined,
+        imageUrl: imageUrl || undefined,
+        coverImageUrl: coverImageUrl || undefined,
+        isActive,
+        isFeatured,
+        order: Number(order) || 0,
+        pointsAwarded: Number(pointsAwarded) || 0,
+        totalSeats: Number(totalSeats) || 0,
+      };
+
       if (initial) await updateHajjPackage(initial.id, body);
       else await createHajjPackage(body);
       onSaved();
@@ -250,9 +269,9 @@ function HajjForm({ initial, onClose, onSaved }: { initial: HajjPackage | null; 
       <form onSubmit={submit} className="space-y-4">
         <AutoTranslatePanel
           sourceFields={{
-            title,
-            highlights,
-            inclusions,
+            title: title || titleBn,
+            highlights: highlights || highlightsBn,
+            inclusions: inclusions || inclusionsBn,
           }}
           fieldLabels={{
             title: 'Hajj Package Title',
@@ -261,12 +280,132 @@ function HajjForm({ initial, onClose, onSaved }: { initial: HajjPackage | null; 
           }}
           category="hajj_umrah"
           onApplyBangla={(translated) => {
-            if (translated.title) setTitle(translated.title);
-            if (translated.highlights) setHighlights(translated.highlights);
-            if (translated.inclusions) setInclusions(translated.inclusions);
+            if (translated.title) setTitleBn(translated.title);
+            if (translated.highlights) setHighlightsBn(translated.highlights);
+            if (translated.inclusions) setInclusionsBn(translated.inclusions);
+            setFormLang('bn');
           }}
         />
-        <FormField label="Title"><FormInput value={title} onChange={setTitle} required /></FormField>
+
+        {/* Bilingual Tab Switcher */}
+        <div className="flex flex-wrap items-center justify-between border-b border-outline-variant pb-2.5 mb-2 gap-2">
+          <div className="flex items-center gap-1 bg-surface-container p-1 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setFormLang('en')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                formLang === 'en'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              English (EN)
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormLang('bn')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                formLang === 'bn'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <span>বাংলা (BN)</span>
+              {titleBn ? <span className="w-2 h-2 rounded-full bg-emerald-500" title="Bangla translation ready" /> : null}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {isTranslating ? (
+              <span className="text-[11px] text-accent font-medium animate-pulse flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 animate-spin" /> {translatingMessage || 'Auto-translating...'}
+              </span>
+            ) : title && titleBn ? (
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                ✓ English & বাংলা synchronized
+              </span>
+            ) : null}
+            <span className="text-[11px] text-muted">
+              {formLang === 'en' ? 'English content (auto-syncs to বাংলা)' : 'বাংলা সংস্করণ (auto-syncs to English)'}
+            </span>
+          </div>
+        </div>
+
+        {formLang === 'en' ? (
+          <>
+            <FormField label="Title (English)">
+              <FormInput
+                value={title}
+                onChange={(v) => {
+                  setTitle(v);
+                  debouncedAutoTranslate('title', v, titleBn, 'en', 'bn', setTitleBn);
+                }}
+                onBlur={() => handleFieldBlur(title, titleBn, 'en', 'bn', setTitleBn)}
+                required
+              />
+            </FormField>
+            <FormField label="Highlights (English - one per line)">
+              <FormTextarea
+                value={highlights}
+                onChange={(v) => {
+                  setHighlights(v);
+                  debouncedAutoTranslate('highlights', v, highlightsBn, 'en', 'bn', setHighlightsBn);
+                }}
+                onBlur={() => handleFieldBlur(highlights, highlightsBn, 'en', 'bn', setHighlightsBn)}
+                rows={3}
+              />
+            </FormField>
+            <FormField label="Inclusions (English - one per line)">
+              <FormTextarea
+                value={inclusions}
+                onChange={(v) => {
+                  setInclusions(v);
+                  debouncedAutoTranslate('inclusions', v, inclusionsBn, 'en', 'bn', setInclusionsBn);
+                }}
+                onBlur={() => handleFieldBlur(inclusions, inclusionsBn, 'en', 'bn', setInclusionsBn)}
+                rows={3}
+              />
+            </FormField>
+          </>
+        ) : (
+          <>
+            <FormField label="Title (বাংলা - BN)">
+              <FormInput
+                value={titleBn}
+                onChange={(v) => {
+                  setTitleBn(v);
+                  debouncedAutoTranslate('title', v, title, 'bn', 'en', setTitle);
+                }}
+                onBlur={() => handleFieldBlur(titleBn, title, 'bn', 'en', setTitle)}
+                placeholder="প্যাকেজের শিরোনাম বাংলায়"
+              />
+            </FormField>
+            <FormField label="Highlights (বাংলা - BN, প্রতি লাইনে একটি)">
+              <FormTextarea
+                value={highlightsBn}
+                onChange={(v) => {
+                  setHighlightsBn(v);
+                  debouncedAutoTranslate('highlights', v, highlights, 'bn', 'en', setHighlights);
+                }}
+                onBlur={() => handleFieldBlur(highlightsBn, highlights, 'bn', 'en', setHighlights)}
+                rows={3}
+                placeholder="প্যাকেজ হাইলাইটস বাংলায়"
+              />
+            </FormField>
+            <FormField label="Inclusions (বাংলা - BN, প্রতি লাইনে একটি)">
+              <FormTextarea
+                value={inclusionsBn}
+                onChange={(v) => {
+                  setInclusionsBn(v);
+                  debouncedAutoTranslate('inclusions', v, inclusions, 'bn', 'en', setInclusions);
+                }}
+                onBlur={() => handleFieldBlur(inclusionsBn, inclusions, 'bn', 'en', setInclusions)}
+                rows={3}
+                placeholder="যা যা অন্তর্ভুক্ত রয়েছে"
+              />
+            </FormField>
+          </>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField label="Tier">
             <FormSelect value={tier} onChange={setTier} options={TIERS} />

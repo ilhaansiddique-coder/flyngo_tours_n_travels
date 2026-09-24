@@ -122,6 +122,7 @@ export class VisaService implements OnModuleInit {
         requirementsBn,
         pointsAwarded: Number(data.pointsAwarded) || 0,
         isActive: data.isActive ?? true,
+        coverImageUrl: data.coverImageUrl || null,
         additionalDestinations: {
           create: additionalIds.map((did, i) => ({ tenantId, destinationId: did, position: i })),
         },
@@ -170,6 +171,7 @@ export class VisaService implements OnModuleInit {
         requirementsBn,
         pointsAwarded: data.pointsAwarded === undefined ? undefined : Number(data.pointsAwarded) || 0,
         isActive: data.isActive,
+        coverImageUrl: data.coverImageUrl !== undefined ? data.coverImageUrl : undefined,
         ...(data.additionalDestinationIds !== undefined
           ? {
               additionalDestinations: {

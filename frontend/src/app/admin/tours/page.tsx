@@ -13,15 +13,18 @@ import { MultiCountryAutocomplete } from '@/components/admin/multi-country-autoc
 import type { CountryOption } from '@/components/admin/country-autocomplete';
 import { tourImage } from '@/lib/entity-image';
 import { useEffect, useState } from 'react';
-import { Map, Search, Plus, Pencil, Trash2, Share2 } from 'lucide-react';
+import { Map, Search, Plus, Pencil, Trash2, Share2, Sparkles } from 'lucide-react';
 import { ShareMenu } from '@/components/shared/share-menu';
 import { AutoTranslatePanel } from '@/components/admin/auto-translate-panel';
+import { useAutoTranslateSync } from '@/hooks/use-auto-translate-sync';
 
 interface Tour {
   id: string;
   slug?: string;
   title: string;
+  titleBn?: string;
   description?: string;
+  descriptionBn?: string;
   price: number;
   duration: number;
   maxGuests?: number;
@@ -39,8 +42,10 @@ interface Tour {
 
 interface FormData {
   title: string;
+  titleBn: string;
   destinationId: string;
   description: string;
+  descriptionBn: string;
   price: string;
   duration: string;
   maxGuests: string;
@@ -54,8 +59,10 @@ interface FormData {
 
 const initialForm: FormData = {
   title: '',
+  titleBn: '',
   destinationId: '',
   description: '',
+  descriptionBn: '',
   price: '',
   duration: '',
   maxGuests: '',
@@ -92,6 +99,8 @@ export default function AdminToursPage() {
 
   const [destName, setDestName] = useState('');
   const [additionalNames, setAdditionalNames] = useState<CountryOption[]>([]);
+  const [formLang, setFormLang] = useState<'en' | 'bn'>('en');
+  const { isTranslating, translatingMessage, debouncedAutoTranslate, handleFieldBlur, ensureBilingualOnSubmit } = useAutoTranslateSync();
 
   const fetchTours = async (page?: number) => {
     setLoading(true);
@@ -118,6 +127,7 @@ export default function AdminToursPage() {
   const openCreateModal = () => {
     setEditingTour(null);
     setForm(initialForm);
+    setFormLang('en');
     setDestName('');
     setAdditionalNames([]);
     setModalOpen(true);
@@ -127,8 +137,10 @@ export default function AdminToursPage() {
     setEditingTour(tour);
     setForm({
       title: tour.title || '',
+      titleBn: (tour as any).titleBn || '',
       destinationId: tour.destinationId || tour.destination?.id || '',
       description: tour.description || '',
+      descriptionBn: (tour as any).descriptionBn || '',
       price: String(tour.price ?? ''),
       duration: String(tour.duration ?? ''),
       maxGuests: String(tour.maxGuests ?? ''),
@@ -139,6 +151,7 @@ export default function AdminToursPage() {
       isFeatured: tour.isFeatured ?? false,
       isActive: tour.isActive ?? true,
     });
+    setFormLang('en');
     setDestName(tour.destination?.name || '');
     setAdditionalNames(
       (tour.additionalDestinations || [])
@@ -152,14 +165,22 @@ export default function AdminToursPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
+      // Bi-directional translation sync: English <-> Bangla
+      const { english: syncedEn, bangla: syncedBn } = await ensureBilingualOnSubmit(
+        { title: form.title, description: form.description },
+        { title: form.titleBn, description: form.descriptionBn }
+      );
+
       const body = {
-        title: form.title,
+        title: syncedEn.title || syncedBn.title,
+        titleBn: syncedBn.title || undefined,
         destinationId: form.destinationId,
         additionalDestinationIds: additionalNames.map((a) => ({
           id: a.id || undefined,
           name: a.name,
         })),
-        description: form.description,
+        description: syncedEn.description || syncedBn.description,
+        descriptionBn: syncedBn.description || undefined,
         price: Number(form.price),
         duration: Number(form.duration),
         maxGuests: form.maxGuests ? Number(form.maxGuests) : undefined,
@@ -408,8 +429,8 @@ export default function AdminToursPage() {
         <form onSubmit={handleSubmit}>
           <AutoTranslatePanel
             sourceFields={{
-              title: form.title,
-              description: form.description,
+              title: form.title || form.titleBn,
+              description: form.description || form.descriptionBn,
             }}
             fieldLabels={{
               title: 'Tour Title',
@@ -419,20 +440,113 @@ export default function AdminToursPage() {
             onApplyBangla={(translated) => {
               setForm((f) => ({
                 ...f,
-                title: translated.title || f.title,
-                description: translated.description || f.description,
+                titleBn: translated.title || f.titleBn,
+                descriptionBn: translated.description || f.descriptionBn,
               }));
+              setFormLang('bn');
             }}
           />
 
-          <FormField label="Title" required>
-            <FormInput
-              value={form.title}
-              onChange={(v) => setForm({ ...form, title: v })}
-              placeholder="Tour title"
-              required
-            />
-          </FormField>
+          {/* Bilingual Tab Switcher */}
+          <div className="flex flex-wrap items-center justify-between border-b border-outline-variant pb-2.5 mb-4 gap-2">
+            <div className="flex items-center gap-1 bg-surface-container p-1 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setFormLang('en')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  formLang === 'en'
+                    ? 'bg-primary text-white shadow-xs'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                English (EN)
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormLang('bn')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  formLang === 'bn'
+                    ? 'bg-primary text-white shadow-xs'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                <span>বাংলা (BN)</span>
+                {form.titleBn ? <span className="w-2 h-2 rounded-full bg-emerald-500" title="Bangla translation ready" /> : null}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {isTranslating ? (
+                <span className="text-[11px] text-accent font-medium animate-pulse flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 animate-spin" /> {translatingMessage || 'Auto-translating...'}
+                </span>
+              ) : form.title && form.titleBn ? (
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                  ✓ English & বাংলা synchronized
+                </span>
+              ) : null}
+              <span className="text-[11px] text-muted">
+                {formLang === 'en' ? 'English content (auto-syncs to বাংলা)' : 'বাংলা সংস্করণ (auto-syncs to English)'}
+              </span>
+            </div>
+          </div>
+
+          {formLang === 'en' ? (
+            <>
+              <FormField label="Title (English)" required>
+                <FormInput
+                  value={form.title}
+                  onChange={(v) => {
+                    setForm({ ...form, title: v });
+                    debouncedAutoTranslate('title', v, form.titleBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, titleBn: bn })));
+                  }}
+                  onBlur={() => handleFieldBlur(form.title, form.titleBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, titleBn: bn })))}
+                  placeholder="Tour title in English"
+                  required
+                />
+              </FormField>
+
+              <FormField label="Description (English)">
+                <FormTextarea
+                  value={form.description}
+                  onChange={(v) => {
+                    setForm({ ...form, description: v });
+                    debouncedAutoTranslate('description', v, form.descriptionBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, descriptionBn: bn })));
+                  }}
+                  onBlur={() => handleFieldBlur(form.description, form.descriptionBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, descriptionBn: bn })))}
+                  placeholder="Tour description in English"
+                  rows={3}
+                />
+              </FormField>
+            </>
+          ) : (
+            <>
+              <FormField label="Title (বাংলা - BN)">
+                <FormInput
+                  value={form.titleBn}
+                  onChange={(v) => {
+                    setForm({ ...form, titleBn: v });
+                    debouncedAutoTranslate('title', v, form.title, 'bn', 'en', (en) => setForm((f) => ({ ...f, title: en })));
+                  }}
+                  onBlur={() => handleFieldBlur(form.titleBn, form.title, 'bn', 'en', (en) => setForm((f) => ({ ...f, title: en })))}
+                  placeholder="ট্যুর শিরোনাম (বাংলায়)"
+                />
+              </FormField>
+
+              <FormField label="Description (বাংলা - BN)">
+                <FormTextarea
+                  value={form.descriptionBn}
+                  onChange={(v) => {
+                    setForm({ ...form, descriptionBn: v });
+                    debouncedAutoTranslate('description', v, form.description, 'bn', 'en', (en) => setForm((f) => ({ ...f, description: en })));
+                  }}
+                  onBlur={() => handleFieldBlur(form.descriptionBn, form.description, 'bn', 'en', (en) => setForm((f) => ({ ...f, description: en })))}
+                  placeholder="ট্যুরের বিস্তারিত বিবরণ (বাংলায়)"
+                  rows={3}
+                />
+              </FormField>
+            </>
+          )}
 
           <FormField label="Destination" required>
             <CountryAutocomplete
@@ -455,15 +569,6 @@ export default function AdminToursPage() {
             <p className="text-xs text-on-surface-variant mt-1">
               Optional. Pick a country or type a new one — it will be created automatically.
             </p>
-          </FormField>
-
-          <FormField label="Description">
-            <FormTextarea
-              value={form.description}
-              onChange={(v) => setForm({ ...form, description: v })}
-              placeholder="Tour description"
-              rows={3}
-            />
           </FormField>
 
           <FormField label="Cover Image">

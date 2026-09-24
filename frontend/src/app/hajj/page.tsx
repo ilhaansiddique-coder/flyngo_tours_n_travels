@@ -30,6 +30,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://flyngo.world';
 interface HajjPackage {
   id: string;
   title: string;
+  titleBn?: string;
   slug: string;
   tier: string;
   durationDays: number;
@@ -38,7 +39,9 @@ interface HajjPackage {
   makkahNights: number;
   madinahNights: number;
   highlights: string[];
+  highlightsBn?: string[];
   inclusions: string[];
+  inclusionsBn?: string[];
   isFeatured: boolean;
   order: number;
   totalSeats?: number;
@@ -63,7 +66,7 @@ export default function HajjPage() {
   const shown = useMemo(() => {
     if (!q) return packages;
     // Tokenised so the autocomplete's "City, Country" label matches.
-    return packages.filter((p: any) => matchesSearch([p.title, p.name, p.description, p.destination?.name], q));
+    return packages.filter((p: any) => matchesSearch([p.title, p.titleBn, p.name, p.description, p.destination?.name], q));
   }, [packages, q]);
   const [showPreReg, setShowPreReg] = useState(false);
   const [preReg, setPreReg] = useState({ fullName: '', phone: '', phoneCountry: DEFAULT_COUNTRY_CODE, email: '', district: '', travelers: 1, packageTier: '' });
@@ -233,56 +236,59 @@ export default function HajjPage() {
               <p className="text-sm text-muted">No packages match &ldquo;{q}&rdquo;.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {shown.map((pkg) => (
-              <Link
-                key={pkg.id}
-                href={`/hajj/${pkg.slug}`}
-                className="group relative flex flex-col overflow-hidden rounded-2xl glass border border-emerald-500/30 hover:border-emerald-500/60 transition-all hover:-translate-y-1"
-              >
-                <div className="relative h-56 overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-700 to-amber-700 flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={hajjImage(pkg)}
-                    alt={pkg.title}
-                    loading="lazy"
-                    className="absolute inset-0 w-full h-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <Sparkles className="relative w-20 h-20 text-white/20" />
-                  <div className="absolute inset-0 scrim-soft" />
-                  {pkg.isFeatured && (
-                    <span
-                      className="absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] tracking-widest uppercase font-bold shadow-lg"
-                      style={{
-                        backgroundColor: 'var(--color-accent)',
-                        color: 'var(--color-on-accent)',
-                        boxShadow: '0 12px 28px -8px var(--accent-glow-strong)',
-                      }}
+                {shown.map((pkg) => {
+                  const displayTitle = (isBn && pkg.titleBn) ? pkg.titleBn : pkg.title;
+                  const displayHighlights = (isBn && pkg.highlightsBn && pkg.highlightsBn.length > 0) ? pkg.highlightsBn : pkg.highlights;
+                  return (
+                    <Link
+                      key={pkg.id}
+                      href={`/hajj/${pkg.slug}`}
+                      className="group relative flex flex-col overflow-hidden rounded-2xl glass border border-emerald-500/30 hover:border-emerald-500/60 transition-all hover:-translate-y-1"
                     >
-                      Featured
-                    </span>
-                  )}
-                  <span className="absolute top-3 right-3 px-2 py-1 rounded-full text-[10px] uppercase tracking-widest font-bold bg-black/30 text-white backdrop-blur-sm">
-                    {pkg.tier.replace(/_/g, ' ')}
-                  </span>
-                </div>
+                      <div className="relative h-56 overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-700 to-amber-700 flex items-center justify-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={hajjImage(pkg)}
+                          alt={displayTitle}
+                          loading="lazy"
+                          className="absolute inset-0 w-full h-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <Sparkles className="relative w-20 h-20 text-white/20" />
+                        <div className="absolute inset-0 scrim-soft" />
+                        {pkg.isFeatured && (
+                          <span
+                            className="absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] tracking-widest uppercase font-bold shadow-lg"
+                            style={{
+                              backgroundColor: 'var(--color-accent)',
+                              color: 'var(--color-on-accent)',
+                              boxShadow: '0 12px 28px -8px var(--accent-glow-strong)',
+                            }}
+                          >
+                            Featured
+                          </span>
+                        )}
+                        <span className="absolute top-3 right-3 px-2 py-1 rounded-full text-[10px] uppercase tracking-widest font-bold bg-black/30 text-white backdrop-blur-sm">
+                          {pkg.tier.replace(/_/g, ' ')}
+                        </span>
+                      </div>
 
-                <div className="p-6">
-                  <h3 className="font-display text-2xl font-semibold text-on-surface mb-2">{pkg.title}</h3>
-                  <div className="flex items-center gap-2 text-xs text-on-surface-variant mb-4">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>
-                      {pkg.durationDays} {isBn ? 'দিন' : 'days'} · {pkg.makkahNights}N Makkah · {pkg.madinahNights}N Madinah
-                    </span>
-                  </div>
+                      <div className="p-6">
+                        <h3 className="font-display text-2xl font-semibold text-on-surface mb-2">{displayTitle}</h3>
+                        <div className="flex items-center gap-2 text-xs text-on-surface-variant mb-4">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>
+                            {pkg.durationDays} {isBn ? 'দিন' : 'days'} · {pkg.makkahNights}N Makkah · {pkg.madinahNights}N Madinah
+                          </span>
+                        </div>
 
-                  <ul className="space-y-1.5 mb-5 text-sm text-on-surface/80">
-                    {pkg.highlights.slice(0, 4).map((h, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="mt-1.5 h-1 w-1 rounded-full bg-emerald-500 flex-shrink-0" />
-                        <span>{h}</span>
-                      </li>
-                    ))}
-                  </ul>
+                        <ul className="space-y-1.5 mb-5 text-sm text-on-surface/80">
+                          {displayHighlights.slice(0, 4).map((h, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="mt-1.5 h-1 w-1 rounded-full bg-emerald-500 flex-shrink-0" />
+                              <span>{h}</span>
+                            </li>
+                          ))}
+                        </ul>
 
                   <div className="mb-3">
                     <SeatCounter packageId={pkg.id} currency={pkg.currency} />
@@ -311,7 +317,8 @@ export default function HajjPage() {
                   </div>
                 </div>
               </Link>
-                ))}
+            );
+          })}
               </div>
             )}
           </>

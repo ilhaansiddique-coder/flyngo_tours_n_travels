@@ -10,10 +10,12 @@ import { useBookingStore } from '@/stores/booking.store';
 import { ReviewsSection } from '@/components/features/reviews/reviews-section';
 import { ShareMenu } from '@/components/shared/share-menu';
 import { ArrowLeft, Clock, Check, Moon, Coins, ArrowRight, Sparkles, MapPin } from 'lucide-react';
+import { useLocale } from '@/contexts/locale-context';
 
 interface UmrahPackage {
   id: string;
   title: string;
+  titleBn?: string;
   slug: string;
   durationDays: number;
   price: number;
@@ -22,13 +24,17 @@ interface UmrahPackage {
   madinahNights: number;
   addOnCity?: string | null;
   highlights?: string[];
+  highlightsBn?: string[];
   inclusions?: string[];
+  inclusionsBn?: string[];
   pointsAwarded?: number;
   coverImageUrl?: string | null;
   imageUrl?: string | null;
 }
 
 export default function UmrahPackageDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { locale } = useLocale();
+  const isBn = locale === 'bn';
   const { slug } = use(params);
   const router = useRouter();
   const { getUmrahPackages } = useApi();
@@ -74,13 +80,18 @@ export default function UmrahPackageDetailPage({ params }: { params: Promise<{ s
     );
   }
 
+  const seatsLeft = null;
+  const displayTitle = (isBn && pkg.titleBn) ? pkg.titleBn : pkg.title;
+  const displayHighlights = (isBn && pkg.highlightsBn && pkg.highlightsBn.length > 0) ? pkg.highlightsBn : pkg.highlights;
+  const displayInclusions = (isBn && pkg.inclusionsBn && pkg.inclusionsBn.length > 0) ? pkg.inclusionsBn : pkg.inclusions;
+
   return (
     <main className="min-h-screen pt-28 pb-16 px-4 sm:px-6 lg:px-16 max-w-[1200px] mx-auto">
       <div className="flex items-start justify-between mb-6">
         <Link href="/umrah" className="inline-flex items-center gap-2 text-sm hover:underline" style={{ color: 'var(--color-nav-active)' }}>
           <ArrowLeft className="w-4 h-4" /> Back to Umrah packages
         </Link>
-        <ShareMenu path={`/umrah/${slug}`} title={pkg.title} />
+        <ShareMenu path={`/umrah/${slug}`} title={displayTitle} />
       </div>
 
       {/* Cover banner */}
@@ -88,7 +99,7 @@ export default function UmrahPackageDetailPage({ params }: { params: Promise<{ s
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={umrahImage(pkg, 1200, 500)}
-          alt={pkg.title}
+          alt={displayTitle}
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
@@ -98,7 +109,7 @@ export default function UmrahPackageDetailPage({ params }: { params: Promise<{ s
               <Sparkles className="w-3 h-3" /> + {pkg.addOnCity}
             </span>
           ) : null}
-          <h1 className="text-white text-3xl sm:text-4xl font-display font-bold drop-shadow mt-2">{pkg.title}</h1>
+          <h1 className="text-white text-3xl sm:text-4xl font-display font-bold drop-shadow mt-2">{displayTitle}</h1>
         </div>
       </div>
 
@@ -106,9 +117,9 @@ export default function UmrahPackageDetailPage({ params }: { params: Promise<{ s
         <div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
             {[
-              { icon: Clock, label: 'Duration', value: `${pkg.durationDays} days` },
-              { icon: Moon, label: 'Makkah', value: `${pkg.makkahNights} nights` },
-              { icon: Moon, label: 'Madinah', value: `${pkg.madinahNights} nights` },
+              { icon: Clock, label: 'Duration', value: `${pkg.durationDays} ${isBn ? 'দিন' : 'days'}` },
+              { icon: Moon, label: 'Makkah', value: `${pkg.makkahNights} ${isBn ? 'রাত' : 'nights'}` },
+              { icon: Moon, label: 'Madinah', value: `${pkg.madinahNights} ${isBn ? 'রাত' : 'nights'}` },
               { icon: Coins, label: 'Points', value: `+${(pkg.pointsAwarded ?? 0).toLocaleString()}` },
             ].map((f) => (
               <div key={f.label} className="rounded-2xl border glass p-4" style={{ borderColor: 'var(--color-outline-variant)' }}>
@@ -119,11 +130,11 @@ export default function UmrahPackageDetailPage({ params }: { params: Promise<{ s
             ))}
           </div>
 
-          {Array.isArray(pkg.highlights) && pkg.highlights.length > 0 && (
+          {Array.isArray(displayHighlights) && displayHighlights.length > 0 && (
             <section className="mb-8">
               <h2 className="text-xl font-display font-semibold mb-4">Highlights</h2>
               <div className="flex flex-wrap gap-2">
-                {pkg.highlights.map((h, i) => (
+                {displayHighlights.map((h, i) => (
                   <span key={i} className="px-3 py-1.5 rounded-full text-sm font-medium" style={{ backgroundColor: 'color-mix(in oklab, #10b981 12%, transparent)', color: 'var(--color-nav-active)' }}>
                     {h}
                   </span>
@@ -132,11 +143,11 @@ export default function UmrahPackageDetailPage({ params }: { params: Promise<{ s
             </section>
           )}
 
-          {Array.isArray(pkg.inclusions) && pkg.inclusions.length > 0 && (
+          {Array.isArray(displayInclusions) && displayInclusions.length > 0 && (
             <section className="mb-8">
               <h2 className="text-xl font-display font-semibold mb-4">What&apos;s included</h2>
               <ul className="space-y-2">
-                {pkg.inclusions.map((inc, i) => (
+                {displayInclusions.map((inc, i) => (
                   <li key={i} className="flex items-start gap-2">
                     <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-500" />
                     <span className="text-on-surface">{inc}</span>

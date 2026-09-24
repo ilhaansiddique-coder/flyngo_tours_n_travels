@@ -12,10 +12,12 @@ import { CountryAutocomplete } from '@/components/admin/country-autocomplete';
 import { MultiCountryAutocomplete } from '@/components/admin/multi-country-autocomplete';
 import type { CountryOption } from '@/components/admin/country-autocomplete';
 import { countryImage } from '@/lib/country-image';
-import { Plus, Pencil, Trash2, Search, Coins, Loader2, Share2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Coins, Loader2, Share2, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { ShareMenu } from '@/components/shared/share-menu';
 import { AutoTranslatePanel } from '@/components/admin/auto-translate-panel';
+import { ImageUploader } from '@/components/admin/image-uploader';
 import { hasBanglaChars } from '@/lib/translations/translator';
+import { useAutoTranslateSync } from '@/hooks/use-auto-translate-sync';
 import { toast } from 'sonner';
 
 interface VisaService {
@@ -36,6 +38,7 @@ interface VisaService {
   requirementsBn?: string[];
   pointsAwarded?: number;
   isActive: boolean;
+  coverImageUrl?: string | null;
 }
 
 export default function AdminVisaPage() {
@@ -44,6 +47,7 @@ export default function AdminVisaPage() {
     createVisaService,
     updateVisaService,
     deleteVisaService,
+    uploadMedia,
   } = useApi();
 
   const [services, setServices] = useState<VisaService[]>([]);
@@ -58,6 +62,7 @@ export default function AdminVisaPage() {
   const [deleteItem, setDeleteItem] = useState<VisaService | null>(null);
 
   const [additionalNames, setAdditionalNames] = useState<CountryOption[]>([]);
+  const { isTranslating, translatingMessage, debouncedAutoTranslate, handleFieldBlur, ensureBilingualOnSubmit } = useAutoTranslateSync();
 
   const [formLang, setFormLang] = useState<'en' | 'bn'>('en');
   const [form, setForm] = useState({
@@ -72,6 +77,7 @@ export default function AdminVisaPage() {
     points: '',
     requirements: '',
     requirementsBn: '',
+    coverImageUrl: '',
     isActive: true,
   });
 
@@ -111,6 +117,7 @@ export default function AdminVisaPage() {
       points: '',
       requirements: '',
       requirementsBn: '',
+      coverImageUrl: '',
       isActive: true,
     });
     setAdditionalNames([]);
@@ -133,6 +140,7 @@ export default function AdminVisaPage() {
       points: String(item.pointsAwarded ?? ''),
       requirements: Array.isArray(item.requirements) ? item.requirements.join('\n') : (item.requirements || ''),
       requirementsBn: Array.isArray(item.requirementsBn) ? item.requirementsBn.join('\n') : (item.requirementsBn || ''),
+      coverImageUrl: item.coverImageUrl || '',
       isActive: item.isActive,
     });
     setAdditionalNames(
@@ -154,20 +162,37 @@ export default function AdminVisaPage() {
           .map((r) => r.replace(/^[-\s\u2022\u25aa\u25b6\u25c6\u2705\u2714\u2713]+/, '').trim())
           .filter(Boolean);
 
+      // Bi-directional sync: auto translates English <-> Bangla while preserving manual edits
+      const { english: syncedEn, bangla: syncedBn } = await ensureBilingualOnSubmit(
+        {
+          title: form.title,
+          description: form.description,
+          processingTime: form.processingTime,
+          requirements: form.requirements,
+        },
+        {
+          title: form.titleBn,
+          description: form.descriptionBn,
+          processingTime: form.processingTimeBn,
+          requirements: form.requirementsBn,
+        }
+      );
+
       const body: any = {
-        title: form.title.trim() || form.titleBn.trim(),
-        titleBn: form.titleBn.trim() || undefined,
+        title: syncedEn.title?.trim() || syncedBn.title?.trim(),
+        titleBn: syncedBn.title?.trim() || undefined,
         countryName: form.countryName.trim(),
         additionalDestinationIds: additionalNames.map((a) => ({ id: a.id || undefined, name: a.name })),
-        description: form.description.trim() || form.descriptionBn.trim() || '',
-        descriptionBn: form.descriptionBn.trim() || undefined,
-        processingTime: form.processingTime.trim() || form.processingTimeBn.trim() || undefined,
-        processingTimeBn: form.processingTimeBn.trim() || undefined,
+        description: syncedEn.description?.trim() || syncedBn.description?.trim() || '',
+        descriptionBn: syncedBn.description?.trim() || undefined,
+        processingTime: syncedEn.processingTime?.trim() || syncedBn.processingTime?.trim() || undefined,
+        processingTimeBn: syncedBn.processingTime?.trim() || undefined,
         price: Number(form.price),
         pointsAwarded: Number(form.points) || 0,
         currency: 'BDT',
-        requirements: splitReqs(form.requirements),
-        requirementsBn: splitReqs(form.requirementsBn),
+        requirements: splitReqs(syncedEn.requirements),
+        requirementsBn: splitReqs(syncedBn.requirements),
+        coverImageUrl: form.coverImageUrl?.trim() || null,
         isActive: form.isActive,
       };
 
@@ -295,7 +320,21 @@ export default function AdminVisaPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="p-4 font-medium">{v.title}</td>
+                      <td className="p-4 font-medium">
+                        <div className="flex items-center gap-2.5">
+                          {v.coverImageUrl ? (
+                            <img
+                              src={v.coverImageUrl}
+                              alt={v.title}
+                              className="w-10 h-10 rounded-lg object-cover border border-outline-variant flex-shrink-0"
+                            />
+                          ) : null}
+                          <div>
+                            <div className="line-clamp-1">{v.title}</div>
+                            {v.titleBn && <div className="text-xs text-muted font-normal line-clamp-1">{v.titleBn}</div>}
+                          </div>
+                        </div>
+                      </td>
                       <td className="p-4 font-medium">{formatCurrency(v.price)}</td>
                       <td className="p-4 text-on-surface-variant">{v.processingTime || '—'}</td>
                       <td className="p-4 text-on-surface-variant max-w-xs truncate">
@@ -407,7 +446,7 @@ export default function AdminVisaPage() {
         />
 
         {/* Bilingual Tab Switcher */}
-        <div className="flex items-center justify-between border-b border-outline-variant pb-2.5 mb-4">
+        <div className="flex flex-wrap items-center justify-between border-b border-outline-variant pb-2.5 mb-4 gap-2">
           <div className="flex items-center gap-1 bg-surface-container p-1 rounded-lg">
             <button
               type="button"
@@ -430,12 +469,24 @@ export default function AdminVisaPage() {
               }`}
             >
               <span>বাংলা (BN)</span>
-              {form.titleBn ? <span className="w-2 h-2 rounded-full bg-emerald-500" title="Bangla translation present" /> : null}
+              {form.titleBn ? <span className="w-2 h-2 rounded-full bg-emerald-500" title="Bangla translation ready" /> : null}
             </button>
           </div>
-          <span className="text-[11px] text-muted">
-            {formLang === 'en' ? 'English content for EN visitors' : 'বাংলা সংস্করণ (BN সাইটে প্রদর্শিত হবে)'}
-          </span>
+
+          <div className="flex items-center gap-2">
+            {isTranslating ? (
+              <span className="text-[11px] text-accent font-medium animate-pulse flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 animate-spin" /> {translatingMessage || 'Auto-translating...'}
+              </span>
+            ) : form.title && form.titleBn ? (
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                ✓ English & বাংলা synchronized
+              </span>
+            ) : null}
+            <span className="text-[11px] text-muted">
+              {formLang === 'en' ? 'English content (auto-syncs to বাংলা)' : 'বাংলা সংস্করণ (auto-syncs to English)'}
+            </span>
+          </div>
         </div>
 
         {formLang === 'en' ? (
@@ -443,14 +494,22 @@ export default function AdminVisaPage() {
             <FormField label="Title (English)" required>
               <FormInput
                 value={form.title}
-                onChange={(v) => setForm((f) => ({ ...f, title: v }))}
+                onChange={(v) => {
+                  setForm((f) => ({ ...f, title: v }));
+                  debouncedAutoTranslate('title', v, form.titleBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, titleBn: bn })));
+                }}
+                onBlur={() => handleFieldBlur(form.title, form.titleBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, titleBn: bn })))}
                 placeholder="e.g. Malaysia Tourist Visa — Your Dream Malaysia Trip Is Now Easier!"
               />
             </FormField>
             <FormField label="Description (English)" required>
               <FormTextarea
                 value={form.description}
-                onChange={(v) => setForm((f) => ({ ...f, description: v }))}
+                onChange={(v) => {
+                  setForm((f) => ({ ...f, description: v }));
+                  debouncedAutoTranslate('description', v, form.descriptionBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, descriptionBn: bn })));
+                }}
+                onBlur={() => handleFieldBlur(form.description, form.descriptionBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, descriptionBn: bn })))}
                 placeholder="Visa service description in English..."
                 rows={3}
               />
@@ -458,14 +517,22 @@ export default function AdminVisaPage() {
             <FormField label="Processing Time (English)">
               <FormInput
                 value={form.processingTime}
-                onChange={(v) => setForm((f) => ({ ...f, processingTime: v }))}
+                onChange={(v) => {
+                  setForm((f) => ({ ...f, processingTime: v }));
+                  debouncedAutoTranslate('processingTime', v, form.processingTimeBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, processingTimeBn: bn })));
+                }}
+                onBlur={() => handleFieldBlur(form.processingTime, form.processingTimeBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, processingTimeBn: bn })))}
                 placeholder="e.g. 5-10 Days"
               />
             </FormField>
             <FormField label="Requirements / Required Documents (English)">
               <FormTextarea
                 value={form.requirements}
-                onChange={(v) => setForm((f) => ({ ...f, requirements: v }))}
+                onChange={(v) => {
+                  setForm((f) => ({ ...f, requirements: v }));
+                  debouncedAutoTranslate('requirements', v, form.requirementsBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, requirementsBn: bn })));
+                }}
+                onBlur={() => handleFieldBlur(form.requirements, form.requirementsBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, requirementsBn: bn })))}
                 placeholder="e.g. Valid passport (6+ months), 2 Passport Photos, Bank statement (6 months), Trade License, NOC..."
                 rows={3}
               />
@@ -479,14 +546,22 @@ export default function AdminVisaPage() {
             <FormField label="Title (বাংলা)" required>
               <FormInput
                 value={form.titleBn}
-                onChange={(v) => setForm((f) => ({ ...f, titleBn: v }))}
+                onChange={(v) => {
+                  setForm((f) => ({ ...f, titleBn: v }));
+                  debouncedAutoTranslate('title', v, form.title, 'bn', 'en', (en) => setForm((f) => ({ ...f, title: en })));
+                }}
+                onBlur={() => handleFieldBlur(form.titleBn, form.title, 'bn', 'en', (en) => setForm((f) => ({ ...f, title: en })))}
                 placeholder="যেমন: মালয়েশিয়া ট্যুরিস্ট ভিসা — আপনার স্বপ্নের মালয়েশিয়া ভ্রমণ এখন আরও সহজ!"
               />
             </FormField>
             <FormField label="Description (বাংলা)">
               <FormTextarea
                 value={form.descriptionBn}
-                onChange={(v) => setForm((f) => ({ ...f, descriptionBn: v }))}
+                onChange={(v) => {
+                  setForm((f) => ({ ...f, descriptionBn: v }));
+                  debouncedAutoTranslate('description', v, form.description, 'bn', 'en', (en) => setForm((f) => ({ ...f, description: en })));
+                }}
+                onBlur={() => handleFieldBlur(form.descriptionBn, form.description, 'bn', 'en', (en) => setForm((f) => ({ ...f, description: en })))}
                 placeholder="বাংলায় ভিসার বিবরণ লিখুন..."
                 rows={3}
               />
@@ -494,14 +569,22 @@ export default function AdminVisaPage() {
             <FormField label="Processing Time (বাংলা)">
               <FormInput
                 value={form.processingTimeBn}
-                onChange={(v) => setForm((f) => ({ ...f, processingTimeBn: v }))}
+                onChange={(v) => {
+                  setForm((f) => ({ ...f, processingTimeBn: v }));
+                  debouncedAutoTranslate('processingTime', v, form.processingTime, 'bn', 'en', (en) => setForm((f) => ({ ...f, processingTime: en })));
+                }}
+                onBlur={() => handleFieldBlur(form.processingTimeBn, form.processingTime, 'bn', 'en', (en) => setForm((f) => ({ ...f, processingTime: en })))}
                 placeholder="যেমন: ৫-১০ দিন"
               />
             </FormField>
             <FormField label="Requirements / Required Documents (বাংলা)">
               <FormTextarea
                 value={form.requirementsBn}
-                onChange={(v) => setForm((f) => ({ ...f, requirementsBn: v }))}
+                onChange={(v) => {
+                  setForm((f) => ({ ...f, requirementsBn: v }));
+                  debouncedAutoTranslate('requirements', v, form.requirements, 'bn', 'en', (en) => setForm((f) => ({ ...f, requirements: en })));
+                }}
+                onBlur={() => handleFieldBlur(form.requirementsBn, form.requirements, 'bn', 'en', (en) => setForm((f) => ({ ...f, requirements: en })))}
                 placeholder="যেমন: মূল পাসপোর্ট (৬ মাসের মেয়াদ), ২ কপি ছবি, ব্যাংক স্টেটমেন্ট (৬ মাসের)..."
                 rows={3}
               />
@@ -511,6 +594,19 @@ export default function AdminVisaPage() {
             </FormField>
           </>
         )}
+
+        <FormField label="Cover Photo">
+          <ImageUploader
+            value={form.coverImageUrl}
+            onChange={(url) => setForm((f) => ({ ...f, coverImageUrl: url }))}
+            onUpload={async (file) => {
+              const res = await uploadMedia(file, { folder: 'visa' });
+              return { url: (res as any).url };
+            }}
+            placeholder="Upload cover photo or paste an image URL"
+            aspectRatio={16 / 9}
+          />
+        </FormField>
 
         <FormField label="Country name" required>
           <CountryAutocomplete

@@ -2,6 +2,21 @@ import { Injectable, NotFoundException, BadRequestException, OnModuleInit, Logge
 import { PrismaService } from '../../database/prisma.service';
 import { buildSearchOr } from '../../common/utils/search.util';
 
+function normalizeRequirements(input: any): string[] {
+  if (!input) return [];
+  const list = Array.isArray(input) ? input : [input];
+  const items: string[] = [];
+  for (const entry of list) {
+    if (typeof entry !== 'string' || !entry.trim()) continue;
+    const parts = entry
+      .split(/(?:\r?\n)+|[•🔹▪▫‣⁃◆*]+|(?:\s*;\s*)|(?:\s*\|\s*)/u)
+      .map((s) => s.replace(/^[-\s\u2022\u25aa\u25b6\u25c6\u2705\u2714\u2713]+/, '').trim())
+      .filter(Boolean);
+    items.push(...parts);
+  }
+  return Array.from(new Set(items));
+}
+
 @Injectable()
 export class VisaService implements OnModuleInit {
   private readonly logger = new Logger(VisaService.name);
@@ -73,17 +88,14 @@ export class VisaService implements OnModuleInit {
       throw new BadRequestException('A country / destination name is required');
     }
 
-    const requirements = Array.isArray(data.requirements)
-      ? data.requirements
-      : typeof data.requirements === 'string'
-        ? data.requirements.split(/[,\n;]+/).map((s: string) => s.trim()).filter(Boolean)
-        : [];
+    const requirements = normalizeRequirements(data.requirements);
 
     // Ensure a VisaCountry exists so the product is visible on the public /visa
     // landing page and its country page can list this service.
     const destination = await this.prisma.destination.findUnique({ where: { id: destinationId } });
     if (destination) {
-      await this.ensureVisaCountry(tenantId, destination.name, data.price, data.currency, data.isActive, destination.flagUrl, requirements);
+      const countryName = destination.country || destination.name;
+      await this.ensureVisaCountry(tenantId, countryName, data.price, data.currency, data.isActive, destination.flagUrl, requirements);
     }
 
     const additionalIds = await this.resolveAdditionalIds(tenantId, data.additionalDestinationIds, destinationId, data);
@@ -113,11 +125,7 @@ export class VisaService implements OnModuleInit {
     if (!existing) throw new NotFoundException('Visa service not found');
 
     const requirements = data.requirements !== undefined
-      ? (Array.isArray(data.requirements)
-          ? data.requirements
-          : typeof data.requirements === 'string'
-            ? data.requirements.split(/[,\n;]+/).map((s: string) => s.trim()).filter(Boolean)
-            : [])
+      ? normalizeRequirements(data.requirements)
       : undefined;
 
     const { destinationId } = await this.resolveCountry(tenantId, data);
@@ -126,7 +134,8 @@ export class VisaService implements OnModuleInit {
       ? await this.prisma.destination.findUnique({ where: { id: destinationId } })
       : null;
     if (destination) {
-      await this.ensureVisaCountry(tenantId, destination.name, data.price, data.currency, data.isActive, destination.flagUrl, requirements);
+      const countryName = destination.country || destination.name;
+      await this.ensureVisaCountry(tenantId, countryName, data.price, data.currency, data.isActive, destination.flagUrl, requirements);
     }
 
     const finalPrimary = destinationId ?? existing.destinationId;
@@ -219,7 +228,8 @@ export class VisaService implements OnModuleInit {
       if (destinationId && destinationId !== primaryId && !ids.includes(destinationId)) {
         const dest = await this.prisma.destination.findUnique({ where: { id: destinationId } });
         if (dest) {
-          await this.ensureVisaCountry(tenantId, dest.name, data.price, data.currency, data.isActive, dest.flagUrl);
+          const countryName = dest.country || dest.name;
+          await this.ensureVisaCountry(tenantId, countryName, data.price, data.currency, data.isActive, dest.flagUrl);
         }
         ids.push(destinationId);
       }

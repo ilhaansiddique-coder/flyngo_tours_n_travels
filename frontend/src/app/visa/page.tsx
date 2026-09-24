@@ -213,11 +213,14 @@ export default function VisaPage() {
 
                         {Array.isArray(s.requirements) && s.requirements.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2.5">
-                            {s.requirements.slice(0, 2).map((r, i) => (
-                              <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant truncate max-w-[120px]">
-                                {r}
-                              </span>
-                            ))}
+                            {s.requirements
+                              .filter((r) => !/^(?:📄|👔|🏢|🎓|💼|👥|🏛️|✈️)?\s*(?:for\s+[a-z\s]+|required\s+documents|general\s+documents):?$/iu.test(r))
+                              .slice(0, 2)
+                              .map((r, i) => (
+                                <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant truncate max-w-[130px]">
+                                  {r}
+                                </span>
+                              ))}
                             {s.requirements.length > 2 && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant">
                                 +{s.requirements.length - 2}

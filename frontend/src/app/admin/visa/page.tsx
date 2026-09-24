@@ -188,8 +188,8 @@ export default function AdminVisaPage() {
         pointsAwarded: Number(form.points) || 0,
         currency: 'BDT',
         requirements: (typeof form.requirements === 'string' ? form.requirements : '')
-          .split(/[,\n;]+/)
-          .map((r) => r.trim())
+          .split(/(?:\r?\n)+|[•🔹▪▫‣⁃◆*]+|(?:\s*;\s*)|(?:\s*,\s*)/u)
+          .map((r) => r.replace(/^[-\s\u2022\u25aa\u25b6\u25c6\u2705\u2714\u2713]+/, '').trim())
           .filter(Boolean),
         isActive: form.isActive,
       };
@@ -446,13 +446,16 @@ export default function AdminVisaPage() {
             </p>
           </FormField>
         </div>
-        <FormField label="Requirements">
-          <FormInput
+        <FormField label="Requirements / Required Documents">
+          <FormTextarea
             value={form.requirements}
             onChange={(v) => setForm((f) => ({ ...f, requirements: v }))}
-            placeholder="e.g. Passport, Photo, Bank Statement"
+            placeholder="e.g. Valid passport (6+ months), 2 Passport Photos, Bank statement (6 months), Trade License, NOC..."
+            rows={3}
           />
-          <p className="text-xs text-on-surface-variant mt-1">Comma-separated list of requirements</p>
+          <p className="text-xs text-on-surface-variant mt-1">
+            Separate items with commas, newlines, or bullets. You can also paste complete checklists.
+          </p>
         </FormField>
         <div className="mb-4">
           <label className="flex items-center gap-2 cursor-pointer">

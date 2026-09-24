@@ -75,6 +75,107 @@ interface VisaContent {
   keyDestinations?: string[];
 }
 
+interface ParsedRequirementGroup {
+  category?: string;
+  items: string[];
+}
+
+function parseRequirements(raw: string[] | string | undefined): ParsedRequirementGroup[] {
+  if (!raw) return [];
+  const list = Array.isArray(raw) ? raw : [raw];
+  const tokens: string[] = [];
+
+  for (const entry of list) {
+    if (!entry || typeof entry !== 'string') continue;
+    const normalized = entry.replace(
+      /(?:^|\s*)([📄👔🏢🎓💼👥✈️🏛️]\s*(?:For\s+[A-Za-z\s]+|Required|General|Standard)[^:]*:?)/giu,
+      '\n__HEADER__$1\n'
+    );
+    const parts = normalized
+      .split(/(?:\r?\n)+|[•🔹▪▫‣⁃◆*]+|(?:\s*;\s*)|(?:\s*\|\s*)/u)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    tokens.push(...parts);
+  }
+
+  const groups: ParsedRequirementGroup[] = [];
+  let currentGroup: ParsedRequirementGroup = { items: [] };
+
+  for (let token of tokens) {
+    let isHeader = false;
+    if (token.startsWith('__HEADER__')) {
+      isHeader = true;
+      token = token.replace('__HEADER__', '').trim();
+    } else if (
+      /^(?:📄|👔|🏢|🎓|💼|👥|🏛️|✈️)?\s*(?:for\s+[a-z\s]+|required\s+documents|general\s+documents|optional\s+documents):?$/iu.test(
+        token
+      ) ||
+      (token.endsWith(':') && token.length < 50)
+    ) {
+      isHeader = true;
+    }
+
+    if (isHeader) {
+      if (currentGroup.items.length > 0 || currentGroup.category) {
+        groups.push(currentGroup);
+      }
+      currentGroup = {
+        category: token.replace(/:$/, '').trim(),
+        items: [],
+      };
+    } else {
+      const cleaned = token.replace(/^[-\s\u2022\u25aa\u25b6\u25c6\u2705\u2714\u2713]+/, '').trim();
+      if (cleaned) currentGroup.items.push(cleaned);
+    }
+  }
+
+  if (currentGroup.items.length > 0 || currentGroup.category) {
+    groups.push(currentGroup);
+  }
+
+  return groups;
+}
+
+function RequirementsDisplay({ requirements }: { requirements: string[] | string | undefined }) {
+  const groups = parseRequirements(requirements);
+  if (!groups.length) return null;
+
+  return (
+    <div className="mt-4 pt-4 border-t border-hairline/60">
+      <div className="text-xs font-bold text-on-surface uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+        <FileCheck className="w-4 h-4 text-accent" /> Required Documents & Prerequisites:
+      </div>
+
+      <div className="space-y-3">
+        {groups.map((group, gIdx) => (
+          <div
+            key={gIdx}
+            className="rounded-xl p-3.5 border"
+            style={{
+              borderColor: 'var(--color-outline-variant)',
+              backgroundColor: 'color-mix(in oklab, var(--color-surface) 60%, transparent)',
+            }}
+          >
+            {group.category && (
+              <div className="text-xs font-semibold text-accent mb-2 pb-1.5 border-b border-hairline flex items-center gap-1.5">
+                <span>{group.category}</span>
+              </div>
+            )}
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {group.items.map((item, iIdx) => (
+                <li key={iIdx} className="flex items-start gap-2 text-xs sm:text-[13px] text-on-surface-variant leading-snug">
+                  <Check className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ChevronToggle({ open }: { open: boolean }) {
   return <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />;
 }
@@ -131,11 +232,17 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
     [content],
   );
 
-  // Sidebar quick-nav: other active visa countries (excluding current)
-  const otherCountries = useMemo(
-    () => allCountries.filter((c) => c.slug !== slug && c.isActive),
-    [allCountries, slug],
-  );
+  // Sidebar quick-nav: other active visa countries (excluding current & cities)
+  const otherCountries = useMemo(() => {
+    const knownCities = new Set(['bangkok', 'tokyo', 'bali', 'paris', 'phuket', 'rome', 'london']);
+    return allCountries.filter(
+      (c) =>
+        c.slug !== slug &&
+        c.isActive &&
+        !knownCities.has(c.slug.toLowerCase()) &&
+        !knownCities.has(c.name.toLowerCase())
+    );
+  }, [allCountries, slug]);
 
   // Bookable services belonging to this country only
   const countryServices = useMemo(() => {
@@ -157,23 +264,33 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
     });
   }, [services, country]);
 
-  // Combined requirements from country and services
+  // Universal general requirements from country content
   const countryRequirements = useMemo(() => {
-    const set = new Set<string>();
+    const list: string[] = [];
     if (Array.isArray(country?.requirements)) {
       for (const r of country.requirements) {
-        if (r && r.trim()) set.add(r.trim());
+        if (!r) continue;
+        const trimmed = r.trim();
+        // Skip giant pasted emoji blobs from countryRequirements flat display
+        if (trimmed.length > 100 && /[🔹•📄]/.test(trimmed)) continue;
+        if (!list.includes(trimmed)) list.push(trimmed);
       }
     }
-    for (const s of countryServices) {
-      if (Array.isArray(s.requirements)) {
-        for (const r of s.requirements) {
-          if (r && r.trim()) set.add(r.trim());
-        }
-      }
+    return list;
+  }, [country]);
+
+  // Minimum starting price from active bookable services or country fee
+  const startingFee = useMemo(() => {
+    if (countryServices.length > 0) {
+      const prices = countryServices.map((s) => Number(s.price)).filter((p) => !isNaN(p) && p > 0);
+      if (prices.length > 0) return Math.min(...prices);
     }
-    return Array.from(set);
-  }, [country, countryServices]);
+    if (tiers.length > 0) {
+      const tFees = tiers.map((t) => t.flatFee ?? t.male).filter((p): p is number => typeof p === 'number' && p > 0);
+      if (tFees.length > 0) return Math.min(...tFees);
+    }
+    return country?.fee || 0;
+  }, [countryServices, tiers, country?.fee]);
 
   const bookService = (id: string) => {
     setSelectedItem(id);
@@ -225,10 +342,11 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={visaImage(country, 1400, 560)}
-          alt={`${country.name} visa`}
-          className="absolute inset-0 w-full h-full object-cover"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
         <div className="absolute bottom-5 left-5 right-5 flex items-center gap-3">
           {country.flagUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -238,7 +356,9 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
             <div className="text-[10px] uppercase tracking-widest font-bold text-white/70 mb-1">
               Visa from Bangladesh
             </div>
-            <h1 className="text-white text-3xl sm:text-4xl font-display font-bold drop-shadow">{country.name} Visa</h1>
+            <h1 className="text-white text-3xl sm:text-4xl font-display font-bold drop-shadow">
+              {country.name.replace(/\s*visa\s*$/i, '')} Visa
+            </h1>
             {country.region && (
               <p className="text-white/80 text-sm capitalize mt-0.5">{country.region.replace('_', ' ')}</p>
             )}
@@ -256,8 +376,75 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
             </p>
           )}
 
-          {/* ── Pricing tiers ───────────────────────────────────────── */}
-          {tiers.length > 0 && (
+          {/* ── Visa options & fees (Live Services or Tier fallback) ── */}
+          {countryServices.length > 0 ? (
+            <section className="mb-10">
+              <h2 className="text-xl font-display font-semibold text-on-surface mb-1">Available Visa Packages</h2>
+              <p className="text-sm text-on-surface-variant mb-5">
+                All-inclusive processing fees with dedicated visa officer assistance.
+              </p>
+              <div className="space-y-5">
+                {countryServices.map((s) => {
+                  const displayTitle =
+                    s.title.trim().toLowerCase() === country.name.trim().toLowerCase()
+                      ? `${country.name} Tourist Visa`
+                      : s.title;
+
+                  return (
+                    <article
+                      key={s.id}
+                      className="rounded-2xl border glass card-elevated p-5 sm:p-6 transition-all hover:border-accent/40"
+                      style={{ borderColor: 'var(--color-outline-variant)' }}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-display text-lg sm:text-xl font-bold text-on-surface">{displayTitle}</h3>
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
+                            {s.processingTime && (
+                              <Badge variant="cyan" className="gap-1">
+                                <Clock className="w-3 h-3" />
+                                {/days|hours|weeks|months/i.test(s.processingTime)
+                                  ? s.processingTime
+                                  : `${s.processingTime} working days`}
+                              </Badge>
+                            )}
+                            {s.pointsAwarded ? (
+                              <Badge variant="amber" className="gap-1 font-bold">
+                                <Coins className="w-3 h-3" /> +{s.pointsAwarded.toLocaleString()} pts
+                              </Badge>
+                            ) : null}
+                          </div>
+                          {s.description && (
+                            <p className="text-sm text-on-surface-variant mt-3 leading-relaxed whitespace-pre-line">
+                              {s.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-hairline">
+                          <div className="text-left sm:text-right">
+                            <span className="text-[10px] uppercase tracking-wider text-muted font-semibold block">Total fee</span>
+                            <span className="text-2xl sm:text-3xl font-display font-extrabold text-accent">
+                              {fmt(s.price, s.currency)}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => bookService(s.id)}
+                            className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:opacity-95 hover:scale-[1.02] active:scale-[0.98]"
+                            style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-tertiary) 100%)' }}
+                          >
+                            Book now <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <RequirementsDisplay requirements={s.requirements} />
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ) : tiers.length > 0 ? (
             <section className="mb-10">
               <h2 className="text-xl font-display font-semibold text-on-surface mb-1">Visa options &amp; fees</h2>
               <p className="text-sm text-on-surface-variant mb-5">Fees include service charge {tiers.some((t) => t.notes?.join(' ').toLowerCase().includes('insurance')) ? 'and insurance ' : ''}unless stated otherwise.</p>
@@ -324,19 +511,7 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
                         </div>
 
                         {tier.documents && tier.documents.length > 0 && (
-                          <div className="mt-5">
-                            <h4 className="text-sm font-semibold text-on-surface flex items-center gap-2 mb-2">
-                              <FileCheck className="w-4 h-4 text-accent" /> Required documents
-                            </h4>
-                            <ul className="space-y-1.5">
-                              {tier.documents.map((d, i) => (
-                                <li key={i} className="flex items-start gap-2 text-sm text-on-surface-variant">
-                                  <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-500" />
-                                  <span>{d}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+                          <RequirementsDisplay requirements={tier.documents} />
                         )}
 
                         {tier.notes && tier.notes.length > 0 && (
@@ -352,61 +527,7 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
                 })}
               </div>
             </section>
-          )}
-
-          {/* ── Bookable services (from backend) ────────────────────── */}
-          {countryServices.length > 0 && (
-            <section className="mb-10">
-              <h2 className="text-xl font-display font-semibold text-on-surface mb-4">Book online</h2>
-              <div className="space-y-4">
-                {countryServices.map((s) => (
-                  <div key={s.id} className="rounded-2xl border glass p-5" style={{ borderColor: 'var(--color-outline-variant)' }}>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="min-w-0">
-                        <h3 className="font-display text-lg font-semibold text-on-surface">{s.title}</h3>
-                        <p className="text-sm text-muted mt-0.5">
-                          {s.processingTime ? `Processing: ${s.processingTime}` : 'Processing time on request'}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        {s.pointsAwarded ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold text-amber-600 bg-amber-500/10 border border-amber-500/30">
-                            <Coins className="w-3.5 h-3.5" /> +{s.pointsAwarded.toLocaleString()} pts
-                          </span>
-                        ) : null}
-                        <span className="text-2xl font-display font-bold text-on-surface">{fmt(s.price, s.currency)}</span>
-                        <button
-                          onClick={() => bookService(s.id)}
-                          className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-                          style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-tertiary) 100%)' }}
-                        >
-                          Book now <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    {s.description && <p className="text-sm text-on-surface-variant mt-3">{s.description}</p>}
-                    {Array.isArray(s.requirements) && s.requirements.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-hairline">
-                        <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                          <FileCheck className="w-3.5 h-3.5 text-accent" /> Required Documents / Items:
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {s.requirements.map((req, idx) => (
-                            <span
-                              key={idx}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-accent/10 border border-accent/25 text-accent"
-                            >
-                              <Check className="w-3 h-3 text-emerald-500" /> {req}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+          ) : null}
 
           {/* ── How it works ────────────────────────────────────────── */}
           {processSteps.length > 0 && (
@@ -442,20 +563,22 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
             </section>
           )}
 
-          {/* ── Country requirements (flat) ─────────────────────────── */}
+          {/* ── General Embassy Requirements (if applicable) ───────── */}
           {countryRequirements.length > 0 && (
             <section className="mb-10">
               <h2 className="text-xl font-display font-semibold text-on-surface flex items-center gap-2 mb-4">
-                <FileCheck className="w-5 h-5" /> General requirements
+                <FileCheck className="w-5 h-5 text-accent" /> General Embassy Guidelines
               </h2>
-              <ul className="space-y-2">
-                {countryRequirements.map((r, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-500" />
-                    <span className="text-on-surface">{r}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="rounded-2xl border glass p-5" style={{ borderColor: 'var(--color-outline-variant)' }}>
+                <ul className="space-y-2.5">
+                  {countryRequirements.map((r, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-on-surface-variant">
+                      <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-500" />
+                      <span>{r}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </section>
           )}
 
@@ -553,7 +676,7 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
           {/* Quick fee summary */}
           <div className="rounded-2xl border glass p-6" style={{ borderColor: 'var(--color-outline-variant)' }}>
             <div className="text-[10px] uppercase tracking-widest font-bold text-muted">Starting visa fee</div>
-            <div className="text-3xl font-display font-bold my-1 text-on-surface">{fmt(country.fee, country.currency)}</div>
+            <div className="text-3xl font-display font-bold my-1 text-on-surface">{fmt(startingFee, country.currency)}</div>
             <div className="text-xs text-muted mb-4">per applicant, service charges included</div>
             {country.processingTime && (
               <div className="flex items-center gap-2 text-sm mb-3">
@@ -573,7 +696,7 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
                   ? bookService(countryServices[0].id)
                   : router.push(`/contact?subject=${encodeURIComponent(`Visa enquiry — ${country.name}`)}`)
               }
-              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white"
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:opacity-90"
               style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-tertiary) 100%)' }}
             >
               {countryServices.length ? 'Book a visa' : 'Enquire now'}

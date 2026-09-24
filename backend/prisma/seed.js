@@ -440,7 +440,7 @@ async function main() {
     // ===========================================================================
     // 11. HAJJ PACKAGES (BD market — 7 tiers)
     // ===========================================================================
-    const hajjPackages = [
+    const hajjPackages = !SEED_DEMO_CONTENT ? [] : [
         {
             title: 'Hajj Pre-Registration 2027-2028',
             tier: 'pre_registration',
@@ -536,7 +536,7 @@ async function main() {
     // ===========================================================================
     // 12. UMRAH PACKAGES (6 BD-market options)
     // ===========================================================================
-    const umrahPackages = [
+    const umrahPackages = !SEED_DEMO_CONTENT ? [] : [
         {
             title: 'Umrah & Jordan Package - 14 Days',
             durationDays: 14,
@@ -625,7 +625,7 @@ async function main() {
     // fully-dynamic country detail page (pricing tiers, process, terms, facts,
     // FAQ, key destinations). Nothing on that page is hard-coded.
     // ===========================================================================
-    const visaCountries = [
+    const visaCountries = !SEED_DEMO_CONTENT ? [] : [
         {
             name: 'United Arab Emirates (Dubai)',
             flagUrl: 'https://flagcdn.com/w320/ae.png',

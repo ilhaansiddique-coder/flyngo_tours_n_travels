@@ -14,6 +14,9 @@ export interface CountryOption {
   continent?: string | null;
   cityName?: string;
   isCity?: boolean;
+  isAirport?: boolean;
+  iata?: string;
+  airportName?: string;
 }
 
 interface Props {
@@ -35,7 +38,7 @@ export function CountryAutocomplete({
   onChange,
   onQueryChange,
   onBlur,
-  placeholder = 'Type a country or city (e.g. Paris, Tokyo, Dhaka)…',
+  placeholder = 'Type a country, city or airport (e.g. Dubai, DXB, London, LHR)…',
   required,
   className,
   allowCreate = true,
@@ -65,7 +68,7 @@ export function CountryAutocomplete({
         return;
       }
 
-      // 1. Instant local world places search (countries + cities)
+      // 1. Instant local world places search (countries + cities + airports)
       const localMatches: CountryOption[] = searchWorldPlaces(trimmed, 30).map((p) => ({
         name: p.name,
         country: p.country,
@@ -74,6 +77,9 @@ export function CountryAutocomplete({
         slug: p.slug,
         cityName: p.cityName,
         isCity: p.isCity,
+        isAirport: p.isAirport,
+        iata: p.iata,
+        airportName: p.airportName,
       }));
 
       setOptions(localMatches);
@@ -309,7 +315,11 @@ export function CountryAutocomplete({
                   </span>
                 )}
               </div>
-              {o.isCity ? (
+              {o.isAirport ? (
+                <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  ✈️ {o.iata || 'Airport'}
+                </span>
+              ) : o.isCity ? (
                 <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant">
                   City
                 </span>
@@ -351,7 +361,7 @@ export function CountryAutocomplete({
           )}
 
           <div className="sticky bottom-0 border-t border-outline-variant/60 bg-surface-container-low px-3 py-1.5 text-[11px] text-on-surface-variant flex items-center justify-between">
-            <span>🌍 2,190+ countries & cities worldwide</span>
+            <span>🌍 8,290+ countries, cities & airport hubs</span>
             {options.length > 0 && <span>{options.length} {options.length === 1 ? 'match' : 'matches'}</span>}
           </div>
         </div>

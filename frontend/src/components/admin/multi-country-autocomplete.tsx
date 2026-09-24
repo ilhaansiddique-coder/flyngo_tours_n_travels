@@ -75,6 +75,9 @@ export function MultiCountryAutocomplete({
         slug: p.slug,
         cityName: p.cityName,
         isCity: p.isCity,
+        isAirport: p.isAirport,
+        iata: p.iata,
+        airportName: p.airportName,
       }));
 
       setOptions(localMatches.filter((o) => !selectedKeys.has(o.id || o.name?.toLowerCase())));
@@ -343,13 +346,22 @@ export function MultiCountryAutocomplete({
                 )}
                 <div className="flex-1 min-w-0">
                   <span className="font-medium text-on-surface">{o.cityName || o.name}</span>
-                  {o.cityName && o.country && (
+                  {o.isAirport && o.iata && (
+                    <span className="text-xs font-semibold text-primary ml-1.5">
+                      ({o.iata})
+                    </span>
+                  )}
+                  {o.country && (
                     <span className="text-xs text-on-surface-variant ml-1.5 font-normal">
-                      ({o.country})
+                      • {o.country}
                     </span>
                   )}
                 </div>
-                {o.isCity ? (
+                {o.isAirport ? (
+                  <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    ✈️ {o.iata || 'Airport'}
+                  </span>
+                ) : o.isCity ? (
                   <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant">
                     City
                   </span>
@@ -393,7 +405,7 @@ export function MultiCountryAutocomplete({
             )}
 
             <div className="sticky bottom-0 border-t border-outline-variant/60 bg-surface-container-low px-3 py-1.5 text-[11px] text-on-surface-variant flex items-center justify-between">
-              <span>🌍 2,190+ countries & cities worldwide</span>
+              <span>🌍 8,290+ countries, cities & airport hubs</span>
               {filteredAvailable.length > 0 && (
                 <span>{filteredAvailable.length} {filteredAvailable.length === 1 ? 'match' : 'matches'}</span>
               )}

@@ -1,6 +1,6 @@
 {
-  "version": "90940b2a080f96db46dc21ab2d9e67e4f5e86bb6",
-  "shortVersion": "90940b2",
-  "message": "fix(visa): resolve rules-of-hooks violation in VisaContentEditor",
-  "builtAt": "2026-09-24T16:48:25.068Z"
+  "version": "0c5d9c8bf29f86c37802f1075286552f2a1d251b",
+  "shortVersion": "0c5d9c8",
+  "message": "feat(ui): add global places indicator footer and illustrative placeholders to autocompletes",
+  "builtAt": "2026-09-24T17:40:08.162Z"
 }

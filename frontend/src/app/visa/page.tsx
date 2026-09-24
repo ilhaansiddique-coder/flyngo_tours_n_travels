@@ -44,6 +44,32 @@ export default function VisaPage() {
   const [services, setServices] = useState<VisaService[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const EXCLUDED_DEMO_NAMES = useMemo(
+    () =>
+      new Set([
+        'bangkok',
+        'nepal',
+        'singapore',
+        'tokyo',
+        'malaysia',
+        'united arab emirates (dubai)',
+        'united arab emirates',
+        'dubai',
+        'thailand',
+        'australia',
+        'united kingdom (uk)',
+        'united kingdom',
+        'uk',
+      ]),
+    [],
+  );
+
+  const isDemoItem = (name?: string, slug?: string) => {
+    const n = (name || '').toLowerCase().trim();
+    const s = (slug || '').toLowerCase().trim();
+    return EXCLUDED_DEMO_NAMES.has(n) || EXCLUDED_DEMO_NAMES.has(s);
+  };
+
   const shownServices = useMemo(() => {
     if (!q) return services;
     // Tokenised so the autocomplete's "City, Country" label matches.
@@ -60,11 +86,20 @@ export default function VisaPage() {
           getVisaServices(),
         ]);
         const rawCountries = (((countriesRes as any)?.data ?? (countriesRes as any)?.items ?? []) as VisaCountry[]);
-        setCountries(rawCountries.filter((c) => c.isActive !== false));
+        setCountries(
+          rawCountries.filter((c) => c.isActive !== false && !isDemoItem(c.name, c.slug)),
+        );
         const all: VisaService[] = Array.isArray(servicesRes)
           ? (servicesRes as VisaService[])
           : ((servicesRes as any)?.data ?? (servicesRes as any)?.items ?? []);
-        setServices(all.filter((s) => s.isActive !== false));
+        setServices(
+          all.filter(
+            (s) =>
+              s.isActive !== false &&
+              !isDemoItem(s.country?.name, s.country?.slug) &&
+              !isDemoItem(s.destination?.name, s.destination?.slug),
+          ),
+        );
       } catch {
         // empty states handled below
       } finally {
@@ -80,6 +115,27 @@ export default function VisaPage() {
 
   const flagBySlug = Object.fromEntries(countries.map((c) => [c.slug, c.flagUrl]));
   const flagByName = Object.fromEntries(countries.map((c) => [c.name.toLowerCase(), c.flagUrl]));
+
+  // Country quick navigation pills: only show countries that have actual manual services submitted
+  const serviceCountries = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; slug: string; flagUrl?: string }>();
+    for (const s of services) {
+      const c = s.country || s.destination;
+      const name = c?.name;
+      const slug = c?.slug;
+      if (!name || !slug) continue;
+      if (isDemoItem(name, slug)) continue;
+      if (!map.has(slug)) {
+        map.set(slug, {
+          id: c.id || slug,
+          name,
+          slug,
+          flagUrl: (s.country as any)?.flagUrl || flagBySlug[slug] || flagByName[name.toLowerCase()],
+        });
+      }
+    }
+    return Array.from(map.values());
+  }, [services, flagBySlug, flagByName]);
 
   return (
     <main className="min-h-screen surface-page pt-24">
@@ -114,10 +170,10 @@ export default function VisaPage() {
           <p className="text-sm text-muted">Loading visa services…</p>
         ) : (
           <>
-            {/* Country quick navigation */}
-            {countries.length > 0 && (
+            {/* Country quick navigation (only for countries with submitted manual visa services) */}
+            {serviceCountries.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-10">
-                {countries.slice(0, 20).map((c) => (
+                {serviceCountries.slice(0, 20).map((c) => (
                   <Link
                     key={c.id}
                     href={`/visa/${c.slug}`}

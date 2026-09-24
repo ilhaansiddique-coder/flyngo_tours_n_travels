@@ -192,6 +192,32 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
   const [loading, setLoading] = useState(true);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
 
+  const EXCLUDED_DEMO_NAMES = useMemo(
+    () =>
+      new Set([
+        'bangkok',
+        'nepal',
+        'singapore',
+        'tokyo',
+        'malaysia',
+        'united arab emirates (dubai)',
+        'united arab emirates',
+        'dubai',
+        'thailand',
+        'australia',
+        'united kingdom (uk)',
+        'united kingdom',
+        'uk',
+      ]),
+    [],
+  );
+
+  const isDemo = (name?: string, slug?: string) => {
+    const n = (name || '').toLowerCase().trim();
+    const s = (slug || '').toLowerCase().trim();
+    return EXCLUDED_DEMO_NAMES.has(n) || EXCLUDED_DEMO_NAMES.has(s);
+  };
+
   useEffect(() => {
     (async () => {
       try {
@@ -200,14 +226,21 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
           getVisaServices(),
         ]);
         const rawCountries = (((countriesRes as any)?.items ?? (countriesRes as any)?.data ?? []) as VisaCountry[]);
-        const all = rawCountries.filter((c) => c.isActive !== false);
+        const all = rawCountries.filter((c) => c.isActive !== false && !isDemo(c.name, c.slug));
         setAllCountries(all);
         setCountry(all.find((c) => c.slug === slug) ?? null);
 
         const rawServices: VisaService[] = Array.isArray(servicesRes)
           ? (servicesRes as VisaService[])
           : ((servicesRes as any)?.items ?? (servicesRes as any)?.data ?? []);
-        setServices(rawServices.filter((s) => s.isActive !== false));
+        setServices(
+          rawServices.filter(
+            (s) =>
+              s.isActive !== false &&
+              !isDemo(s.country?.name, s.country?.slug) &&
+              !isDemo(s.destination?.name, s.destination?.slug),
+          ),
+        );
       } catch {
         // bubble up nothing — the empty state handles it
       } finally {
@@ -233,15 +266,10 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
     [content],
   );
 
-  // Sidebar quick-nav: other active visa countries (excluding current & cities)
+  // Sidebar quick-nav: other active visa countries (excluding current & demo cities)
   const otherCountries = useMemo(() => {
-    const knownCities = new Set(['bangkok', 'tokyo', 'bali', 'paris', 'phuket', 'rome', 'london']);
     return allCountries.filter(
-      (c) =>
-        c.slug !== slug &&
-        c.isActive &&
-        !knownCities.has(c.slug.toLowerCase()) &&
-        !knownCities.has(c.name.toLowerCase())
+      (c) => c.slug !== slug && c.isActive && !isDemo(c.name, c.slug),
     );
   }, [allCountries, slug]);
 

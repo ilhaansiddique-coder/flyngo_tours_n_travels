@@ -78,12 +78,41 @@ export default function AdminVisaPage() {
     isActive: true,
   });
 
+  const EXCLUDED_DEMO_NAMES = new Set([
+    'bangkok',
+    'nepal',
+    'singapore',
+    'tokyo',
+    'malaysia',
+    'united arab emirates (dubai)',
+    'united arab emirates',
+    'dubai',
+    'thailand',
+    'australia',
+    'united kingdom (uk)',
+    'united kingdom',
+    'uk',
+  ]);
+
+  const isDemo = (name?: string, slug?: string) => {
+    const n = (name || '').toLowerCase().trim();
+    const s = (slug || '').toLowerCase().trim();
+    return EXCLUDED_DEMO_NAMES.has(n) || EXCLUDED_DEMO_NAMES.has(s);
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
       const visaData = await getVisaServices({ all: 'true' });
-      setServices(Array.isArray(visaData) ? visaData : (visaData as any)?.data || []);
+      const raw = Array.isArray(visaData) ? visaData : (visaData as any)?.data || [];
+      setServices(
+        raw.filter(
+          (s: any) =>
+            !isDemo(s.country?.name, s.country?.slug) &&
+            !isDemo(s.destination?.name, s.destination?.slug),
+        ),
+      );
     } catch (err: any) {
       setError(err.message || 'Failed to load visa services');
     } finally {
@@ -101,7 +130,8 @@ export default function AdminVisaPage() {
       try {
         setCountriesLoading(true);
         const data = await getVisaCountries({ all: 'true', limit: '200' });
-        setCountries(Array.isArray(data) ? data : (data as any)?.data || []);
+        const raw = Array.isArray(data) ? data : (data as any)?.data || [];
+        setCountries(raw.filter((c: any) => !isDemo(c.name, c.slug)));
       } catch (err: any) {
         setError(err.message || 'Failed to load visa countries');
       } finally {
@@ -113,7 +143,8 @@ export default function AdminVisaPage() {
   const reloadCountries = async () => {
     try {
       const data = await getVisaCountries({ all: 'true', limit: '200' });
-      setCountries(Array.isArray(data) ? data : (data as any)?.data || []);
+      const raw = Array.isArray(data) ? data : (data as any)?.data || [];
+      setCountries(raw.filter((c: any) => !isDemo(c.name, c.slug)));
     } catch (err: any) {
       setError(err.message || 'Failed to load visa countries');
     }

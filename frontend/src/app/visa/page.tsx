@@ -9,7 +9,7 @@ import { useBookingStore } from '@/stores/booking.store';
 import { visaImage } from '@/lib/entity-image';
 import { useSearchQuery } from '@/hooks/use-search-query';
 import { SearchResultsBanner } from '@/components/ui/search-results-banner';
-import { Briefcase, Clock, FileCheck, ArrowRight, Coins, Globe } from 'lucide-react';
+import { Briefcase, Clock, FileCheck, ArrowRight, Coins, Globe, Eye } from 'lucide-react';
 import { matchesSearch } from '@/lib/search';
 
 interface VisaCountry {
@@ -158,7 +158,8 @@ export default function VisaPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {shownServices.map((s) => {
                   const countryName = s.destination?.name || s.country?.name;
-                  const countrySlug = s.destination?.slug || s.country?.slug;
+                  const countrySlug = s.destination?.slug || s.country?.slug || countries.find((c) => c.name.toLowerCase() === (countryName || '').toLowerCase())?.slug;
+                  const targetViewUrl = countrySlug ? `/visa/${countrySlug}` : `/booking?type=visa&id=${s.id}`;
                   const flag = s.country?.flagUrl || flagBySlug[countrySlug || ''] || flagByName[(countryName || '').toLowerCase()];
                   return (
                     <div
@@ -231,18 +232,29 @@ export default function VisaPage() {
                           </div>
                         )}
 
-                        <div className="mt-4 pt-4 border-t flex items-end justify-between" style={{ borderColor: 'var(--color-outline-variant)' }}>
+                        <div className="mt-auto pt-4 border-t flex flex-col gap-3" style={{ borderColor: 'var(--color-outline-variant)' }}>
                           <div>
                             <div className="text-[10px] uppercase tracking-widest font-bold text-muted">Visa fee</div>
                             <div className="font-display text-2xl font-bold text-on-surface">{fmt(s.price, s.currency)}</div>
                           </div>
-                          <button
-                            onClick={() => bookService(s.id)}
-                            className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-                            style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-tertiary) 100%)' }}
-                          >
-                            Book now <ArrowRight className="w-4 h-4" />
-                          </button>
+
+                          <div className="grid grid-cols-2 gap-2 pt-0.5">
+                            <Link
+                              href={targetViewUrl}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs sm:text-sm font-semibold border border-outline-variant text-on-surface hover:bg-surface-container-high transition hover:border-primary/50"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-muted" />
+                              View
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => bookService(s.id)}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:opacity-90 shadow-sm"
+                              style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-tertiary) 100%)' }}
+                            >
+                              Book Now <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>

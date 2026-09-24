@@ -1,6 +1,6 @@
 {
-  "version": "ac9c56026d9fc14d2377f7d8e76e8c8f9bdebb3a",
-  "shortVersion": "ac9c560",
-  "message": "fix(admin-visa): fix country pages loading, editor crash, search, and error handling",
-  "builtAt": "2026-09-24T15:43:55.166Z"
+  "version": "9024f1bba85759612f4ff662afb9062dc7966fa9",
+  "shortVersion": "9024f1b",
+  "message": "feat(update): place update refresh popover in exact center of screen",
+  "builtAt": "2026-09-24T16:17:25.049Z"
 }

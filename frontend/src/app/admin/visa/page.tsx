@@ -487,7 +487,7 @@ export default function AdminVisaPage() {
           <CountryAutocomplete
             value={form.countryName}
             onQueryChange={(q) => setForm((f) => ({ ...f, countryName: q }))}
-            onChange={(opt) => setForm((f) => ({ ...f, countryName: opt.name }))}
+            onChange={(opt) => setForm((f) => ({ ...f, countryName: opt.country || opt.name }))}
             placeholder="e.g. Indonesia"
           />
           <p className="text-xs text-on-surface-variant mt-1">

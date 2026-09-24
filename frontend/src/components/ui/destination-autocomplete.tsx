@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import type { Destination } from '@/types';
 import { COUNTRY_DIALS, type CountryDial } from '@/lib/country-dial-codes';
+import { searchWorldPlaces } from '@/lib/world-places';
 
 export interface VisaCountryItem {
   id: string;
@@ -111,9 +112,46 @@ export function DestinationAutocomplete({
           );
           setItems([...local, ...extras]);
         } else {
-          const res: any = await getDestinationAutocomplete(q.trim(), 8, filterForPackages);
-          const list = res?.items ?? res?.data ?? res ?? [];
-          setItems(Array.isArray(list) ? list : []);
+          const localPlaces = searchWorldPlaces(q.trim(), 10).map((p) => ({
+            id: p.id || '',
+            name: p.cityName || p.name,
+            country: p.country,
+            continent: p.continent,
+            slug: p.slug,
+            flagUrl: p.flagUrl,
+          } as unknown as Destination));
+
+          if (filterForPackages) {
+            const res: any = await getDestinationAutocomplete(q.trim(), 8, true);
+            const list = res?.items ?? res?.data ?? res ?? [];
+            setItems(Array.isArray(list) ? list : []);
+          } else {
+            let serverList: Destination[] = [];
+            try {
+              const res: any = await getDestinationAutocomplete(q.trim(), 8, false);
+              const list = res?.items ?? res?.data ?? res ?? [];
+              serverList = Array.isArray(list) ? list : [];
+            } catch {
+              // fallback to local
+            }
+            const seen = new Set<string>();
+            const merged: Destination[] = [];
+            for (const s of serverList) {
+              const k = (s.country ? `${s.name}, ${s.country}` : s.name).toLowerCase();
+              if (!seen.has(k)) {
+                seen.add(k);
+                merged.push(s);
+              }
+            }
+            for (const loc of localPlaces) {
+              const k = (loc.country ? `${loc.name}, ${loc.country}` : loc.name).toLowerCase();
+              if (!seen.has(k)) {
+                seen.add(k);
+                merged.push(loc);
+              }
+            }
+            setItems(merged.slice(0, 15));
+          }
         }
         setOpen(true);
       } catch {

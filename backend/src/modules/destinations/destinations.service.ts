@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { ALL_WORLD_PLACES, searchWorldPlaces } from '../../common/data/world-places';
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -36,7 +37,7 @@ export class DestinationsService {
         },
       ];
     }
-    return this.prisma.destination.findMany({
+    const dbResults = await this.prisma.destination.findMany({
       where,
       take: limit,
       orderBy: { name: 'asc' },
@@ -49,14 +50,36 @@ export class DestinationsService {
         continent: true,
       },
     });
+
+    if (toursOnly || !q || !q.trim()) {
+      return dbResults;
+    }
+
+    // Blend in any world places (countries & cities) that match the search query
+    const worldMatches = searchWorldPlaces(q, limit);
+    const seenNames = new Set(dbResults.map((d) => d.name.toLowerCase()));
+    const seenSlugs = new Set(dbResults.map((d) => d.slug.toLowerCase()));
+
+    const combined = [...dbResults];
+    for (const p of worldMatches) {
+      if (combined.length >= limit) break;
+      if (!seenNames.has(p.name.toLowerCase()) && !seenSlugs.has(p.slug.toLowerCase())) {
+        seenNames.add(p.name.toLowerCase());
+        seenSlugs.add(p.slug.toLowerCase());
+        combined.push({
+          id: p.id || '',
+          name: p.name,
+          slug: p.slug,
+          flagUrl: p.flagUrl,
+          country: p.country,
+          continent: p.continent,
+        });
+      }
+    }
+
+    return combined;
   }
 
-  /**
-   * Resolve a country/destination by name. If it already exists (matched on
-   * name or slug, case-insensitive) it is returned; otherwise a new Destination
-   * is auto-created so the typed value is never lost. Used by the autocomplete
-   * "create if not found" behaviour.
-   */
   /**
    * Derive a flag for a destination from its country. Looks for a sibling
    * destination row matching the country name (seeded for every ISO country)
@@ -87,13 +110,35 @@ export class DestinationsService {
     });
     if (existing) return existing;
 
+    // Check if place exists in ALL_WORLD_PLACES
+    const place = ALL_WORLD_PLACES.find(
+      (p) =>
+        p.name.toLowerCase() === trimmed.toLowerCase() ||
+        p.slug === slug ||
+        (p.cityName && p.cityName.toLowerCase() === trimmed.toLowerCase()),
+    );
+
+    const destName = place ? place.name : trimmed;
+    const destSlug = place ? place.slug : slug;
+    const destCountry = place ? place.country : trimmed;
+    const destContinent = place ? place.continent : undefined;
+    const destFlag = place ? place.flagUrl : await this.resolveFlagUrl(tenantId, trimmed);
+
+    // Guard against unique constraint on slug
+    const existingBySlug = await this.prisma.destination.findFirst({
+      where: { tenantId, slug: destSlug },
+      select: { id: true, name: true, slug: true, flagUrl: true, country: true, continent: true },
+    });
+    if (existingBySlug) return existingBySlug;
+
     const created = await this.prisma.destination.create({
       data: {
         tenantId,
-        name: trimmed,
-        slug,
-        country: trimmed,
-        flagUrl: await this.resolveFlagUrl(tenantId, trimmed),
+        name: destName,
+        slug: destSlug,
+        country: destCountry,
+        continent: destContinent,
+        flagUrl: destFlag,
       },
       select: { id: true, name: true, slug: true, flagUrl: true, country: true, continent: true },
     });

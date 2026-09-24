@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaClient, Prisma } from '@prisma/client';
 import * as bcryptjs from 'bcryptjs';
+import { ALL_WORLD_PLACES } from '../src/common/data/world-places';
 
 const prisma = new PrismaClient();
 
@@ -251,46 +252,37 @@ async function main() {
   console.log(`✅ Destinations: ${Object.keys(createdDestinations).length} created`);
 
   // ===========================================================================
-  // 5b. WORLD COUNTRIES (global country autocomplete data)
+  // 5b. ALL WORLD COUNTRIES & CITIES (global autocomplete & storage)
   // ---------------------------------------------------------------------------
-  // Seeds every recognised country (name + continent + flag SVG from the
-  // open flag-icons repo on GitHub) as a Destination so the admin country
-  // autocomplete is pre-populated. Fetched at seed time; if the network is
-  // unavailable the step is skipped rather than failing the whole seed.
+  // Seeds every recognized country and city into Destinations so all countries
+  // and cities are fully stored in the database.
   // ===========================================================================
   try {
-    console.log('🌍 Fetching world countries for the country autocomplete…');
-    const res = await fetch(
-      'https://raw.githubusercontent.com/lukes/ISO-3166-Countries-with-Regional-Codes/master/all/all.json',
-    );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const countries: any[] = await res.json();
-
+    console.log('🌍 Seeding all world countries and cities into destinations…');
     let added = 0;
-    for (const c of countries) {
-      const name = (c.name || '').trim();
-      const iso2 = (c['alpha-2'] || '').trim().toLowerCase();
-      if (!name || !iso2) continue;
-      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      const flagUrl = `https://raw.githubusercontent.com/lipis/flag-icons/main/flags/4x3/${iso2}.svg`;
+    for (const place of ALL_WORLD_PLACES) {
       await prisma.destination.upsert({
-        where: { tenantId_slug: { tenantId: TENANT_ID, slug } },
-        update: { flagUrl, continent: c.region || undefined },
+        where: { tenantId_slug: { tenantId: TENANT_ID, slug: place.slug } },
+        update: {
+          flagUrl: place.flagUrl,
+          continent: place.continent || undefined,
+          country: place.country,
+        },
         create: {
           tenantId: TENANT_ID,
-          name,
-          slug,
-          country: name,
-          continent: c.region || undefined,
-          flagUrl,
+          name: place.name,
+          slug: place.slug,
+          country: place.country,
+          continent: place.continent || undefined,
+          flagUrl: place.flagUrl,
           isFeatured: false,
         },
       });
       added++;
     }
-    console.log(`✅ World countries: ${added} upserted into destinations`);
+    console.log(`✅ World places: ${added} upserted into destinations`);
   } catch (err: any) {
-    console.warn(`⚠️  World country seed skipped: ${err.message}`);
+    console.warn(`⚠️  World places seed failed: ${err.message}`);
   }
 
   // ===========================================================================

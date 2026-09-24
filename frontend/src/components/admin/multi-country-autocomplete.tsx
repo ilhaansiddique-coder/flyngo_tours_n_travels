@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback, useMemo, useId } from 'react'
 import { useApi } from '@/hooks/use-api';
 import { Plus, X } from 'lucide-react';
 import type { CountryOption } from './country-autocomplete';
+import { searchWorldPlaces } from '@/lib/world-places';
 
 interface Props {
   value: CountryOption[];
@@ -59,17 +60,62 @@ export function MultiCountryAutocomplete({
 
   const fetchOptions = useCallback(
     async (q: string) => {
-      if (!q.trim()) {
+      const trimmed = q.trim();
+      if (!trimmed) {
         setOptions([]);
         return;
       }
+
+      // 1. Instant local world places
+      const localMatches: CountryOption[] = searchWorldPlaces(trimmed, 30).map((p) => ({
+        name: p.name,
+        country: p.country,
+        continent: p.continent,
+        flagUrl: p.flagUrl,
+        slug: p.slug,
+        cityName: p.cityName,
+        isCity: p.isCity,
+      }));
+
+      setOptions(localMatches.filter((o) => !selectedKeys.has(o.id || o.name?.toLowerCase())));
+
+      // 2. Query server
       try {
         setLoading(true);
-        const res = await getDestinationAutocomplete(q, 25);
-        const items = (Array.isArray(res) ? res : (res as any)?.data || []) as CountryOption[];
-        setOptions(items.filter((o) => !selectedKeys.has(o.id || o.name?.toLowerCase())));
+        const res = await getDestinationAutocomplete(trimmed, 30);
+        const serverItems = (Array.isArray(res) ? res : (res as any)?.data || []) as CountryOption[];
+
+        if (serverItems.length > 0) {
+          const serverMap = new Map<string, CountryOption>();
+          for (const s of serverItems) {
+            serverMap.set(s.name.toLowerCase(), s);
+            if (s.slug) serverMap.set(s.slug.toLowerCase(), s);
+          }
+
+          const merged: CountryOption[] = [];
+          const seen = new Set<string>();
+
+          for (const s of serverItems) {
+            const key = s.name.toLowerCase();
+            if (!seen.has(key) && !selectedKeys.has(s.id || key)) {
+              seen.add(key);
+              merged.push(s);
+            }
+          }
+
+          for (const loc of localMatches) {
+            const key = loc.name.toLowerCase();
+            if (!seen.has(key) && !selectedKeys.has(loc.id || key)) {
+              seen.add(key);
+              const serverMatch = serverMap.get(key) || (loc.slug ? serverMap.get(loc.slug.toLowerCase()) : undefined);
+              merged.push(serverMatch ? { ...loc, id: serverMatch.id } : loc);
+            }
+          }
+
+          setOptions(merged.slice(0, 30));
+        }
       } catch {
-        setOptions([]);
+        // Keep local matches
       } finally {
         setLoading(false);
       }
@@ -78,10 +124,9 @@ export function MultiCountryAutocomplete({
   );
 
   useEffect(() => {
-    const t = setTimeout(() => fetchOptions(query), 200);
+    const t = setTimeout(() => fetchOptions(query), 150);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  }, [query, fetchOptions]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -103,12 +148,25 @@ export function MultiCountryAutocomplete({
     el?.scrollIntoView({ block: 'nearest' });
   }, [activeIndex]);
 
-  const add = (opt: CountryOption) => {
+  const add = async (opt: CountryOption) => {
     if (selectedKeys.has(opt.id || opt.name?.toLowerCase())) return;
-    onChange([...value, opt]);
     setQuery('');
     setOpen(false);
     setActiveIndex(-1);
+
+    // If option has no id, resolve in backend so it gets saved
+    let optToAdd = opt;
+    if (!opt.id) {
+      try {
+        const resolved = (await resolveDestination(opt.name)) as CountryOption;
+        if (resolved?.id) {
+          optToAdd = { ...opt, id: resolved.id };
+        }
+      } catch {
+        // fallback
+      }
+    }
+    onChange([...value, optToAdd]);
   };
 
   const remove = (opt: CountryOption) => {
@@ -146,7 +204,11 @@ export function MultiCountryAutocomplete({
   const filteredAvailable = options.filter((o) => !disabledKeys.has(o.id || o.name?.toLowerCase()));
   const trimmedQuery = query.trim();
   const exactMatch = filteredAvailable.some((o) => o.name.toLowerCase() === trimmedQuery.toLowerCase());
-  const showCreate = allowCreate && trimmedQuery.length > 0 && !exactMatch && !selectedKeys.has(trimmedQuery.toLowerCase());
+  const showCreate =
+    allowCreate &&
+    trimmedQuery.length > 0 &&
+    !exactMatch &&
+    !selectedKeys.has(trimmedQuery.toLowerCase());
   const listOpen = open && (loading || filteredAvailable.length > 0 || showCreate);
   const listLength = filteredAvailable.length + (showCreate ? 1 : 0);
 
@@ -199,12 +261,17 @@ export function MultiCountryAutocomplete({
               ) : (
                 <span className="h-3.5 w-5 rounded-sm bg-surface-container" />
               )}
-              <span>{opt.name}</span>
+              <span>{opt.cityName || opt.name}</span>
+              {opt.cityName && opt.country && (
+                <span className="text-xs text-on-surface-variant font-normal">
+                  ({opt.country})
+                </span>
+              )}
               <button
                 type="button"
                 title={`Remove ${opt.name}`}
                 aria-label={`Remove ${opt.name}`}
-                className="text-on-surface-variant hover:text-error"
+                className="text-on-surface-variant hover:text-error ml-1"
                 onClick={() => remove(opt)}
               >
                 <X className="w-3.5 h-3.5" />
@@ -242,21 +309,21 @@ export function MultiCountryAutocomplete({
             ref={listRef}
             id={listboxId}
             role="listbox"
-            className="absolute z-50 mt-1 w-full max-h-64 overflow-auto rounded-lg border border-outline-variant bg-surface-container shadow-lg"
+            className="absolute z-50 mt-1 w-full max-h-72 overflow-auto rounded-lg border border-outline-variant bg-surface-container shadow-xl"
           >
             {loading && filteredAvailable.length === 0 && (
-              <div className="px-3 py-2 text-xs text-on-surface-variant">Loading…</div>
+              <div className="px-3 py-2 text-xs text-on-surface-variant">Searching world places…</div>
             )}
 
             {filteredAvailable.map((o, idx) => (
               <button
                 type="button"
-                key={o.id || o.name}
+                key={o.id || `${o.name}-${idx}`}
                 id={`multi-country-option-${idx}`}
                 role="option"
                 aria-selected={activeIndex === idx}
                 data-index={idx}
-                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
+                className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors ${
                   activeIndex === idx
                     ? 'bg-surface-container-high text-on-surface'
                     : 'hover:bg-surface-container-high'
@@ -270,12 +337,30 @@ export function MultiCountryAutocomplete({
               >
                 {o.flagUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={o.flagUrl} alt="" className="h-4 w-6 rounded-sm object-cover" />
+                  <img src={o.flagUrl} alt="" className="h-4 w-6 rounded-sm object-cover flex-shrink-0" />
                 ) : (
-                  <span className="h-4 w-6 rounded-sm bg-surface-container-high" />
+                  <span className="h-4 w-6 rounded-sm bg-surface-container-highest flex-shrink-0" />
                 )}
-                <span className="flex-1">{o.name}</span>
-                {o.continent && <span className="text-xs text-on-surface-variant">{o.continent}</span>}
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-on-surface">{o.cityName || o.name}</span>
+                  {o.cityName && o.country && (
+                    <span className="text-xs text-on-surface-variant ml-1.5 font-normal">
+                      ({o.country})
+                    </span>
+                  )}
+                </div>
+                {o.isCity ? (
+                  <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant">
+                    City
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                    Country
+                  </span>
+                )}
+                {o.continent && (
+                  <span className="text-xs text-on-surface-variant/80 hidden sm:inline">{o.continent}</span>
+                )}
               </button>
             ))}
 
@@ -287,7 +372,9 @@ export function MultiCountryAutocomplete({
                 aria-selected={activeIndex === filteredAvailable.length}
                 data-index={filteredAvailable.length}
                 className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-primary ${
-                  activeIndex === filteredAvailable.length ? 'bg-surface-container-high' : 'hover:bg-surface-container-high'
+                  activeIndex === filteredAvailable.length
+                    ? 'bg-surface-container-high'
+                    : 'hover:bg-surface-container-high'
                 }`}
                 onMouseDown={(e) => {
                   e.preventDefault();

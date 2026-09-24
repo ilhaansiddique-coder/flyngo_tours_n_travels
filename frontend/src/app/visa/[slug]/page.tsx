@@ -279,6 +279,14 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
     return list;
   }, [country]);
 
+  // Check if any active package or tier already displays document requirements
+  const hasPackageRequirements = useMemo(() => {
+    if (countryServices.length > 0) {
+      return countryServices.some((s) => Array.isArray(s.requirements) && s.requirements.length > 0);
+    }
+    return tiers.some((t) => Array.isArray(t.documents) && t.documents.length > 0);
+  }, [countryServices, tiers]);
+
   // Minimum starting price from active bookable services or country fee
   const startingFee = useMemo(() => {
     if (countryServices.length > 0) {
@@ -563,8 +571,8 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
             </section>
           )}
 
-          {/* ── General Embassy Requirements (if applicable) ───────── */}
-          {countryRequirements.length > 0 && (
+          {/* ── General Embassy Guidelines (only if packages lack document requirements) ── */}
+          {!hasPackageRequirements && countryRequirements.length > 0 && (
             <section className="mb-10">
               <h2 className="text-xl font-display font-semibold text-on-surface flex items-center gap-2 mb-4">
                 <FileCheck className="w-5 h-5 text-accent" /> General Embassy Guidelines

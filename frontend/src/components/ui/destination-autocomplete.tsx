@@ -62,7 +62,7 @@ export function DestinationAutocomplete({
   mode = 'city',
   filterForPackages = false,
 }: DestinationAutocompleteProps) {
-  const { getDestinationAutocomplete, getVisaCountries } = useApi();
+  const { getDestinationAutocomplete } = useApi();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<(Destination | VisaCountryItem | CountryDial)[]>([]);
   const [loading, setLoading] = useState(false);
@@ -93,24 +93,9 @@ export function DestinationAutocomplete({
       setLoading(true);
       try {
         if (mode === 'country') {
-          // Always include the full local country list so every country in the world
-          // shows up, regardless of what the admin has added to visa-countries.
+          // Full comprehensive local country list (all 240+ world countries)
           const local = filterCountriesLocal(q);
-          let apiResults: VisaCountryItem[] = [];
-          try {
-            const res: any = await getVisaCountries({ q: q.trim(), limit: '8' });
-            const list = res?.items ?? res?.data ?? res ?? [];
-            apiResults = Array.isArray(list) ? list : [];
-          } catch {
-            // ignore — local list is the source of truth
-          }
-          // Merge: local first (prefix matches), then any extra API matches that
-          // aren't already in the local list by name.
-          const localNames = new Set(local.map((c) => c.name.toLowerCase()));
-          const extras = apiResults.filter(
-            (a) => !localNames.has(a.name.toLowerCase()),
-          );
-          setItems([...local, ...extras]);
+          setItems(local);
         } else {
           const localPlaces = searchWorldPlaces(q.trim(), 10).map((p) => ({
             id: p.id || '',
@@ -164,7 +149,7 @@ export function DestinationAutocomplete({
         setLoading(false);
       }
     },
-    [getDestinationAutocomplete, getVisaCountries, mode, filterForPackages],
+    [getDestinationAutocomplete, mode, filterForPackages],
   );
 
   function handleInput(next: string) {

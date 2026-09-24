@@ -50,7 +50,9 @@ export class VisaService implements OnModuleInit {
     }
     const or = buildSearchOr(q, [
       (term) => ({ title: { contains: term, mode: 'insensitive' } }),
+      (term) => ({ titleBn: { contains: term, mode: 'insensitive' } }),
       (term) => ({ description: { contains: term, mode: 'insensitive' } }),
+      (term) => ({ descriptionBn: { contains: term, mode: 'insensitive' } }),
       (term) => ({ country: { name: { contains: term, mode: 'insensitive' } } }),
       (term) => ({
         additionalDestinations: {
@@ -102,17 +104,22 @@ export class VisaService implements OnModuleInit {
     }
 
     const additionalIds = await this.resolveAdditionalIds(tenantId, data.additionalDestinationIds, destinationId, data);
+    const requirementsBn = data.requirementsBn !== undefined ? normalizeRequirements(data.requirementsBn) : [];
 
     return this.prisma.visaService.create({
       data: {
         tenantId,
         destinationId,
         title: data.title,
+        titleBn: data.titleBn || null,
         description: data.description || '',
-        processingTime: data.processingTime,
+        descriptionBn: data.descriptionBn || null,
+        processingTime: data.processingTime || null,
+        processingTimeBn: data.processingTimeBn || null,
         price: data.price,
         currency: data.currency || 'USD',
         requirements,
+        requirementsBn,
         pointsAwarded: Number(data.pointsAwarded) || 0,
         isActive: data.isActive ?? true,
         additionalDestinations: {
@@ -129,6 +136,9 @@ export class VisaService implements OnModuleInit {
 
     const requirements = data.requirements !== undefined
       ? normalizeRequirements(data.requirements)
+      : undefined;
+    const requirementsBn = data.requirementsBn !== undefined
+      ? normalizeRequirements(data.requirementsBn)
       : undefined;
 
     const { destinationId } = await this.resolveCountry(tenantId, data);
@@ -149,11 +159,15 @@ export class VisaService implements OnModuleInit {
       data: {
         destinationId: finalPrimary,
         title: data.title,
+        titleBn: data.titleBn !== undefined ? data.titleBn : undefined,
         description: data.description,
+        descriptionBn: data.descriptionBn !== undefined ? data.descriptionBn : undefined,
         processingTime: data.processingTime,
+        processingTimeBn: data.processingTimeBn !== undefined ? data.processingTimeBn : undefined,
         price: data.price,
         currency: data.currency,
         requirements,
+        requirementsBn,
         pointsAwarded: data.pointsAwarded === undefined ? undefined : Number(data.pointsAwarded) || 0,
         isActive: data.isActive,
         ...(data.additionalDestinationIds !== undefined

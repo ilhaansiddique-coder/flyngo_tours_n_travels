@@ -437,10 +437,14 @@ model Tour {
   destination   Destination @relation(fields: [destinationId], references: [id])
 
   title       String
+  titleBn     String?  @map("title_bn")
   slug        String
   description String   @db.Text
+  descriptionBn String? @map("description_bn") @db.Text
   highlights  String[] @default([])
+  highlightsBn String[] @default([]) @map("highlights_bn")
   inclusions  String[] @default([])
+  inclusionsBn String[] @default([]) @map("inclusions_bn")
   exclusions  String[] @default([])
   price     Decimal  @db.Decimal(10, 2)
   salePrice Decimal? @map("sale_price") @db.Decimal(10, 2)
@@ -598,11 +602,15 @@ model VisaService {
   country       Destination @relation(fields: [destinationId], references: [id])
 
   title          String
+  titleBn        String?  @map("title_bn")
   description    String   @db.Text
+  descriptionBn  String?  @map("description_bn") @db.Text
   processingTime String?  @map("processing_time")
+  processingTimeBn String? @map("processing_time_bn")
   price          Decimal  @db.Decimal(10, 2)
   currency       String   @default("USD")
   requirements   String[]
+  requirementsBn String[] @default([]) @map("requirements_bn")
 
   isActive Boolean @default(true) @map("is_active")
 
@@ -1323,6 +1331,7 @@ model HajjPackage {
   tenantId String @map("tenant_id")
 
   title         String
+  titleBn       String?  @map("title_bn")
   slug          String
   tier          String // pre_registration, non_shifting, shifting, cheap, five_star, vip, a_grade
   durationDays  Int      @map("duration_days")
@@ -1331,7 +1340,9 @@ model HajjPackage {
   makkahNights  Int      @default(0) @map("makkah_nights")
   madinahNights Int      @default(0) @map("madinah_nights")
   inclusions    String[] @default([])
+  inclusionsBn  String[] @default([]) @map("inclusions_bn")
   highlights    String[] @default([])
+  highlightsBn  String[] @default([]) @map("highlights_bn")
   imageUrl      String?  @map("image_url")
   coverImageUrl String?  @map("cover_image_url")
   isActive      Boolean  @default(true) @map("is_active")
@@ -1387,6 +1398,7 @@ model UmrahPackage {
   tenantId String @map("tenant_id")
 
   title         String
+  titleBn       String?  @map("title_bn")
   slug          String
   durationDays  Int      @map("duration_days")
   price         Decimal  @db.Decimal(10, 2)
@@ -1395,7 +1407,9 @@ model UmrahPackage {
   madinahNights Int      @default(0) @map("madinah_nights")
   addOnCity     String?  @map("add_on_city") // optional combined-trip city e.g. "Qatar", "Turkey", "Jordan"
   inclusions    String[] @default([])
+  inclusionsBn  String[] @default([]) @map("inclusions_bn")
   highlights    String[] @default([])
+  highlightsBn  String[] @default([]) @map("highlights_bn")
   imageUrl      String?  @map("image_url")
   coverImageUrl String?  @map("cover_image_url")
   isActive      Boolean  @default(true) @map("is_active")

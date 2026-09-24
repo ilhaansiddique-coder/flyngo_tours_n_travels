@@ -17,6 +17,7 @@ import {
   FileCheck, Briefcase, Coins, Building2, Landmark, MapPin,
 } from 'lucide-react';
 import { getCountryFlagByName } from '@/lib/world-places';
+import { useLocale } from '@/contexts/locale-context';
 
 interface VisaCountry {
   id: string;
@@ -39,12 +40,16 @@ interface VisaCountry {
 interface VisaService {
   id: string;
   title: string;
+  titleBn?: string;
   price: number;
   currency: string;
   processingTime?: string;
+  processingTimeBn?: string;
   requirements?: string[];
+  requirementsBn?: string[];
   pointsAwarded?: number;
   description?: string;
+  descriptionBn?: string;
   isActive: boolean;
   country?: { id: string; name: string; slug: string };
   destination?: { id: string; name: string; slug: string };
@@ -137,14 +142,14 @@ function parseRequirements(raw: string[] | string | undefined): ParsedRequiremen
   return groups;
 }
 
-function RequirementsDisplay({ requirements }: { requirements: string[] | string | undefined }) {
+function RequirementsDisplay({ requirements, isBn }: { requirements: string[] | string | undefined; isBn?: boolean }) {
   const groups = parseRequirements(requirements);
   if (!groups.length) return null;
 
   return (
     <div className="mt-4 pt-4 border-t border-hairline/60">
       <div className="text-xs font-bold text-on-surface uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-        <FileCheck className="w-4 h-4 text-accent" /> Required Documents & Prerequisites:
+        <FileCheck className="w-4 h-4 text-accent" /> {isBn ? 'প্রয়োজনীয় নথিপত্র এবং শর্তাবলী:' : 'Required Documents & Prerequisites:'}
       </div>
 
       <div className="space-y-3">
@@ -184,6 +189,8 @@ function ChevronToggle({ open }: { open: boolean }) {
 export default function VisaCountryDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const router = useRouter();
+  const { locale } = useLocale();
+  const isBn = locale === 'bn';
   const { getVisaCountries, getVisaServices } = useApi();
   const setSelectedItem = useBookingStore((s) => s.setSelectedItem);
   const fmt = useFormatCurrency();
@@ -271,10 +278,20 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
     [content],
   );
 
-  // Sidebar quick-nav: other active visa countries (excluding current)
+  // Sidebar quick-nav: other active visa countries (only those with active services)
   const otherCountries = useMemo(() => {
-    return allCountries.filter((c) => c.slug !== slug && c.isActive !== false);
-  }, [allCountries, slug]);
+    const knownSlugs = new Set<string>();
+    for (const s of services) {
+      const c = s.country || s.destination;
+      if (c?.slug) knownSlugs.add(c.slug.toLowerCase());
+      for (const ad of (s as any).additionalDestinations || []) {
+        if (ad.destination?.slug) knownSlugs.add(ad.destination.slug.toLowerCase());
+      }
+    }
+    return allCountries.filter(
+      (c) => c.slug !== slug && c.isActive !== false && knownSlugs.has(c.slug.toLowerCase())
+    );
+  }, [allCountries, slug, services]);
 
   // Bookable services belonging to this country only
   const countryServices = useMemo(() => {
@@ -311,13 +328,10 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
     return list;
   }, [country]);
 
-  // Check if any active package or tier already displays document requirements
+  // Check if any active package already displays document requirements
   const hasPackageRequirements = useMemo(() => {
-    if (countryServices.length > 0) {
-      return countryServices.some((s) => Array.isArray(s.requirements) && s.requirements.length > 0);
-    }
-    return tiers.some((t) => Array.isArray(t.documents) && t.documents.length > 0);
-  }, [countryServices, tiers]);
+    return countryServices.some((s) => Array.isArray(s.requirements) && s.requirements.length > 0);
+  }, [countryServices]);
 
   // Minimum starting price from active bookable services or country fee
   const startingFee = useMemo(() => {
@@ -325,12 +339,8 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
       const prices = countryServices.map((s) => Number(s.price)).filter((p) => !isNaN(p) && p > 0);
       if (prices.length > 0) return Math.min(...prices);
     }
-    if (tiers.length > 0) {
-      const tFees = tiers.map((t) => t.flatFee ?? t.male).filter((p): p is number => typeof p === 'number' && p > 0);
-      if (tFees.length > 0) return Math.min(...tFees);
-    }
     return country?.fee || 0;
-  }, [countryServices, tiers, country?.fee]);
+  }, [countryServices, country?.fee]);
 
   const bookService = (id: string) => {
     setSelectedItem(id);
@@ -425,10 +435,14 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
               </p>
               <div className="space-y-5">
                 {countryServices.map((s) => {
+                  const rawTitle = isBn ? (s.titleBn || s.title) : s.title;
                   const displayTitle =
-                    s.title.trim().toLowerCase() === country.name.trim().toLowerCase()
+                    rawTitle.trim().toLowerCase() === country.name.trim().toLowerCase()
                       ? `${country.name} Tourist Visa`
-                      : s.title;
+                      : rawTitle;
+                  const displayTime = isBn ? (s.processingTimeBn || s.processingTime) : s.processingTime;
+                  const displayDesc = isBn ? (s.descriptionBn || s.description) : s.description;
+                  const displayReqs = (isBn && s.requirementsBn && s.requirementsBn.length > 0) ? s.requirementsBn : s.requirements;
 
                   return (
                     <article
@@ -440,12 +454,12 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
                         <div className="min-w-0 flex-1">
                           <h3 className="font-display text-lg sm:text-xl font-bold text-on-surface">{displayTitle}</h3>
                           <div className="flex flex-wrap items-center gap-2 mt-2">
-                            {s.processingTime && (
+                            {displayTime && (
                               <Badge variant="cyan" className="gap-1">
                                 <Clock className="w-3 h-3" />
-                                {/days|hours|weeks|months/i.test(s.processingTime)
-                                  ? s.processingTime
-                                  : `${s.processingTime} working days`}
+                                {/days|hours|weeks|months|দিন|ঘণ্টা|সপ্তাহ|মাস/i.test(displayTime)
+                                  ? displayTime
+                                  : `${displayTime} working days`}
                               </Badge>
                             )}
                             {s.pointsAwarded ? (
@@ -454,16 +468,16 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
                               </Badge>
                             ) : null}
                           </div>
-                          {s.description && (
+                          {displayDesc && (
                             <p className="text-sm text-on-surface-variant mt-3 leading-relaxed whitespace-pre-line">
-                              {s.description}
+                              {displayDesc}
                             </p>
                           )}
                         </div>
 
                         <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-hairline">
                           <div className="text-left sm:text-right">
-                            <span className="text-[10px] uppercase tracking-wider text-muted font-semibold block">Total fee</span>
+                            <span className="text-[10px] uppercase tracking-wider text-muted font-semibold block">{isBn ? 'মোট ফি' : 'Total fee'}</span>
                             <span className="text-2xl sm:text-3xl font-display font-extrabold text-accent">
                               {fmt(s.price, s.currency)}
                             </span>
@@ -473,101 +487,35 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
                             className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:opacity-95 hover:scale-[1.02] active:scale-[0.98]"
                             style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-tertiary) 100%)' }}
                           >
-                            Book now <ArrowRight className="w-4 h-4" />
+                            {isBn ? 'বুক করুন' : 'Book now'} <ArrowRight className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
 
-                      <RequirementsDisplay requirements={s.requirements} />
+                      <RequirementsDisplay requirements={displayReqs} isBn={isBn} />
                     </article>
                   );
                 })}
               </div>
             </section>
-          ) : tiers.length > 0 ? (
-            <section className="mb-10">
-              <h2 className="text-xl font-display font-semibold text-on-surface mb-1">Visa options &amp; fees</h2>
-              <p className="text-sm text-on-surface-variant mb-5">Fees include service charge {tiers.some((t) => t.notes?.join(' ').toLowerCase().includes('insurance')) ? 'and insurance ' : ''}unless stated otherwise.</p>
-              <div className="space-y-5">
-                {tiers.map((tier) => {
-                  const hasRowFees = tier.male != null || tier.female != null || tier.child != null;
-                  return (
-                    <article key={tier.id} className="rounded-2xl border glass card-elevated overflow-hidden" style={{ borderColor: 'var(--color-outline-variant)' }}>
-                      <div className="p-5 sm:p-6">
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                          <div className="min-w-0">
-                            <h3 className="font-display text-lg font-semibold text-on-surface">{tier.title}</h3>
-                            {tier.subtitle && <p className="text-sm text-on-surface-variant mt-0.5">{tier.subtitle}</p>}
-                            <div className="flex flex-wrap gap-2 mt-3">
-                              {tier.stay && <Badge variant="cyan">{tier.stay}</Badge>}
-                              {tier.entry && <Badge variant="default">{tier.entry}</Badge>}
-                              {tier.validity && <Badge variant="amber">Valid {tier.validity}</Badge>}
-                            </div>
-                          </div>
-                          <div className="flex-shrink-0 sm:text-right">
-                            {tier.flatFee != null ? (
-                              <div className="price-tag rounded-xl px-4 py-2">
-                                <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold block">From</span>
-                                <p className="text-2xl font-display font-bold text-accent">{say(tier.flatFee)}</p>
-                              </div>
-                            ) : hasRowFees ? null : null}
-                          </div>
-                        </div>
-
-                        {hasRowFees && (
-                          <div className="mt-5 overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--color-outline-variant)' }}>
-                            <table className="w-full text-sm min-w-[280px]">
-                              <thead>
-                                <tr className="text-left text-xs uppercase tracking-wider text-on-surface-variant" style={{ backgroundColor: 'color-mix(in oklab, var(--color-primary) 8%, transparent)' }}>
-                                  <th className="px-4 py-2.5 font-semibold">Adult male</th>
-                                  <th className="px-4 py-2.5 font-semibold">Adult female</th>
-                                  <th className="px-4 py-2.5 font-semibold">Child (&lt;12)</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr className="border-t" style={{ borderColor: 'var(--color-outline-variant)' }}>
-                                  <td className="px-4 py-3 font-display font-bold text-on-surface">{tier.male != null ? say(tier.male) : '—'}</td>
-                                  <td className="px-4 py-3 font-display font-bold text-on-surface">{tier.female != null ? say(tier.female) : '—'}</td>
-                                  <td className="px-4 py-3 font-display font-bold text-on-surface">{tier.child != null ? say(tier.child) : '—'}</td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-
-                        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-on-surface-variant">
-                          {tier.processingTime && (
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-accent" />
-                              <span>Processing: <strong className="text-on-surface">{tier.processingTime}</strong></span>
-                            </div>
-                          )}
-                          {tier.validity && (
-                            <div className="flex items-center gap-2">
-                              <Briefcase className="w-4 h-4 text-accent" />
-                              <span>Valid for: <strong className="text-on-surface">{tier.validity}</strong></span>
-                            </div>
-                          )}
-                        </div>
-
-                        {tier.documents && tier.documents.length > 0 && (
-                          <RequirementsDisplay requirements={tier.documents} />
-                        )}
-
-                        {tier.notes && tier.notes.length > 0 && (
-                          <div className="mt-4 p-3 rounded-xl text-xs leading-relaxed" style={{ backgroundColor: 'color-mix(in oklab, var(--color-amber, #f59e0b) 8%, transparent)', border: '1px solid color-mix(in oklab, var(--color-amber, #f59e0b) 30%, transparent)' }}>
-                            {tier.notes.map((n, i) => (
-                              <p key={i} className={i > 0 ? 'mt-1' : ''}>• {n}</p>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </section>
-          ) : null}
+          ) : (
+            <div className="rounded-2xl border glass p-8 text-center mb-10" style={{ borderColor: 'var(--color-outline-variant)' }}>
+              <FileCheck className="w-10 h-10 mx-auto mb-3 opacity-40 text-muted" />
+              <p className="text-base font-semibold text-on-surface">
+                {isBn ? 'এই দেশের জন্য বর্তমানে কোনো সক্রিয় ভিসা প্যাকেজ নেই' : 'No visa packages currently listed for this country'}
+              </p>
+              <p className="text-xs text-on-surface-variant mt-1 mb-4">
+                {isBn ? 'ভিসা তথ্য ও সহায়তার জন্য আমাদের টিমের সাথে সরাসরি যোগাযোগ করুন।' : 'Contact our visa assistance desk for personalized requirements and guidance.'}
+              </p>
+              <Link
+                href="/visa"
+                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-white"
+                style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-tertiary) 100%)' }}
+              >
+                {isBn ? 'সব ভিসা প্যাকেজ ব্রাউজ করুন' : 'Browse all visa services'}
+              </Link>
+            </div>
+          )}
 
           {/* ── How it works ────────────────────────────────────────── */}
           {processSteps.length > 0 && (

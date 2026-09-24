@@ -15,20 +15,25 @@ import { countryImage } from '@/lib/country-image';
 import { Plus, Pencil, Trash2, Search, Coins, Loader2, Share2 } from 'lucide-react';
 import { ShareMenu } from '@/components/shared/share-menu';
 import { AutoTranslatePanel } from '@/components/admin/auto-translate-panel';
+import { hasBanglaChars } from '@/lib/translations/translator';
 import { toast } from 'sonner';
 
 interface VisaService {
   id: string;
   slug?: string;
   title: string;
+  titleBn?: string;
   country?: { id: string; name: string; slug?: string };
   destinationId?: string;
   destination?: { id: string; name: string };
   additionalDestinations?: { destination?: { id: string; name: string; flagUrl?: string | null } }[];
   description?: string;
+  descriptionBn?: string;
   price: number;
   processingTime?: string;
+  processingTimeBn?: string;
   requirements?: string[];
+  requirementsBn?: string[];
   pointsAwarded?: number;
   isActive: boolean;
 }
@@ -54,14 +59,19 @@ export default function AdminVisaPage() {
 
   const [additionalNames, setAdditionalNames] = useState<CountryOption[]>([]);
 
+  const [formLang, setFormLang] = useState<'en' | 'bn'>('en');
   const [form, setForm] = useState({
     title: '',
+    titleBn: '',
     countryName: '',
     description: '',
+    descriptionBn: '',
     processingTime: '',
+    processingTimeBn: '',
     price: '',
     points: '',
     requirements: '',
+    requirementsBn: '',
     isActive: true,
   });
 
@@ -88,21 +98,41 @@ export default function AdminVisaPage() {
 
   const openAddModal = () => {
     setEditItem(null);
-    setForm({ title: '', countryName: '', description: '', processingTime: '', price: '', points: '', requirements: '', isActive: true });
+    setFormLang('en');
+    setForm({
+      title: '',
+      titleBn: '',
+      countryName: '',
+      description: '',
+      descriptionBn: '',
+      processingTime: '',
+      processingTimeBn: '',
+      price: '',
+      points: '',
+      requirements: '',
+      requirementsBn: '',
+      isActive: true,
+    });
     setAdditionalNames([]);
     setModalOpen(true);
   };
 
   const openEditModal = (item: VisaService) => {
     setEditItem(item);
+    setFormLang('en');
+    const isTitleBangla = hasBanglaChars(item.title);
     setForm({
-      title: item.title || '',
+      title: isTitleBangla && !item.titleBn ? '' : item.title || '',
+      titleBn: item.titleBn || (isTitleBangla ? item.title : ''),
       countryName: item.destination?.name || item.country?.name || '',
       description: item.description || '',
+      descriptionBn: item.descriptionBn || '',
       processingTime: item.processingTime || '',
+      processingTimeBn: item.processingTimeBn || '',
       price: String(item.price || ''),
       points: String(item.pointsAwarded ?? ''),
-      requirements: Array.isArray(item.requirements) ? item.requirements.join(', ') : (item.requirements || ''),
+      requirements: Array.isArray(item.requirements) ? item.requirements.join('\n') : (item.requirements || ''),
+      requirementsBn: Array.isArray(item.requirementsBn) ? item.requirementsBn.join('\n') : (item.requirementsBn || ''),
       isActive: item.isActive,
     });
     setAdditionalNames(
@@ -114,22 +144,30 @@ export default function AdminVisaPage() {
   };
 
   const handleSave = async () => {
-    if (!form.title.trim() || !form.countryName.trim() || !form.description.trim() || !form.price) return;
+    const finalTitle = form.title.trim() || form.titleBn.trim();
+    if (!finalTitle || !form.countryName.trim() || !form.price) return;
     try {
       setSubmitting(true);
+      const splitReqs = (str: string) =>
+        (typeof str === 'string' ? str : '')
+          .split(/(?:\r?\n)+|[•🔹▪▫‣⁃◆*]+|(?:\s*;\s*)|(?:\s*,\s*)/u)
+          .map((r) => r.replace(/^[-\s\u2022\u25aa\u25b6\u25c6\u2705\u2714\u2713]+/, '').trim())
+          .filter(Boolean);
+
       const body: any = {
-        title: form.title.trim(),
+        title: form.title.trim() || form.titleBn.trim(),
+        titleBn: form.titleBn.trim() || undefined,
         countryName: form.countryName.trim(),
         additionalDestinationIds: additionalNames.map((a) => ({ id: a.id || undefined, name: a.name })),
-        description: form.description.trim(),
-        processingTime: form.processingTime.trim(),
+        description: form.description.trim() || form.descriptionBn.trim() || '',
+        descriptionBn: form.descriptionBn.trim() || undefined,
+        processingTime: form.processingTime.trim() || form.processingTimeBn.trim() || undefined,
+        processingTimeBn: form.processingTimeBn.trim() || undefined,
         price: Number(form.price),
         pointsAwarded: Number(form.points) || 0,
         currency: 'BDT',
-        requirements: (typeof form.requirements === 'string' ? form.requirements : '')
-          .split(/(?:\r?\n)+|[•🔹▪▫‣⁃◆*]+|(?:\s*;\s*)|(?:\s*,\s*)/u)
-          .map((r) => r.replace(/^[-\s\u2022\u25aa\u25b6\u25c6\u2705\u2714\u2713]+/, '').trim())
-          .filter(Boolean),
+        requirements: splitReqs(form.requirements),
+        requirementsBn: splitReqs(form.requirementsBn),
         isActive: form.isActive,
       };
 
@@ -343,10 +381,10 @@ export default function AdminVisaPage() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editItem ? 'Edit Visa Service' : 'Add Visa Service'}>
         <AutoTranslatePanel
           sourceFields={{
-            title: form.title,
-            description: form.description,
-            processingTime: form.processingTime,
-            requirements: form.requirements,
+            title: form.title || form.titleBn,
+            description: form.description || form.descriptionBn,
+            processingTime: form.processingTime || form.processingTimeBn,
+            requirements: form.requirements || form.requirementsBn,
           }}
           fieldLabels={{
             title: 'Visa Title',
@@ -358,23 +396,128 @@ export default function AdminVisaPage() {
           onApplyBangla={(translated) => {
             setForm((f) => ({
               ...f,
-              title: translated.title || f.title,
-              description: translated.description || f.description,
-              processingTime: translated.processingTime || f.processingTime,
-              requirements: translated.requirements || f.requirements,
+              titleBn: translated.title || f.titleBn,
+              descriptionBn: translated.description || f.descriptionBn,
+              processingTimeBn: translated.processingTime || f.processingTimeBn,
+              requirementsBn: translated.requirements || f.requirementsBn,
             }));
+            setFormLang('bn');
+            toast.success('Bangla translation applied to বাংলা tab! English version preserved.');
           }}
         />
 
-        <FormField label="Title" required>
-          <FormInput value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} placeholder="e.g. Indonesia Tourist Visa" />
-        </FormField>
+        {/* Bilingual Tab Switcher */}
+        <div className="flex items-center justify-between border-b border-outline-variant pb-2.5 mb-4">
+          <div className="flex items-center gap-1 bg-surface-container p-1 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setFormLang('en')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                formLang === 'en'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              English (EN)
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormLang('bn')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                formLang === 'bn'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <span>বাংলা (BN)</span>
+              {form.titleBn ? <span className="w-2 h-2 rounded-full bg-emerald-500" title="Bangla translation present" /> : null}
+            </button>
+          </div>
+          <span className="text-[11px] text-muted">
+            {formLang === 'en' ? 'English content for EN visitors' : 'বাংলা সংস্করণ (BN সাইটে প্রদর্শিত হবে)'}
+          </span>
+        </div>
+
+        {formLang === 'en' ? (
+          <>
+            <FormField label="Title (English)" required>
+              <FormInput
+                value={form.title}
+                onChange={(v) => setForm((f) => ({ ...f, title: v }))}
+                placeholder="e.g. Malaysia Tourist Visa — Your Dream Malaysia Trip Is Now Easier!"
+              />
+            </FormField>
+            <FormField label="Description (English)" required>
+              <FormTextarea
+                value={form.description}
+                onChange={(v) => setForm((f) => ({ ...f, description: v }))}
+                placeholder="Visa service description in English..."
+                rows={3}
+              />
+            </FormField>
+            <FormField label="Processing Time (English)">
+              <FormInput
+                value={form.processingTime}
+                onChange={(v) => setForm((f) => ({ ...f, processingTime: v }))}
+                placeholder="e.g. 5-10 Days"
+              />
+            </FormField>
+            <FormField label="Requirements / Required Documents (English)">
+              <FormTextarea
+                value={form.requirements}
+                onChange={(v) => setForm((f) => ({ ...f, requirements: v }))}
+                placeholder="e.g. Valid passport (6+ months), 2 Passport Photos, Bank statement (6 months), Trade License, NOC..."
+                rows={3}
+              />
+              <p className="text-xs text-on-surface-variant mt-1">
+                Separate items with commas, newlines, or bullets.
+              </p>
+            </FormField>
+          </>
+        ) : (
+          <>
+            <FormField label="Title (বাংলা)" required>
+              <FormInput
+                value={form.titleBn}
+                onChange={(v) => setForm((f) => ({ ...f, titleBn: v }))}
+                placeholder="যেমন: মালয়েশিয়া ট্যুরিস্ট ভিসা — আপনার স্বপ্নের মালয়েশিয়া ভ্রমণ এখন আরও সহজ!"
+              />
+            </FormField>
+            <FormField label="Description (বাংলা)">
+              <FormTextarea
+                value={form.descriptionBn}
+                onChange={(v) => setForm((f) => ({ ...f, descriptionBn: v }))}
+                placeholder="বাংলায় ভিসার বিবরণ লিখুন..."
+                rows={3}
+              />
+            </FormField>
+            <FormField label="Processing Time (বাংলা)">
+              <FormInput
+                value={form.processingTimeBn}
+                onChange={(v) => setForm((f) => ({ ...f, processingTimeBn: v }))}
+                placeholder="যেমন: ৫-১০ দিন"
+              />
+            </FormField>
+            <FormField label="Requirements / Required Documents (বাংলা)">
+              <FormTextarea
+                value={form.requirementsBn}
+                onChange={(v) => setForm((f) => ({ ...f, requirementsBn: v }))}
+                placeholder="যেমন: মূল পাসপোর্ট (৬ মাসের মেয়াদ), ২ কপি ছবি, ব্যাংক স্টেটমেন্ট (৬ মাসের)..."
+                rows={3}
+              />
+              <p className="text-xs text-on-surface-variant mt-1">
+                প্রতিটি আবশ্যিক নথি কমা, নতুন লাইন বা বুলেট দিয়ে আলাদা করুন।
+              </p>
+            </FormField>
+          </>
+        )}
+
         <FormField label="Country name" required>
           <CountryAutocomplete
             value={form.countryName}
             onQueryChange={(q) => setForm((f) => ({ ...f, countryName: q }))}
             onChange={(opt) => setForm((f) => ({ ...f, countryName: opt.country || opt.name }))}
-            placeholder="e.g. Indonesia"
+            placeholder="e.g. Malaysia"
           />
           <p className="text-xs text-on-surface-variant mt-1">
             Pick from the list or type a new country — it will be created automatically and show up next time.
@@ -390,19 +533,8 @@ export default function AdminVisaPage() {
             Optional. Add multiple countries this visa service covers.
           </p>
         </FormField>
-        <FormField label="Description" required>
-          <FormTextarea
-            value={form.description}
-            onChange={(v) => setForm((f) => ({ ...f, description: v }))}
-            placeholder="Visa service description..."
-            rows={3}
-          />
-        </FormField>
-        <FormField label="Processing Time">
-          <FormInput value={form.processingTime} onChange={(v) => setForm((f) => ({ ...f, processingTime: v }))} placeholder="e.g. 3-5 days" />
-        </FormField>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField label="Price" required>
+          <FormField label="Price (BDT)" required>
             <FormInput value={form.price} onChange={(v) => setForm((f) => ({ ...f, price: v }))} type="number" placeholder="0" />
           </FormField>
           <FormField label="Points awarded" required>
@@ -412,17 +544,6 @@ export default function AdminVisaPage() {
             </p>
           </FormField>
         </div>
-        <FormField label="Requirements / Required Documents">
-          <FormTextarea
-            value={form.requirements}
-            onChange={(v) => setForm((f) => ({ ...f, requirements: v }))}
-            placeholder="e.g. Valid passport (6+ months), 2 Passport Photos, Bank statement (6 months), Trade License, NOC..."
-            rows={3}
-          />
-          <p className="text-xs text-on-surface-variant mt-1">
-            Separate items with commas, newlines, or bullets. You can also paste complete checklists.
-          </p>
-        </FormField>
         <div className="mb-4">
           <label className="flex items-center gap-2 cursor-pointer">
             <input

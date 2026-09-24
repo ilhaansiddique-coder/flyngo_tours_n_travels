@@ -13,6 +13,8 @@ import { Briefcase, Clock, FileCheck, ArrowRight, Coins, Globe, Eye } from 'luci
 import { matchesSearch } from '@/lib/search';
 import { getCountryFlagByName } from '@/lib/world-places';
 
+import { useLocale } from '@/contexts/locale-context';
+
 interface VisaCountry {
   id: string;
   name: string;
@@ -24,11 +26,15 @@ interface VisaCountry {
 interface VisaService {
   id: string;
   title: string;
+  titleBn?: string;
   description?: string;
+  descriptionBn?: string;
   price: number;
   currency: string;
   processingTime?: string;
+  processingTimeBn?: string;
   requirements?: string[];
+  requirementsBn?: string[];
   pointsAwarded?: number;
   isActive: boolean;
   country?: { id: string; name: string; slug: string; flagUrl?: string };
@@ -37,6 +43,8 @@ interface VisaService {
 
 export default function VisaPage() {
   const router = useRouter();
+  const { locale, t } = useLocale();
+  const isBn = locale === 'bn';
   const { getVisaCountries, getVisaServices } = useApi();
   const setSelectedItem = useBookingStore((s) => s.setSelectedItem);
   const fmt = useFormatCurrency();
@@ -50,7 +58,10 @@ export default function VisaPage() {
     // Tokenised so the autocomplete's "City, Country" label matches.
     return services.filter((s: any) => {
       const extraNames = (s.additionalDestinations || []).map((ad: any) => ad.destination?.name);
-      return matchesSearch([s.title, s.description, s.destination?.name, s.country?.name, ...extraNames], q);
+      return matchesSearch(
+        [s.title, s.titleBn, s.description, s.descriptionBn, s.destination?.name, s.country?.name, ...extraNames],
+        q,
+      );
     });
   }, [services, q]);
 
@@ -240,32 +251,44 @@ export default function VisaPage() {
                             <span />
                           )}
                         </div>
-                        <h3 className="font-display text-lg font-semibold text-on-surface leading-snug">{s.title}</h3>
+                        {(() => {
+                          const displayTitle = isBn ? (s.titleBn || s.title) : s.title;
+                          const displayProcessingTime = isBn
+                            ? (s.processingTimeBn || (s.processingTime ? s.processingTime.replace(/\bDays\b/gi, 'দিন').replace(/\bDay\b/gi, 'দিন').replace(/\bHours\b/gi, 'ঘণ্টা').replace(/\bWeeks\b/gi, 'সপ্তাহ') : ''))
+                            : s.processingTime;
+                          const reqs = (isBn && s.requirementsBn && s.requirementsBn.length > 0) ? s.requirementsBn : (s.requirements || []);
 
-                        {s.processingTime && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted mt-2">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>{s.processingTime}</span>
-                          </div>
-                        )}
+                          return (
+                            <>
+                              <h3 className="font-display text-lg font-semibold text-on-surface leading-snug">{displayTitle}</h3>
 
-                        {Array.isArray(s.requirements) && s.requirements.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2.5">
-                            {s.requirements
-                              .filter((r) => !/^(?:📄|👔|🏢|🎓|💼|👥|🏛️|✈️)?\s*(?:for\s+[a-z\s]+|required\s+documents|general\s+documents):?$/iu.test(r))
-                              .slice(0, 2)
-                              .map((r, i) => (
-                                <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant truncate max-w-[130px]">
-                                  {r}
-                                </span>
-                              ))}
-                            {s.requirements.length > 2 && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant">
-                                +{s.requirements.length - 2}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                              {displayProcessingTime && (
+                                <div className="flex items-center gap-1.5 text-xs text-muted mt-2">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  <span>{displayProcessingTime}</span>
+                                </div>
+                              )}
+
+                              {Array.isArray(reqs) && reqs.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2.5">
+                                  {reqs
+                                    .filter((r) => !/^(?:📄|👔|🏢|🎓|💼|👥|🏛️|✈️)?\s*(?:for\s+[a-z\s]+|required\s+documents|general\s+documents):?$/iu.test(r))
+                                    .slice(0, 2)
+                                    .map((r, i) => (
+                                      <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant truncate max-w-[130px]">
+                                        {r}
+                                      </span>
+                                    ))}
+                                  {reqs.length > 2 && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant">
+                                      +{reqs.length - 2}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
 
                         <div className="mt-auto pt-4 flex flex-col gap-3">
                           <div>

@@ -119,7 +119,13 @@ export default function TransportPage() {
               {shown.length === 0 ? (
                 <div className="text-center py-20">
                   <p className="text-muted text-lg">
-                    {q ? <>No transport match &ldquo;{q}&rdquo;.</> : <>No transport match these filters.</>}
+                    {q ? (
+                      <>No transport match &ldquo;{q}&rdquo;.</>
+                    ) : hasFilters ? (
+                      <>No transport match these filters.</>
+                    ) : (
+                      <>No transport services available yet.</>
+                    )}
                   </p>
                 </div>
               ) : (

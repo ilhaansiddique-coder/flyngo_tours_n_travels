@@ -51,7 +51,8 @@ export class MediaService {
     private readonly config: ConfigService,
   ) {
     this.uploadDir = path.resolve(process.cwd(), 'uploads');
-    this.publicBaseUrl = this.config.getOrNull('PUBLIC_UPLOAD_BASE_URL') || '/api/v1/uploads';
+    const apiBase = (this.config.getOrNull('API_PUBLIC_URL') || this.config.getOrNull('BACKEND_URL'))?.replace(/\/+$/, '');
+    this.publicBaseUrl = this.config.getOrNull('PUBLIC_UPLOAD_BASE_URL') || (apiBase ? `${apiBase}/api/v1/uploads` : '/api/v1/uploads');
   }
 
   get mode(): 'r2' | 'local' {

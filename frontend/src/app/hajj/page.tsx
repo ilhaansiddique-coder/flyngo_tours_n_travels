@@ -72,7 +72,10 @@ export default function HajjPage() {
 
   useEffect(() => {
     getHajjPackages({ limit: '50' })
-      .then((r: any) => setPackages(r?.data ?? r?.items ?? []))
+      .then((r: any) => {
+        const list = r?.data ?? r?.items ?? [];
+        setPackages(list.filter((p: any) => p.isActive !== false));
+      })
       .finally(() => setLoading(false));
   }, [getHajjPackages]);
 

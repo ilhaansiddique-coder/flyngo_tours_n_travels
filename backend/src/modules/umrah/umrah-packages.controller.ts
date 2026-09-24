@@ -18,7 +18,8 @@ export class UmrahPackagesController {
     @Query() pagination: PaginationDto,
     @Query('q') q?: string,
   ) {
-    return this.service.findAll(tenantId, pagination.page, pagination.limit, q);
+    const showAll = pagination.all === 'true' || pagination.includeInactive === 'true';
+    return this.service.findAll(tenantId, pagination.page, pagination.limit, q || pagination.q, showAll);
   }
 
   @Get('active')

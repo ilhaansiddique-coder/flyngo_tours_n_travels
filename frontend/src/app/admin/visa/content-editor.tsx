@@ -36,6 +36,7 @@ export interface VisaCountryEditor {
   id: string;
   name: string;
   slug: string;
+  isActive?: boolean;
   content?: VisaContent | null;
 }
 

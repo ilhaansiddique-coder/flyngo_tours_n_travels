@@ -9,6 +9,10 @@ export class TransportService {
 
   async findAll(tenantId: string, page = 1, limit = 20, q?: string, filters: ListQueryDto = {}) {
     const where: any = { tenantId, deletedAt: null };
+    const showAll = filters.all === 'true' || filters.includeInactive === 'true';
+    if (!showAll) {
+      where.isActive = true;
+    }
 
     const price = priceRange(filters.minPrice, filters.maxPrice);
     if (price) where.price = price;

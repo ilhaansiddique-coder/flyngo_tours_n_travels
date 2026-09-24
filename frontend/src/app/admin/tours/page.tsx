@@ -96,7 +96,7 @@ export default function AdminToursPage() {
     setLoading(true);
     setError(null);
     try {
-      const params: Record<string, string> = { page: String(page ?? meta.page) };
+      const params: Record<string, string> = { page: String(page ?? meta.page), all: 'true' };
       if (search) params.search = search;
       const res = await getTours(params);
       const data = res as any;
@@ -307,9 +307,30 @@ export default function AdminToursPage() {
                         <td className="p-4 font-medium">{formatCurrency(t.price)}</td>
                         <td className="p-4">{t.duration} days</td>
                         <td className="p-4">
-                          <Badge variant={t.isActive ? 'success' : 'default'}>
-                            {t.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
+                          <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={t.isActive}
+                              onChange={async (e) => {
+                                const newActive = e.target.checked;
+                                setTours((prev) =>
+                                  prev.map((item) => (item.id === t.id ? { ...item, isActive: newActive } : item))
+                                );
+                                try {
+                                  await updateTour(t.id, { isActive: newActive });
+                                } catch (err: any) {
+                                  setTours((prev) =>
+                                    prev.map((item) => (item.id === t.id ? { ...item, isActive: !newActive } : item))
+                                  );
+                                  alert(err.message || 'Failed to update tour status');
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"
+                            />
+                            <Badge variant={t.isActive ? 'success' : 'default'}>
+                              {t.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </label>
                         </td>
                         <td className="p-4">
                           <div className="flex gap-1">

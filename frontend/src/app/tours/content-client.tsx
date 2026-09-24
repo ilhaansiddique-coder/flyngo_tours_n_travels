@@ -23,7 +23,8 @@ export function ToursPageClient() {
       try {
         const params = q ? { q } : undefined;
         const data = (await getTours(params)) as { data?: Tour[] } & { items?: Tour[] };
-        if (!cancelled) setTours(data.data ?? data.items ?? []);
+        const list = data.data ?? data.items ?? [];
+        if (!cancelled) setTours(list.filter((t: any) => t.isActive !== false));
       } catch (err: any) {
         if (!cancelled) setError(err.message || 'Failed to load tours');
       } finally {

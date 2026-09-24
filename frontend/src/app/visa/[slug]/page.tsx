@@ -199,14 +199,15 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
           getVisaCountries({ limit: '100' }),
           getVisaServices(),
         ]);
-        const all: VisaCountry[] = ((countriesRes as any)?.items ?? []) as VisaCountry[];
+        const rawCountries = (((countriesRes as any)?.items ?? (countriesRes as any)?.data ?? []) as VisaCountry[]);
+        const all = rawCountries.filter((c) => c.isActive !== false);
         setAllCountries(all);
         setCountry(all.find((c) => c.slug === slug) ?? null);
 
-        const svc: VisaService[] = Array.isArray(servicesRes)
+        const rawServices: VisaService[] = Array.isArray(servicesRes)
           ? (servicesRes as VisaService[])
-          : ((servicesRes as any)?.items ?? []);
-        setServices(svc);
+          : ((servicesRes as any)?.items ?? (servicesRes as any)?.data ?? []);
+        setServices(rawServices.filter((s) => s.isActive !== false));
       } catch {
         // bubble up nothing — the empty state handles it
       } finally {

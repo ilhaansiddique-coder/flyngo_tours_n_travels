@@ -22,6 +22,16 @@ export class PaginationDto {
   @IsOptional()
   @IsString()
   q?: string;
+
+  @ApiPropertyOptional({ description: 'Include inactive records' })
+  @IsOptional()
+  @IsString()
+  all?: string;
+
+  @ApiPropertyOptional({ description: 'Include inactive records' })
+  @IsOptional()
+  @IsString()
+  includeInactive?: string;
 }
 
 export interface PaginatedResult<T> {

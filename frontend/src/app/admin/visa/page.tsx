@@ -40,6 +40,7 @@ export default function AdminVisaPage() {
     deleteVisaService,
     getVisaCountries,
     createVisaCountry,
+    updateVisaCountry,
     deleteVisaCountry,
   } = useApi();
 
@@ -80,7 +81,7 @@ export default function AdminVisaPage() {
     try {
       setLoading(true);
       setError(null);
-      const visaData = await getVisaServices();
+      const visaData = await getVisaServices({ all: 'true' });
       setServices(Array.isArray(visaData) ? visaData : (visaData as any)?.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load visa services');
@@ -98,7 +99,7 @@ export default function AdminVisaPage() {
     (async () => {
       try {
         setCountriesLoading(true);
-        const data = await getVisaCountries();
+        const data = await getVisaCountries({ all: 'true', limit: '200' });
         setCountries(Array.isArray(data) ? data : (data as any)?.data || []);
       } catch (err: any) {
         setError(err.message || 'Failed to load visa countries');
@@ -110,7 +111,7 @@ export default function AdminVisaPage() {
 
   const reloadCountries = async () => {
     try {
-      const data = await getVisaCountries();
+      const data = await getVisaCountries({ all: 'true', limit: '200' });
       setCountries(Array.isArray(data) ? data : (data as any)?.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load visa countries');
@@ -356,9 +357,30 @@ export default function AdminVisaPage() {
                     </td>
                     <td className="p-4">{v.processingTime || '—'}</td>
                     <td className="p-4">
-                      <Badge variant={v.isActive ? 'success' : 'warning'}>
-                        {v.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
+                      <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={v.isActive}
+                          onChange={async (e) => {
+                            const newActive = e.target.checked;
+                            setServices((prev) =>
+                              prev.map((item) => (item.id === v.id ? { ...item, isActive: newActive } : item))
+                            );
+                            try {
+                              await updateVisaService(v.id, { isActive: newActive });
+                            } catch (err: any) {
+                              setServices((prev) =>
+                                prev.map((item) => (item.id === v.id ? { ...item, isActive: !newActive } : item))
+                              );
+                              alert(err.message || 'Failed to update status');
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"
+                        />
+                        <Badge variant={v.isActive ? 'success' : 'warning'}>
+                          {v.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </label>
                     </td>
                     <td className="p-4">
                       <div className="flex gap-1">
@@ -521,6 +543,7 @@ export default function AdminVisaPage() {
                       <th className="p-4 font-medium">Country</th>
                       <th className="p-4 font-medium">Slug</th>
                       <th className="p-4 font-medium">Content</th>
+                      <th className="p-4 font-medium">Status</th>
                       <th className="p-4 font-medium">Actions</th>
                     </tr>
                   </thead>
@@ -540,6 +563,32 @@ export default function AdminVisaPage() {
                             ) : (
                               <Badge variant="warning">No content</Badge>
                             )}
+                          </td>
+                          <td className="p-4">
+                            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={cd.isActive !== false}
+                                onChange={async (e) => {
+                                  const newActive = e.target.checked;
+                                  setCountries((prev) =>
+                                    prev.map((item) => (item.id === cd.id ? { ...item, isActive: newActive } : item))
+                                  );
+                                  try {
+                                    await updateVisaCountry(cd.id, { isActive: newActive });
+                                  } catch (err: any) {
+                                    setCountries((prev) =>
+                                      prev.map((item) => (item.id === cd.id ? { ...item, isActive: !newActive } : item))
+                                    );
+                                    alert(err.message || 'Failed to update country status');
+                                  }
+                                }}
+                                className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"
+                              />
+                              <Badge variant={cd.isActive !== false ? 'success' : 'warning'}>
+                                {cd.isActive !== false ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </label>
                           </td>
                           <td className="p-4">
                             <div className="flex gap-1">

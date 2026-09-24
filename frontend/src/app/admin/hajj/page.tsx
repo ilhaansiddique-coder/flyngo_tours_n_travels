@@ -56,7 +56,7 @@ export default function AdminHajjPage() {
 
   const load = () => {
     setLoading(true);
-    getHajjPackages({ limit: '100' })
+    getHajjPackages({ limit: '100', all: 'true' })
       .then((r: any) => setItems(r?.items ?? []))
       .finally(() => setLoading(false));
   };
@@ -107,7 +107,31 @@ export default function AdminHajjPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <Badge variant={p.isActive ? 'success' : 'default'}>{p.tier.replace(/_/g, ' ')}</Badge>
+                      <Badge variant="default">{p.tier.replace(/_/g, ' ')}</Badge>
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={p.isActive}
+                          onChange={async (e) => {
+                            const newActive = e.target.checked;
+                            setItems((prev) =>
+                              prev.map((item) => (item.id === p.id ? { ...item, isActive: newActive } : item))
+                            );
+                            try {
+                              await updateHajjPackage(p.id, { isActive: newActive });
+                            } catch (err: any) {
+                              setItems((prev) =>
+                                prev.map((item) => (item.id === p.id ? { ...item, isActive: !newActive } : item))
+                              );
+                              alert(err.message || 'Failed to update package status');
+                            }
+                          }}
+                          className="w-3.5 h-3.5 rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"
+                        />
+                        <Badge variant={p.isActive ? 'success' : 'warning'}>
+                          {p.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </label>
                       {p.isFeatured && <Badge variant="warning">Featured</Badge>}
                     </div>
                     <h3 className="font-semibold truncate">{p.title}</h3>

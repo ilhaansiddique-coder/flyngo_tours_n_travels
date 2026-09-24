@@ -33,7 +33,10 @@ export function UmrahPageClient() {
 
   useEffect(() => {
     getUmrahPackages({ limit: '50' })
-      .then((r: any) => setPackages(r?.items ?? []))
+      .then((r: any) => {
+        const list = r?.items ?? r?.data ?? [];
+        setPackages(list.filter((p: any) => p.isActive !== false));
+      })
       .finally(() => setLoading(false));
   }, [getUmrahPackages]);
 

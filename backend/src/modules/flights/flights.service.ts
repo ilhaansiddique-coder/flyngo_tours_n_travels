@@ -14,6 +14,10 @@ export class FlightsService {
     limit = 20,
   ) {
     const where: any = { tenantId, deletedAt: null };
+    const showAll = params.all === 'true' || params.includeInactive === 'true';
+    if (!showAll) {
+      where.isActive = true;
+    }
     if (params.origin) where.originCode = params.origin;
     if (params.destination) where.destinationCode = params.destination;
     if (params.date) {

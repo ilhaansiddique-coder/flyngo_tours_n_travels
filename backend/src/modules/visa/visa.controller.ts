@@ -13,8 +13,15 @@ export class VisaController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'Get all visa services' })
-  async getAll(@CurrentTenantId() tenantId: string, @Query('q') q?: string, @Query('countrySlug') countrySlug?: string) {
-    return this.visaService.getVisaServices(tenantId, q, countrySlug);
+  async getAll(
+    @CurrentTenantId() tenantId: string,
+    @Query('q') q?: string,
+    @Query('countrySlug') countrySlug?: string,
+    @Query('all') all?: string,
+    @Query('includeInactive') includeInactive?: string,
+  ) {
+    const showAll = all === 'true' || includeInactive === 'true';
+    return this.visaService.getVisaServices(tenantId, q, countrySlug, showAll);
   }
 
   @Get(':id')

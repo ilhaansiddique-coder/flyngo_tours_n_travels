@@ -106,7 +106,7 @@ export default function TransportPage() {
     setLoading(true);
     setError(null);
     try {
-      const params: Record<string, string> = { page: String(p), limit: '20' };
+      const params: Record<string, string> = { page: String(p), limit: '20', all: 'true' };
       if (search) params.search = search;
       const res = await getTransport(params);
       const data = res as any;
@@ -292,9 +292,30 @@ export default function TransportPage() {
                         <td className="p-4 font-medium">{formatCurrency(Number(t.price), t.currency || 'BDT')}</td>
                         <td className="p-4 text-xs">{t.availableSeats}/{t.totalSeats}</td>
                         <td className="p-4">
-                          <Badge variant={t.isActive ? 'success' : 'default'}>
-                            {t.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
+                          <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={t.isActive}
+                              onChange={async (e) => {
+                                const newActive = e.target.checked;
+                                setItems((prev) =>
+                                  prev.map((item) => (item.id === t.id ? { ...item, isActive: newActive } : item))
+                                );
+                                try {
+                                  await updateTransport(t.id, { isActive: newActive });
+                                } catch (err: any) {
+                                  setItems((prev) =>
+                                    prev.map((item) => (item.id === t.id ? { ...item, isActive: !newActive } : item))
+                                  );
+                                  alert(err.message || 'Failed to update transport status');
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"
+                            />
+                            <Badge variant={t.isActive ? 'success' : 'default'}>
+                              {t.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </label>
                         </td>
                         <td className="p-4">
                           <div className="flex gap-1">

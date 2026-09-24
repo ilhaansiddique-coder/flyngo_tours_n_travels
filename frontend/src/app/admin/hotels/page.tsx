@@ -91,7 +91,7 @@ export default function AdminHotelsPage() {
     setLoading(true);
     setError(null);
     try {
-      const params: Record<string, string> = { page: String(pageNum), limit: String(LIMIT) };
+      const params: Record<string, string> = { page: String(pageNum), limit: String(LIMIT), all: 'true' };
       if (search) params.search = search;
       const res = await getHotels(params);
       const data = res as any;
@@ -302,9 +302,30 @@ export default function AdminHotelsPage() {
                       <td className="p-4 font-medium">{formatCurrency(h.pricePerNight)}</td>
                       <td className="p-4">{renderStarRating(h.starRating)}</td>
                       <td className="p-4">
-                        <Badge variant={h.isActive ? 'success' : 'warning'}>
-                          {h.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
+                        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={h.isActive}
+                            onChange={async (e) => {
+                              const newActive = e.target.checked;
+                              setHotels((prev) =>
+                                prev.map((item) => (item.id === h.id ? { ...item, isActive: newActive } : item))
+                              );
+                              try {
+                                await updateHotel(h.id, { isActive: newActive });
+                              } catch (err: any) {
+                                setHotels((prev) =>
+                                  prev.map((item) => (item.id === h.id ? { ...item, isActive: !newActive } : item))
+                                );
+                                alert(err.message || 'Failed to update hotel status');
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"
+                          />
+                          <Badge variant={h.isActive ? 'success' : 'warning'}>
+                            {h.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </label>
                       </td>
                       <td className="p-4">
                         <div className="flex gap-1">

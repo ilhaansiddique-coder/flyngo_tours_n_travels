@@ -17,6 +17,7 @@ interface VisaCountry {
   name: string;
   slug: string;
   flagUrl?: string;
+  isActive?: boolean;
 }
 
 interface VisaService {
@@ -58,7 +59,8 @@ export default function VisaPage() {
           getVisaCountries({ limit: '100' }),
           getVisaServices(),
         ]);
-        setCountries((((countriesRes as any)?.data ?? (countriesRes as any)?.items ?? []) as VisaCountry[]));
+        const rawCountries = (((countriesRes as any)?.data ?? (countriesRes as any)?.items ?? []) as VisaCountry[]);
+        setCountries(rawCountries.filter((c) => c.isActive !== false));
         const all: VisaService[] = Array.isArray(servicesRes)
           ? (servicesRes as VisaService[])
           : ((servicesRes as any)?.data ?? (servicesRes as any)?.items ?? []);

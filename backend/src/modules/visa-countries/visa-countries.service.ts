@@ -9,8 +9,11 @@ function slugify(text: string): string {
 export class VisaCountriesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(tenantId: string, page = 1, limit = 50, q?: string) {
+  async findAll(tenantId: string, page = 1, limit = 50, q?: string, showAll = false) {
     const where: any = { tenantId, deletedAt: null };
+    if (!showAll) {
+      where.isActive = true;
+    }
     if (q && q.trim()) {
       const term = q.trim();
       where.OR = [

@@ -43,8 +43,11 @@ export class VisaService implements OnModuleInit {
     }
   }
 
-  async getVisaServices(tenantId: string, q?: string, countrySlug?: string) {
-    const where: any = { tenantId, deletedAt: null, isActive: true };
+  async getVisaServices(tenantId: string, q?: string, countrySlug?: string, all = false) {
+    const where: any = { tenantId, deletedAt: null };
+    if (!all) {
+      where.isActive = true;
+    }
     const or = buildSearchOr(q, [
       (term) => ({ title: { contains: term, mode: 'insensitive' } }),
       (term) => ({ description: { contains: term, mode: 'insensitive' } }),

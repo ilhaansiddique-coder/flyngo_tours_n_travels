@@ -10,8 +10,11 @@ function slugify(text: string): string {
 export class HajjPackagesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(tenantId: string, page = 1, limit = 20, q?: string) {
+  async findAll(tenantId: string, page = 1, limit = 20, q?: string, showAll = false) {
     const where: any = { tenantId, deletedAt: null };
+    if (!showAll) {
+      where.isActive = true;
+    }
     const or = buildSearchOr(q, [
       (term) => ({ title: { contains: term, mode: 'insensitive' } }),
       (term) => ({ tier: { contains: term, mode: 'insensitive' } }),

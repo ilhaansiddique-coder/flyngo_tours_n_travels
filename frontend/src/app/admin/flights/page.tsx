@@ -78,7 +78,7 @@ export default function AdminFlightsPage() {
     setLoading(true);
     setError('');
     try {
-      const res: any = await getFlights({ page: String(page), limit: String(meta.limit) });
+      const res: any = await getFlights({ page: String(page), limit: String(meta.limit), all: 'true' });
       if (res && (res.data || res.items)) {
         setFlights(res.data ?? res.items);
         if (res.meta) setMeta(res.meta);
@@ -264,9 +264,30 @@ export default function AdminFlightsPage() {
                       <td className="p-4 font-medium">{formatCurrency(f.price)}</td>
                       <td className="p-4">{f.availableSeats ?? '-'}</td>
                       <td className="p-4">
-                        <Badge variant={f.isActive ? 'success' : 'warning'}>
-                          {f.isActive ? 'active' : 'inactive'}
-                        </Badge>
+                        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={f.isActive}
+                            onChange={async (e) => {
+                              const newActive = e.target.checked;
+                              setFlights((prev) =>
+                                prev.map((item) => (item.id === f.id ? { ...item, isActive: newActive } : item))
+                              );
+                              try {
+                                await updateFlight(f.id, { isActive: newActive });
+                              } catch (err: any) {
+                                setFlights((prev) =>
+                                  prev.map((item) => (item.id === f.id ? { ...item, isActive: !newActive } : item))
+                                );
+                                alert(err.message || 'Failed to update flight status');
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"
+                          />
+                          <Badge variant={f.isActive ? 'success' : 'warning'}>
+                            {f.isActive ? 'active' : 'inactive'}
+                          </Badge>
+                        </label>
                       </td>
                       <td className="p-4">
                         <div className="flex gap-1">

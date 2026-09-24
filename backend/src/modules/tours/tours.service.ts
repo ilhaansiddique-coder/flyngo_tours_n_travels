@@ -40,6 +40,10 @@ export class ToursService {
 
   async findAll(tenantId: string, page = 1, limit = 20, q?: string, filters: ListQueryDto = {}) {
     const where: any = { tenantId, deletedAt: null };
+    const showAll = (filters as any).all === 'true' || (filters as any).includeInactive === 'true';
+    if (!showAll) {
+      where.isActive = true;
+    }
 
     // Price filtering targets `price`, the list price every tour has.
     // salePrice is nullable, so filtering on it would silently drop every tour

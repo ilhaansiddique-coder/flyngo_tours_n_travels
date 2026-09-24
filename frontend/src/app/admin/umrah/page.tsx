@@ -46,7 +46,7 @@ export default function AdminUmrahPage() {
 
   const load = () => {
     setLoading(true);
-    getUmrahPackages({ limit: '100' })
+    getUmrahPackages({ limit: '100', all: 'true' })
       .then((r: any) => setItems(r?.items ?? []))
       .finally(() => setLoading(false));
   };
@@ -94,7 +94,31 @@ export default function AdminUmrahPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <Badge variant={p.isActive ? 'success' : 'default'}>{p.durationDays} days</Badge>
+                      <Badge variant="default">{p.durationDays} days</Badge>
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={p.isActive}
+                          onChange={async (e) => {
+                            const newActive = e.target.checked;
+                            setItems((prev) =>
+                              prev.map((item) => (item.id === p.id ? { ...item, isActive: newActive } : item))
+                            );
+                            try {
+                              await updateUmrahPackage(p.id, { isActive: newActive });
+                            } catch (err: any) {
+                              setItems((prev) =>
+                                prev.map((item) => (item.id === p.id ? { ...item, isActive: !newActive } : item))
+                              );
+                              alert(err.message || 'Failed to update package status');
+                            }
+                          }}
+                          className="w-3.5 h-3.5 rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"
+                        />
+                        <Badge variant={p.isActive ? 'success' : 'warning'}>
+                          {p.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </label>
                       {p.addOnCity && <Badge variant="cyan">+ {p.addOnCity}</Badge>}
                       {p.isFeatured && <Badge variant="warning">Featured</Badge>}
                     </div>

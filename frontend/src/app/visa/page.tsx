@@ -232,7 +232,7 @@ export default function VisaPage() {
                           </div>
                         )}
 
-                        <div className="mt-auto pt-4 border-t flex flex-col gap-3" style={{ borderColor: 'var(--color-outline-variant)' }}>
+                        <div className="mt-auto pt-4 flex flex-col gap-3">
                           <div>
                             <div className="text-[10px] uppercase tracking-widest font-bold text-muted">Visa fee</div>
                             <div className="font-display text-2xl font-bold text-on-surface">{fmt(s.price, s.currency)}</div>

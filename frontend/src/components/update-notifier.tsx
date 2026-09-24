@@ -2,11 +2,10 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, RefreshCw, Sparkles, ArrowRight } from 'lucide-react';
+import { RefreshCw, Sparkles } from 'lucide-react';
 import { useLocale } from '@/contexts/locale-context';
 
 const POLL_INTERVAL_MS = 25_000;
-const DISMISSED_KEY = 'flyngo:dismissed_version';
 
 interface VersionPayload {
   version?: string;
@@ -20,23 +19,17 @@ interface VersionPayload {
 }
 
 export function UpdateNotifier() {
-  const { locale, t } = useLocale();
+  const { locale } = useLocale();
   const [open, setOpen] = useState(false);
   const [versionData, setVersionData] = useState<VersionPayload | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const initialVersionRef = useRef<string | null>(null);
-  const dismissedVersionRef = useRef<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    try {
-      dismissedVersionRef.current = window.sessionStorage.getItem(DISMISSED_KEY);
-    } catch {
-      // ignore
-    }
   }, []);
 
   const fetchCurrentVersion = useCallback(async (): Promise<VersionPayload | null> => {
@@ -96,11 +89,6 @@ export function UpdateNotifier() {
 
     // If server version has changed compared to when this tab loaded
     if (serverVer !== initialVersionRef.current) {
-      // Check if user dismissed this specific version in this session
-      if (dismissedVersionRef.current === serverVer) {
-        return;
-      }
-
       setVersionData(data);
       setOpen(true);
     }
@@ -140,29 +128,8 @@ export function UpdateNotifier() {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    const ver = versionData?.version || versionData?.sha;
-    if (ver) {
-      try {
-        window.sessionStorage.removeItem(DISMISSED_KEY);
-      } catch {
-        // ignore
-      }
-    }
     // Hard refresh to reload updated bundles from the server
     window.location.reload();
-  };
-
-  const handleDismiss = () => {
-    const ver = versionData?.version || versionData?.sha;
-    if (ver) {
-      dismissedVersionRef.current = ver;
-      try {
-        window.sessionStorage.setItem(DISMISSED_KEY, ver);
-      } catch {
-        // ignore
-      }
-    }
-    setOpen(false);
   };
 
   if (!mounted || !open) return null;
@@ -173,44 +140,36 @@ export function UpdateNotifier() {
   const messageText = isBn
     ? 'নতুন আপডেট এসেছে, আপডেট দেখতে রিফ্রেশ বাটনে চাপ দিন'
     : 'Here are some update, press refresh button to check the Update';
-  const refreshText = isBn ? 'রিফ্রেশ করুন' : 'Refresh';
-  const laterText = isBn ? 'পরে' : 'Later';
+  const refreshText = isBn ? 'রিফ্রেশ করে আপডেট দেখুন' : 'Refresh to Update';
 
   return createPortal(
     <div
-      className="fixed bottom-5 right-5 z-[99999] w-[min(400px,calc(100vw-2.5rem))] animate-in slide-in-from-bottom-5 fade-in duration-300"
+      className="fixed top-1/2 -translate-y-1/2 right-4 sm:right-6 z-[99999] w-[min(380px,calc(100vw-2rem))] animate-in slide-in-from-right-8 fade-in duration-300 pointer-events-auto"
       role="alertdialog"
       aria-labelledby="update-dialog-title"
       aria-describedby="update-dialog-message"
     >
       <div
-        className="relative overflow-hidden rounded-2xl border border-primary/40 shadow-2xl backdrop-blur-xl"
+        className="relative overflow-hidden rounded-2xl border-2 border-primary/50 shadow-2xl backdrop-blur-2xl"
         style={{
           background:
-            'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 12%, var(--color-surface)) 0%, var(--color-surface) 100%)',
+            'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 14%, var(--color-surface)) 0%, var(--color-surface) 100%)',
+          boxShadow: '0 20px 45px -10px rgba(0,0,0,0.5), 0 0 25px -5px var(--accent-glow-strong)',
         }}
       >
         {/* Ambient glow accent */}
-        <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-primary/25 blur-3xl" />
+        <div className="pointer-events-none absolute -top-12 -right-12 h-36 w-36 rounded-full bg-primary/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-10 -left-10 h-28 w-28 rounded-full bg-primary/20 blur-2xl" />
 
-        {/* Close Button */}
-        <button
-          onClick={handleDismiss}
-          aria-label="Dismiss"
-          className="absolute top-3.5 right-3.5 rounded-lg p-1.5 text-on-surface-variant hover:bg-surface-container/60 hover:text-on-surface transition"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        <div className="relative p-5">
+        <div className="relative p-5 sm:p-6">
           {/* Header Badge */}
-          <div className="flex items-center gap-2 mb-2.5">
+          <div className="flex items-center gap-2 mb-3">
             <span className="relative flex h-2.5 w-2.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
             </span>
             <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1">
-              <Sparkles className="h-3 w-3" />
+              <Sparkles className="h-3.5 w-3.5" />
               {badgeText}
             </span>
           </div>
@@ -218,7 +177,7 @@ export function UpdateNotifier() {
           {/* Heading */}
           <h3
             id="update-dialog-title"
-            className="text-base font-bold text-on-surface mb-2 pr-6 leading-snug"
+            className="text-base sm:text-lg font-bold text-on-surface mb-2.5 leading-snug"
           >
             {titleText}
           </h3>
@@ -226,32 +185,25 @@ export function UpdateNotifier() {
           {/* Main User Notification Text */}
           <p
             id="update-dialog-message"
-            className="text-sm text-on-surface/90 leading-relaxed mb-4 rounded-xl bg-surface-container/50 p-3 border border-outline-variant/40"
+            className="text-sm text-on-surface/90 leading-relaxed mb-5 rounded-xl bg-surface-container/60 p-3.5 border border-outline-variant/50 font-medium"
           >
             {messageText}
           </p>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2.5">
+          {/* Refresh Action Button (Persistent - no close/later option) */}
+          <div>
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:opacity-95 active:scale-[0.98] disabled:opacity-70 cursor-pointer"
+              className="w-full inline-flex items-center justify-center gap-2.5 rounded-xl px-5 py-3 text-sm font-bold text-white shadow-xl transition hover:opacity-95 active:scale-[0.98] disabled:opacity-75 cursor-pointer"
               style={{
                 background:
                   'linear-gradient(90deg, var(--color-primary) 0%, var(--color-tertiary, var(--color-primary)) 100%)',
-                boxShadow: '0 8px 20px -6px var(--accent-glow-strong)',
+                boxShadow: '0 10px 24px -6px var(--accent-glow-strong)',
               }}
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshText}
-            </button>
-            <button
-              onClick={handleDismiss}
-              className="inline-flex items-center justify-center gap-1 rounded-xl px-3.5 py-2.5 text-sm font-medium text-on-surface-variant hover:bg-surface-container/60 hover:text-on-surface border border-outline-variant transition cursor-pointer"
-            >
-              {laterText}
-              <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>

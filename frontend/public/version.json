@@ -1,6 +1,6 @@
 {
-  "version": "4748c50e6ca75ea5bbadd73f5828285cffcf6d18",
-  "shortVersion": "4748c50",
-  "message": "feat: add update detection popover with refresh button and Bangla localization",
-  "builtAt": "2026-09-24T15:23:59.459Z"
+  "version": "6a06cf34469f66a13ebea520be7ebb11cd3475ff",
+  "shortVersion": "6a06cf3",
+  "message": "fix(visa): remove demo countries and show only manual submitted services and countries",
+  "builtAt": "2026-09-24T15:28:36.553Z"
 }

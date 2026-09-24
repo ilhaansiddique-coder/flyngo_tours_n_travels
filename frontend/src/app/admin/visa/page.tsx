@@ -16,6 +16,7 @@ import { VisaContentEditor, type VisaCountryEditor } from './content-editor';
 import { Globe, Plus, Pencil, Trash2, Search, Coins, FileText, Loader2, Share2 } from 'lucide-react';
 import { ShareMenu } from '@/components/shared/share-menu';
 import { AutoTranslatePanel } from '@/components/admin/auto-translate-panel';
+import { toast } from 'sonner';
 
 interface VisaService {
   id: string;
@@ -52,6 +53,7 @@ export default function AdminVisaPage() {
   const [search, setSearch] = useState('');
 
   const [countries, setCountries] = useState<VisaCountryEditor[]>([]);
+  const [countrySearch, setCountrySearch] = useState('');
   const [countriesLoading, setCountriesLoading] = useState(false);
   const [editorCountry, setEditorCountry] = useState<VisaCountryEditor | null>(null);
   const [countryModalOpen, setCountryModalOpen] = useState(false);
@@ -78,43 +80,17 @@ export default function AdminVisaPage() {
     isActive: true,
   });
 
-  const EXCLUDED_DEMO_NAMES = new Set([
-    'bangkok',
-    'nepal',
-    'singapore',
-    'tokyo',
-    'malaysia',
-    'united arab emirates (dubai)',
-    'united arab emirates',
-    'dubai',
-    'thailand',
-    'australia',
-    'united kingdom (uk)',
-    'united kingdom',
-    'uk',
-  ]);
-
-  const isDemo = (name?: string, slug?: string) => {
-    const n = (name || '').toLowerCase().trim();
-    const s = (slug || '').toLowerCase().trim();
-    return EXCLUDED_DEMO_NAMES.has(n) || EXCLUDED_DEMO_NAMES.has(s);
-  };
-
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
       const visaData = await getVisaServices({ all: 'true' });
-      const raw = Array.isArray(visaData) ? visaData : (visaData as any)?.data || [];
-      setServices(
-        raw.filter(
-          (s: any) =>
-            !isDemo(s.country?.name, s.country?.slug) &&
-            !isDemo(s.destination?.name, s.destination?.slug),
-        ),
-      );
+      const raw = Array.isArray(visaData) ? visaData : (visaData as any)?.items || (visaData as any)?.data || [];
+      setServices(raw);
     } catch (err: any) {
-      setError(err.message || 'Failed to load visa services');
+      const msg = err.message || 'Failed to load visa services';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -124,46 +100,54 @@ export default function AdminVisaPage() {
     loadData();
   }, []);
 
+  const reloadCountries = async () => {
+    try {
+      setError(null);
+      const data = await getVisaCountries({ all: 'true', limit: '250' });
+      const raw = Array.isArray(data) ? data : (data as any)?.items || (data as any)?.data || [];
+      setCountries(raw);
+    } catch (err: any) {
+      const msg = err.message || 'Failed to load visa countries';
+      setError(msg);
+      toast.error(msg);
+    }
+  };
+
   useEffect(() => {
     if (tab !== 'countries') return;
     (async () => {
       try {
         setCountriesLoading(true);
-        const data = await getVisaCountries({ all: 'true', limit: '200' });
-        const raw = Array.isArray(data) ? data : (data as any)?.data || [];
-        setCountries(raw.filter((c: any) => !isDemo(c.name, c.slug)));
+        setError(null);
+        await reloadCountries();
       } catch (err: any) {
-        setError(err.message || 'Failed to load visa countries');
+        const msg = err.message || 'Failed to load visa countries';
+        setError(msg);
+        toast.error(msg);
       } finally {
         setCountriesLoading(false);
       }
     })();
   }, [tab]);
 
-  const reloadCountries = async () => {
-    try {
-      const data = await getVisaCountries({ all: 'true', limit: '200' });
-      const raw = Array.isArray(data) ? data : (data as any)?.data || [];
-      setCountries(raw.filter((c: any) => !isDemo(c.name, c.slug)));
-    } catch (err: any) {
-      setError(err.message || 'Failed to load visa countries');
-    }
-  };
-
   const handleCreateCountry = async () => {
     if (!countryForm.name.trim()) return;
     try {
       setCountrySaving(true);
+      setError(null);
       await createVisaCountry({
         name: countryForm.name.trim(),
         flagUrl: countryForm.flagUrl.trim() || undefined,
         content: {},
       });
+      toast.success(`Country "${countryForm.name.trim()}" created successfully`);
       setCountryModalOpen(false);
       setCountryForm({ name: '', flagUrl: '' });
       await reloadCountries();
     } catch (err: any) {
-      setError(err.message || 'Failed to create visa country');
+      const msg = err.message || 'Failed to create visa country';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setCountrySaving(false);
     }
@@ -172,11 +156,15 @@ export default function AdminVisaPage() {
   const handleDeleteCountry = async () => {
     if (!deleteCountry) return;
     try {
+      setError(null);
       await deleteVisaCountry(deleteCountry.id);
+      toast.success(`Country "${deleteCountry.name}" deleted`);
       setDeleteCountry(null);
       await reloadCountries();
     } catch (err: any) {
-      setError(err.message || 'Failed to delete visa country');
+      const msg = err.message || 'Failed to delete visa country';
+      setError(msg);
+      toast.error(msg);
     }
   };
 
@@ -262,6 +250,14 @@ export default function AdminVisaPage() {
     );
   });
 
+  const filteredCountries = countries.filter((c) => {
+    const q = countrySearch.toLowerCase();
+    return (
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.slug || '').toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex gap-1 border-b border-outline-variant">
@@ -283,6 +279,18 @@ export default function AdminVisaPage() {
         ))}
       </div>
 
+      {error && (
+        <div className="bg-error-container border border-error/30 text-on-error-container px-4 py-3 rounded-xl text-sm flex items-center justify-between">
+          <span>{error}</span>
+          <button
+            className="ml-2 underline font-medium hover:opacity-80"
+            onClick={tab === 'countries' ? reloadCountries : loadData}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {tab === 'services' && (
         <>
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
@@ -299,13 +307,6 @@ export default function AdminVisaPage() {
           <Plus className="w-4 h-4" /> Add Visa Service
         </Button>
       </div>
-
-      {error && (
-        <div className="bg-error-container border border-error/30 text-on-error-container px-4 py-3 rounded-xl text-sm">
-          {error}
-          <button className="ml-2 underline" onClick={loadData}>Retry</button>
-        </div>
-      )}
 
       {loading ? (
         <Card hover={false} padding="md">
@@ -567,11 +568,22 @@ export default function AdminVisaPage() {
 
       {tab === 'countries' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between">
-            <p className="text-sm text-on-surface-variant">
-              Manage the content shown on each public visa country detail page (/visa/:slug).
-            </p>
-            <Button size="md" className="gap-2" onClick={() => setCountryModalOpen(true)}>
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
+                <Input
+                  placeholder="Search countries..."
+                  className="pl-9 w-full sm:w-64"
+                  value={countrySearch}
+                  onChange={(e) => setCountrySearch(e.target.value)}
+                />
+              </div>
+              <p className="text-sm text-on-surface-variant">
+                Manage the content shown on each public visa country detail page (/visa/:slug).
+              </p>
+            </div>
+            <Button size="md" className="gap-2 shrink-0" onClick={() => setCountryModalOpen(true)}>
               <Plus className="w-4 h-4" /> Add Visa Country
             </Button>
           </div>
@@ -583,12 +595,16 @@ export default function AdminVisaPage() {
                 Loading visa countries...
               </div>
             </Card>
-          ) : countries.length === 0 ? (
+          ) : filteredCountries.length === 0 ? (
             <Card hover={false} padding="md">
               <div className="text-center py-10 text-on-surface-variant">
                 <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">No visa countries yet</p>
-                <p className="text-sm mt-1">Add a country to unlock its detail page and content editor.</p>
+                <p className="text-lg font-medium">
+                  {countrySearch ? `No countries match "${countrySearch}"` : 'No visa countries yet'}
+                </p>
+                <p className="text-sm mt-1">
+                  {countrySearch ? 'Try a different search term.' : 'Add a country to unlock its detail page and content editor.'}
+                </p>
               </div>
             </Card>
           ) : (
@@ -605,7 +621,7 @@ export default function AdminVisaPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {countries.map((cd) => {
+                    {filteredCountries.map((cd) => {
                       const ct = cd.content;
                       const hasContent = ct && (ct.pricingTiers?.length || ct.intro || ct.faq?.length);
                       return (
@@ -687,12 +703,15 @@ export default function AdminVisaPage() {
             </Card>
           )}
 
-          <VisaContentEditor
-            open={!!editorCountry}
-            onClose={() => setEditorCountry(null)}
-            country={editorCountry!}
-            onSaved={reloadCountries}
-          />
+          {editorCountry && (
+            <VisaContentEditor
+              key={editorCountry.id}
+              open={!!editorCountry}
+              onClose={() => setEditorCountry(null)}
+              country={editorCountry}
+              onSaved={reloadCountries}
+            />
+          )}
 
           <Modal open={countryModalOpen} onClose={() => setCountryModalOpen(false)} title="Add Visa Country">
             <FormField label="Country name" required>

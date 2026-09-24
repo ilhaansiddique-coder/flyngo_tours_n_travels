@@ -1,6 +1,6 @@
 {
-  "version": "6a06cf34469f66a13ebea520be7ebb11cd3475ff",
-  "shortVersion": "6a06cf3",
-  "message": "fix(visa): remove demo countries and show only manual submitted services and countries",
-  "builtAt": "2026-09-24T15:28:36.553Z"
+  "version": "bdb83a1fdcbdc7ac50f3a6c81bfec9d67296fdf1",
+  "shortVersion": "bdb83a1",
+  "message": "feat(update): center right popover, remove later button, require refresh",
+  "builtAt": "2026-09-24T15:38:55.051Z"
 }

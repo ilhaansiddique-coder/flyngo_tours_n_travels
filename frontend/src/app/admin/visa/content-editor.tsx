@@ -120,6 +120,7 @@ interface EditorModalProps {
 
 export function VisaContentEditor({ open, onClose, country, onSaved }: EditorModalProps) {
   const { updateVisaCountry } = useApi();
+  if (!country) return null;
   const c = country.content ?? {};
   const [intro, setIntro] = useState<string>(c.intro ?? '');
   const [processSteps, setProcessSteps] = useState<string[]>(c.processSteps ?? []);

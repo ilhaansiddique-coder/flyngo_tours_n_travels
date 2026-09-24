@@ -1,6 +1,6 @@
 {
-  "version": "9024f1bba85759612f4ff662afb9062dc7966fa9",
-  "shortVersion": "9024f1b",
-  "message": "feat(update): place update refresh popover in exact center of screen",
-  "builtAt": "2026-09-24T16:17:25.049Z"
+  "version": "90940b2a080f96db46dc21ab2d9e67e4f5e86bb6",
+  "shortVersion": "90940b2",
+  "message": "fix(visa): resolve rules-of-hooks violation in VisaContentEditor",
+  "builtAt": "2026-09-24T16:48:25.068Z"
 }

@@ -35,7 +35,7 @@ export function CountryAutocomplete({
   onChange,
   onQueryChange,
   onBlur,
-  placeholder = 'Type a country or city…',
+  placeholder = 'Type a country or city (e.g. Paris, Tokyo, Dhaka)…',
   required,
   className,
   allowCreate = true,
@@ -349,6 +349,11 @@ export function CountryAutocomplete({
           {!loading && options.length === 0 && !showCreate && (
             <div className="px-3 py-2 text-xs text-on-surface-variant">No matches</div>
           )}
+
+          <div className="sticky bottom-0 border-t border-outline-variant/60 bg-surface-container-low px-3 py-1.5 text-[11px] text-on-surface-variant flex items-center justify-between">
+            <span>🌍 2,190+ countries & cities worldwide</span>
+            {options.length > 0 && <span>{options.length} {options.length === 1 ? 'match' : 'matches'}</span>}
+          </div>
         </div>
       )}
     </div>

@@ -10,6 +10,7 @@ import { Clock, Sparkles, ArrowRight, Shield, Users, Plane, Heart } from 'lucide
 interface UmrahPackage {
   id: string;
   title: string;
+  slug?: string;
   durationDays: number;
   price: number;
   currency: string;
@@ -107,7 +108,7 @@ export function UmrahPageClient() {
             {packages.map((pkg) => (
               <Link
                 key={pkg.id}
-                href="/booking"
+                href={pkg.slug ? `/umrah/${pkg.slug}` : `/booking?type=umrah&id=${pkg.id}`}
                 className="group relative flex flex-col overflow-hidden rounded-2xl glass border border-emerald-500/30 hover:border-emerald-500/60 transition-all hover:-translate-y-1"
               >
                 <div className="relative h-48 overflow-hidden bg-gradient-to-br from-emerald-800 via-emerald-600 to-amber-600 flex items-center justify-center">

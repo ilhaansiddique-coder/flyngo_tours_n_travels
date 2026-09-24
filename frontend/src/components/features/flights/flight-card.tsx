@@ -17,13 +17,13 @@ interface FlightCardProps {
   airline: string;
   flightNumber: string;
   originCode: string;
-  originCity?: string;
+  originCity?: string | null;
   destinationCode: string;
-  destinationCity?: string;
+  destinationCity?: string | null;
   departureTime: string;
   arrivalTime: string;
-  duration?: number;
-  price: number;
+  duration?: number | null;
+  price: number | string;
   availableSeats: number;
 }
 

@@ -187,34 +187,43 @@ async function main() {
   // (admin@flyngo.com), which is a public login for anyone who reads this repo.
   // Refusing to boot is the right failure mode — a silent weak default is not.
   const isProductionSeed = process.env.NODE_ENV === 'production';
-  const adminPlainPassword = process.env.SUPER_ADMIN_PASSWORD || (isProductionSeed ? '' : 'Admin!');
-  if (!adminPlainPassword) {
+  const existingAdmin = await prisma.user.findFirst({
+    where: {
+      tenantId: TENANT_ID,
+      role: { code: 'super_admin' },
+    },
+  });
+
+  const adminPlainPassword = process.env.SUPER_ADMIN_PASSWORD || (!isProductionSeed ? 'Admin!' : '');
+  if (!adminPlainPassword && !existingAdmin) {
     throw new Error(
-      'SUPER_ADMIN_PASSWORD must be set when seeding with NODE_ENV=production. ' +
+      'SUPER_ADMIN_PASSWORD must be set when seeding a fresh database with NODE_ENV=production. ' +
         'Set it in the Coolify environment and redeploy.',
     );
   }
-  const adminPassword = await bcryptjs.hash(adminPlainPassword, 12);
 
-  const adminUser = await prisma.user.upsert({
-    where: { id: '00000000-0000-0000-0000-00000000admin' },
-    // The old `update: {}` meant an already-seeded admin could never be rotated
-    // from the outside: a weak password baked in at first deploy stayed forever.
-    // Setting SUPER_ADMIN_PASSWORD and redeploying now rotates it, which is the
-    // only rotation path available on a host with no shell access.
-    update: process.env.SUPER_ADMIN_PASSWORD ? { passwordHash: adminPassword } : {},
-    create: {
-      id: '00000000-0000-0000-0000-00000000admin',
-      email: 'admin@flyngo.com',
-      fullName: 'Super Admin',
-      passwordHash: adminPassword,
-      tenantId: TENANT_ID,
-      roleId: roleRecords['super_admin'],
-      emailVerifiedAt: new Date(),
-    },
-  });
-  // Never print the password — container logs are retained and widely readable.
-  console.log(`✅ Admin user: ${adminUser.email}`);
+  const adminEmail = (process.env.SUPER_ADMIN_EMAIL || 'admin@flyngo.com').toLowerCase();
+  let adminUser;
+
+  if (adminPlainPassword) {
+    const adminPassword = await bcryptjs.hash(adminPlainPassword, 12);
+    adminUser = await prisma.user.upsert({
+      where: { id: '00000000-0000-0000-0000-00000000admin' },
+      update: { passwordHash: adminPassword },
+      create: {
+        id: '00000000-0000-0000-0000-00000000admin',
+        email: adminEmail,
+        fullName: 'Super Admin',
+        passwordHash: adminPassword,
+        tenantId: TENANT_ID,
+        roleId: roleRecords['super_admin'],
+        emailVerifiedAt: new Date(),
+      },
+    });
+    console.log(`✅ Admin user: ${adminUser.email}`);
+  } else if (existingAdmin) {
+    console.log(`ℹ️ Admin user already exists: ${existingAdmin.email} (set SUPER_ADMIN_PASSWORD to rotate password).`);
+  }
 
   // ===========================================================================
   // 5. SAMPLE DESTINATIONS

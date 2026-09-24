@@ -137,6 +137,44 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
     [allCountries, slug],
   );
 
+  // Bookable services belonging to this country only
+  const countryServices = useMemo(() => {
+    if (!country) return [];
+    const cName = country.name.toLowerCase();
+    const cSlug = country.slug.toLowerCase();
+    return services.filter((s: any) => {
+      const sName = s.country?.name?.toLowerCase() || '';
+      const sSlug = s.country?.slug?.toLowerCase() || '';
+      const dName = s.destination?.name?.toLowerCase() || '';
+      const dSlug = s.destination?.slug?.toLowerCase() || '';
+      const sTitle = s.title?.toLowerCase() || '';
+      const hasAddl = (s.additionalDestinations || []).some((ad: any) => {
+        const an = ad.destination?.name?.toLowerCase() || '';
+        const as_ = ad.destination?.slug?.toLowerCase() || '';
+        return an === cName || as_ === cSlug;
+      });
+      return sName === cName || sSlug === cSlug || dName === cName || dSlug === cSlug || sTitle.includes(cName) || hasAddl;
+    });
+  }, [services, country]);
+
+  // Combined requirements from country and services
+  const countryRequirements = useMemo(() => {
+    const set = new Set<string>();
+    if (Array.isArray(country?.requirements)) {
+      for (const r of country.requirements) {
+        if (r && r.trim()) set.add(r.trim());
+      }
+    }
+    for (const s of countryServices) {
+      if (Array.isArray(s.requirements)) {
+        for (const r of s.requirements) {
+          if (r && r.trim()) set.add(r.trim());
+        }
+      }
+    }
+    return Array.from(set);
+  }, [country, countryServices]);
+
   const bookService = (id: string) => {
     setSelectedItem(id);
     router.push(`/booking?type=visa&id=${id}`);
@@ -317,11 +355,11 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
           )}
 
           {/* ── Bookable services (from backend) ────────────────────── */}
-          {services.length > 0 && (
+          {countryServices.length > 0 && (
             <section className="mb-10">
               <h2 className="text-xl font-display font-semibold text-on-surface mb-4">Book online</h2>
               <div className="space-y-4">
-                {services.map((s) => (
+                {countryServices.map((s) => (
                   <div key={s.id} className="rounded-2xl border glass p-5" style={{ borderColor: 'var(--color-outline-variant)' }}>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="min-w-0">
@@ -347,6 +385,23 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
                       </div>
                     </div>
                     {s.description && <p className="text-sm text-on-surface-variant mt-3">{s.description}</p>}
+                    {Array.isArray(s.requirements) && s.requirements.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-hairline">
+                        <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <FileCheck className="w-3.5 h-3.5 text-accent" /> Required Documents / Items:
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {s.requirements.map((req, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-accent/10 border border-accent/25 text-accent"
+                            >
+                              <Check className="w-3 h-3 text-emerald-500" /> {req}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -388,13 +443,13 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
           )}
 
           {/* ── Country requirements (flat) ─────────────────────────── */}
-          {country.requirements.length > 0 && (
+          {countryRequirements.length > 0 && (
             <section className="mb-10">
               <h2 className="text-xl font-display font-semibold text-on-surface flex items-center gap-2 mb-4">
                 <FileCheck className="w-5 h-5" /> General requirements
               </h2>
               <ul className="space-y-2">
-                {country.requirements.map((r, i) => (
+                {countryRequirements.map((r, i) => (
                   <li key={i} className="flex items-start gap-2">
                     <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-500" />
                     <span className="text-on-surface">{r}</span>
@@ -514,14 +569,14 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
             )}
             <button
               onClick={() =>
-                services[0]
-                  ? bookService(services[0].id)
+                countryServices[0]
+                  ? bookService(countryServices[0].id)
                   : router.push(`/contact?subject=${encodeURIComponent(`Visa enquiry — ${country.name}`)}`)
               }
               className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white"
               style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-tertiary) 100%)' }}
             >
-              {services.length ? 'Book a visa' : 'Enquire now'}
+              {countryServices.length ? 'Book a visa' : 'Enquire now'}
             </button>
           </div>
 

@@ -187,8 +187,8 @@ export default function AdminVisaPage() {
         price: Number(form.price),
         pointsAwarded: Number(form.points) || 0,
         currency: 'BDT',
-        requirements: form.requirements
-          .split(',')
+        requirements: (typeof form.requirements === 'string' ? form.requirements : '')
+          .split(/[,\n;]+/)
           .map((r) => r.trim())
           .filter(Boolean),
         isActive: form.isActive,
@@ -297,6 +297,7 @@ export default function AdminVisaPage() {
                 <tr className="text-left text-on-surface-variant bg-surface-container-low">
                   <th className="p-4 font-medium">Title</th>
                   <th className="p-4 font-medium">Country</th>
+                  <th className="p-4 font-medium">Requirements</th>
                   <th className="p-4 font-medium">Price</th>
                   <th className="p-4 font-medium">Points</th>
                   <th className="p-4 font-medium">Processing Time</th>
@@ -325,6 +326,22 @@ export default function AdminVisaPage() {
                         <span className="text-on-surface-variant/60">
                           {' '}+{(v.additionalDestinations || []).length} more
                         </span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      {Array.isArray(v.requirements) && v.requirements.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 max-w-[220px]">
+                          {v.requirements.map((req, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container border border-outline-variant text-on-surface"
+                            >
+                              {req}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-on-surface-variant/50 text-xs italic">None</span>
                       )}
                     </td>
                     <td className="p-4 font-medium">{formatCurrency(v.price)}</td>

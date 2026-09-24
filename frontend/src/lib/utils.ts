@@ -7,8 +7,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /** Format an amount in BDT (Taka sign). */
-export function formatCurrency(amount: number, _currency: Currency | string = 'BDT'): string {
-  return formatCurrencyCore(amount, _currency);
+export function formatCurrency(amount: number | string, _currency: Currency | string = 'BDT'): string {
+  const num = typeof amount === 'string' ? Number(amount) : amount;
+  return formatCurrencyCore(num, _currency);
 }
 
 /** Hook variant: returns a formatter that always renders BDT (Taka sign). */

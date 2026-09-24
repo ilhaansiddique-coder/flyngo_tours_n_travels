@@ -211,6 +211,21 @@ export default function VisaPage() {
                           </div>
                         )}
 
+                        {Array.isArray(s.requirements) && s.requirements.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2.5">
+                            {s.requirements.slice(0, 2).map((r, i) => (
+                              <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant truncate max-w-[120px]">
+                                {r}
+                              </span>
+                            ))}
+                            {s.requirements.length > 2 && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant">
+                                +{s.requirements.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         <div className="mt-4 pt-4 border-t flex items-end justify-between" style={{ borderColor: 'var(--color-outline-variant)' }}>
                           <div>
                             <div className="text-[10px] uppercase tracking-widest font-bold text-muted">Visa fee</div>

@@ -26,17 +26,34 @@ export class NotificationsService {
   }
 
   private initMailer() {
-    const host = this.configService.getOrNull('SMTP_HOST');
+    let host = this.configService.getOrNull('SMTP_HOST');
     const user = this.configService.getOrNull('SMTP_USER');
-    const pass = this.configService.getOrNull('SMTP_PASSWORD');
+    let pass = this.configService.getOrNull('SMTP_PASSWORD') || this.configService.getOrNull('SMTP_PASS');
+
+    // Auto-detect Gmail host if not explicitly specified
+    if (!host && user && (user.includes('@gmail.com') || user.includes('@googlemail.com'))) {
+      host = 'smtp.gmail.com';
+    }
+
+    // Strip spaces if user provided Google App Password with spaces ("xxxx xxxx xxxx xxxx")
+    if (pass && host?.includes('gmail.com')) {
+      pass = pass.replace(/\s+/g, '');
+    }
+
     if (host && user && pass) {
+      const isGmail = host.includes('gmail.com');
+      const configuredPort = this.configService.getOrNull('SMTP_PORT');
+      const port = Number(configuredPort || (isGmail ? 465 : 587));
+      const configuredSecure = this.configService.getOrNull('SMTP_SECURE');
+      const secure = configuredSecure !== null ? configuredSecure === 'true' : port === 465;
+
       this.mailer = nodemailer.createTransport({
         host,
-        port: Number(this.configService.getOrNull('SMTP_PORT') || 587),
-        secure: (this.configService.getOrNull('SMTP_SECURE') || 'false') === 'true',
+        port,
+        secure,
         auth: { user, pass },
       });
-      this.logger.log(`SMTP mailer configured (host=${host})`);
+      this.logger.log(`SMTP mailer configured (host=${host}, port=${port}, secure=${secure})`);
     } else {
       this.logger.warn('SMTP not configured — email sends will be logged but not delivered');
     }

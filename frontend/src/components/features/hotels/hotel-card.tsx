@@ -10,12 +10,12 @@ interface HotelCardProps {
   slug: string;
   name: string;
   starRating?: number;
-  pricePerNight: number;
-  destination?: { name: string; country: string };
+  pricePerNight: number | string;
+  destination?: { name: string; country: string } | null;
   additionalDestinations?: Array<{ destination?: { name: string; country?: string } }>;
   amenities?: string[];
-  imageUrl?: string;
-  coverImageUrl?: string;
+  imageUrl?: string | null;
+  coverImageUrl?: string | null;
 }
 
 export function HotelCard({ slug, name, starRating, pricePerNight, destination, additionalDestinations, imageUrl, coverImageUrl }: HotelCardProps) {

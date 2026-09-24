@@ -73,11 +73,17 @@ export class VisaService implements OnModuleInit {
       throw new BadRequestException('A country / destination name is required');
     }
 
+    const requirements = Array.isArray(data.requirements)
+      ? data.requirements
+      : typeof data.requirements === 'string'
+        ? data.requirements.split(/[,\n;]+/).map((s: string) => s.trim()).filter(Boolean)
+        : [];
+
     // Ensure a VisaCountry exists so the product is visible on the public /visa
     // landing page and its country page can list this service.
     const destination = await this.prisma.destination.findUnique({ where: { id: destinationId } });
     if (destination) {
-      await this.ensureVisaCountry(tenantId, destination.name, data.price, data.currency, data.isActive, destination.flagUrl);
+      await this.ensureVisaCountry(tenantId, destination.name, data.price, data.currency, data.isActive, destination.flagUrl, requirements);
     }
 
     const additionalIds = await this.resolveAdditionalIds(tenantId, data.additionalDestinationIds, destinationId, data);
@@ -91,7 +97,7 @@ export class VisaService implements OnModuleInit {
         processingTime: data.processingTime,
         price: data.price,
         currency: data.currency || 'USD',
-        requirements: data.requirements || [],
+        requirements,
         pointsAwarded: Number(data.pointsAwarded) || 0,
         isActive: data.isActive ?? true,
         additionalDestinations: {
@@ -106,13 +112,21 @@ export class VisaService implements OnModuleInit {
     const existing = await this.prisma.visaService.findFirst({ where: { id, tenantId } });
     if (!existing) throw new NotFoundException('Visa service not found');
 
+    const requirements = data.requirements !== undefined
+      ? (Array.isArray(data.requirements)
+          ? data.requirements
+          : typeof data.requirements === 'string'
+            ? data.requirements.split(/[,\n;]+/).map((s: string) => s.trim()).filter(Boolean)
+            : [])
+      : undefined;
+
     const { destinationId } = await this.resolveCountry(tenantId, data);
 
     const destination = destinationId
       ? await this.prisma.destination.findUnique({ where: { id: destinationId } })
       : null;
     if (destination) {
-      await this.ensureVisaCountry(tenantId, destination.name, data.price, data.currency, data.isActive, destination.flagUrl);
+      await this.ensureVisaCountry(tenantId, destination.name, data.price, data.currency, data.isActive, destination.flagUrl, requirements);
     }
 
     const finalPrimary = destinationId ?? existing.destinationId;
@@ -127,7 +141,7 @@ export class VisaService implements OnModuleInit {
         processingTime: data.processingTime,
         price: data.price,
         currency: data.currency,
-        requirements: data.requirements,
+        requirements,
         pointsAwarded: data.pointsAwarded === undefined ? undefined : Number(data.pointsAwarded) || 0,
         isActive: data.isActive,
         ...(data.additionalDestinationIds !== undefined
@@ -215,16 +229,32 @@ export class VisaService implements OnModuleInit {
 
   /** Auto-create a VisaCountry (public landing card) for a service's country if
    *  it doesn't exist yet, so services always surface on the public site. */
-  private async ensureVisaCountry(tenantId: string, name: string, price: number, currency: string, isActive: boolean, flagUrl?: string | null) {
+  private async ensureVisaCountry(
+    tenantId: string,
+    name: string,
+    price: number,
+    currency: string,
+    isActive: boolean,
+    flagUrl?: string | null,
+    requirements?: string[],
+  ) {
     if (!name) return;
     const slug = this.slugify(name);
     const existing = await this.prisma.visaCountry.findFirst({
       where: { tenantId, OR: [{ slug }, { name: { equals: name, mode: 'insensitive' } }] },
     });
     if (existing) {
-      // Backfill a missing flag so the public country card can show it.
-      if (!existing.flagUrl && flagUrl) {
-        await this.prisma.visaCountry.update({ where: { id: existing.id }, data: { flagUrl } });
+      const updateData: any = {};
+      if (!existing.flagUrl && flagUrl) updateData.flagUrl = flagUrl;
+      if (Array.isArray(requirements) && requirements.length > 0) {
+        const existingReqs = Array.isArray(existing.requirements) ? existing.requirements : [];
+        const merged = Array.from(new Set([...existingReqs, ...requirements]));
+        if (merged.length !== existingReqs.length) {
+          updateData.requirements = merged;
+        }
+      }
+      if (Object.keys(updateData).length > 0) {
+        await this.prisma.visaCountry.update({ where: { id: existing.id }, data: updateData });
       }
       return;
     }
@@ -239,7 +269,7 @@ export class VisaService implements OnModuleInit {
         currency: currency || 'BDT',
         isActive: isActive !== false,
         visaTypes: [],
-        requirements: [],
+        requirements: Array.isArray(requirements) ? requirements : [],
       },
     });
   }

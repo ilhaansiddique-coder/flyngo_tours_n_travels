@@ -9,12 +9,12 @@ interface TourCardProps {
   slug: string;
   title: string;
   description: string;
-  price: number;
+  price: number | string;
   duration: number;
   maxGuests?: number;
   destination?: { name: string; country: string } | null;
   additionalDestinations?: Array<{ destination?: { name: string; country?: string } }>;
-  difficulty?: string;
+  difficulty?: string | null;
   imageUrl?: string | null;
   coverImageUrl?: string | null;
 }

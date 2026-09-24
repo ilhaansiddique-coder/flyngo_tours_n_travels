@@ -40,7 +40,11 @@ async function bootstrap() {
     }
   }
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   app.use(cookieParser());
 
   // Serve uploaded media from the local filesystem at /api/v1/uploads so the
@@ -49,7 +53,13 @@ async function bootstrap() {
   if (!existsSync(uploadsDir)) {
     mkdirSync(uploadsDir, { recursive: true });
   }
-  app.useStaticAssets(uploadsDir, { prefix: '/api/v1/uploads/' });
+  app.useStaticAssets(uploadsDir, {
+    prefix: '/api/v1/uploads/',
+    setHeaders: (res) => {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    },
+  });
 
   const corsOrigins = [
     configService.get('FRONTEND_URL') || 'http://localhost:3000',

@@ -54,8 +54,6 @@ const INITIAL: TenantSettings = {
   faviconUrl: '',
   primaryColor: '',
   secondaryColor: '',
-  stripePublicKey: '',
-  stripeSecretKey: '',
   bkashApiKey: '',
   nagadMerchantId: '',
   sslcStoreId: '',
@@ -174,12 +172,6 @@ export default function SettingsPage() {
       <Card hover={false}>
         <h3 className="font-display text-lg font-bold mb-6">Payment Gateways</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField label="Stripe Public Key">
-            <FormInput value={settings.stripePublicKey} onChange={(v) => set('stripePublicKey', v)} type="password" placeholder="pk_test_..." />
-          </FormField>
-          <FormField label="Stripe Secret Key">
-            <FormInput value={settings.stripeSecretKey} onChange={(v) => set('stripeSecretKey', v)} type="password" placeholder="sk_test_..." />
-          </FormField>
           <FormField label="bKash API Key">
             <FormInput value={settings.bkashApiKey} onChange={(v) => set('bkashApiKey', v)} type="password" placeholder="Enter key..." />
           </FormField>

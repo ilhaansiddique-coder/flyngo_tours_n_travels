@@ -184,4 +184,9 @@ export const bn: Messages = {
   service_required_documents: 'প্রয়োজনীয় কাগজপত্র ও ডকুমেন্টস',
   service_passport_validity: 'কমপক্ষে ৬ মাসের মেয়াদসহ পাসপোর্ট',
   service_bank_statement: 'ব্যাংক স্টেটমেন্ট (বিগত ৬ মাস)',
+  update_badge: 'নতুন আপডেট উপলভ্য',
+  update_title: 'নতুন সংস্করণ প্রকাশিত হয়েছে',
+  update_message: 'নতুন আপডেট এসেছে, আপডেট দেখতে রিফ্রেশ বাটনে চাপ দিন',
+  update_refresh: 'রিফ্রেশ করে আপডেট দেখুন',
+  update_later: 'পরে',
 };

@@ -1,0 +1,6 @@
+{
+  "version": "2f625e89b8851cb0d73552f6edeb3ea6f6e73d80",
+  "shortVersion": "2f625e8",
+  "message": "fix(admin): remove Stripe Public Key and Secret Key from payment gateways settings",
+  "builtAt": "2026-09-24T15:07:47.229Z"
+}

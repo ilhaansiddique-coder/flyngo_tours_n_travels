@@ -182,6 +182,11 @@ export const en = {
   service_required_documents: 'Required Documents',
   service_passport_validity: 'Passport with at least 6 months validity',
   service_bank_statement: 'Bank Statement (6 months)',
+  update_badge: 'Update Available',
+  update_title: 'New Update Deployed',
+  update_message: 'Here are some update, press refresh button to check the Update',
+  update_refresh: 'Refresh to Update',
+  update_later: 'Later',
 };
 
 export type Messages = typeof en;

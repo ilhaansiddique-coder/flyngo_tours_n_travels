@@ -146,3 +146,15 @@ export function searchWorldPlaces(query: string, limit = 30): WorldPlace[] {
 
   return deduped;
 }
+
+export function getCountryFlagByName(name?: string): string | undefined {
+  if (!name) return undefined;
+  const n = name.trim().toLowerCase();
+  const c = WORLD_COUNTRIES.find(
+    (item) =>
+      item.name.toLowerCase() === n ||
+      item.officialName?.toLowerCase() === n ||
+      item.iso2.toLowerCase() === n,
+  );
+  return c ? getFlagUrl(c.iso2) : undefined;
+}

@@ -16,6 +16,7 @@ import {
   ArrowLeft, ArrowRight, Clock, Check, ChevronDown,
   FileCheck, Briefcase, Coins, Building2, Landmark, MapPin,
 } from 'lucide-react';
+import { getCountryFlagByName } from '@/lib/world-places';
 
 interface VisaCountry {
   id: string;
@@ -192,32 +193,6 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
   const [loading, setLoading] = useState(true);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
 
-  const EXCLUDED_DEMO_NAMES = useMemo(
-    () =>
-      new Set([
-        'bangkok',
-        'nepal',
-        'singapore',
-        'tokyo',
-        'malaysia',
-        'united arab emirates (dubai)',
-        'united arab emirates',
-        'dubai',
-        'thailand',
-        'australia',
-        'united kingdom (uk)',
-        'united kingdom',
-        'uk',
-      ]),
-    [],
-  );
-
-  const isDemo = (name?: string, slug?: string) => {
-    const n = (name || '').toLowerCase().trim();
-    const s = (slug || '').toLowerCase().trim();
-    return EXCLUDED_DEMO_NAMES.has(n) || EXCLUDED_DEMO_NAMES.has(s);
-  };
-
   useEffect(() => {
     (async () => {
       try {
@@ -225,22 +200,52 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
           getVisaCountries({ limit: '100' }),
           getVisaServices(),
         ]);
-        const rawCountries = (((countriesRes as any)?.items ?? (countriesRes as any)?.data ?? []) as VisaCountry[]);
-        const all = rawCountries.filter((c) => c.isActive !== false && !isDemo(c.name, c.slug));
+        const rawCountries = Array.isArray(countriesRes)
+          ? (countriesRes as VisaCountry[])
+          : (((countriesRes as any)?.items ?? (countriesRes as any)?.data ?? []) as VisaCountry[]);
+        const all = rawCountries.filter((c) => c.isActive !== false);
         setAllCountries(all);
-        setCountry(all.find((c) => c.slug === slug) ?? null);
 
         const rawServices: VisaService[] = Array.isArray(servicesRes)
           ? (servicesRes as VisaService[])
           : ((servicesRes as any)?.items ?? (servicesRes as any)?.data ?? []);
-        setServices(
-          rawServices.filter(
-            (s) =>
-              s.isActive !== false &&
-              !isDemo(s.country?.name, s.country?.slug) &&
-              !isDemo(s.destination?.name, s.destination?.slug),
-          ),
-        );
+        const activeServices = rawServices.filter((s) => s.isActive !== false);
+        setServices(activeServices);
+
+        const slugLower = (slug || '').toLowerCase().trim();
+        let foundCountry = all.find((c) => (c.slug || '').toLowerCase() === slugLower || (c.name || '').toLowerCase() === slugLower) ?? null;
+        if (!foundCountry) {
+          // If not in VisaCountry list, look inside active services (primary or additional destination)
+          const matchService = activeServices.find((s: any) => {
+            const sn = (s.country?.name || '').toLowerCase();
+            const ss = (s.country?.slug || '').toLowerCase();
+            const dn = (s.destination?.name || '').toLowerCase();
+            const ds = (s.destination?.slug || '').toLowerCase();
+            const st = (s.title || '').toLowerCase();
+            const hasAddl = (s.additionalDestinations || []).some((ad: any) => {
+              const an = (ad.destination?.name || '').toLowerCase();
+              const as_ = (ad.destination?.slug || '').toLowerCase();
+              return an === slugLower || as_ === slugLower;
+            });
+            return sn === slugLower || ss === slugLower || dn === slugLower || ds === slugLower || st.includes(slugLower) || hasAddl;
+          });
+          if (matchService) {
+            const c = matchService.country || matchService.destination;
+            const countryName = c?.name || slug;
+            foundCountry = {
+              id: c?.id || slug,
+              name: countryName,
+              slug,
+              flagUrl: (matchService.country as any)?.flagUrl || getCountryFlagByName(countryName),
+              fee: Number(matchService.price) || 0,
+              currency: matchService.currency || 'BDT',
+              isActive: true,
+              visaTypes: [],
+              requirements: matchService.requirements || [],
+            };
+          }
+        }
+        setCountry(foundCountry);
       } catch {
         // bubble up nothing — the empty state handles it
       } finally {
@@ -266,11 +271,9 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
     [content],
   );
 
-  // Sidebar quick-nav: other active visa countries (excluding current & demo cities)
+  // Sidebar quick-nav: other active visa countries (excluding current)
   const otherCountries = useMemo(() => {
-    return allCountries.filter(
-      (c) => c.slug !== slug && c.isActive && !isDemo(c.name, c.slug),
-    );
+    return allCountries.filter((c) => c.slug !== slug && c.isActive !== false);
   }, [allCountries, slug]);
 
   // Bookable services belonging to this country only
@@ -385,9 +388,9 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
         <div className="absolute bottom-5 left-5 right-5 flex items-center gap-3">
-          {country.flagUrl && (
+          {(country.flagUrl || getCountryFlagByName(country.name)) && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={country.flagUrl} alt="" className="w-14 h-10 object-cover rounded-md shadow ring-1 ring-white/40" />
+            <img src={country.flagUrl || getCountryFlagByName(country.name)} alt="" className="w-14 h-10 object-cover rounded-md shadow ring-1 ring-white/40" />
           )}
           <div>
             <div className="text-[10px] uppercase tracking-widest font-bold text-white/70 mb-1">

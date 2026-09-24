@@ -11,6 +11,7 @@ import { useSearchQuery } from '@/hooks/use-search-query';
 import { SearchResultsBanner } from '@/components/ui/search-results-banner';
 import { Briefcase, Clock, FileCheck, ArrowRight, Coins, Globe, Eye } from 'lucide-react';
 import { matchesSearch } from '@/lib/search';
+import { getCountryFlagByName } from '@/lib/world-places';
 
 interface VisaCountry {
   id: string;
@@ -44,38 +45,13 @@ export default function VisaPage() {
   const [services, setServices] = useState<VisaService[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const EXCLUDED_DEMO_NAMES = useMemo(
-    () =>
-      new Set([
-        'bangkok',
-        'nepal',
-        'singapore',
-        'tokyo',
-        'malaysia',
-        'united arab emirates (dubai)',
-        'united arab emirates',
-        'dubai',
-        'thailand',
-        'australia',
-        'united kingdom (uk)',
-        'united kingdom',
-        'uk',
-      ]),
-    [],
-  );
-
-  const isDemoItem = (name?: string, slug?: string) => {
-    const n = (name || '').toLowerCase().trim();
-    const s = (slug || '').toLowerCase().trim();
-    return EXCLUDED_DEMO_NAMES.has(n) || EXCLUDED_DEMO_NAMES.has(s);
-  };
-
   const shownServices = useMemo(() => {
     if (!q) return services;
     // Tokenised so the autocomplete's "City, Country" label matches.
-    return services.filter((s: any) =>
-      matchesSearch([s.title, s.description, s.destination?.name, s.country?.name], q),
-    );
+    return services.filter((s: any) => {
+      const extraNames = (s.additionalDestinations || []).map((ad: any) => ad.destination?.name);
+      return matchesSearch([s.title, s.description, s.destination?.name, s.country?.name, ...extraNames], q);
+    });
   }, [services, q]);
 
   useEffect(() => {
@@ -85,21 +61,15 @@ export default function VisaPage() {
           getVisaCountries({ limit: '100' }),
           getVisaServices(),
         ]);
-        const rawCountries = (((countriesRes as any)?.data ?? (countriesRes as any)?.items ?? []) as VisaCountry[]);
-        setCountries(
-          rawCountries.filter((c) => c.isActive !== false && !isDemoItem(c.name, c.slug)),
-        );
+        const rawCountries = Array.isArray(countriesRes)
+          ? (countriesRes as VisaCountry[])
+          : (((countriesRes as any)?.data ?? (countriesRes as any)?.items ?? []) as VisaCountry[]);
+        setCountries(rawCountries.filter((c) => c.isActive !== false));
+
         const all: VisaService[] = Array.isArray(servicesRes)
           ? (servicesRes as VisaService[])
           : ((servicesRes as any)?.data ?? (servicesRes as any)?.items ?? []);
-        setServices(
-          all.filter(
-            (s) =>
-              s.isActive !== false &&
-              !isDemoItem(s.country?.name, s.country?.slug) &&
-              !isDemoItem(s.destination?.name, s.destination?.slug),
-          ),
-        );
+        setServices(all.filter((s) => s.isActive !== false));
       } catch {
         // empty states handled below
       } finally {
@@ -123,15 +93,24 @@ export default function VisaPage() {
       const c = s.country || s.destination;
       const name = c?.name;
       const slug = c?.slug;
-      if (!name || !slug) continue;
-      if (isDemoItem(name, slug)) continue;
-      if (!map.has(slug)) {
+      if (name && slug && !map.has(slug)) {
         map.set(slug, {
           id: c.id || slug,
           name,
           slug,
-          flagUrl: (s.country as any)?.flagUrl || flagBySlug[slug] || flagByName[name.toLowerCase()],
+          flagUrl: (s.country as any)?.flagUrl || flagBySlug[slug] || flagByName[name.toLowerCase()] || getCountryFlagByName(name),
         });
+      }
+      for (const ad of (s as any).additionalDestinations || []) {
+        const dest = ad.destination;
+        if (dest?.name && dest?.slug && !map.has(dest.slug)) {
+          map.set(dest.slug, {
+            id: dest.id || dest.slug,
+            name: dest.name,
+            slug: dest.slug,
+            flagUrl: dest.flagUrl || flagBySlug[dest.slug] || flagByName[dest.name.toLowerCase()] || getCountryFlagByName(dest.name),
+          });
+        }
       }
     }
     return Array.from(map.values());
@@ -216,7 +195,7 @@ export default function VisaPage() {
                   const countryName = s.destination?.name || s.country?.name;
                   const countrySlug = s.destination?.slug || s.country?.slug || countries.find((c) => c.name.toLowerCase() === (countryName || '').toLowerCase())?.slug;
                   const targetViewUrl = countrySlug ? `/visa/${countrySlug}` : `/booking?type=visa&id=${s.id}`;
-                  const flag = s.country?.flagUrl || flagBySlug[countrySlug || ''] || flagByName[(countryName || '').toLowerCase()];
+                  const flag = s.country?.flagUrl || flagBySlug[countrySlug || ''] || flagByName[(countryName || '').toLowerCase()] || getCountryFlagByName(countryName);
                   return (
                     <div
                       key={s.id}

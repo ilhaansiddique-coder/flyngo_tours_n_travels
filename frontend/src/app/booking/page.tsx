@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/contexts/locale-context';
 import { loadContact, saveContact } from '@/lib/contact-persist';
+import { AutoTranslateTextarea } from '@/components/ui/auto-translate-textarea';
 
 const STANDARD_STEPS = [
   { number: 1, key: 'booking_step_details' },
@@ -1248,15 +1249,13 @@ export default function BookingPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
-                    {t('custom_requests')}
-                  </label>
-                  <textarea
+                  <AutoTranslateTextarea
+                    label={t('custom_requests')}
                     value={formData.notes || ''}
-                    onChange={(e) => updateForm('notes', e.target.value)}
+                    onChange={(val) => updateForm('notes', val)}
                     rows={4}
-                    className="w-full px-4 py-3 rounded-xl text-on-surface placeholder:text-muted outline-none border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all bg-surface-container/60 backdrop-blur-md"
                     placeholder={t('custom_requests_ph')}
+                    helpText={isBn ? 'স্বয়ংক্রিয় অনুবাদ অপশন চালু আছে — ইংরেজি বা বাংলায় লিখতে পারেন।' : 'Auto-translate options enabled — write in English or বাংলা.'}
                   />
                 </div>
               </div>
@@ -1588,19 +1587,14 @@ export default function BookingPage() {
                   />
                   {bookingType === 'tour' && (
                     <div>
-                      <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
-                        {t('booking_notes')}
-                      </label>
-                      <textarea
+                      <AutoTranslateTextarea
+                        label={t('booking_notes')}
                         value={formData.notes || ''}
-                        onChange={(e) => updateForm('notes', e.target.value)}
+                        onChange={(val) => updateForm('notes', val)}
                         rows={3}
-                        className="w-full px-4 py-3 rounded-xl text-on-surface placeholder:text-muted outline-none border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all bg-surface-container/60 backdrop-blur-md"
                         placeholder={isBn ? 'আপনার ভ্রমণ সম্পর্কে একটি সংক্ষিপ্ত নোট লিখুন' : 'Leave a short note about your trip (optional)'}
+                        helpText={isBn ? 'আপনার বুকিং নিশ্চিত হওয়ার পর আমরা আপনার সাথে যোগাযোগ করব।' : 'We will contact you after your booking is confirmed.'}
                       />
-                      <p className="text-xs text-muted mt-1">
-                        {isBn ? 'আপনার বুকিং নিশ্চিত হওয়ার পর আমরা কল/এসএমএস/ইমেইলের মাধ্যমে আপনার সাথে যোগাযোগ করব।' : 'We will contact you by call, SMS or email after your booking is confirmed.'}
-                      </p>
                     </div>
                   )}
                 </div>
@@ -1623,14 +1617,11 @@ export default function BookingPage() {
                   </div>
                   <Input label={t('booking_guests')} type="number" min={1} value={formData.guests || ''} onChange={(e) => updateForm('guests', e.target.value)} required error={fieldErrors.guests} />
                   <div>
-                    <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-2">
-                      {t('booking_notes')}
-                    </label>
-                    <textarea
+                    <AutoTranslateTextarea
+                      label={t('booking_notes')}
                       value={formData.notes || ''}
-                      onChange={(e) => updateForm('notes', e.target.value)}
+                      onChange={(val) => updateForm('notes', val)}
                       rows={3}
-                      className="w-full px-4 py-3 rounded-xl text-on-surface placeholder:text-muted outline-none border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all bg-surface-container/60 backdrop-blur-md"
                       placeholder={t('booking_notes_ph')}
                     />
                   </div>

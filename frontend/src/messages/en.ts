@@ -173,6 +173,15 @@ export const en = {
   about_achievements_lead: 'FlynGo is a full-service outbound travel platform from Bangladesh, dedicated to making world exploration accessible, seamless, and unforgettable for every traveler.',
   about_company_lead: 'Built by 100% tourism professionals with deep knowledge of destinations worldwide.',
   about_company_sub: 'We provide end-to-end solutions for tours, hotels, flights, visas, and pilgrimage journeys — backed by trusted alliances with hotels and tourism partners across the globe.',
+  service_auto_translate: 'Auto-Translate',
+  service_auto_translate_to_bn: 'Auto-Translate to Bangla',
+  service_manual_words_bn: 'Manual Bangla Words',
+  service_tourist_visa: 'Tourist Visa',
+  service_processing_time: 'Processing Time',
+  service_working_days: 'Working Days',
+  service_required_documents: 'Required Documents',
+  service_passport_validity: 'Passport with at least 6 months validity',
+  service_bank_statement: 'Bank Statement (6 months)',
 };
 
 export type Messages = typeof en;

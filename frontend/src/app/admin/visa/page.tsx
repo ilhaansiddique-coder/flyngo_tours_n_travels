@@ -15,6 +15,7 @@ import { countryImage } from '@/lib/country-image';
 import { VisaContentEditor, type VisaCountryEditor } from './content-editor';
 import { Globe, Plus, Pencil, Trash2, Search, Coins, FileText, Loader2, Share2 } from 'lucide-react';
 import { ShareMenu } from '@/components/shared/share-menu';
+import { AutoTranslatePanel } from '@/components/admin/auto-translate-panel';
 
 interface VisaService {
   id: string;
@@ -422,6 +423,31 @@ export default function AdminVisaPage() {
       )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editItem ? 'Edit Visa Service' : 'Add Visa Service'}>
+        <AutoTranslatePanel
+          sourceFields={{
+            title: form.title,
+            description: form.description,
+            processingTime: form.processingTime,
+            requirements: form.requirements,
+          }}
+          fieldLabels={{
+            title: 'Visa Title',
+            description: 'Description',
+            processingTime: 'Processing Time',
+            requirements: 'Requirements / Documents',
+          }}
+          category="visa"
+          onApplyBangla={(translated) => {
+            setForm((f) => ({
+              ...f,
+              title: translated.title || f.title,
+              description: translated.description || f.description,
+              processingTime: translated.processingTime || f.processingTime,
+              requirements: translated.requirements || f.requirements,
+            }));
+          }}
+        />
+
         <FormField label="Title" required>
           <FormInput value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} placeholder="e.g. Indonesia Tourist Visa" />
         </FormField>

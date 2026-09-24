@@ -15,6 +15,7 @@ import { tourImage } from '@/lib/entity-image';
 import { useEffect, useState } from 'react';
 import { Map, Search, Plus, Pencil, Trash2, Share2 } from 'lucide-react';
 import { ShareMenu } from '@/components/shared/share-menu';
+import { AutoTranslatePanel } from '@/components/admin/auto-translate-panel';
 
 interface Tour {
   id: string;
@@ -405,6 +406,25 @@ export default function AdminToursPage() {
         title={editingTour ? 'Edit Tour' : 'Add Tour'}
       >
         <form onSubmit={handleSubmit}>
+          <AutoTranslatePanel
+            sourceFields={{
+              title: form.title,
+              description: form.description,
+            }}
+            fieldLabels={{
+              title: 'Tour Title',
+              description: 'Tour Description',
+            }}
+            category="tour"
+            onApplyBangla={(translated) => {
+              setForm((f) => ({
+                ...f,
+                title: translated.title || f.title,
+                description: translated.description || f.description,
+              }));
+            }}
+          />
+
           <FormField label="Title" required>
             <FormInput
               value={form.title}

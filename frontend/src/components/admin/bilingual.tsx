@@ -1,8 +1,10 @@
 'use client';
 
 import { createContext, useContext, useMemo, useState, ReactNode } from 'react';
+import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Locale } from '@/lib/i18n';
+import { autoTranslate } from '@/lib/translations/translator';
 
 /**
  * Bilingual (English / Bangla) content authoring for admin forms.
@@ -12,11 +14,7 @@ import type { Locale } from '@/lib/i18n';
  * discard the other language's text; both are stored in the form state and
  * submitted together, so admins can fill each language independently.
  *
- * Two usage modes:
- *   1. Grouped (recommended): wrap fields in <BiLangGroup> and use <BiInput> /
- *      <BiTextarea>. One shared toggle switches every field inside the group.
- *   2. Standalone: use <BiInputStandalone> / <BiTextareaStandalone>, each of
- *      which carries its own toggle.
+ * Includes built-in Auto-Translate (English -> Bangla) with manual editing.
  */
 
 export interface BiLangValue {
@@ -84,20 +82,33 @@ export function BiLangGroup({
   children,
   toggle = true,
   defaultLang = 'en',
+  onAutoTranslateAll,
 }: {
   label: string;
   toggle?: boolean;
   children: ReactNode;
   defaultLang?: Locale;
+  onAutoTranslateAll?: () => void;
 }) {
   const [lang, setLang] = useState<Locale>(defaultLang);
   const value = useMemo(() => ({ lang, setLang }), [lang]);
   return (
     <BiLangContext.Provider value={value}>
       <div className="mb-4">
-        <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center justify-between mb-1.5 gap-2">
           <label className="block text-sm font-medium text-on-surface">{label}</label>
-          {toggle && <BiLangToggle lang={lang} onChange={setLang} />}
+          <div className="flex items-center gap-2">
+            {onAutoTranslateAll && (
+              <button
+                type="button"
+                onClick={onAutoTranslateAll}
+                className="inline-flex items-center gap-1 text-[11px] text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                <Sparkles className="w-3 h-3" /> Auto-Translate
+              </button>
+            )}
+            {toggle && <BiLangToggle lang={lang} onChange={setLang} />}
+          </div>
         </div>
         {children}
       </div>
@@ -136,7 +147,7 @@ export function BiInput({ value, onChange, required, disabled, type = 'text', pl
         disabled={disabled}
         value={value[lang] ?? ''}
         onChange={(e) => onChange({ ...value, [lang]: e.target.value })}
-        placeholder={placeholder ?? (lang === 'bn' ? 'বাংলা লিখুন…' : 'Type in English…')}
+        placeholder={placeholder ?? (lang === 'bn' ? 'বাংলায় লিখুন (ম্যানুয়াল শব্দ)…' : 'Type in English…')}
         className={cn(inputBase, 'pr-12')}
       />
       {langBadge(lang === 'bn')}
@@ -157,7 +168,7 @@ export function BiTextarea({
       <textarea
         value={value[lang] ?? ''}
         onChange={(e) => onChange({ ...value, [lang]: e.target.value })}
-        placeholder={placeholder ?? (lang === 'bn' ? 'বাংলা লিখুন…' : 'Type in English…')}
+        placeholder={placeholder ?? (lang === 'bn' ? 'বাংলায় লিখুন (ম্যানুয়াল শব্দ)…' : 'Type in English…')}
         rows={rows}
         className={cn(inputBase, 'resize-none pr-12')}
       />
@@ -166,7 +177,7 @@ export function BiTextarea({
   );
 }
 
-/** Standalone single-line input with its own EN/BN toggle. */
+/** Standalone single-line input with its own EN/BN toggle and 1-click Auto-Translate */
 export function BiInputStandalone({
   label,
   required,
@@ -175,14 +186,27 @@ export function BiInputStandalone({
   placeholder,
   type = 'text',
 }: { label: string; required?: boolean } & BiInputProps) {
+  const [translating, setTranslating] = useState(false);
+
+  const handleTranslate = async () => {
+    if (!value.en.trim()) return;
+    try {
+      setTranslating(true);
+      const bn = await autoTranslate(value.en, 'en', 'bn');
+      onChange({ ...value, bn });
+    } finally {
+      setTranslating(false);
+    }
+  };
+
   return (
-    <BiLangGroup label={label}>
+    <BiLangGroup label={label} onAutoTranslateAll={value.en.trim() ? handleTranslate : undefined}>
       <BiInput value={value} onChange={onChange} required={required} placeholder={placeholder} type={type} />
     </BiLangGroup>
   );
 }
 
-/** Standalone textarea with its own EN/BN toggle. */
+/** Standalone textarea with its own EN/BN toggle and 1-click Auto-Translate */
 export function BiTextareaStandalone({
   label,
   required,
@@ -191,8 +215,21 @@ export function BiTextareaStandalone({
   placeholder,
   rows = 3,
 }: { label: string; required?: boolean; rows?: number } & BiInputProps) {
+  const [translating, setTranslating] = useState(false);
+
+  const handleTranslate = async () => {
+    if (!value.en.trim()) return;
+    try {
+      setTranslating(true);
+      const bn = await autoTranslate(value.en, 'en', 'bn');
+      onChange({ ...value, bn });
+    } finally {
+      setTranslating(false);
+    }
+  };
+
   return (
-    <BiLangGroup label={label}>
+    <BiLangGroup label={label} onAutoTranslateAll={value.en.trim() ? handleTranslate : undefined}>
       <BiTextarea value={value} onChange={onChange} rows={rows} placeholder={placeholder} />
     </BiLangGroup>
   );

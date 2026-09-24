@@ -12,6 +12,7 @@ import { formatCurrency } from '@/lib/utils';
 import { hajjImage } from '@/lib/entity-image';
 import { Sparkles, Plus, Pencil, Trash2, Search, Share2 } from 'lucide-react';
 import { ShareMenu } from '@/components/shared/share-menu';
+import { AutoTranslatePanel } from '@/components/admin/auto-translate-panel';
 
 interface HajjPackage {
   id: string;
@@ -247,6 +248,24 @@ function HajjForm({ initial, onClose, onSaved }: { initial: HajjPackage | null; 
   return (
     <Modal open onClose={onClose} title={initial ? 'Edit Hajj Package' : 'New Hajj Package'}>
       <form onSubmit={submit} className="space-y-4">
+        <AutoTranslatePanel
+          sourceFields={{
+            title,
+            highlights,
+            inclusions,
+          }}
+          fieldLabels={{
+            title: 'Hajj Package Title',
+            highlights: 'Highlights',
+            inclusions: 'Inclusions',
+          }}
+          category="hajj_umrah"
+          onApplyBangla={(translated) => {
+            if (translated.title) setTitle(translated.title);
+            if (translated.highlights) setHighlights(translated.highlights);
+            if (translated.inclusions) setInclusions(translated.inclusions);
+          }}
+        />
         <FormField label="Title"><FormInput value={title} onChange={setTitle} required /></FormField>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField label="Tier">

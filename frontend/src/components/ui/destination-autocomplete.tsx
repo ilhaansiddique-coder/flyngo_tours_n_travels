@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, KeyboardEvent } from 'react';
 import { MapPin, Flag, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatDestinationDisplay } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import type { Destination } from '@/types';
 import { COUNTRY_DIALS, type CountryDial } from '@/lib/country-dial-codes';
@@ -30,7 +30,7 @@ interface DestinationAutocompleteProps {
 }
 
 function formatDestination(d: Destination): string {
-  return d.country && d.country !== d.name ? `${d.name}, ${d.country}` : d.name;
+  return formatDestinationDisplay(d.name, d.country);
 }
 
 function filterCountriesLocal(q: string): CountryDial[] {
@@ -273,11 +273,13 @@ export function DestinationAutocomplete({
                 : isCountryMode
                   ? ((item as VisaCountryItem).region ?? '')
                   : ((item as Destination).continent ?? '');
+            const country = (item as Destination).country;
             const sub = isCountryMode
               ? ''
-              : (item as Destination).country &&
-                  (item as Destination).country !== (item as Destination).name
-                ? `, ${(item as Destination).country}`
+              : country &&
+                country.toLowerCase() !== name.toLowerCase() &&
+                !name.toLowerCase().includes(country.toLowerCase())
+                ? `, ${country}`
                 : '';
             return (
               <li

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDestinationDisplay } from '@/lib/utils';
 import { tourImage } from '@/lib/entity-image';
 import { Button } from '@/components/ui/button';
 import { ShareMenu } from '@/components/shared/share-menu';
@@ -176,15 +176,16 @@ export default function TourDetailPage() {
             {tour.destination && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-accent/10 border border-accent/30 text-accent">
                 <MapPin className="w-3.5 h-3.5" />
-                {tour.destination.name}{tour.destination.country && tour.destination.country !== tour.destination.name ? `, ${tour.destination.country}` : ''}
+                {formatDestinationDisplay(tour.destination.name, tour.destination.country)}
               </span>
             )}
             {(tour.additionalDestinations || [])
               .map((ad) => ad.destination)
               .filter((d): d is { name: string; country?: string } => !!d?.name)
-              .map((d) => (                <span key={d.name} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-accent/10 border border-accent/30 text-accent">
+              .map((d) => (
+                <span key={d.name} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-accent/10 border border-accent/30 text-accent">
                   <MapPin className="w-3.5 h-3.5" />
-                  {d.name}
+                  {formatDestinationDisplay(d.name, d.country)}
                 </span>
               ))}
             {tour.tourType && (

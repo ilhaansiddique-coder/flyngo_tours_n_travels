@@ -1,8 +1,8 @@
 import { Card } from '@/components/ui/card';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDestinationDisplay } from '@/lib/utils';
 import { tourImage } from '@/lib/entity-image';
 import Link from 'next/link';
-import { Clock, Users, MapPin, Star } from 'lucide-react';
+import { Clock, Users, MapPin, Star, Eye } from 'lucide-react';
 import { useLocale } from '@/contexts/locale-context';
 
 interface TourCardProps {
@@ -22,21 +22,31 @@ interface TourCardProps {
   coverImageUrl?: string | null;
 }
 
-export function TourCard({ slug, title, titleBn, price, duration, maxGuests, destination, additionalDestinations, imageUrl, coverImageUrl }: TourCardProps) {
+export function TourCard({ id, slug, title, titleBn, price, duration, maxGuests, destination, additionalDestinations, imageUrl, coverImageUrl }: TourCardProps) {
   const { locale } = useLocale();
   const isBn = locale === 'bn';
   const displayTitle = isBn ? (titleBn || title) : title;
   const destinationBadges = [
-    destination?.name ? { name: destination.name, label: destination.country && destination.country !== destination.name ? `${destination.name}, ${destination.country}` : destination.name } : null,
+    destination?.name
+      ? {
+          name: destination.name,
+          label: formatDestinationDisplay(destination.name, destination.country),
+        }
+      : null,
     ...(additionalDestinations || []).map((a) => {
       const d = a && 'destination' in (a as any) ? (a as { destination?: { name: string; country?: string } }).destination : (a as { name: string; country?: string });
-      return d && d.name ? { name: d.name, label: d.country && d.country !== d.name ? `${d.name}, ${d.country}` : d.name } : null;
+      return d && d.name
+        ? {
+            name: d.name,
+            label: formatDestinationDisplay(d.name, d.country),
+          }
+        : null;
     }),
   ].filter((b): b is { name: string; label: string } => !!b);
 
   return (
     <Card className="group overflow-hidden flex flex-col" hover={false} premium padding="none">
-      <div className="relative h-60 overflow-hidden rounded-t-3xl">
+      <div className="relative h-56 overflow-hidden rounded-t-3xl">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-tertiary" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -46,15 +56,11 @@ export function TourCard({ slug, title, titleBn, price, duration, maxGuests, des
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-
-        <div className="absolute bottom-4 left-4 right-4 z-20">
-          <h3 className="text-xl font-bold text-white leading-tight tracking-tight">{displayTitle}</h3>
-        </div>
       </div>
 
       <div className="px-6 py-5 flex flex-col flex-1">
         {destinationBadges.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-3">
+          <div className="flex flex-wrap gap-1.5 mb-2.5">
             {destinationBadges.map((b, i) => (
               <span
                 key={`${b.name}-${i}`}
@@ -67,6 +73,10 @@ export function TourCard({ slug, title, titleBn, price, duration, maxGuests, des
           </div>
         )}
 
+        <h3 className="text-lg font-bold text-on-surface leading-snug tracking-tight mb-2.5 line-clamp-2">
+          {displayTitle}
+        </h3>
+
         <div className="flex items-center gap-4 mb-3">
           <div className="flex items-center gap-1.5 text-sm text-on-surface-variant">
             <Clock className="w-4 h-4 text-accent" />
@@ -74,7 +84,7 @@ export function TourCard({ slug, title, titleBn, price, duration, maxGuests, des
           </div>
           <div className="flex items-center gap-1.5 text-sm text-on-surface-variant">
             <Users className="w-4 h-4 text-accent" />
-            <span>{maxGuests ?? '—'} Guests</span>
+            <span>{maxGuests != null && maxGuests > 0 ? `${maxGuests} Guests` : '— Guests'}</span>
           </div>
         </div>
 
@@ -85,18 +95,31 @@ export function TourCard({ slug, title, titleBn, price, duration, maxGuests, des
           <span className="text-xs text-on-surface-variant ml-1">(4.0)</span>
         </div>
 
-        <div className="mt-auto pt-3 border-t border-outline-variant/40 flex items-end justify-between">
-          <div>
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">From</p>
-            <p className="text-2xl font-bold text-accent leading-none mt-0.5">{formatCurrency(price)}</p>
+        <div className="mt-auto pt-4 border-t border-outline-variant/40 space-y-3">
+          <div className="flex items-baseline justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">From</p>
+              <p className="text-2xl font-bold text-accent leading-none mt-1">{formatCurrency(price)}</p>
+            </div>
+            <span className="text-xs text-on-surface-variant">per person</span>
           </div>
-          <Link
-            href={`/tours/${slug}`}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-white rounded-full px-5 py-2.5 transition-all duration-300 hover:shadow-lg hover:shadow-accent/20"
-            style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-primary))' }}
-          >
-            Book Now
-          </Link>
+
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <Link
+              href={`/tours/${slug}`}
+              className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-on-surface border border-outline-variant hover:border-primary/50 hover:bg-surface-container rounded-full px-4 py-2.5 transition-all duration-200 text-center"
+            >
+              <Eye className="w-4 h-4 text-accent" />
+              View
+            </Link>
+            <Link
+              href={id ? `/booking?type=tour&id=${id}` : `/tours/${slug}`}
+              className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-white rounded-full px-4 py-2.5 transition-all duration-300 hover:shadow-lg hover:shadow-accent/20 text-center"
+              style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-primary))' }}
+            >
+              Book Now
+            </Link>
+          </div>
         </div>
       </div>
     </Card>

@@ -58,8 +58,8 @@ export function FormField({ label, children, required }: { label: string; childr
   );
 }
 
-export function FormInput({ value, onChange, onBlur, placeholder, type = 'text', required, disabled, accept }: {
-  value?: string; onChange?: (v: string) => void; onBlur?: () => void; placeholder?: string; type?: string; required?: boolean; disabled?: boolean; accept?: string;
+export function FormInput({ value, onChange, onBlur, placeholder, type = 'text', required, disabled, accept, min, max }: {
+  value?: string; onChange?: (v: string) => void; onBlur?: () => void; placeholder?: string; type?: string; required?: boolean; disabled?: boolean; accept?: string; min?: number | string; max?: number | string;
 }) {
   const [visible, setVisible] = useState(false);
   const isPassword = type === 'password';
@@ -76,6 +76,8 @@ export function FormInput({ value, onChange, onBlur, placeholder, type = 'text',
         required={required}
         disabled={disabled}
         accept={accept}
+        min={min}
+        max={max}
         className={isPassword ? `${base} pr-10` : base}
       />
       {isPassword && (

@@ -114,6 +114,7 @@ describe('ToursService', () => {
         destinationId: 'dest-1',
         price: 999,
         duration: 5,
+        maxGuests: 10,
         requirements: ['Valid Passport\nHealth Certificate', 'Travel Insurance'],
         requirementsBn: 'বৈধ পাসপোর্ট\nস্বাস্থ্য সনদ',
       });

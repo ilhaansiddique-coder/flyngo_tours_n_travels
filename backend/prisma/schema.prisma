@@ -453,7 +453,7 @@ model Tour {
   currency  String   @default("USD")
 
   duration      Int
-  maxGuests     Int     @default(10) @map("max_guests")
+  maxGuests     Int     @map("max_guests")
   difficulty    String? // easy, moderate, challenging
   tourType      String? @map("tour_type") // group, private, adventure, luxury
   startLocation String? @map("start_location")

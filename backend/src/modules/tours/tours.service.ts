@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { buildSearchOr } from '../../common/utils/search.util';
 import { ListQueryDto, orderByFor, priceRange } from '../../common/dto/list-query.dto';
@@ -42,9 +42,11 @@ export class ToursService {
         where: { tenantId, OR: [{ slug }, { name: { equals: name, mode: 'insensitive' } }] },
         select: { id: true },
       });
+      const countryParts = name.split(',').map((p) => p.trim()).filter(Boolean);
+      const country = countryParts.length > 1 ? countryParts[countryParts.length - 1] : name;
       const destId = existing?.id || (
         await this.prisma.destination.create({
-          data: { tenantId, name, slug, country: name },
+          data: { tenantId, name, slug, country },
           select: { id: true },
         })
       ).id;
@@ -126,6 +128,11 @@ export class ToursService {
     const requirements = normalizeRequirements(data.requirements);
     const requirementsBn = data.requirementsBn !== undefined ? normalizeRequirements(data.requirementsBn) : [];
 
+    const maxGuestsNum = Number(data.maxGuests);
+    if (data.maxGuests === undefined || data.maxGuests === null || data.maxGuests === '' || isNaN(maxGuestsNum) || maxGuestsNum < 1) {
+      throw new BadRequestException('Max guests is required and must be at least 1');
+    }
+
     return this.prisma.tour.create({
       data: {
         tenantId,
@@ -146,7 +153,7 @@ export class ToursService {
         salePrice: data.salePrice,
         currency: data.currency || 'USD',
         duration: data.duration,
-        maxGuests: data.maxGuests || 10,
+        maxGuests: maxGuestsNum,
         difficulty: data.difficulty,
         tourType: data.tourType,
         startLocation: data.startLocation,
@@ -198,6 +205,14 @@ export class ToursService {
       ? normalizeRequirements(data.requirementsBn)
       : undefined;
 
+    let maxGuestsNum: number | undefined;
+    if (data.maxGuests !== undefined && data.maxGuests !== null && data.maxGuests !== '') {
+      maxGuestsNum = Number(data.maxGuests);
+      if (isNaN(maxGuestsNum) || maxGuestsNum < 1) {
+        throw new BadRequestException('Max guests must be at least 1');
+      }
+    }
+
     return this.prisma.tour.update({
       where: { id },
       data: {
@@ -218,7 +233,7 @@ export class ToursService {
         salePrice: data.salePrice,
         currency: data.currency,
         duration: data.duration,
-        maxGuests: data.maxGuests,
+        ...(maxGuestsNum !== undefined ? { maxGuests: maxGuestsNum } : {}),
         difficulty: data.difficulty,
         tourType: data.tourType,
         startLocation: data.startLocation,

@@ -5,7 +5,7 @@ import { useApi } from '@/hooks/use-api';
 import { useLocale } from '@/contexts/locale-context';
 import { MapPin, Clock, Star } from 'lucide-react';
 import { SectionHeading } from '@/components/ui/section-heading';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDestinationDisplay } from '@/lib/utils';
 import { tourImage } from '@/lib/entity-image';
 import { useEffect, useState } from 'react';
 
@@ -154,10 +154,10 @@ export function PopularPackages() {
                   <MapPin className="w-3.5 h-3.5 text-accent" />
                   <span className="line-clamp-1">
                     {tour.destination
-                      ? `${tour.destination.name}${tour.destination.country && tour.destination.country !== tour.destination.name ? `, ${tour.destination.country}` : ''}${
+                      ? `${formatDestinationDisplay(tour.destination.name, tour.destination.country)}${
                           (tour.additionalDestinations || []).length
                             ? ` · ${(tour.additionalDestinations || [])
-                                .map((ad) => ad.destination?.name)
+                                .map((ad) => formatDestinationDisplay(ad.destination?.name, ad.destination?.country))
                                 .filter(Boolean)
                                 .join(' · ')}`
                             : ''

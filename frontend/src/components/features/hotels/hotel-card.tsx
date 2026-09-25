@@ -3,7 +3,7 @@ import { formatCurrency } from '@/lib/utils';
 import { hotelImage } from '@/lib/entity-image';
 import { DestinationList } from '@/components/features/destination-list';
 import Link from 'next/link';
-import { Star, MapPin } from 'lucide-react';
+import { Star, MapPin, Eye } from 'lucide-react';
 
 interface HotelCardProps {
   id: string;
@@ -18,7 +18,7 @@ interface HotelCardProps {
   coverImageUrl?: string | null;
 }
 
-export function HotelCard({ slug, name, starRating, pricePerNight, destination, additionalDestinations, imageUrl, coverImageUrl }: HotelCardProps) {
+export function HotelCard({ id, slug, name, starRating, pricePerNight, destination, additionalDestinations, imageUrl, coverImageUrl }: HotelCardProps) {
   return (
     <Card className="group overflow-hidden flex flex-col" hover={false} premium padding="none">
       <div className="relative h-60 overflow-hidden rounded-t-3xl">
@@ -60,18 +60,31 @@ export function HotelCard({ slug, name, starRating, pricePerNight, destination, 
           <span className="text-xs text-on-surface-variant ml-1">({starRating || 0}.0)</span>
         </div>
 
-        <div className="mt-auto pt-3 border-t border-outline-variant/40 flex items-end justify-between">
-          <div>
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">Per night</p>
-            <p className="text-2xl font-bold text-accent leading-none mt-0.5">{formatCurrency(pricePerNight)}</p>
+        <div className="mt-auto pt-4 border-t border-outline-variant/40 space-y-3">
+          <div className="flex items-baseline justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">Per night</p>
+              <p className="text-2xl font-bold text-accent leading-none mt-1">{formatCurrency(pricePerNight)}</p>
+            </div>
+            <span className="text-xs text-on-surface-variant">per night</span>
           </div>
-          <Link
-            href={`/hotels/${slug}`}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-white rounded-full px-5 py-2.5 transition-all duration-300 hover:shadow-lg hover:shadow-accent/20"
-            style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-primary))' }}
-          >
-            Book Now
-          </Link>
+
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <Link
+              href={`/hotels/${slug}`}
+              className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-on-surface border border-outline-variant hover:border-primary/50 hover:bg-surface-container rounded-full px-4 py-2.5 transition-all duration-200 text-center"
+            >
+              <Eye className="w-4 h-4 text-accent" />
+              View
+            </Link>
+            <Link
+              href={id ? `/booking?type=hotel&id=${id}` : `/hotels/${slug}`}
+              className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-white rounded-full px-4 py-2.5 transition-all duration-300 hover:shadow-lg hover:shadow-accent/20 text-center"
+              style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-primary))' }}
+            >
+              Book Now
+            </Link>
+          </div>
         </div>
       </div>
     </Card>

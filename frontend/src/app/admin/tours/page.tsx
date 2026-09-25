@@ -97,6 +97,7 @@ export default function AdminToursPage() {
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
   const [form, setForm] = useState<FormData>(initialForm);
   const [submitting, setSubmitting] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string | null }>({
     open: false,
@@ -136,6 +137,7 @@ export default function AdminToursPage() {
     setFormLang('en');
     setDestName('');
     setAdditionalNames([]);
+    setModalError(null);
     setModalOpen(true);
   };
 
@@ -166,12 +168,22 @@ export default function AdminToursPage() {
         .map((ad) => ad.destination)
         .filter((d): d is { id: string; name: string; flagUrl?: string | null } => !!d),
     );
+    setModalError(null);
     setModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setModalError(null);
+
+    const guestsNum = Number(form.maxGuests);
+    if (!form.maxGuests || isNaN(guestsNum) || guestsNum < 1) {
+      setModalError('Max Guests is required and must be at least 1');
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const splitReqs = (str: string) =>
         (typeof str === 'string' ? str : '')
@@ -199,7 +211,7 @@ export default function AdminToursPage() {
         requirementsBn: splitReqs(syncedBn.requirements),
         price: Number(form.price),
         duration: Number(form.duration),
-        maxGuests: form.maxGuests ? Number(form.maxGuests) : undefined,
+        maxGuests: guestsNum,
         pointsAwarded: form.pointsAwarded ? Number(form.pointsAwarded) : 0,
         difficulty: form.difficulty,
         tourType: form.tourType,
@@ -214,8 +226,8 @@ export default function AdminToursPage() {
       }
       setModalOpen(false);
       fetchTours(1);
-    } catch {
-      // error handled silently
+    } catch (err: any) {
+      setModalError(err?.message || 'Failed to save tour');
     } finally {
       setSubmitting(false);
     }
@@ -516,6 +528,12 @@ export default function AdminToursPage() {
             </div>
           </div>
 
+          {modalError && (
+            <div className="p-3 rounded-lg bg-danger-soft text-error text-sm font-medium border border-error/20">
+              {modalError}
+            </div>
+          )}
+
           {formLang === 'en' ? (
             <>
               <FormField label="Title (English)" required>
@@ -658,12 +676,14 @@ export default function AdminToursPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label="Max Guests">
+            <FormField label="Max Guests" required>
               <FormInput
                 type="number"
+                min="1"
                 value={form.maxGuests}
                 onChange={(v) => setForm({ ...form, maxGuests: v })}
-                placeholder="Optional"
+                placeholder="e.g. 10"
+                required
               />
             </FormField>
             <FormField label="Loyalty points awarded">

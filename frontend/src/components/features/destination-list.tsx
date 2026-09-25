@@ -1,4 +1,5 @@
 import { MapPin, Plus } from 'lucide-react';
+import { formatDestinationDisplay } from '@/lib/utils';
 
 interface DestItem {
   name?: string;
@@ -23,8 +24,8 @@ export function DestinationList({ primary, additions, className = '', emptyLabel
   }
 
   const labels = [
-    primary?.name ? (primary.country && primary.country !== primary.name ? `${primary.name}, ${primary.country}` : primary.name) : null,
-    ...extra.map((d) => d.name),
+    primary?.name ? formatDestinationDisplay(primary.name, primary.country) : null,
+    ...extra.map((d) => formatDestinationDisplay(d.name, d.country)),
   ].filter((x): x is string => !!x);
 
   return (

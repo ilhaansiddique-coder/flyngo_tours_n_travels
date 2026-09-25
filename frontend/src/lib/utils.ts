@@ -46,3 +46,28 @@ export function shortPaymentRef(ref?: string | null): string {
   }
   return ref;
 }
+
+/** Format a destination label ensuring no repeated city/country segments (e.g. "Penang, Malaysia, Malaysia" -> "Penang, Malaysia"). */
+export function formatDestinationDisplay(name?: string | null, country?: string | null): string {
+  if (!name && !country) return '';
+  let str = (name || country || '').trim();
+  const c = (country || '').trim();
+
+  if (c && str) {
+    const lowerStr = str.toLowerCase();
+    const lowerCountry = c.toLowerCase();
+    if (lowerStr !== lowerCountry && !lowerStr.includes(lowerCountry)) {
+      str = `${str}, ${c}`;
+    }
+  }
+
+  // Deduplicate redundant comma-separated segments case-insensitively
+  const segments = str.split(',').map((s) => s.trim()).filter(Boolean);
+  const deduped: string[] = [];
+  for (const seg of segments) {
+    if (!deduped.some((d) => d.toLowerCase() === seg.toLowerCase())) {
+      deduped.push(seg);
+    }
+  }
+  return deduped.join(', ');
+}

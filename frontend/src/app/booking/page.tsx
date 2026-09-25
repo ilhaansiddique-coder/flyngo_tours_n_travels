@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { DestinationAutocomplete } from '@/components/ui/destination-autocomplete';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDestinationDisplay } from '@/lib/utils';
 import { useBookingStore } from '@/stores/booking.store';
 import { useApi } from '@/hooks/use-api';
 import {
@@ -213,10 +213,10 @@ function ItemSummaryCard({ t }: { t: (k: any) => string }) {
             <div className="flex items-center gap-1 mt-1 text-xs text-muted">
               <MapPin className="w-3 h-3" />
               <span>
-                {item.destination.name}{item.destination?.country && item.destination.country !== item.destination.name ? `, ${item.destination.country}` : ''}
+                {formatDestinationDisplay(item.destination.name, item.destination?.country)}
                 {(item.additionalDestinations || []).length
                   ? ` · ${(item.additionalDestinations || [])
-                      .map((ad: any) => ad?.destination?.name)
+                      .map((ad: any) => formatDestinationDisplay(ad?.destination?.name, ad?.destination?.country))
                       .filter(Boolean)
                       .join(' · ')}`
                   : ''}

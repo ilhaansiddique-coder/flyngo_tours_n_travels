@@ -5,7 +5,7 @@ import { Plane, Plus, Pencil, Trash2, ArrowRight, Share2 } from 'lucide-react';
 import { ShareMenu } from '@/components/shared/share-menu';
 import { useApi } from '@/hooks/use-api';
 import { flightImage } from '@/lib/entity-image';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, pagerPages } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -325,22 +325,42 @@ export default function AdminFlightsPage() {
             </div>
 
             {meta.totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-outline-variant">
-                <span className="text-sm text-on-surface-variant">
+              <div className="flex flex-col gap-2.5 px-4 py-3 border-t border-outline-variant">
+                <span className="text-sm text-on-surface-variant whitespace-nowrap">
                   Page {meta.page} of {meta.totalPages} ({meta.total} total)
                 </span>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-1 flex-wrap">
                   <button
                     onClick={() => fetchFlights(meta.page - 1)}
                     disabled={meta.page <= 1}
-                    className="px-3 py-1.5 text-sm rounded-lg border border-outline-variant disabled:opacity-50 hover:bg-surface-container-high text-on-surface"
+                    className="px-3 py-1 text-sm rounded-lg border border-outline-variant disabled:opacity-50 hover:bg-surface-container-high text-on-surface disabled:cursor-not-allowed"
                   >
                     Previous
                   </button>
+                  {pagerPages(meta.page, meta.totalPages).map((p, i) =>
+                    p === '…' ? (
+                      <span key={`gap-${i}`} className="px-2 text-sm text-on-surface-variant select-none">
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => fetchFlights(p)}
+                        style={p === meta.page ? adminButtonSmStyle : undefined}
+                        className={
+                          p === meta.page
+                            ? 'hover:opacity-95'
+                            : 'px-3 py-1 text-sm rounded-lg border border-outline-variant hover:bg-surface-container-high text-on-surface'
+                        }
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
                   <button
                     onClick={() => fetchFlights(meta.page + 1)}
                     disabled={meta.page >= meta.totalPages}
-                    className="px-3 py-1.5 text-sm rounded-lg border border-outline-variant disabled:opacity-50 hover:bg-surface-container-high text-on-surface"
+                    className="px-3 py-1 text-sm rounded-lg border border-outline-variant disabled:opacity-50 hover:bg-surface-container-high text-on-surface disabled:cursor-not-allowed"
                   >
                     Next
                   </button>

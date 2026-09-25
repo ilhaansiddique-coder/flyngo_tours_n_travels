@@ -237,11 +237,11 @@ export default function MediaPage() {
       )}
 
       {!loading && meta.totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-on-surface-variant">
+        <div className="flex flex-col gap-2.5 text-sm">
+          <span className="text-on-surface-variant whitespace-nowrap">
             Page {meta.page} of {meta.totalPages} ({meta.total} total)
           </span>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button variant="outline" size="sm" disabled={meta.page <= 1} onClick={() => setPage((p) => p - 1)}>
               Previous
             </Button>

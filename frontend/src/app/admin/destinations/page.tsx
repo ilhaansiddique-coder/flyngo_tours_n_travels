@@ -11,6 +11,7 @@ import { CountryAutocomplete } from '@/components/admin/country-autocomplete';
 import { ImageUploader } from '@/components/admin/image-uploader';
 import { countryImage } from '@/lib/country-image';
 import { adminButtonStyle, adminButtonSmStyle } from '@/components/admin/button-styles';
+import { pagerPages } from '@/lib/utils';
 
 interface DestinationItem {
   id: string;
@@ -282,11 +283,11 @@ export default function AdminDestinationsPage() {
         </div>
 
         {meta.totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-outline-variant">
-            <span className="text-sm text-on-surface-variant">
+          <div className="flex flex-col gap-2.5 px-4 py-3 border-t border-outline-variant">
+            <span className="text-sm text-on-surface-variant whitespace-nowrap">
               Page {meta.page} of {meta.totalPages} ({meta.total} total)
             </span>
-            <div className="flex gap-1">
+            <div className="flex items-center gap-1 flex-wrap">
               <button
                 onClick={() => goToPage(meta.page - 1)}
                 disabled={meta.page <= 1}
@@ -294,20 +295,26 @@ export default function AdminDestinationsPage() {
               >
                 Prev
               </button>
-              {Array.from({ length: meta.totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => goToPage(p)}
-                  style={p === meta.page ? adminButtonSmStyle : undefined}
-                  className={
-                    p === meta.page
-                      ? 'hover:opacity-95'
-                      : 'px-3 py-1 text-sm rounded-lg border border-outline-variant hover:bg-surface-container-high'
-                  }
-                >
-                  {p}
-                </button>
-              ))}
+              {pagerPages(meta.page, meta.totalPages).map((p, i) =>
+                p === '…' ? (
+                  <span key={`gap-${i}`} className="px-2 text-sm text-on-surface-variant select-none">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => goToPage(p)}
+                    style={p === meta.page ? adminButtonSmStyle : undefined}
+                    className={
+                      p === meta.page
+                        ? 'hover:opacity-95'
+                        : 'px-3 py-1 text-sm rounded-lg border border-outline-variant hover:bg-surface-container-high'
+                    }
+                  >
+                    {p}
+                  </button>
+                )
+              )}
               <button
                 onClick={() => goToPage(meta.page + 1)}
                 disabled={meta.page >= meta.totalPages}

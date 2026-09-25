@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, pagerPages } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
 import { ImageUploader } from '@/components/admin/image-uploader';
@@ -372,11 +372,11 @@ export default function AdminHotelsPage() {
             </div>
 
             {meta.totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t border-outline-variant">
-                <p className="text-sm text-on-surface-variant">
+              <div className="flex flex-col gap-2.5 p-4 border-t border-outline-variant">
+                <p className="text-sm text-on-surface-variant whitespace-nowrap">
                   Showing {((meta.page - 1) * meta.limit) + 1}–{Math.min(meta.page * meta.limit, meta.total)} of {meta.total}
                 </p>
-                <div className="flex gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
                   <Button
                     variant="outline"
                     size="sm"
@@ -385,16 +385,22 @@ export default function AdminHotelsPage() {
                   >
                     Previous
                   </Button>
-                  {Array.from({ length: meta.totalPages }, (_, i) => i + 1).map((p) => (
-                    <Button
-                      key={p}
-                      variant={p === meta.page ? 'primary' : 'outline'}
-                      size="sm"
-                      onClick={() => setPage(p)}
-                    >
-                      {p}
-                    </Button>
-                  ))}
+                  {pagerPages(meta.page, meta.totalPages).map((p, i) =>
+                    p === '…' ? (
+                      <span key={`gap-${i}`} className="px-2 text-sm text-on-surface-variant select-none">
+                        …
+                      </span>
+                    ) : (
+                      <Button
+                        key={p}
+                        variant={p === meta.page ? 'primary' : 'outline'}
+                        size="sm"
+                        onClick={() => setPage(p)}
+                      >
+                        {p}
+                      </Button>
+                    )
+                  )}
                   <Button
                     variant="outline"
                     size="sm"

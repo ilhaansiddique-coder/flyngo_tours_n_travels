@@ -71,3 +71,19 @@ export function formatDestinationDisplay(name?: string | null, country?: string 
   }
   return deduped.join(', ');
 }
+
+/** Page numbers for pagination: 1 … neighbours … last, with gaps collapsed to "…". */
+export function pagerPages(current: number, total: number): Array<number | '…'> {
+  const out: Array<number | '…'> = [];
+  const addNum = (p: number) => { if (out[out.length - 1] !== p) out.push(p); };
+  const addGap = () => { if (out[out.length - 1] !== '…') out.push('…'); };
+  if (total <= 1) return [1];
+  const from = Math.max(2, current - 2);
+  const to = Math.min(total - 1, current + 2);
+  addNum(1);
+  if (from > 2) addGap();
+  for (let p = from; p <= to; p++) addNum(p);
+  if (to < total - 1) addGap();
+  addNum(total);
+  return out;
+}

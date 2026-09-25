@@ -1,6 +1,6 @@
 {
-  "version": "0d349a6f6723adc14d2c8d4eda07338790c1aa92",
-  "shortVersion": "0d349a6",
-  "message": "refactor(admin-hajj): remove redundant Image URL field from Hajj package form",
-  "builtAt": "2026-09-25T08:40:54.205Z"
+  "version": "be6cac86d7788fdc4d117d79e870be7d5927eac8",
+  "shortVersion": "be6cac8",
+  "message": "refactor(admin-umrah): remove redundant Image URL field from Umrah package form",
+  "builtAt": "2026-09-25T12:25:49.027Z"
 }

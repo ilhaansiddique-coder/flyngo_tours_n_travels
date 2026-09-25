@@ -52,7 +52,7 @@ export function DestinationsPageClient() {
         title={<>Explore <span className="gradient-text-warm">Destinations</span></>}
         subtitle="Choose from hundreds of incredible destinations worldwide — curated for the luxury traveller."
       />
-      <Section>
+      <Section className="pt-4 sm:pt-6 pb-20">
         <Container>
           {loading ? (
             <div className="text-center py-20">

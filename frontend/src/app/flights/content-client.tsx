@@ -34,7 +34,7 @@ export function FlightsPageClient() {
         title={<>Find & Book <span className="gradient-text-warm">Flights</span></>}
         subtitle="Search hundreds of airlines for the best deals worldwide."
       />
-      <Section>
+      <Section className="pt-4 sm:pt-6 pb-20">
         <Container>
           {loading ? (
             <div className="text-center py-20">

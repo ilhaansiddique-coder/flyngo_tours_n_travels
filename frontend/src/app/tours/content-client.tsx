@@ -44,7 +44,7 @@ export function ToursPageClient() {
         title={<>Explore Our <span className="gradient-text-warm">Tours</span></>}
         subtitle="Curated experiences in the world's most breathtaking destinations."
       />
-      <Section>
+      <Section className="pt-4 sm:pt-6 pb-20">
         <Container>
           {q && <SearchResultsBanner query={q} count={tours.length} noun="tours" />}
           {loading ? (

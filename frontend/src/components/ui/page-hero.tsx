@@ -7,6 +7,7 @@ interface PageHeroProps {
   align?: 'left' | 'center';
   variant?: 'default' | 'emerald' | 'amber' | 'blue';
   children?: React.ReactNode;
+  className?: string;
 }
 
 const VARIANT_WASH: Record<NonNullable<PageHeroProps['variant']>, string> = {
@@ -23,9 +24,10 @@ export function PageHero({
   align = 'center',
   variant = 'default',
   children,
+  className,
 }: PageHeroProps) {
   return (
-    <section className="relative isolate overflow-hidden surface-page pt-20 sm:pt-32 pb-20">
+    <section className={cn('relative isolate overflow-hidden surface-page pt-16 sm:pt-24 pb-8 sm:pb-10', className)}>
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-grid opacity-60" />
         <div

@@ -34,7 +34,7 @@ export function HotelsPageClient() {
         title={<>Find Your <span className="gradient-text-warm">Perfect Stay</span></>}
         subtitle="From luxury resorts to cozy boutique hotels worldwide."
       />
-      <Section>
+      <Section className="pt-4 sm:pt-6 pb-20">
         <Container>
           {loading ? (
             <div className="text-center py-20">

@@ -1,6 +1,6 @@
 {
-  "version": "625eb41c394ffec2e3c58efdd8ccf51f115ed4f8",
-  "shortVersion": "625eb41",
-  "message": "feat(hajj-umrah): add requirements field, enhance destination city imagery and layout",
-  "builtAt": "2026-09-25T08:13:58.957Z"
+  "version": "0ec0803ca77167edc381a9b34be1a54db51b2805",
+  "shortVersion": "0ec0803",
+  "message": "fix(tours): deduplicate destination names, require guest field, and update service card button layout",
+  "builtAt": "2026-09-25T08:30:32.847Z"
 }

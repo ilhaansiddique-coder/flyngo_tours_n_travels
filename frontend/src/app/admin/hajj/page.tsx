@@ -474,7 +474,6 @@ function HajjForm({ initial, onClose, onSaved }: { initial: HajjPackage | null; 
         </div>
         <FormField label="Highlights (one per line)"><FormTextarea value={highlights} onChange={setHighlights} rows={4} /></FormField>
         <FormField label="Inclusions (one per line)"><FormTextarea value={inclusions} onChange={setInclusions} rows={4} /></FormField>
-        <FormField label="Image URL"><FormInput value={imageUrl} onChange={setImageUrl} /></FormField>
         <FormField label="Cover Image">
           <ImageUploader
             value={coverImageUrl}

@@ -1,6 +1,6 @@
 {
-  "version": "0ec0803ca77167edc381a9b34be1a54db51b2805",
-  "shortVersion": "0ec0803",
-  "message": "fix(tours): deduplicate destination names, require guest field, and update service card button layout",
-  "builtAt": "2026-09-25T08:30:32.847Z"
+  "version": "47d3a8166583538e372a5e074473d6e5b847dc45",
+  "shortVersion": "47d3a81",
+  "message": "style(tours): further reduce top padding on tours section to pt-0.5 sm:pt-2",
+  "builtAt": "2026-09-25T08:38:46.949Z"
 }

@@ -79,13 +79,13 @@ export function FlightsPageClient() {
         <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 pt-1 sm:pt-2 pb-4 sm:pb-6">
           <span className="inline-flex items-center gap-2 px-3 py-1 mb-6 rounded-full text-[10px] tracking-widest uppercase font-bold text-blue-700 dark:text-blue-300 border border-blue-500/30 bg-blue-500/10">
             <Plane className="w-3 h-3" />
-            Flight Bookings
+            Flight Tickets & Routes
           </span>
           <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-[-0.02em] text-on-surface mb-6 max-w-3xl">
-            Flights <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">made simple</span>
+            Tickets <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">made simple</span>
           </h1>
           <p className="text-lg text-on-surface-variant max-w-2xl leading-relaxed">
-            Search hundreds of trusted airlines for the best airfares worldwide. Instant e-ticket confirmation, 24/7 flight support, and rewards on every route.
+            Search hundreds of trusted airlines for the best airfares and instant tickets worldwide. Instant e-ticket confirmation, 24/7 flight assistance, and rewards on every route.
           </p>
         </div>
       </section>

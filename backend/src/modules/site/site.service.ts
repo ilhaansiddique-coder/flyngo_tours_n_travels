@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 
 export interface FooterColumnLink {
@@ -63,6 +63,8 @@ const DEFAULT_FOOTER_COLUMNS: FooterColumn[] = [
 
 @Injectable()
 export class SiteService {
+  private readonly logger = new Logger(SiteService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private generateId(): string {
@@ -73,32 +75,69 @@ export class SiteService {
     );
   }
 
+  getDefaultNavMenuTree() {
+    return [
+      { id: 'nav-home', labelEn: 'Home', labelBn: 'হোম', href: '/', order: 0, isVisible: true, children: [] },
+      {
+        id: 'nav-about',
+        labelEn: 'About Us',
+        labelBn: 'আমাদের সম্পর্কে',
+        href: '#',
+        order: 1,
+        isVisible: true,
+        children: [
+          { id: 'nav-about-profile', labelEn: 'Company Profile', labelBn: 'কোম্পানি প্রোফাইল', href: '/about', order: 0, isVisible: true, children: [] },
+          { id: 'nav-about-ceo', labelEn: 'Message from CEO', labelBn: 'সিইও-এর বার্তা', href: '/about/ceo', order: 1, isVisible: true, children: [] },
+        ],
+      },
+      { id: 'nav-tours', labelEn: 'Tours', labelBn: 'ট্যুর', href: '/tours', translationKey: 'nav_tours', order: 2, isVisible: true, children: [] },
+      { id: 'nav-visa', labelEn: 'Visa', labelBn: 'ভিসা', href: '/visa', translationKey: 'nav_visa', order: 3, isVisible: true, children: [] },
+      { id: 'nav-hajj', labelEn: 'Hajj & Umrah', labelBn: 'হজ্জ ও ওমরাহ', href: '/hajj', translationKey: 'nav_hajj', order: 4, isVisible: true, children: [] },
+      { id: 'nav-hotels', labelEn: 'Hotels', labelBn: 'হোটেল', href: '/hotels', translationKey: 'nav_hotels', order: 5, isVisible: true, children: [] },
+      { id: 'nav-tickets', labelEn: 'Tickets', labelBn: 'টিকিট', href: '/flights', translationKey: 'nav_tickets', order: 6, isVisible: true, children: [] },
+      { id: 'nav-blog', labelEn: 'Blog', labelBn: 'ব্লগ', href: '/blog', translationKey: 'nav_blog', order: 7, isVisible: true, children: [] },
+    ];
+  }
+
   // ----------------- NAV MENU -----------------
 
   async listNavMenu(tenantId: string) {
-    const items = await this.prisma.navMenu.findMany({
-      where: { tenantId, deletedAt: null },
-      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
-    });
-    return items;
+    try {
+      const items = await this.prisma.navMenu.findMany({
+        where: { tenantId, deletedAt: null },
+        orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      });
+      return items;
+    } catch (err: any) {
+      this.logger.warn(`Failed to list nav menu: ${err.message}`);
+      return [];
+    }
   }
 
   async listNavMenuTree(tenantId: string) {
-    const flat = await this.listNavMenu(tenantId);
-    const byId = new Map<string, any>();
-    const roots: any[] = [];
-    for (const n of flat) {
-      byId.set(n.id, { ...n, children: [] });
-    }
-    for (const n of flat) {
-      const node = byId.get(n.id);
-      if (n.parentId && byId.has(n.parentId)) {
-        byId.get(n.parentId).children.push(node);
-      } else {
-        roots.push(node);
+    try {
+      const flat = await this.listNavMenu(tenantId);
+      if (!flat || flat.length === 0) {
+        return this.getDefaultNavMenuTree();
       }
+      const byId = new Map<string, any>();
+      const roots: any[] = [];
+      for (const n of flat) {
+        byId.set(n.id, { ...n, children: [] });
+      }
+      for (const n of flat) {
+        const node = byId.get(n.id);
+        if (n.parentId && byId.has(n.parentId)) {
+          byId.get(n.parentId).children.push(node);
+        } else {
+          roots.push(node);
+        }
+      }
+      return roots.length > 0 ? roots : this.getDefaultNavMenuTree();
+    } catch (err: any) {
+      this.logger.warn(`Failed to list nav menu tree: ${err.message}`);
+      return this.getDefaultNavMenuTree();
     }
-    return roots;
   }
 
   async createNavMenu(tenantId: string, data: any) {
@@ -173,92 +212,131 @@ export class SiteService {
   }
 
   async seedDefaultNavMenu(tenantId: string) {
-    const count = await this.prisma.navMenu.count({ where: { tenantId, deletedAt: null } });
-    if (count > 0) return;
+    try {
+      const count = await this.prisma.navMenu.count({ where: { tenantId, deletedAt: null } });
+      if (count > 0) return;
 
-    const groups: { en: string; bn?: string; href: string; children: { en: string; bn?: string; href: string }[] }[] = [
-      { en: 'About Us', bn: 'আমাদের সম্পর্কে', href: '#', children: [
-        { en: 'Company Profile', bn: 'কোম্পানি প্রোফাইল', href: '/about' },
-        { en: 'Message from CEO', bn: 'সিইও-এর বার্তা', href: '/about/ceo' },
-      ]},
-    ];
+      const groups: { en: string; bn?: string; href: string; children: { en: string; bn?: string; href: string }[] }[] = [
+        { en: 'About Us', bn: 'আমাদের সম্পর্কে', href: '#', children: [
+          { en: 'Company Profile', bn: 'কোম্পানি প্রোফাইল', href: '/about' },
+          { en: 'Message from CEO', bn: 'সিইও-এর বার্তা', href: '/about/ceo' },
+        ]},
+      ];
 
-    const flat: { en: string; bn?: string; href: string; order: number; parentId?: string | null }[] = [];
-    let order = 0;
-    flat.push({ en: 'Home', bn: 'হোম', href: '/', order: order++ });
-    for (const g of groups) {
-      const parentOrder = order++;
-      flat.push({ en: g.en, bn: g.bn, href: g.href, order: parentOrder });
-    }
-    const singles: { en: string; bn?: string; href: string; translationKey?: string }[] = [
-      { en: 'Tours', bn: 'ট্যুর', href: '/tours', translationKey: 'nav_tours' },
-      { en: 'Visa', bn: 'ভিসা', href: '/visa', translationKey: 'nav_visa' },
-      { en: 'Hajj & Umrah', bn: 'হজ্জ ও ওমরাহ', href: '/hajj', translationKey: 'nav_hajj' },
-      { en: 'Hotels', bn: 'হোটেল', href: '/hotels', translationKey: 'nav_hotels' },
-      { en: 'Tickets', bn: 'টিকিট', href: '/flights', translationKey: 'nav_tickets' },
-      { en: 'Blog', bn: 'ব্লগ', href: '/blog', translationKey: 'nav_blog' },
-    ];
-    for (const s of singles) flat.push({ en: s.en, bn: s.bn, href: s.href, order: order++ });
+      const flat: { en: string; bn?: string; href: string; order: number; parentId?: string | null }[] = [];
+      let order = 0;
+      flat.push({ en: 'Home', bn: 'হোম', href: '/', order: order++ });
+      for (const g of groups) {
+        const parentOrder = order++;
+        flat.push({ en: g.en, bn: g.bn, href: g.href, order: parentOrder });
+      }
+      const singles: { en: string; bn?: string; href: string; translationKey?: string }[] = [
+        { en: 'Tours', bn: 'ট্যুর', href: '/tours', translationKey: 'nav_tours' },
+        { en: 'Visa', bn: 'ভিসা', href: '/visa', translationKey: 'nav_visa' },
+        { en: 'Hajj & Umrah', bn: 'হজ্জ ও ওমরাহ', href: '/hajj', translationKey: 'nav_hajj' },
+        { en: 'Hotels', bn: 'হোটেল', href: '/hotels', translationKey: 'nav_hotels' },
+        { en: 'Tickets', bn: 'টিকিট', href: '/flights', translationKey: 'nav_tickets' },
+        { en: 'Blog', bn: 'ব্লগ', href: '/blog', translationKey: 'nav_blog' },
+      ];
+      for (const s of singles) flat.push({ en: s.en, bn: s.bn, href: s.href, order: order++ });
 
-    const created: { id: string; en: string; children: { en: string; href: string }[] }[] = [];
-    for (const item of flat) {
-      const created_item = await this.prisma.navMenu.create({
-        data: {
-          tenantId,
-          labelEn: item.en,
-          labelBn: item.bn,
-          href: item.href,
-          translationKey: (item as any).translationKey ?? null,
-          order: item.order,
-          parentId: item.parentId ?? null,
-        },
-      });
-      created.push({ id: created_item.id, en: item.en, children: [] });
-    }
-    for (const g of groups) {
-      const parent = created.find((c) => c.en === g.en);
-      if (!parent) continue;
-      let childOrder = 0;
-      for (const child of g.children) {
-        await this.prisma.navMenu.create({
+      const created: { id: string; en: string; children: { en: string; href: string }[] }[] = [];
+      for (const item of flat) {
+        const created_item = await this.prisma.navMenu.create({
           data: {
             tenantId,
-            labelEn: child.en,
-            labelBn: child.bn,
-            href: child.href,
-            order: childOrder++,
-            parentId: parent.id,
+            labelEn: item.en,
+            labelBn: item.bn,
+            href: item.href,
+            translationKey: (item as any).translationKey ?? null,
+            order: item.order,
+            parentId: item.parentId ?? null,
           },
         });
+        created.push({ id: created_item.id, en: item.en, children: [] });
       }
+      for (const g of groups) {
+        const parent = created.find((c) => c.en === g.en);
+        if (!parent) continue;
+        let childOrder = 0;
+        for (const child of g.children) {
+          await this.prisma.navMenu.create({
+            data: {
+              tenantId,
+              labelEn: child.en,
+              labelBn: child.bn,
+              href: child.href,
+              order: childOrder++,
+              parentId: parent.id,
+            },
+          });
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(`Failed to seed default nav menu: ${err.message}`);
     }
   }
 
   // ----------------- FOOTER -----------------
 
+  getDefaultFooterConfig(tenantId: string) {
+    return {
+      id: 'default-footer',
+      tenantId,
+      taglineEn:
+        'High-velocity luxury travel — tours, hotels, flights, visas, and Hajj packages designed for the discerning global traveller.',
+      taglineBn: null,
+      accentLabelEn: 'High Velocity Luxury',
+      accentLabelBn: null,
+      columns: DEFAULT_FOOTER_COLUMNS as any,
+      socialLinks: [
+        { id: 'social-facebook', platform: 'facebook', label: 'Facebook', href: 'https://facebook.com/flyngo', isVisible: true, openInNewTab: true },
+        { id: 'social-instagram', platform: 'instagram', label: 'Instagram', href: 'https://instagram.com/flyngo', isVisible: true, openInNewTab: true },
+      ],
+      contactEmail: 'visaflyngo@gmail.com',
+      contactPhone: '+8801322913530',
+      contactNoteEn: '24/7 concierge · Multilingual support',
+      contactNoteBn: null,
+      copyrightTextEn: null,
+      copyrightTextBn: null,
+      showLanguageToggle: true,
+      showShareButton: true,
+    };
+  }
+
   async getFooter(tenantId: string) {
-    let footer = await this.prisma.footerConfig.findUnique({ where: { tenantId } });
-    if (!footer) {
-      footer = await this.prisma.footerConfig.create({
-        data: {
-          tenantId,
-          taglineEn:
-            'High-velocity luxury travel — tours, hotels, flights, visas, and Hajj packages designed for the discerning global traveller.',
-          taglineBn: null,
-          accentLabelEn: 'High Velocity Luxury',
-          accentLabelBn: null,
-          columns: DEFAULT_FOOTER_COLUMNS as any,
-          socialLinks: (await this.getDefaultSocialLinks(tenantId)) as any,
-          contactEmail: 'visaflyngo@gmail.com',
-          contactPhone: '+8801322913530',
-          contactNoteEn: '24/7 concierge · Multilingual support',
-          contactNoteBn: null,
-          copyrightTextEn: null,
-          copyrightTextBn: null,
-        },
-      });
+    try {
+      let footer = await this.prisma.footerConfig.findUnique({ where: { tenantId } });
+      if (!footer) {
+        try {
+          footer = await this.prisma.footerConfig.create({
+            data: {
+              tenantId,
+              taglineEn:
+                'High-velocity luxury travel — tours, hotels, flights, visas, and Hajj packages designed for the discerning global traveller.',
+              taglineBn: null,
+              accentLabelEn: 'High Velocity Luxury',
+              accentLabelBn: null,
+              columns: DEFAULT_FOOTER_COLUMNS as any,
+              socialLinks: (await this.getDefaultSocialLinks(tenantId)) as any,
+              contactEmail: 'visaflyngo@gmail.com',
+              contactPhone: '+8801322913530',
+              contactNoteEn: '24/7 concierge · Multilingual support',
+              contactNoteBn: null,
+              copyrightTextEn: null,
+              copyrightTextBn: null,
+            },
+          });
+        } catch (createErr: any) {
+          this.logger.warn(`Failed to auto-create footer config in DB: ${createErr.message}`);
+          return this.getDefaultFooterConfig(tenantId);
+        }
+      }
+      return footer;
+    } catch (err: any) {
+      this.logger.warn(`Failed to fetch footer config: ${err.message}`);
+      return this.getDefaultFooterConfig(tenantId);
     }
-    return footer;
   }
 
   async updateFooter(tenantId: string, data: any) {
@@ -327,16 +405,20 @@ export class SiteService {
   }
 
   private async getDefaultSocialLinks(tenantId: string): Promise<FooterSocialLink[]> {
-    const settings = await this.prisma.tenantSettings.findUnique({
-      where: { tenantId },
-      select: { facebookUrl: true, instagramUrl: true, twitterUrl: true, youtubeUrl: true },
-    });
-    if (!settings) return [];
-    return this.sanitizeSocialLinks([
-      { id: 'social-facebook', platform: 'facebook', label: 'Facebook', href: settings.facebookUrl },
-      { id: 'social-instagram', platform: 'instagram', label: 'Instagram', href: settings.instagramUrl },
-      { id: 'social-twitter', platform: 'twitter', label: 'Twitter', href: settings.twitterUrl },
-      { id: 'social-youtube', platform: 'youtube', label: 'YouTube', href: settings.youtubeUrl },
-    ]);
+    try {
+      const settings = await this.prisma.tenantSettings.findUnique({
+        where: { tenantId },
+        select: { facebookUrl: true, instagramUrl: true, twitterUrl: true, youtubeUrl: true },
+      });
+      if (!settings) return [];
+      return this.sanitizeSocialLinks([
+        { id: 'social-facebook', platform: 'facebook', label: 'Facebook', href: settings.facebookUrl },
+        { id: 'social-instagram', platform: 'instagram', label: 'Instagram', href: settings.instagramUrl },
+        { id: 'social-twitter', platform: 'twitter', label: 'Twitter', href: settings.twitterUrl },
+        { id: 'social-youtube', platform: 'youtube', label: 'YouTube', href: settings.youtubeUrl },
+      ]);
+    } catch {
+      return [];
+    }
   }
 }

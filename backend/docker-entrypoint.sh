@@ -33,7 +33,9 @@ run_migrations() {
 }
 
 attempt_recovery() {
-  echo "==> Migrate deploy failed; attempting to resolve known cleanup migrations..."
+  echo "==> Migrate deploy failed; checking migration status..."
+  npx prisma migrate status 2>&1 || true
+  echo "==> Attempting to resolve known cleanup migrations..."
   for m in $MIGRATE_TARGETS; do
     echo "    -> prisma migrate resolve --applied $m"
     npx prisma migrate resolve --applied "$m" 2>&1 || true

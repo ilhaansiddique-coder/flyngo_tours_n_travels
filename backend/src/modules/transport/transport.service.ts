@@ -1,40 +1,47 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { buildSearchOr } from '../../common/utils/search.util';
 import { ListQueryDto, orderByFor, priceRange } from '../../common/dto/list-query.dto';
 
 @Injectable()
 export class TransportService {
+  private readonly logger = new Logger(TransportService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(tenantId: string, page = 1, limit = 20, q?: string, filters: ListQueryDto = {}) {
-    const where: any = { tenantId, deletedAt: null };
-    const showAll = filters.all === 'true' || filters.includeInactive === 'true';
-    if (!showAll) {
-      where.isActive = true;
+    try {
+      const where: any = { tenantId, deletedAt: null };
+      const showAll = filters.all === 'true' || filters.includeInactive === 'true';
+      if (!showAll) {
+        where.isActive = true;
+      }
+
+      const price = priceRange(filters.minPrice, filters.maxPrice);
+      if (price) where.price = price;
+      if (filters.vehicleType) where.vehicleType = filters.vehicleType;
+
+      const or = buildSearchOr(q, [
+        (term) => ({ title: { contains: term, mode: 'insensitive' } }),
+        (term) => ({ operatorName: { contains: term, mode: 'insensitive' } }),
+        (term) => ({ originCity: { contains: term, mode: 'insensitive' } }),
+        (term) => ({ destinationCity: { contains: term, mode: 'insensitive' } }),
+      ]);
+      if (or) where.OR = or;
+      const [items, total] = await Promise.all([
+        this.prisma.transport.findMany({
+          where,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: orderByFor(filters.sort, 'price'),
+        }),
+        this.prisma.transport.count({ where }),
+      ]);
+      return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    } catch (err: any) {
+      this.logger.warn(`Failed to fetch transports: ${err.message}`);
+      return { items: [], meta: { page, limit, total: 0, totalPages: 0 } };
     }
-
-    const price = priceRange(filters.minPrice, filters.maxPrice);
-    if (price) where.price = price;
-    if (filters.vehicleType) where.vehicleType = filters.vehicleType;
-
-    const or = buildSearchOr(q, [
-      (term) => ({ title: { contains: term, mode: 'insensitive' } }),
-      (term) => ({ operatorName: { contains: term, mode: 'insensitive' } }),
-      (term) => ({ originCity: { contains: term, mode: 'insensitive' } }),
-      (term) => ({ destinationCity: { contains: term, mode: 'insensitive' } }),
-    ]);
-    if (or) where.OR = or;
-    const [items, total] = await Promise.all([
-      this.prisma.transport.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: orderByFor(filters.sort, 'price'),
-      }),
-      this.prisma.transport.count({ where }),
-    ]);
-    return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
   async findById(id: string, tenantId: string) {

@@ -149,21 +149,72 @@ export class TrackingService {
   // Settings (per-tenant credentials)
   // ===========================================================================
 
-  async getSettings(tenantId: string) {
-    let s = await this.prisma.trackingSettings.findUnique({ where: { tenantId } });
-    if (!s) s = await this.prisma.trackingSettings.create({ data: { tenantId } });
-    // Strip secrets before returning to admin UI (write-only on frontend)
+  private getDefaultTrackingSettings(tenantId: string) {
     return {
-      ...s,
-      metaCapiToken: s.metaCapiToken ? '••••••••' + s.metaCapiToken.slice(-4) : null,
-      ga4ApiSecret: s.ga4ApiSecret ? '••••••••' + s.ga4ApiSecret.slice(-4) : null,
+      id: 'default',
+      tenantId,
+      metaPixelId: null,
+      metaCapiEnabled: false,
+      metaCapiToken: null,
+      metaCapiTestCode: null,
+      ga4MeasurementId: null,
+      ga4ApiSecret: null,
+      gtmContainerId: null,
+      googleAdsConversionId: null,
+      googleAdsConversionLabel: null,
+      tiktokPixelId: null,
+      snapchatPixelId: null,
+      xPixelId: null,
+      whatsappNumber: '+8801322913530',
+      whatsappGreeting: 'Hi! I am interested in your Hajj/Umrah/travel packages. Could you share more details?',
+      trustBadges: [],
+      customerCount: null,
+      yearsInBusiness: null,
+      requireMarketingConsent: false,
+      metaLduEnabled: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   }
 
+  async getSettings(tenantId: string) {
+    try {
+      let s = await this.prisma.trackingSettings.findUnique({ where: { tenantId } });
+      if (!s) {
+        try {
+          s = await this.prisma.trackingSettings.create({ data: { tenantId } });
+        } catch {
+          s = null;
+        }
+      }
+      const effective = s ?? this.getDefaultTrackingSettings(tenantId);
+      // Strip secrets before returning to admin UI (write-only on frontend)
+      return {
+        ...effective,
+        metaCapiToken: effective.metaCapiToken ? '••••••••' + effective.metaCapiToken.slice(-4) : null,
+        ga4ApiSecret: effective.ga4ApiSecret ? '••••••••' + effective.ga4ApiSecret.slice(-4) : null,
+      };
+    } catch (err: any) {
+      this.logger.warn(`Failed to get tracking settings: ${err.message}`);
+      return this.getDefaultTrackingSettings(tenantId);
+    }
+  }
+
   async getRawSettings(tenantId: string) {
-    let s = await this.prisma.trackingSettings.findUnique({ where: { tenantId } });
-    if (!s) s = await this.prisma.trackingSettings.create({ data: { tenantId } });
-    return s;
+    try {
+      let s = await this.prisma.trackingSettings.findUnique({ where: { tenantId } });
+      if (!s) {
+        try {
+          s = await this.prisma.trackingSettings.create({ data: { tenantId } });
+        } catch {
+          s = null;
+        }
+      }
+      return s ?? this.getDefaultTrackingSettings(tenantId);
+    } catch (err: any) {
+      this.logger.warn(`Failed to get raw tracking settings: ${err.message}`);
+      return this.getDefaultTrackingSettings(tenantId);
+    }
   }
 
   async updateSettings(tenantId: string, body: any) {
@@ -191,24 +242,45 @@ export class TrackingService {
   // ===========================================================================
 
   async getPublicSettings(tenantId: string) {
-    const s = await this.getRawSettings(tenantId);
-    return {
-      metaPixelId: s.metaPixelId,
-      ga4MeasurementId: s.ga4MeasurementId,
-      gtmContainerId: s.gtmContainerId,
-      googleAdsConversionId: s.googleAdsConversionId,
-      googleAdsConversionLabel: s.googleAdsConversionLabel,
-      tiktokPixelId: s.tiktokPixelId,
-      snapchatPixelId: s.snapchatPixelId,
-      xPixelId: s.xPixelId,
-      whatsappNumber: s.whatsappNumber,
-      whatsappGreeting: s.whatsappGreeting,
-      trustBadges: s.trustBadges ?? [],
-      customerCount: s.customerCount,
-      yearsInBusiness: s.yearsInBusiness,
-      requireMarketingConsent: s.requireMarketingConsent,
-      metaLduEnabled: s.metaLduEnabled,
-    };
+    try {
+      const s = await this.getRawSettings(tenantId);
+      return {
+        metaPixelId: s?.metaPixelId ?? null,
+        ga4MeasurementId: s?.ga4MeasurementId ?? null,
+        gtmContainerId: s?.gtmContainerId ?? null,
+        googleAdsConversionId: s?.googleAdsConversionId ?? null,
+        googleAdsConversionLabel: s?.googleAdsConversionLabel ?? null,
+        tiktokPixelId: s?.tiktokPixelId ?? null,
+        snapchatPixelId: s?.snapchatPixelId ?? null,
+        xPixelId: s?.xPixelId ?? null,
+        whatsappNumber: s?.whatsappNumber ?? '+8801322913530',
+        whatsappGreeting: s?.whatsappGreeting ?? 'Hi! I am interested in your Hajj/Umrah/travel packages. Could you share more details?',
+        trustBadges: s?.trustBadges ?? [],
+        customerCount: s?.customerCount ?? null,
+        yearsInBusiness: s?.yearsInBusiness ?? null,
+        requireMarketingConsent: s?.requireMarketingConsent ?? false,
+        metaLduEnabled: s?.metaLduEnabled ?? false,
+      };
+    } catch (err: any) {
+      this.logger.warn(`Failed to get public settings: ${err.message}`);
+      return {
+        metaPixelId: null,
+        ga4MeasurementId: null,
+        gtmContainerId: null,
+        googleAdsConversionId: null,
+        googleAdsConversionLabel: null,
+        tiktokPixelId: null,
+        snapchatPixelId: null,
+        xPixelId: null,
+        whatsappNumber: '+8801322913530',
+        whatsappGreeting: 'Hi! I am interested in your Hajj/Umrah/travel packages. Could you share more details?',
+        trustBadges: [],
+        customerCount: null,
+        yearsInBusiness: null,
+        requireMarketingConsent: false,
+        metaLduEnabled: false,
+      };
+    }
   }
 
   // ===========================================================================
@@ -476,16 +548,26 @@ export class TrackingService {
   }
 
   async listLeads(tenantId: string, status?: string) {
-    return this.prisma.lead.findMany({
-      where: { tenantId, ...(status ? { status } : {}) },
-      orderBy: { createdAt: 'desc' },
-    });
+    try {
+      return await this.prisma.lead.findMany({
+        where: { tenantId, ...(status ? { status } : {}) },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (err: any) {
+      this.logger.warn(`Failed to list leads: ${err.message}`);
+      return [];
+    }
   }
 
   async countUnreadLeads(tenantId: string) {
-    return this.prisma.lead.count({
-      where: { tenantId, status: 'new' },
-    });
+    try {
+      return await this.prisma.lead.count({
+        where: { tenantId, status: 'new' },
+      });
+    } catch (err: any) {
+      this.logger.warn(`Failed to count unread leads: ${err.message}`);
+      return 0;
+    }
   }
 
   async updateLead(tenantId: string, id: string, body: { status?: string; assignedTo?: string; notes?: string }) {

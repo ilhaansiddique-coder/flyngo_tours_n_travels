@@ -2304,3 +2304,43 @@ model UserDocument {
   @@index([userId, deletedAt])
   @@map("user_documents")
 }
+
+model Vendor {
+  id          String             @id @default(uuid())
+  tenantId    String             @map("tenant_id")
+  name        String
+  email       String?
+  phone       String?
+  serviceType String?            @map("service_type")
+  notes       String?
+  isActive    Boolean            @default(true) @map("is_active")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  deletedAt   DateTime?          @map("deleted_at")
+  submissions VendorSubmission[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("vendors")
+}
+
+model VendorSubmission {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  vendorId    String    @map("vendor_id")
+  serviceName String    @map("service_name")
+  doneDate    DateTime  @map("done_date")
+  status      String    @default("completed")
+  amount      Decimal?  @db.Decimal(12, 2)
+  currency    String    @default("BDT")
+  reference   String?
+  notes       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  vendor      Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([vendorId])
+  @@map("vendor_submissions")
+}

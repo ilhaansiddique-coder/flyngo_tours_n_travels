@@ -10,7 +10,7 @@ import {
   FileText as FileIcon, Image, Search as SearchIcon, Star, HelpCircle,
   Megaphone, Car, MessageSquare, Bell, CreditCard, Sparkles, FileCheck,
   Languages, MessageCircle, Info, Menu as MenuIcon, LayoutGrid, Target, Coins,
-  Smartphone, Trash2 as TrashIcon,
+  Smartphone, Trash2 as TrashIcon, Briefcase,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { AdminTopbar } from '@/components/admin/admin-topbar';
@@ -23,6 +23,7 @@ const navigation = [
   { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Bookings', href: '/admin/bookings', icon: BookOpen },
   { label: 'Customers', href: '/admin/customers', icon: Users },
+  { label: 'Vendor', href: '/admin/vendor', icon: Briefcase },
   { label: 'Tours', href: '/admin/tours', icon: Map },
   { label: 'Hotels', href: '/admin/hotels', icon: Building2 },
   { label: 'Flights', href: '/admin/flights', icon: Plane },

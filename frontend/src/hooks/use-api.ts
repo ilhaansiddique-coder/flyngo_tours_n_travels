@@ -381,6 +381,16 @@ export function useApi() {
   const updateTransport = useCallback(async (id: string, body: any) => api.patch(`/transport/${id}`, body, auth()), [auth]);
   const deleteTransport = useCallback(async (id: string) => api.delete(`/transport/${id}`, auth()), [auth]);
 
+  const getVendors = useCallback(async () => api.get('/admin/vendors', auth()), [auth]);
+  const deleteVendor = useCallback(async (id: string) => api.delete(`/admin/vendors/${id}`, auth()), [auth]);
+  const getVendorSubmissions = useCallback(async (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get('/admin/vendors/submissions' + qs, auth());
+  }, [auth]);
+  const createVendorSubmission = useCallback(async (body: any) => api.post('/admin/vendors/submissions', body, auth()), [auth]);
+  const updateVendorSubmission = useCallback(async (id: string, body: any) => api.patch(`/admin/vendors/submissions/${id}`, body, auth()), [auth]);
+  const deleteVendorSubmission = useCallback(async (id: string) => api.delete(`/admin/vendors/submissions/${id}`, auth()), [auth]);
+
   const getReviews = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/admin/reviews' + qs, auth());
@@ -574,6 +584,7 @@ export function useApi() {
     getMobileWallets, createMobileWallet, updateMobileWallet, deleteMobileWallet,
     getMyInvoices, getInvoice, sendInvoiceEmail, downloadInvoicePdf, openInvoicePdf, getAdminInvoices,
     getTransport, createTransport, updateTransport, deleteTransport,
+    getVendors, deleteVendor, getVendorSubmissions, createVendorSubmission, updateVendorSubmission, deleteVendorSubmission,
     getHajjPackages, createHajjPackage, updateHajjPackage, deleteHajjPackage,
     getUmrahPackages, createUmrahPackage, updateUmrahPackage, deleteUmrahPackage,
     getVisaCountries, createVisaCountry, updateVisaCountry, deleteVisaCountry,

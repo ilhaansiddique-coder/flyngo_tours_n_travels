@@ -22,6 +22,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     try {
       await this.$connect();
       this.logger.log('Database connection established');
+      await this.ensureDefaultTenant();
     } catch (error) {
       this.logger.error(
         `Database connection failed: ${(error as Error).message}`,
@@ -34,6 +35,29 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       if (!this.configService.isDevelopment) {
         throw error;
       }
+    }
+  }
+
+  private async ensureDefaultTenant() {
+    const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+    try {
+      const exists = await (this as any).tenant.findUnique({
+        where: { id: DEFAULT_TENANT_ID },
+      });
+      if (!exists) {
+        await (this as any).tenant.create({
+          data: {
+            id: DEFAULT_TENANT_ID,
+            name: 'Flyngo',
+            slug: 'flyngo',
+            domain: 'flyngo.com',
+            isActive: true,
+          },
+        });
+        this.logger.log('Default tenant ensured in database');
+      }
+    } catch (err: any) {
+      this.logger.warn(`Could not verify/create default tenant: ${err.message}`);
     }
   }
 

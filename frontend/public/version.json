@@ -1,6 +1,6 @@
 {
-  "version": "fac05fab1715d9ed347e971bb07b78605ec69b99",
-  "shortVersion": "fac05fa",
-  "message": "feat(ui): beautify dropdowns with modern styling and dedicated right padding for chevron arrows",
-  "builtAt": "2026-09-25T13:13:34.774Z"
+  "version": "e48ad771b8ac281bd61c2c9825ea6ffbac29b318",
+  "shortVersion": "e48ad77",
+  "message": "style(visa): remove excessive blank space above visa processing badge",
+  "builtAt": "2026-09-25T13:21:12.245Z"
 }

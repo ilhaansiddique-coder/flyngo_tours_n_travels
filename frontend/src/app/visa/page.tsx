@@ -128,7 +128,7 @@ export default function VisaPage() {
   }, [services, flagBySlug, flagByName]);
 
   return (
-    <main className="min-h-screen surface-page pt-24">
+    <main className="min-h-screen surface-page pt-20">
       <section className="relative isolate overflow-hidden">
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-grid opacity-50" />
@@ -141,7 +141,7 @@ export default function VisaPage() {
           />
         </div>
 
-        <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-20">
+        <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 pt-2 sm:pt-4 pb-12 sm:pb-16">
           <span className="inline-flex items-center gap-2 px-3 py-1 mb-6 rounded-full text-[10px] tracking-widest uppercase font-bold text-blue-700 dark:text-blue-300 border border-blue-500/30 bg-blue-500/10">
             <Briefcase className="w-3 h-3" />
             Visa Processing

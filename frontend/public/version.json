@@ -1,6 +1,6 @@
 {
-  "version": "20f6fe4e348ad3efaa78da396d6dc1f0f5aa639d",
-  "shortVersion": "20f6fe4",
-  "message": "fix(admin): resolve broken pagination text line by splitting into two lines and windowing page numbers",
-  "builtAt": "2026-09-25T12:38:35.295Z"
+  "version": "fac05fab1715d9ed347e971bb07b78605ec69b99",
+  "shortVersion": "fac05fa",
+  "message": "feat(ui): beautify dropdowns with modern styling and dedicated right padding for chevron arrows",
+  "builtAt": "2026-09-25T13:13:34.774Z"
 }

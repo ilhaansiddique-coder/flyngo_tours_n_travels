@@ -446,6 +446,8 @@ model Tour {
   inclusions  String[] @default([])
   inclusionsBn String[] @default([]) @map("inclusions_bn")
   exclusions  String[] @default([])
+  requirements String[] @default([])
+  requirementsBn String[] @default([]) @map("requirements_bn")
   price     Decimal  @db.Decimal(10, 2)
   salePrice Decimal? @map("sale_price") @db.Decimal(10, 2)
   currency  String   @default("USD")

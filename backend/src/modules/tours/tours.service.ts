@@ -7,6 +7,21 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
 
+function normalizeRequirements(input: any): string[] {
+  if (!input) return [];
+  const list = Array.isArray(input) ? input : [input];
+  const items: string[] = [];
+  for (const entry of list) {
+    if (typeof entry !== 'string' || !entry.trim()) continue;
+    const parts = entry
+      .split(/(?:\r?\n)+|[•🔹▪▫‣⁃◆*]+|(?:\s*;\s*)|(?:\s*\|\s*)/u)
+      .map((s) => s.replace(/^[-\s\u2022\u25aa\u25b6\u25c6\u2705\u2714\u2713]+/, '').trim())
+      .filter(Boolean);
+    items.push(...parts);
+  }
+  return Array.from(new Set(items));
+}
+
 @Injectable()
 export class ToursService {
   constructor(private readonly prisma: PrismaService) {}
@@ -108,6 +123,9 @@ export class ToursService {
     const primaryId = data.destinationId;
     const additionalIdsFiltered = additionalIds.filter((id) => id !== primaryId);
 
+    const requirements = normalizeRequirements(data.requirements);
+    const requirementsBn = data.requirementsBn !== undefined ? normalizeRequirements(data.requirementsBn) : [];
+
     return this.prisma.tour.create({
       data: {
         tenantId,
@@ -122,6 +140,8 @@ export class ToursService {
         inclusions: data.inclusions || [],
         inclusionsBn: data.inclusionsBn ?? [],
         exclusions: data.exclusions || [],
+        requirements,
+        requirementsBn,
         price: data.price,
         salePrice: data.salePrice,
         currency: data.currency || 'USD',
@@ -171,6 +191,13 @@ export class ToursService {
       };
     }
 
+    const requirements = data.requirements !== undefined
+      ? normalizeRequirements(data.requirements)
+      : undefined;
+    const requirementsBn = data.requirementsBn !== undefined
+      ? normalizeRequirements(data.requirementsBn)
+      : undefined;
+
     return this.prisma.tour.update({
       where: { id },
       data: {
@@ -185,6 +212,8 @@ export class ToursService {
         inclusions: data.inclusions,
         inclusionsBn: data.inclusionsBn,
         exclusions: data.exclusions,
+        requirements,
+        requirementsBn,
         price: data.price,
         salePrice: data.salePrice,
         currency: data.currency,

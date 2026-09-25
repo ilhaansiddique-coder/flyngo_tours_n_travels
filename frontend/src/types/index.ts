@@ -26,6 +26,8 @@ export interface Tour {
   inclusions?: string[];
   inclusionsBn?: string[];
   exclusions?: string[];
+  requirements?: string[];
+  requirementsBn?: string[];
   itinerary?: Array<{ id: string; day: number; title: string; description: string; activities: string[] }>;
   isActive?: boolean;
   isFeatured?: boolean;

@@ -9,7 +9,7 @@ import { tourImage } from '@/lib/entity-image';
 import { Button } from '@/components/ui/button';
 import { ShareMenu } from '@/components/shared/share-menu';
 import { ReviewsSection } from '@/components/features/reviews/reviews-section';
-import { ArrowLeft, Clock, Users, MapPin, Check, X, CalendarDays } from 'lucide-react';
+import { ArrowLeft, Clock, Users, MapPin, Check, X, CalendarDays, FileCheck } from 'lucide-react';
 import { useLocale } from '@/contexts/locale-context';
 
 interface TourImage {
@@ -38,6 +38,8 @@ interface TourDetail {
   inclusions: string[];
   inclusionsBn?: string[];
   exclusions: string[];
+  requirements?: string[];
+  requirementsBn?: string[];
   price: number | string;
   salePrice?: number | string | null;
   currency: string;
@@ -132,6 +134,7 @@ export default function TourDetailPage() {
   const displayDescription = (isBn && tour.descriptionBn) ? tour.descriptionBn : tour.description;
   const displayHighlights = (isBn && tour.highlightsBn && tour.highlightsBn.length > 0) ? tour.highlightsBn : tour.highlights;
   const displayInclusions = (isBn && tour.inclusionsBn && tour.inclusionsBn.length > 0) ? tour.inclusionsBn : tour.inclusions;
+  const displayRequirements = (isBn && tour.requirementsBn && tour.requirementsBn.length > 0) ? tour.requirementsBn : tour.requirements;
 
   return (
     <main className="min-h-screen bg-background pt-28 pb-20 px-4 sm:px-6 lg:px-16 max-w-[1200px] mx-auto">
@@ -259,6 +262,25 @@ export default function TourDetailPage() {
                   </ul>
                 </div>
               )}
+            </section>
+          )}
+
+          {displayRequirements && displayRequirements.length > 0 && (
+            <section className="mb-8">
+              <div className="glass-deep rounded-2xl p-6">
+                <h3 className="text-lg font-display font-semibold text-on-surface mb-3 flex items-center gap-2">
+                  <FileCheck className="w-5 h-5 text-accent" />
+                  {isBn ? 'প্রয়োজনীয় নথিপত্র এবং শর্তাবলী' : 'Requirements & Required Documents'}
+                </h3>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {displayRequirements.map((req, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-500" />
+                      <span className="text-on-surface-variant text-sm leading-relaxed">{req}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </section>
           )}
 

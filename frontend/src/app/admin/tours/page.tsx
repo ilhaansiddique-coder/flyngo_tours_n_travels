@@ -25,6 +25,8 @@ interface Tour {
   titleBn?: string;
   description?: string;
   descriptionBn?: string;
+  requirements?: string[];
+  requirementsBn?: string[];
   price: number;
   duration: number;
   maxGuests?: number;
@@ -46,6 +48,8 @@ interface FormData {
   destinationId: string;
   description: string;
   descriptionBn: string;
+  requirements: string;
+  requirementsBn: string;
   price: string;
   duration: string;
   maxGuests: string;
@@ -63,6 +67,8 @@ const initialForm: FormData = {
   destinationId: '',
   description: '',
   descriptionBn: '',
+  requirements: '',
+  requirementsBn: '',
   price: '',
   duration: '',
   maxGuests: '',
@@ -141,6 +147,8 @@ export default function AdminToursPage() {
       destinationId: tour.destinationId || tour.destination?.id || '',
       description: tour.description || '',
       descriptionBn: (tour as any).descriptionBn || '',
+      requirements: Array.isArray(tour.requirements) ? tour.requirements.join('\n') : ((tour as any).requirements || ''),
+      requirementsBn: Array.isArray(tour.requirementsBn) ? tour.requirementsBn.join('\n') : ((tour as any).requirementsBn || ''),
       price: String(tour.price ?? ''),
       duration: String(tour.duration ?? ''),
       maxGuests: String(tour.maxGuests ?? ''),
@@ -165,10 +173,16 @@ export default function AdminToursPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
+      const splitReqs = (str: string) =>
+        (typeof str === 'string' ? str : '')
+          .split(/(?:\r?\n)+|[•🔹▪▫‣⁃◆*]+|(?:\s*;\s*)|(?:\s*,\s*)/u)
+          .map((r) => r.replace(/^[-\s\u2022\u25aa\u25b6\u25c6\u2705\u2714\u2713]+/, '').trim())
+          .filter(Boolean);
+
       // Bi-directional translation sync: English <-> Bangla
       const { english: syncedEn, bangla: syncedBn } = await ensureBilingualOnSubmit(
-        { title: form.title, description: form.description },
-        { title: form.titleBn, description: form.descriptionBn }
+        { title: form.title, description: form.description, requirements: form.requirements },
+        { title: form.titleBn, description: form.descriptionBn, requirements: form.requirementsBn }
       );
 
       const body = {
@@ -181,6 +195,8 @@ export default function AdminToursPage() {
         })),
         description: syncedEn.description || syncedBn.description,
         descriptionBn: syncedBn.description || undefined,
+        requirements: splitReqs(syncedEn.requirements),
+        requirementsBn: splitReqs(syncedBn.requirements),
         price: Number(form.price),
         duration: Number(form.duration),
         maxGuests: form.maxGuests ? Number(form.maxGuests) : undefined,
@@ -285,6 +301,7 @@ export default function AdminToursPage() {
                     <th className="p-4 font-medium">Destination</th>
                     <th className="p-4 font-medium">Price</th>
                     <th className="p-4 font-medium">Duration</th>
+                    <th className="p-4 font-medium">Requirements</th>
                     <th className="p-4 font-medium">Status</th>
                     <th className="p-4 font-medium">Actions</th>
                   </tr>
@@ -292,7 +309,7 @@ export default function AdminToursPage() {
                 <tbody>
                   {tours.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-12 text-center text-on-surface-variant">
+                      <td colSpan={8} className="p-12 text-center text-on-surface-variant">
                         <Map className="w-8 h-8 mx-auto mb-2 text-on-surface-variant/40" />
                         <p>No tours found</p>
                       </td>
@@ -328,6 +345,11 @@ export default function AdminToursPage() {
                         </td>
                         <td className="p-4 font-medium">{formatCurrency(t.price)}</td>
                         <td className="p-4">{t.duration} days</td>
+                        <td className="p-4 text-on-surface-variant">
+                          {t.requirements && t.requirements.length > 0
+                            ? `${t.requirements.length} item(s)`
+                            : '—'}
+                        </td>
                         <td className="p-4">
                           <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                             <input
@@ -431,10 +453,12 @@ export default function AdminToursPage() {
             sourceFields={{
               title: form.title || form.titleBn,
               description: form.description || form.descriptionBn,
+              requirements: form.requirements || form.requirementsBn,
             }}
             fieldLabels={{
               title: 'Tour Title',
               description: 'Tour Description',
+              requirements: 'Requirements / Documents',
             }}
             category="tour"
             onApplyBangla={(translated) => {
@@ -442,6 +466,7 @@ export default function AdminToursPage() {
                 ...f,
                 titleBn: translated.title || f.titleBn,
                 descriptionBn: translated.description || f.descriptionBn,
+                requirementsBn: translated.requirements || f.requirementsBn,
               }));
               setFormLang('bn');
             }}
@@ -518,6 +543,20 @@ export default function AdminToursPage() {
                   rows={3}
                 />
               </FormField>
+
+              <FormField label="Requirements / Required Documents (English)">
+                <FormTextarea
+                  value={form.requirements}
+                  onChange={(v) => {
+                    setForm((f) => ({ ...f, requirements: v }));
+                    debouncedAutoTranslate('requirements', v, form.requirementsBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, requirementsBn: bn })));
+                  }}
+                  onBlur={() => handleFieldBlur(form.requirements, form.requirementsBn, 'en', 'bn', (bn) => setForm((f) => ({ ...f, requirementsBn: bn })))}
+                  placeholder={"1. Valid passport (minimum 6 months validity)\n2. Physical fitness for walking/trekking\n3. Travel insurance"}
+                  rows={4}
+                />
+                <p className="text-xs text-on-surface-variant mt-1">One requirement per line, or bullet points</p>
+              </FormField>
             </>
           ) : (
             <>
@@ -544,6 +583,20 @@ export default function AdminToursPage() {
                   placeholder="ট্যুরের বিস্তারিত বিবরণ (বাংলায়)"
                   rows={3}
                 />
+              </FormField>
+
+              <FormField label="Requirements / Required Documents (বাংলা)">
+                <FormTextarea
+                  value={form.requirementsBn}
+                  onChange={(v) => {
+                    setForm((f) => ({ ...f, requirementsBn: v }));
+                    debouncedAutoTranslate('requirements', v, form.requirements, 'bn', 'en', (en) => setForm((f) => ({ ...f, requirements: en })));
+                  }}
+                  onBlur={() => handleFieldBlur(form.requirementsBn, form.requirements, 'bn', 'en', (en) => setForm((f) => ({ ...f, requirements: en })))}
+                  placeholder={"১. বৈধ পাসপোর্ট (কমপক্ষে ৬ মাসের মেয়াদ)\n২. ভ্রমণের জন্য শারীরিক সুস্থতা\n৩. ট্রাভেল ইন্স্যুরেন্স"}
+                  rows={4}
+                />
+                <p className="text-xs text-on-surface-variant mt-1">প্রতি লাইনে একটি করে প্রয়োজনীয় কাগজপত্র/শর্ত লিখুন</p>
               </FormField>
             </>
           )}

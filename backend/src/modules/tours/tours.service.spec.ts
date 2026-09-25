@@ -11,6 +11,8 @@ describe('ToursService', () => {
       findMany: jest.fn(),
       findFirst: jest.fn(),
       count: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
     },
   };
 
@@ -99,6 +101,58 @@ describe('ToursService', () => {
       mockPrisma.tour.findFirst.mockResolvedValue(null);
 
       await expect(service.findById('fake-id', 'tenant-1')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('create', () => {
+    it('should create tour with normalized requirements and requirementsBn', async () => {
+      mockPrisma.tour.findFirst.mockResolvedValue(null);
+      mockPrisma.tour.create.mockImplementation((args: any) => Promise.resolve({ id: 'tour-1', ...args.data }));
+
+      const result = await service.create('tenant-1', {
+        title: 'Thailand Adventure',
+        destinationId: 'dest-1',
+        price: 999,
+        duration: 5,
+        requirements: ['Valid Passport\nHealth Certificate', 'Travel Insurance'],
+        requirementsBn: 'বৈধ পাসপোর্ট\nস্বাস্থ্য সনদ',
+      });
+
+      expect(mockPrisma.tour.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            tenantId: 'tenant-1',
+            title: 'Thailand Adventure',
+            requirements: ['Valid Passport', 'Health Certificate', 'Travel Insurance'],
+            requirementsBn: ['বৈধ পাসপোর্ট', 'স্বাস্থ্য সনদ'],
+          }),
+        }),
+      );
+      expect(result.requirements).toEqual(['Valid Passport', 'Health Certificate', 'Travel Insurance']);
+      expect(result.requirementsBn).toEqual(['বৈধ পাসপোর্ট', 'স্বাস্থ্য সনদ']);
+    });
+  });
+
+  describe('update', () => {
+    it('should update tour with normalized requirements', async () => {
+      mockPrisma.tour.findFirst.mockResolvedValue({ id: 'tour-1', tenantId: 'tenant-1', slug: 'thailand-adventure' });
+      mockPrisma.tour.update.mockImplementation((args: any) => Promise.resolve({ id: 'tour-1', ...args.data }));
+
+      const result = await service.update('tour-1', 'tenant-1', {
+        requirements: '• Passport with 6 months validity\n• Visa on arrival fee',
+        requirementsBn: ['ভিসা ফি'],
+      });
+
+      expect(mockPrisma.tour.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'tour-1' },
+          data: expect.objectContaining({
+            requirements: ['Passport with 6 months validity', 'Visa on arrival fee'],
+            requirementsBn: ['ভিসা ফি'],
+          }),
+        }),
+      );
+      expect(result.requirements).toEqual(['Passport with 6 months validity', 'Visa on arrival fee']);
     });
   });
 });

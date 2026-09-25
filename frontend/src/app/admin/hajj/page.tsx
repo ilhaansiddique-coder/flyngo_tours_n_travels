@@ -30,6 +30,8 @@ interface HajjPackage {
   inclusionsBn?: string[];
   highlights: string[];
   highlightsBn?: string[];
+  requirements?: string[];
+  requirementsBn?: string[];
   imageUrl?: string;
   coverImageUrl?: string;
   isActive: boolean;
@@ -213,6 +215,8 @@ function HajjForm({ initial, onClose, onSaved }: { initial: HajjPackage | null; 
   const [highlightsBn, setHighlightsBn] = useState((initial?.highlightsBn ?? []).join('\n'));
   const [inclusions, setInclusions] = useState((initial?.inclusions ?? []).join('\n'));
   const [inclusionsBn, setInclusionsBn] = useState((initial?.inclusionsBn ?? []).join('\n'));
+  const [requirements, setRequirements] = useState((initial?.requirements ?? []).join('\n'));
+  const [requirementsBn, setRequirementsBn] = useState((initial?.requirementsBn ?? []).join('\n'));
   const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? '');
   const [coverImageUrl, setCoverImageUrl] = useState(initial?.coverImageUrl ?? '');
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
@@ -228,10 +232,16 @@ function HajjForm({ initial, onClose, onSaved }: { initial: HajjPackage | null; 
     e.preventDefault();
     setSaving(true);
     try {
+      const splitReqs = (str: string) =>
+        (typeof str === 'string' ? str : '')
+          .split(/(?:\r?\n)+|[•🔹▪▫‣⁃◆*]+|(?:\s*;\s*)|(?:\s*,\s*)/u)
+          .map((r) => r.replace(/^[-\s\u2022\u25aa\u25b6\u25c6\u2705\u2714\u2713]+/, '').trim())
+          .filter(Boolean);
+
       // Bi-directional translation sync: English <-> Bangla
       const { english: syncedEn, bangla: syncedBn } = await ensureBilingualOnSubmit(
-        { title, highlights, inclusions },
-        { title: titleBn, highlights: highlightsBn, inclusions: inclusionsBn }
+        { title, highlights, inclusions, requirements },
+        { title: titleBn, highlights: highlightsBn, inclusions: inclusionsBn, requirements: requirementsBn }
       );
 
       const body = {
@@ -247,6 +257,8 @@ function HajjForm({ initial, onClose, onSaved }: { initial: HajjPackage | null; 
         highlightsBn: syncedBn.highlights ? syncedBn.highlights.split('\n').map((s) => s.trim()).filter(Boolean) : undefined,
         inclusions: syncedEn.inclusions ? syncedEn.inclusions.split('\n').map((s) => s.trim()).filter(Boolean) : [],
         inclusionsBn: syncedBn.inclusions ? syncedBn.inclusions.split('\n').map((s) => s.trim()).filter(Boolean) : undefined,
+        requirements: splitReqs(syncedEn.requirements),
+        requirementsBn: splitReqs(syncedBn.requirements),
         imageUrl: imageUrl || undefined,
         coverImageUrl: coverImageUrl || undefined,
         isActive,
@@ -272,17 +284,20 @@ function HajjForm({ initial, onClose, onSaved }: { initial: HajjPackage | null; 
             title: title || titleBn,
             highlights: highlights || highlightsBn,
             inclusions: inclusions || inclusionsBn,
+            requirements: requirements || requirementsBn,
           }}
           fieldLabels={{
             title: 'Hajj Package Title',
             highlights: 'Highlights',
             inclusions: 'Inclusions',
+            requirements: 'Requirements / Documents',
           }}
           category="hajj_umrah"
           onApplyBangla={(translated) => {
             if (translated.title) setTitleBn(translated.title);
             if (translated.highlights) setHighlightsBn(translated.highlights);
             if (translated.inclusions) setInclusionsBn(translated.inclusions);
+            if (translated.requirements) setRequirementsBn(translated.requirements);
             setFormLang('bn');
           }}
         />
@@ -366,6 +381,18 @@ function HajjForm({ initial, onClose, onSaved }: { initial: HajjPackage | null; 
                 rows={3}
               />
             </FormField>
+            <FormField label="Requirements / Documents (English - one per line)">
+              <FormTextarea
+                value={requirements}
+                onChange={(v) => {
+                  setRequirements(v);
+                  debouncedAutoTranslate('requirements', v, requirementsBn, 'en', 'bn', setRequirementsBn);
+                }}
+                onBlur={() => handleFieldBlur(requirements, requirementsBn, 'en', 'bn', setRequirementsBn)}
+                placeholder={"1. Valid passport (minimum 6 months validity)\n2. Biometric registration & health clearance\n3. Covid-19 & Meningitis vaccination proof"}
+                rows={3}
+              />
+            </FormField>
           </>
         ) : (
           <>
@@ -402,6 +429,18 @@ function HajjForm({ initial, onClose, onSaved }: { initial: HajjPackage | null; 
                 onBlur={() => handleFieldBlur(inclusionsBn, inclusions, 'bn', 'en', setInclusions)}
                 rows={3}
                 placeholder="যা যা অন্তর্ভুক্ত রয়েছে"
+              />
+            </FormField>
+            <FormField label="Requirements / Documents (বাংলা - প্রতি লাইনে একটি)">
+              <FormTextarea
+                value={requirementsBn}
+                onChange={(v) => {
+                  setRequirementsBn(v);
+                  debouncedAutoTranslate('requirements', v, requirements, 'bn', 'en', setRequirements);
+                }}
+                onBlur={() => handleFieldBlur(requirementsBn, requirements, 'bn', 'en', setRequirements)}
+                rows={3}
+                placeholder={"১. বৈধ পাসপোর্ট (কমপক্ষে ৬ মাসের মেয়াদ)\n২. বায়োমেট্রিক নিবন্ধন ও স্বাস্থ্য সনদ\n৩. সরকার নির্ধারিত টিকাদান সম্পন্ন"}
               />
             </FormField>
           </>

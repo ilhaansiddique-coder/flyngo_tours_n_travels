@@ -9,7 +9,7 @@ import { hajjImage } from '@/lib/entity-image';
 import { useBookingStore } from '@/stores/booking.store';
 import { ReviewsSection } from '@/components/features/reviews/reviews-section';
 import { ShareMenu } from '@/components/shared/share-menu';
-import { ArrowLeft, Clock, Check, Moon, Coins, ArrowRight, MapPin, CalendarDays, Sparkles, Users } from 'lucide-react';
+import { ArrowLeft, Clock, Check, Moon, Coins, ArrowRight, MapPin, CalendarDays, Sparkles, Users, FileCheck } from 'lucide-react';
 import { useLocale } from '@/contexts/locale-context';
 
 interface HajjPackage {
@@ -27,6 +27,8 @@ interface HajjPackage {
   highlightsBn?: string[];
   inclusions?: string[];
   inclusionsBn?: string[];
+  requirements?: string[];
+  requirementsBn?: string[];
   pointsAwarded?: number;
   coverImageUrl?: string | null;
   imageUrl?: string | null;
@@ -89,6 +91,7 @@ export default function HajjPackageDetailPage({ params }: { params: Promise<{ sl
   const displayTitle = (isBn && pkg.titleBn) ? pkg.titleBn : pkg.title;
   const displayHighlights = (isBn && pkg.highlightsBn && pkg.highlightsBn.length > 0) ? pkg.highlightsBn : pkg.highlights;
   const displayInclusions = (isBn && pkg.inclusionsBn && pkg.inclusionsBn.length > 0) ? pkg.inclusionsBn : pkg.inclusions;
+  const displayRequirements = (isBn && pkg.requirementsBn && pkg.requirementsBn.length > 0) ? pkg.requirementsBn : pkg.requirements;
 
   return (
     <main className="min-h-screen pt-28 pb-16 px-4 sm:px-6 lg:px-16 max-w-[1200px] mx-auto">
@@ -155,6 +158,20 @@ export default function HajjPackageDetailPage({ params }: { params: Promise<{ sl
                   <li key={i} className="flex items-start gap-2">
                     <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-500" />
                     <span className="text-on-surface">{inc}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {Array.isArray(displayRequirements) && displayRequirements.length > 0 && (
+            <section className="mb-8">
+              <h2 className="text-xl font-display font-semibold mb-4">{isBn ? 'প্রয়োজনীয় কাগজপত্র ও শর্তাবলী' : 'Requirements & Documents'}</h2>
+              <ul className="space-y-2">
+                {displayRequirements.map((req, i) => (
+                  <li key={i} className="flex items-start gap-2.5">
+                    <FileCheck className="w-4 h-4 mt-1 shrink-0 text-emerald-500" />
+                    <span className="text-on-surface">{req}</span>
                   </li>
                 ))}
               </ul>

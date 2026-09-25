@@ -6,6 +6,21 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
 
+function normalizeRequirements(input: any): string[] {
+  if (!input) return [];
+  const list = Array.isArray(input) ? input : [input];
+  const items: string[] = [];
+  for (const entry of list) {
+    if (typeof entry !== 'string' || !entry.trim()) continue;
+    const parts = entry
+      .split(/(?:\r?\n)+|[•🔹▪▫‣⁃◆*]+|(?:\s*;\s*)|(?:\s*\|\s*)/u)
+      .map((s) => s.replace(/^[-\s\u2022\u25aa\u25b6\u25c6\u2705\u2714\u2713]+/, '').trim())
+      .filter(Boolean);
+    items.push(...parts);
+  }
+  return Array.from(new Set(items));
+}
+
 @Injectable()
 export class UmrahPackagesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -49,6 +64,10 @@ export class UmrahPackagesService {
     const slug = slugify(data.title);
     const existing = await this.prisma.umrahPackage.findFirst({ where: { tenantId, slug } });
     if (existing) throw new ConflictException('An umrah package with this title already exists');
+
+    const requirements = normalizeRequirements(data.requirements);
+    const requirementsBn = data.requirementsBn !== undefined ? normalizeRequirements(data.requirementsBn) : [];
+
     return this.prisma.umrahPackage.create({
       data: {
         tenantId,
@@ -65,6 +84,8 @@ export class UmrahPackagesService {
         inclusionsBn: data.inclusionsBn ?? [],
         highlights: data.highlights ?? [],
         highlightsBn: data.highlightsBn ?? [],
+        requirements,
+        requirementsBn,
         imageUrl: data.imageUrl,
         coverImageUrl: data.coverImageUrl,
         isActive: data.isActive ?? true,
@@ -80,6 +101,14 @@ export class UmrahPackagesService {
 
   async update(id: string, tenantId: string, data: any) {
     await this.findById(id, tenantId);
+
+    const requirements = data.requirements !== undefined
+      ? normalizeRequirements(data.requirements)
+      : undefined;
+    const requirementsBn = data.requirementsBn !== undefined
+      ? normalizeRequirements(data.requirementsBn)
+      : undefined;
+
     return this.prisma.umrahPackage.update({
       where: { id },
       data: {
@@ -95,6 +124,8 @@ export class UmrahPackagesService {
         inclusionsBn: data.inclusionsBn,
         highlights: data.highlights,
         highlightsBn: data.highlightsBn,
+        requirements,
+        requirementsBn,
         imageUrl: data.imageUrl,
         coverImageUrl: data.coverImageUrl,
         isActive: data.isActive,

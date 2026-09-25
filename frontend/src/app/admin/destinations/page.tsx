@@ -179,8 +179,7 @@ export default function AdminDestinationsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-on-surface-variant bg-surface-container-low">
-                <th className="p-4 font-medium">Image</th>
-                <th className="p-4 font-medium">Name</th>
+                <th className="p-4 font-medium">Destination</th>
                 <th className="p-4 font-medium">Country</th>
                 <th className="p-4 font-medium">Continent</th>
                 <th className="p-4 font-medium">Tours</th>
@@ -192,14 +191,14 @@ export default function AdminDestinationsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-on-surface-variant">
+                  <td colSpan={7} className="p-8 text-center text-on-surface-variant">
                     <div className="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2 align-middle" />
                     Loading destinations...
                   </td>
                 </tr>
               ) : destinations.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-on-surface-variant/40">
+                  <td colSpan={7} className="p-8 text-center text-on-surface-variant/40">
                     No destinations found
                   </td>
                 </tr>
@@ -207,24 +206,27 @@ export default function AdminDestinationsPage() {
                 destinations.map((d) => (
                   <tr key={d.id} className="border-b border-outline-variant hover:bg-surface-container-high">
                     <td className="p-4">
-                      {(() => {
-                        // Admin-uploaded image wins; else a deterministic
-                        // name-keyed photo so the list is never blank.
-                        const url = d.coverImageUrl || d.imageUrl || countryImage(d.name, 120, 80);
-                        return (
-                          <a href={url} target="_blank" rel="noreferrer">
-                            <img
-                              src={url}
-                              alt={d.name}
-                              className="w-14 h-10 object-cover rounded-lg border border-outline-variant"
-                            />
-                          </a>
-                        );
-                      })()}
-                    </td>
-                    <td className="p-4 font-medium flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-on-surface-variant/40" />
-                      {d.name}
+                      <div className="flex items-center gap-3">
+                        {(() => {
+                          const url = d.coverImageUrl || d.imageUrl || countryImage(d.name, 120, 80);
+                          return (
+                            <a href={url} target="_blank" rel="noreferrer" className="shrink-0">
+                              <img
+                                src={url}
+                                alt={d.name}
+                                className="w-14 h-10 object-cover rounded-lg border border-outline-variant hover:opacity-90 transition-opacity"
+                              />
+                            </a>
+                          );
+                        })()}
+                        <div className="min-w-0">
+                          <div className="font-semibold text-on-surface flex items-center gap-1.5 truncate">
+                            <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span className="truncate">{d.name}</span>
+                          </div>
+                          {d.slug && <span className="text-xs text-muted">/{d.slug}</span>}
+                        </div>
+                      </div>
                     </td>
                     <td className="p-4 text-on-surface-variant">{d.country}</td>
                     <td className="p-4">{d.continent ?? '—'}</td>

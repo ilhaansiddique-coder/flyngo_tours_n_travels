@@ -4,6 +4,7 @@ import { Section, Container } from '@/components/ui/section';
 import { Card } from '@/components/ui/card';
 import { PageHero } from '@/components/ui/page-hero';
 import { countryFlag } from '@/lib/country-flag';
+import { destinationImage } from '@/lib/entity-image';
 import Link from 'next/link';
 import { ArrowUpRight, MapPin } from 'lucide-react';
 import { useApi } from '@/hooks/use-api';
@@ -69,7 +70,7 @@ export function DestinationsPageClient() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {destinations.map((dest) => {
-                const image = dest.coverImageUrl || dest.imageUrl;
+                const image = destinationImage(dest, 800, 550);
                 return (
                   <Link key={dest.id} href={`/destinations/${dest.slug}`} className="group block">
                     <Card className="group h-full" hover={false}>

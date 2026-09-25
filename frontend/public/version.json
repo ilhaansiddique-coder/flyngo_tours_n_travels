@@ -1,6 +1,6 @@
 {
-  "version": "42ddce69307d38da7ced07510c961c13c1a1c50c",
-  "shortVersion": "42ddce6",
-  "message": "feat(visa): remove hardcoded seeded visa services and add bilingual EN/BN support",
-  "builtAt": "2026-09-24T20:01:37.481Z"
+  "version": "f036e629f132403ea1b3061df31677a9aa8b347e",
+  "shortVersion": "f036e62",
+  "message": "feat(tours): add requirements field support to tour creation and details",
+  "builtAt": "2026-09-25T07:05:08.653Z"
 }

@@ -800,7 +800,7 @@ export default function BookingsPage() {
                           <select
                             value={b.status}
                             onChange={(e) => handleStatusChange(b.id, e.target.value)}
-                            className="text-xs border border-outline-variant rounded-lg px-2 py-1 bg-surface-container text-on-surface focus:ring-2 focus:ring-primary/50 focus:border-transparent outline-none"
+                            className="text-xs border border-outline-variant rounded-lg pl-2.5 pr-7 py-1.5 bg-surface-container text-on-surface hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
                           >
                             {AVAILABLE_STATUSES.map((s) => (
                               <option key={s.value} value={s.value}>
@@ -850,7 +850,7 @@ export default function BookingsPage() {
             <select
               value={perPage}
               onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
-              className="px-2 py-1 rounded-lg text-xs bg-surface-container-high text-on-surface border border-outline-variant focus:outline-none"
+              className="pl-2.5 pr-7 py-1 rounded-lg text-xs bg-surface-container-high text-on-surface border border-outline-variant hover:border-outline focus:outline-none transition-colors cursor-pointer shadow-xs"
               title="Bookings per page"
             >
               <option value={10}>10 / page</option>

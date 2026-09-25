@@ -359,7 +359,7 @@ export function HeroSearchPanel() {
               <select
                 value={cabin}
                 onChange={(e) => setCabin(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border bg-surface-container/60 backdrop-blur-md text-on-surface transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant hover:border-outline"
+                className="w-full pl-4 pr-11 py-3 rounded-xl border bg-surface-container/60 backdrop-blur-md text-on-surface transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary border-outline-variant hover:border-outline cursor-pointer shadow-xs"
               >
                 <option>Economy</option>
                 <option>Premium Economy</option>

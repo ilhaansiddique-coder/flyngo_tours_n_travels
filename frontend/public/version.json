@@ -1,6 +1,6 @@
 {
-  "version": "be6cac86d7788fdc4d117d79e870be7d5927eac8",
-  "shortVersion": "be6cac8",
-  "message": "refactor(admin-umrah): remove redundant Image URL field from Umrah package form",
-  "builtAt": "2026-09-25T12:25:49.027Z"
+  "version": "20f6fe4e348ad3efaa78da396d6dc1f0f5aa639d",
+  "shortVersion": "20f6fe4",
+  "message": "fix(admin): resolve broken pagination text line by splitting into two lines and windowing page numbers",
+  "builtAt": "2026-09-25T12:38:35.295Z"
 }

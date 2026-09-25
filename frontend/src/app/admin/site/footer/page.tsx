@@ -800,7 +800,7 @@ export default function AdminFooterPage() {
             <select
               value={linkForm.linkType}
               onChange={(e) => setLinkForm((f) => ({ ...f, linkType: e.target.value as any }))}
-              className="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm bg-surface-container focus:ring-2 focus:ring-primary/50 outline-none"
+              className="w-full border border-outline-variant rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-surface-container text-on-surface hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
             >
               <option value="INTERNAL">Internal route</option>
               <option value="EXTERNAL">External URL</option>

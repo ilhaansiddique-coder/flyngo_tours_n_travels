@@ -26,7 +26,7 @@ const ACCOUNT_TYPES = [
 const PROVIDER_LABEL: Record<string, string> = Object.fromEntries(PROVIDERS.map((p) => [p.id, p.label]));
 
 const selectClass =
-  'w-full border border-outline-variant rounded-lg px-3 py-2 text-sm bg-surface-container text-on-surface focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none';
+  'w-full border border-outline-variant rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-surface-container text-on-surface hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all cursor-pointer shadow-xs';
 
 interface MobileWallet {
   id: string;

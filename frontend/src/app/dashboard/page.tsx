@@ -117,7 +117,7 @@ function PhoneCountryRow({
       <select
         value={code}
         onChange={(e) => setCode(e.target.value)}
-        className="w-32 px-2 py-2 rounded-md border bg-surface text-sm"
+        className="w-36 pl-3 pr-8 py-2 rounded-xl border bg-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
         style={{ borderColor: 'var(--color-outline-variant)' }}
         aria-label="Country code"
       >

@@ -70,7 +70,7 @@ export default function AdminHajjPreRegistrationsPage() {
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name, phone, district..." />
         </div>
         <select
-          className="px-3 py-2 rounded-md border bg-surface text-sm"
+          className="pl-3.5 pr-10 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         >
@@ -110,7 +110,7 @@ export default function AdminHajjPreRegistrationsPage() {
                   <div className="flex flex-col gap-2">
                     <label className="text-xs text-muted">Update status</label>
                     <select
-                      className="px-2 py-1.5 rounded-md border bg-surface text-sm"
+                      className="pl-2.5 pr-7 py-1.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
                       value={r.status}
                       onChange={(e) => setStatus(r.id, e.target.value)}
                     >

@@ -225,7 +225,7 @@ export default function PaymentsPage() {
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); fetchPayments(1); }}
-            className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-surface-container"
+            className="border border-gray-300 dark:border-gray-700 rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-white dark:bg-surface-container text-on-surface hover:border-gray-400 dark:hover:border-gray-600 focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
           >
             <option value="">All Statuses</option>
             <option value="pending">Pending</option>
@@ -237,7 +237,7 @@ export default function PaymentsPage() {
           <select
             value={methodFilter}
             onChange={(e) => { setMethodFilter(e.target.value); setPage(1); fetchPayments(1); }}
-            className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-surface-container"
+            className="border border-gray-300 dark:border-gray-700 rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-white dark:bg-surface-container text-on-surface hover:border-gray-400 dark:hover:border-gray-600 focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
           >
             <option value="">All Methods</option>
             <option value="bkash">bKash</option>
@@ -343,7 +343,7 @@ export default function PaymentsPage() {
                         <select
                           value={p.status}
                           onChange={(e) => handleStatusUpdate(p.id, e.target.value)}
-                          className="text-xs border border-gray-300 dark:border-gray-700 rounded-lg px-2 py-1 bg-white dark:bg-surface-container"
+                          className="text-xs border border-gray-300 dark:border-gray-700 rounded-lg pl-2.5 pr-7 py-1.5 bg-white dark:bg-surface-container text-on-surface hover:border-gray-400 dark:hover:border-gray-600 focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
                         >
                           <option value="pending">Pending</option>
                           <option value="processing">Processing</option>

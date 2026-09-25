@@ -1223,3 +1223,68 @@ body {
     margin-left: auto;
   }
 }
+
+/* ==========================================================================
+   DROPDOWN & SELECT GLOBAL BEAUTIFICATION
+   Ensures every dropdown arrow has proper right padding and modern UI styling.
+   ========================================================================== */
+
+select:not([multiple]) {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  /* Crisp Lucide ChevronDown SVG icon */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  /* Right padding for the dropdown arrow: 14px (0.875rem) from the right boundary */
+  background-position: right 0.875rem center !important;
+  background-size: 1rem 1rem !important;
+  /* Generous right padding for the text content so it never collides with the arrow */
+  padding-right: 2.75rem !important;
+  cursor: pointer;
+  border-radius: 0.75rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+select:not([multiple]):hover:not(:disabled) {
+  border-color: var(--color-outline, #94a3b8);
+}
+
+select:not([multiple]):focus {
+  outline: none;
+  border-color: var(--color-primary, #0756b8);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary, #0756b8) 25%, transparent);
+}
+
+select:not([multiple]):disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' opacity='0.4'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+}
+
+/* Dark mode dropdown chevron */
+:is(.dark *) select:not([multiple]),
+.dark select:not([multiple]) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+}
+
+/* Compact / small dropdowns */
+select.text-xs:not([multiple]),
+select.select-sm:not([multiple]) {
+  background-position: right 0.625rem center !important;
+  background-size: 0.875rem 0.875rem !important;
+  padding-right: 2rem !important;
+}
+
+/* Option tags styling in modern browsers */
+select option {
+  background-color: var(--color-surface, #ffffff);
+  color: var(--color-on-surface, #06112a);
+  padding: 8px 12px;
+}
+
+:is(.dark *) select option,
+.dark select option {
+  background-color: var(--color-surface-container, #111e38);
+  color: var(--color-on-surface, #f1f5f9);
+}

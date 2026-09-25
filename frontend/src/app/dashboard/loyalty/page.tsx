@@ -172,7 +172,7 @@ export default function LoyaltyDashboardPage() {
         <Card hover={false}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 font-bold"><TrendingUp className="w-5 h-5 text-accent" /> Points history</h2>
-            <select value={filter} onChange={(event) => { setFilter(event.target.value); void load(event.target.value); }} className="rounded-xl border border-outline-variant bg-surface px-3 py-2 text-sm" aria-label="Filter points history">
+            <select value={filter} onChange={(event) => { setFilter(event.target.value); void load(event.target.value); }} className="rounded-xl border border-outline-variant bg-surface text-on-surface pl-3.5 pr-10 py-2.5 text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs" aria-label="Filter points history">
               <option value="">All activity</option>
               {Object.entries(TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>

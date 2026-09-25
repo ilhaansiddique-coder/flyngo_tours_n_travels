@@ -147,7 +147,7 @@ export default function MediaPage() {
             <select
               value={folder}
               onChange={(e) => setFolder(e.target.value)}
-              className="pl-9 pr-3 py-2.5 text-sm border border-outline-variant rounded-xl bg-surface-container text-on-surface focus:ring-2 focus:ring-primary/50 outline-none appearance-none cursor-pointer"
+              className="pl-9 pr-10 py-2.5 text-sm border border-outline-variant rounded-xl bg-surface-container text-on-surface hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none cursor-pointer transition-colors shadow-xs"
             >
               <option value="">All folders</option>
               {ALL_FOLDERS.map((f) => (
@@ -273,7 +273,7 @@ export default function MediaPage() {
             <select
               value={uploadFolder}
               onChange={(e) => setUploadFolder(e.target.value)}
-              className="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm bg-surface-container text-on-surface focus:ring-2 focus:ring-primary/50 outline-none"
+              className="w-full border border-outline-variant rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-surface-container text-on-surface hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
             >
               {ALL_FOLDERS.map((f) => (
                 <option key={f} value={f}>{f}</option>

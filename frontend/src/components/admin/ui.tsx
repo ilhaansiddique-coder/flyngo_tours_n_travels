@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Eye, EyeOff, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ModalProps {
   open: boolean;
@@ -112,8 +113,9 @@ export function FormTextarea({ value, onChange, onBlur, placeholder, rows = 3 }:
 
 let keyCounter = 0;
 
-export function FormSelect({ value, onChange, options, placeholder }: {
+export function FormSelect({ value, onChange, options, placeholder, className, disabled, id, name }: {
   value?: string; onChange?: (v: string) => void; options: { label: string; value: string }[]; placeholder?: string;
+  className?: string; disabled?: boolean; id?: string; name?: string;
 }) {
   const seen = new Set<string>();
   const deduped = options.map((o) => {
@@ -126,9 +128,15 @@ export function FormSelect({ value, onChange, options, placeholder }: {
   });
   return (
     <select
+      id={id}
+      name={name}
       value={value ?? ''}
+      disabled={disabled}
       onChange={(e) => onChange?.(e.target.value)}
-      className="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm bg-surface-container text-on-surface focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-colors"
+      className={cn(
+        "w-full border border-outline-variant rounded-xl pl-3.5 pr-11 py-2.5 text-sm bg-surface-container text-on-surface hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed",
+        className
+      )}
     >
       {placeholder && <option value="">{placeholder}</option>}
       {deduped.map((o) => (

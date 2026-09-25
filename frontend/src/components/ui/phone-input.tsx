@@ -131,11 +131,11 @@ export function PhoneInput({
           }}
           aria-haspopup="listbox"
           aria-expanded={open}
-          className="flex items-center gap-1.5 px-3 py-3 border-r border-outline-variant bg-surface-container/40 hover:bg-surface-container transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 pl-3.5 pr-3 py-3 border-r border-outline-variant bg-surface-container/40 hover:bg-surface-container transition-colors disabled:opacity-50"
         >
           <span className="text-base leading-none">{selected.flag}</span>
           <span className="text-sm font-medium text-on-surface">{selected.dial}</span>
-          <ChevronDown className="w-3.5 h-3.5 text-muted" />
+          <ChevronDown className={cn("w-3.5 h-3.5 text-muted transition-transform duration-200", open && "rotate-180")} />
         </button>
 
         <div className="relative flex-1">

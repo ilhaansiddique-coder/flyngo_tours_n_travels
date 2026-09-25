@@ -87,12 +87,12 @@ export default function AdminHajjUmrahBookingsPage() {
           <Search className="w-4 h-4 text-muted" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by package, pilgrim, customer…" />
         </div>
-        <select className="px-3 py-2 rounded-md border bg-surface text-sm" value={kind} onChange={(e) => setKind(e.target.value)}>
+        <select className="pl-3.5 pr-10 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs" value={kind} onChange={(e) => setKind(e.target.value)}>
           <option value="">All types</option>
           <option value="hajj">Hajj</option>
           <option value="umrah">Umrah</option>
         </select>
-        <select className="px-3 py-2 rounded-md border bg-surface text-sm" value={filter} onChange={(e) => setFilter(e.target.value)}>
+        <select className="pl-3.5 pr-10 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs" value={filter} onChange={(e) => setFilter(e.target.value)}>
           <option value="">All statuses</option>
           {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
@@ -143,7 +143,7 @@ export default function AdminHajjUmrahBookingsPage() {
                   <div className="flex flex-col gap-2">
                     <label className="text-xs text-muted">Update status</label>
                     <select
-                      className="px-2 py-1.5 rounded-md border bg-surface text-sm"
+                      className="pl-2.5 pr-7 py-1.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
                       value={b.status}
                       onChange={(e) => setStatus(b.id, e.target.value)}
                     >

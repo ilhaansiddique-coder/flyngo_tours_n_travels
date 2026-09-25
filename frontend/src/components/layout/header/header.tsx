@@ -259,7 +259,7 @@ export function Header() {
                       {labelOf(item)}
                       <ChevronDown
                         className={cn(
-                          'w-3.5 h-3.5 transition-transform duration-200',
+                          'w-3.5 h-3.5 ml-0.5 transition-transform duration-200',
                           isOpen ? 'rotate-180' : ''
                         )}
                       />

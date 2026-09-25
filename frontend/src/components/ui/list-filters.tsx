@@ -25,10 +25,12 @@ const SORT_OPTIONS = [
 ];
 
 const selectClass =
-  'w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container/60 text-sm text-on-surface ' +
-  'transition focus:outline-none focus:ring-2 focus:ring-primary/50 hover:border-outline';
-const inputClass = selectClass;
-const labelClass = 'block text-xs font-medium text-on-surface-variant mb-1';
+  'w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-outline-variant bg-surface-container/60 text-sm text-on-surface ' +
+  'transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary hover:border-outline shadow-xs cursor-pointer';
+const inputClass =
+  'w-full px-3.5 py-2.5 rounded-xl border border-outline-variant bg-surface-container/60 text-sm text-on-surface ' +
+  'transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary hover:border-outline shadow-xs';
+const labelClass = 'block text-xs font-medium text-on-surface-variant mb-1.5';
 
 /**
  * Filter + sort bar for the public listing pages.

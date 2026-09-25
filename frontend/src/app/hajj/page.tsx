@@ -363,7 +363,7 @@ export default function HajjPage() {
                       const raw = preReg.phone.replace(/^\+\d+\s*/, '');
                       setPreReg({ ...preReg, phoneCountry: next, phone: raw ? `${dial} ${raw}` : '' });
                     }}
-                    className="w-32 px-2 py-2 rounded-md border bg-surface text-sm"
+                    className="w-36 pl-3 pr-8 py-2.5 rounded-xl border bg-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
                     style={{ borderColor: 'var(--color-outline-variant)' }}
                     aria-label="Country code"
                   >
@@ -394,7 +394,7 @@ export default function HajjPage() {
                 <input type="email" placeholder="Email (optional)" value={preReg.email} onChange={(e) => setPreReg({ ...preReg, email: e.target.value })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />
                 <input placeholder="District (optional)" value={preReg.district} onChange={(e) => setPreReg({ ...preReg, district: e.target.value })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />
                 <input required type="number" min="1" placeholder="Number of travelers" value={preReg.travelers} onChange={(e) => setPreReg({ ...preReg, travelers: Number(e.target.value) })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }} />
-                <select value={preReg.packageTier} onChange={(e) => setPreReg({ ...preReg, packageTier: e.target.value })} className="w-full px-3 py-2 rounded-md border bg-surface text-sm" style={{ borderColor: 'var(--color-outline-variant)' }}>
+                <select value={preReg.packageTier} onChange={(e) => setPreReg({ ...preReg, packageTier: e.target.value })} className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border bg-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs" style={{ borderColor: 'var(--color-outline-variant)' }}>
                   <option value="">Preferred tier (optional)</option>
                   {packages.map((p) => <option key={p.id} value={p.tier}>{p.title}</option>)}
                 </select>

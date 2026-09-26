@@ -1,13 +1,23 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { buildSearchOr } from '../../common/utils/search.util';
 import { ListQueryDto, orderByFor, priceRange } from '../../common/dto/list-query.dto';
 
 @Injectable()
-export class TransportService {
+export class TransportService implements OnModuleInit {
   private readonly logger = new Logger(TransportService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async onModuleInit() {
+    try {
+      await this.prisma.$executeRawUnsafe(
+        'ALTER TABLE "transports" ADD COLUMN IF NOT EXISTS "cover_image_url" TEXT;',
+      );
+    } catch (err: any) {
+      this.logger.warn(`Auto-migration for transports.cover_image_url: ${err.message}`);
+    }
+  }
 
   async findAll(tenantId: string, page = 1, limit = 20, q?: string, filters: ListQueryDto = {}) {
     try {
@@ -69,6 +79,7 @@ export class TransportService {
         totalSeats: data.totalSeats ?? 0,
         availableSeats: data.availableSeats ?? 0,
         amenities: data.amenities || [],
+        coverImageUrl: data.coverImageUrl || null,
         isActive: data.isActive ?? true,
         pointsAwarded: Number(data.pointsAwarded) || 0,
       },

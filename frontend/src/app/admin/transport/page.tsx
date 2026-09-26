@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal, FormField, FormInput, FormSelect, ConfirmDialog } from '@/components/admin/ui';
+import { ImageUploader } from '@/components/admin/image-uploader';
 import { formatCurrency } from '@/lib/utils';
 import { transportImage } from '@/lib/entity-image';
 import { useApi } from '@/hooks/use-api';
@@ -29,6 +30,7 @@ interface Transport {
   totalSeats: number;
   availableSeats: number;
   amenities: string[];
+  coverImageUrl?: string | null;
   isActive: boolean;
   pointsAwarded?: number;
 }
@@ -49,6 +51,7 @@ interface FormData {
   totalSeats: string;
   availableSeats: string;
   amenities: string;
+  coverImageUrl: string;
   pointsAwarded: string;
   isActive: boolean;
 }
@@ -78,12 +81,13 @@ const initialForm: FormData = {
   totalSeats: '',
   availableSeats: '',
   amenities: '',
+  coverImageUrl: '',
   pointsAwarded: '',
   isActive: true,
 };
 
 export default function TransportPage() {
-  const { getTransport, createTransport, updateTransport, deleteTransport } = useApi();
+  const { getTransport, createTransport, updateTransport, deleteTransport, uploadMedia } = useApi();
 
   const [items, setItems] = useState<Transport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,6 +159,7 @@ export default function TransportPage() {
       totalSeats: String(t.totalSeats || 0),
       availableSeats: String(t.availableSeats || 0),
       amenities: (t.amenities || []).join(', '),
+      coverImageUrl: t.coverImageUrl || '',
       pointsAwarded: String(t.pointsAwarded ?? ''),
       isActive: t.isActive,
     });
@@ -181,6 +186,7 @@ export default function TransportPage() {
         totalSeats: Number(form.totalSeats) || 0,
         availableSeats: Number(form.availableSeats) || 0,
         amenities: form.amenities.split(',').map((s) => s.trim()).filter(Boolean),
+        coverImageUrl: form.coverImageUrl || undefined,
         pointsAwarded: form.pointsAwarded ? Number(form.pointsAwarded) : 0,
         isActive: form.isActive,
       };
@@ -508,6 +514,18 @@ export default function TransportPage() {
               value={form.amenities}
               onChange={(v) => setForm({ ...form, amenities: v })}
               placeholder="e.g. AC, WiFi, Water, TV"
+            />
+          </FormField>
+
+          <FormField label="Cover Image">
+            <ImageUploader
+              value={form.coverImageUrl}
+              onChange={(url) => setForm({ ...form, coverImageUrl: url ?? '' })}
+              onUpload={async (file) => {
+                const res = await uploadMedia(file, { folder: 'transport' });
+                return { url: (res as any).url };
+              }}
+              aspectRatio={1.7777}
             />
           </FormField>
 

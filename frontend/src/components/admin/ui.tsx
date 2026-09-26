@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Eye, EyeOff, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CustomSelect } from '@/components/ui/select';
 
 interface ModalProps {
   open: boolean;
@@ -124,25 +125,23 @@ export function FormSelect({ value, onChange, options, placeholder, className, d
       key = `${o.value}__${++keyCounter}`;
     }
     seen.add(key);
-    return { ...o, value: o.value, _key: key };
+    return { label: o.label, value: o.value };
   });
+
   return (
-    <select
+    <CustomSelect
       id={id}
       name={name}
       value={value ?? ''}
       disabled={disabled}
-      onChange={(e) => onChange?.(e.target.value)}
-      className={cn(
-        "w-full border border-outline-variant rounded-xl pl-3.5 pr-11 py-2.5 text-sm bg-surface-container text-on-surface hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed",
+      onChange={onChange}
+      placeholder={placeholder || 'Select...'}
+      options={deduped}
+      triggerClassName={cn(
+        "bg-surface-container text-on-surface border-outline-variant hover:border-outline",
         className
       )}
-    >
-      {placeholder && <option value="">{placeholder}</option>}
-      {deduped.map((o) => (
-        <option key={o._key} value={o.value}>{o.label}</option>
-      ))}
-    </select>
+    />
   );
 }
 

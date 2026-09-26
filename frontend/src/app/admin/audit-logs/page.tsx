@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CustomSelect } from '@/components/ui/select';
 import { formatDate } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import { useEffect, useState, useCallback } from 'react';
@@ -205,16 +206,16 @@ export default function AuditLogsPage() {
             </div>
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">User</label>
-              <select
+              <CustomSelect
                 value={filters.userId}
-                onChange={(e) => setFilters({ ...filters, userId: e.target.value })}
-                className="w-full border border-gray-300 dark:border-gray-700 rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-white dark:bg-surface-container text-on-surface hover:border-gray-400 dark:hover:border-gray-600 focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-              >
-                <option value="">All users</option>
-                {userOptions.map((u) => (
-                  <option key={u.value} value={u.value}>{u.label}</option>
-                ))}
-              </select>
+                onChange={(val) => setFilters({ ...filters, userId: val })}
+                options={[
+                  { value: '', label: 'All users' },
+                  ...userOptions,
+                ]}
+                searchable={userOptions.length > 5}
+                placeholder="All users"
+              />
             </div>
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">From</label>

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal, FormField, FormInput, FormTextarea, FormSelect, ConfirmDialog } from '@/components/admin/ui';
+import { CustomSelect } from '@/components/ui/select';
 import { useApi } from '@/hooks/use-api';
 import { formatCurrency } from '@/lib/utils';
 import {
@@ -544,34 +545,33 @@ export default function VendorManagementPage() {
 
           {/* Vendor Filter */}
           <div className="w-full sm:w-56">
-            <select
+            <CustomSelect
               aria-label="Filter by vendor"
               value={selectedVendorFilter}
-              onChange={(e) => setSelectedVendorFilter(e.target.value)}
-              className="w-full border border-outline-variant rounded-xl px-3 py-2 text-sm bg-surface-container text-on-surface focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none"
-            >
-              <option value="">All Vendors</option>
-              {vendors.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedVendorFilter(val)}
+              options={[
+                { value: '', label: 'All Vendors' },
+                ...vendors.map((v) => ({ value: v.id, label: v.name })),
+              ]}
+              searchable={vendors.length > 5}
+              placeholder="All Vendors"
+            />
           </div>
 
           {/* Status Filter */}
           <div className="w-full sm:w-44">
-            <select
+            <CustomSelect
               aria-label="Filter by status"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full border border-outline-variant rounded-xl px-3 py-2 text-sm bg-surface-container text-on-surface focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none"
-            >
-              <option value="">All Statuses</option>
-              <option value="completed">Completed</option>
-              <option value="in_progress">In Progress</option>
-              <option value="pending">Pending</option>
-            </select>
+              onChange={(val) => setStatusFilter(val)}
+              options={[
+                { value: '', label: 'All Statuses' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'in_progress', label: 'In Progress' },
+                { value: 'pending', label: 'Pending' },
+              ]}
+              placeholder="All Statuses"
+            />
           </div>
         </div>
       </div>

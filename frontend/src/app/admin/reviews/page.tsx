@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CustomSelect } from '@/components/ui/select';
 import { ConfirmDialog } from '@/components/admin/ui';
 import { formatDate } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
@@ -133,29 +134,31 @@ export default function ReviewsPage() {
           </div>
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">Item Type</label>
-            <select
+            <CustomSelect
               value={itemTypeFilter}
-              onChange={(e) => setItemTypeFilter(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-700 rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-white dark:bg-surface-container text-on-surface hover:border-gray-400 dark:hover:border-gray-600 focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-            >
-              <option value="">All types</option>
-              <option value="tour">Tours</option>
-              <option value="hotel">Hotels</option>
-              <option value="flight">Flights</option>
-              <option value="visa">Visa</option>
-            </select>
+              onChange={(val) => setItemTypeFilter(val)}
+              options={[
+                { value: '', label: 'All types' },
+                { value: 'tour', label: 'Tours' },
+                { value: 'hotel', label: 'Hotels' },
+                { value: 'flight', label: 'Flights' },
+                { value: 'visa', label: 'Visa' },
+              ]}
+              placeholder="All types"
+            />
           </div>
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">Status</label>
-            <select
+            <CustomSelect
               value={approvalFilter}
-              onChange={(e) => setApprovalFilter(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-700 rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-white dark:bg-surface-container text-on-surface hover:border-gray-400 dark:hover:border-gray-600 focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-            >
-              <option value="">All</option>
-              <option value="false">Pending</option>
-              <option value="true">Approved</option>
-            </select>
+              onChange={(val) => setApprovalFilter(val)}
+              options={[
+                { value: '', label: 'All' },
+                { value: 'false', label: 'Pending' },
+                { value: 'true', label: 'Approved' },
+              ]}
+              placeholder="All"
+            />
           </div>
           <div className="flex items-end gap-2">
             <Button onClick={applyFilters} size="md" className="flex-1">Apply</Button>

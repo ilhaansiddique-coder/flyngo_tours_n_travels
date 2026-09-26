@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { CustomSelect } from '@/components/ui/select';
 import { useApi } from '@/hooks/use-api';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { HAJJ_UMRAH_BOOKING_STATUSES, HAJJ_UMRAH_STATUS_VARIANT } from '@/lib/booking-statuses';
@@ -87,15 +88,27 @@ export default function AdminHajjUmrahBookingsPage() {
           <Search className="w-4 h-4 text-muted" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by package, pilgrim, customer…" />
         </div>
-        <select className="pl-3.5 pr-10 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs" value={kind} onChange={(e) => setKind(e.target.value)}>
-          <option value="">All types</option>
-          <option value="hajj">Hajj</option>
-          <option value="umrah">Umrah</option>
-        </select>
-        <select className="pl-3.5 pr-10 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs" value={filter} onChange={(e) => setFilter(e.target.value)}>
-          <option value="">All statuses</option>
-          {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-        </select>
+        <div className="w-40">
+          <CustomSelect
+            value={kind}
+            onChange={(val) => setKind(val)}
+            options={[
+              { value: '', label: 'All types' },
+              { value: 'hajj', label: 'Hajj' },
+              { value: 'umrah', label: 'Umrah' },
+            ]}
+          />
+        </div>
+        <div className="w-48">
+          <CustomSelect
+            value={filter}
+            onChange={(val) => setFilter(val)}
+            options={[
+              { value: '', label: 'All statuses' },
+              ...STATUSES,
+            ]}
+          />
+        </div>
       </div>
 
       {loading ? (
@@ -140,15 +153,14 @@ export default function AdminHajjUmrahBookingsPage() {
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1.5 min-w-[160px]">
                     <label className="text-xs text-muted">Update status</label>
-                    <select
-                      className="pl-2.5 pr-7 py-1.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
+                    <CustomSelect
+                      size="sm"
                       value={b.status}
-                      onChange={(e) => setStatus(b.id, e.target.value)}
-                    >
-                      {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                    </select>
+                      onChange={(val) => setStatus(b.id, val)}
+                      options={STATUSES}
+                    />
                   </div>
                 </div>
               </Card>

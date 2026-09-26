@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { CustomSelect } from '@/components/ui/select';
 import { useApi } from '@/hooks/use-api';
 import { formatDate } from '@/lib/utils';
 import { FileCheck, Search, Phone, Mail, MapPin, Users, Calendar } from 'lucide-react';
@@ -69,14 +70,16 @@ export default function AdminHajjPreRegistrationsPage() {
           <Search className="w-4 h-4 text-muted" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name, phone, district..." />
         </div>
-        <select
-          className="pl-3.5 pr-10 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        >
-          <option value="">All statuses</option>
-          {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-        </select>
+        <div className="w-48">
+          <CustomSelect
+            value={filter}
+            onChange={(val) => setFilter(val)}
+            options={[
+              { value: '', label: 'All statuses' },
+              ...STATUSES,
+            ]}
+          />
+        </div>
       </div>
 
       {loading ? (
@@ -107,15 +110,14 @@ export default function AdminHajjPreRegistrationsPage() {
                     </div>
                     {r.notes && <p className="text-xs text-muted mt-2 italic">{r.notes}</p>}
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1.5 min-w-[160px]">
                     <label className="text-xs text-muted">Update status</label>
-                    <select
-                      className="pl-2.5 pr-7 py-1.5 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
+                    <CustomSelect
+                      size="sm"
                       value={r.status}
-                      onChange={(e) => setStatus(r.id, e.target.value)}
-                    >
-                      {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                    </select>
+                      onChange={(val) => setStatus(r.id, val)}
+                      options={STATUSES}
+                    />
                   </div>
                 </div>
               </Card>

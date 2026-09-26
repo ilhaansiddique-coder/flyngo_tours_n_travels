@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Compass, FileCheck, Plane, Search, Building2, Moon, Sparkles, Car } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { CustomSelect } from '@/components/ui/select';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { DestinationAutocomplete } from '@/components/ui/destination-autocomplete';
 import { DEFAULT_COUNTRY_CODE, findDialByCode } from '@/lib/country-dial-codes';
@@ -356,16 +357,18 @@ export function HeroSearchPanel() {
             </div>
             <div className="self-end">
               <label className="block text-sm font-medium text-on-surface mb-1.5">Class</label>
-              <select
+              <CustomSelect
                 value={cabin}
-                onChange={(e) => setCabin(e.target.value)}
-                className="w-full pl-4 pr-11 py-3 rounded-xl border bg-surface-container/60 backdrop-blur-md text-on-surface transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary border-outline-variant hover:border-outline cursor-pointer shadow-xs"
-              >
-                <option>Economy</option>
-                <option>Premium Economy</option>
-                <option>Business</option>
-                <option>First</option>
-              </select>
+                onChange={(val) => setCabin(val)}
+                options={[
+                  { value: 'Economy', label: 'Economy' },
+                  { value: 'Premium Economy', label: 'Premium Economy' },
+                  { value: 'Business', label: 'Business' },
+                  { value: 'First', label: 'First' },
+                ]}
+                size="md"
+                triggerClassName="bg-surface-container/60 backdrop-blur-md py-2.5"
+              />
             </div>
             {contactField}
           </>

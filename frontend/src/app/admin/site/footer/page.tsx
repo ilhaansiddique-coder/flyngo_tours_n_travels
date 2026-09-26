@@ -797,15 +797,15 @@ export default function AdminFooterPage() {
             />
           </FormField>
           <FormField label="Link type">
-            <select
+            <FormSelect
               value={linkForm.linkType}
-              onChange={(e) => setLinkForm((f) => ({ ...f, linkType: e.target.value as any }))}
-              className="w-full border border-outline-variant rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-surface-container text-on-surface hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-            >
-              <option value="INTERNAL">Internal route</option>
-              <option value="EXTERNAL">External URL</option>
-              <option value="SECTION">In-page section</option>
-            </select>
+              onChange={(val) => setLinkForm((f) => ({ ...f, linkType: val as any }))}
+              options={[
+                { value: 'INTERNAL', label: 'Internal route' },
+                { value: 'EXTERNAL', label: 'External URL' },
+                { value: 'SECTION', label: 'In-page section' },
+              ]}
+            />
           </FormField>
         </div>
         <label className="flex items-center gap-2 cursor-pointer mt-2">

@@ -13,6 +13,7 @@ import {
   Gift, Trophy, Upload, Download, Trash2, Camera, Image as ImageIcon, Loader2,
 } from 'lucide-react';
 import TierBadge from '@/components/ui/tier-badge';
+import { CustomSelect } from '@/components/ui/select';
 import { InvoiceShareMenu } from '@/components/shared/invoice-share-menu';
 import {
   COUNTRY_DIALS,
@@ -114,19 +115,21 @@ function PhoneCountryRow({
 
   return (
     <div className="flex gap-2">
-      <select
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        className="w-36 pl-3 pr-8 py-2 rounded-xl border bg-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-        style={{ borderColor: 'var(--color-outline-variant)' }}
-        aria-label="Country code"
-      >
-        {COUNTRY_DIALS.map((c) => (
-          <option key={c.code} value={c.code}>
-            {c.flag} {c.dial}
-          </option>
-        ))}
-      </select>
+      <div className="w-36 shrink-0">
+        <CustomSelect
+          value={code}
+          onChange={(val) => setCode(val)}
+          options={COUNTRY_DIALS.map((c) => ({
+            value: c.code,
+            label: `${c.flag} ${c.dial}`,
+            description: c.name,
+          }))}
+          searchable
+          searchPlaceholder="Search country..."
+          aria-label="Country code"
+          minMenuWidth={220}
+        />
+      </div>
       <input
         type="tel"
         placeholder="Phone number"

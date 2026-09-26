@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import TierBadge from '@/components/ui/tier-badge';
+import { CustomSelect } from '@/components/ui/select';
 import {
   Copy, Gift, Loader2, Check, Sparkles, Trophy, Wallet, Clock, TrendingUp,
 } from 'lucide-react';
@@ -172,10 +173,18 @@ export default function LoyaltyDashboardPage() {
         <Card hover={false}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 font-bold"><TrendingUp className="w-5 h-5 text-accent" /> Points history</h2>
-            <select value={filter} onChange={(event) => { setFilter(event.target.value); void load(event.target.value); }} className="rounded-xl border border-outline-variant bg-surface text-on-surface pl-3.5 pr-10 py-2.5 text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs" aria-label="Filter points history">
-              <option value="">All activity</option>
-              {Object.entries(TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-            </select>
+            <div className="w-52">
+              <CustomSelect
+                value={filter}
+                onChange={(val) => { setFilter(val); void load(val); }}
+                options={[
+                  { value: '', label: 'All activity' },
+                  ...Object.entries(TYPE_LABELS).map(([val, lbl]) => ({ value: val, label: lbl })),
+                ]}
+                aria-label="Filter points history"
+                placeholder="All activity"
+              />
+            </div>
           </div>
           {transactions.length === 0 ? <p className="py-12 text-center text-sm text-on-surface-variant">No points activity yet.</p> : (
             <div className="mt-4 divide-y divide-outline-variant">

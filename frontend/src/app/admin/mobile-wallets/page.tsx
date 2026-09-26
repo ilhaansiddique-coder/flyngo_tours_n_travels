@@ -4,7 +4,7 @@ import { useApi } from '@/hooks/use-api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Modal, FormField, FormInput, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
+import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
 import { useEffect, useState } from 'react';
 import { Smartphone, Plus, Pencil, Trash2 } from 'lucide-react';
 
@@ -208,18 +208,18 @@ export default function MobileWalletsPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField label="Provider">
-              <select className={selectClass} value={form.provider} onChange={(e) => setForm({ ...form, provider: e.target.value })}>
-                {PROVIDERS.map((p) => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
-                ))}
-              </select>
+              <FormSelect
+                value={form.provider}
+                onChange={(v) => setForm({ ...form, provider: v })}
+                options={PROVIDERS.map((p) => ({ value: p.id, label: p.label }))}
+              />
             </FormField>
             <FormField label="Account type">
-              <select className={selectClass} value={form.accountType} onChange={(e) => setForm({ ...form, accountType: e.target.value })}>
-                {ACCOUNT_TYPES.map((t) => (
-                  <option key={t.id} value={t.id}>{t.label}</option>
-                ))}
-              </select>
+              <FormSelect
+                value={form.accountType}
+                onChange={(v) => setForm({ ...form, accountType: v })}
+                options={ACCOUNT_TYPES.map((t) => ({ value: t.id, label: t.label }))}
+              />
             </FormField>
           </div>
           <FormField label="Account name">

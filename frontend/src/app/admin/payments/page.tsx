@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CustomSelect } from '@/components/ui/select';
 import { formatCurrency, shortPaymentRef } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import { useEffect, useState } from 'react';
@@ -222,33 +223,39 @@ export default function PaymentsPage() {
               onKeyDown={(e) => { if (e.key === 'Enter') fetchPayments(1); }}
             />
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); fetchPayments(1); }}
-            className="border border-gray-300 dark:border-gray-700 rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-white dark:bg-surface-container text-on-surface hover:border-gray-400 dark:hover:border-gray-600 focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-          >
-            <option value="">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="processing">Processing</option>
-            <option value="completed">Completed</option>
-            <option value="failed">Failed</option>
-            <option value="refunded">Refunded</option>
-          </select>
-          <select
-            value={methodFilter}
-            onChange={(e) => { setMethodFilter(e.target.value); setPage(1); fetchPayments(1); }}
-            className="border border-gray-300 dark:border-gray-700 rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-white dark:bg-surface-container text-on-surface hover:border-gray-400 dark:hover:border-gray-600 focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-          >
-            <option value="">All Methods</option>
-            <option value="bkash">bKash</option>
-            <option value="bank_transfer">Bank transfer</option>
-            <option value="cash">Cash</option>
-            <option value="nagad">Nagad</option>
-            <option value="sslcommerz">SSLCommerz</option>
-            <option value="stripe">Stripe</option>
-            <option value="rocket">Rocket</option>
-            <option value="upay">Upay</option>
-          </select>
+          <div className="w-44">
+            <CustomSelect
+              value={statusFilter}
+              onChange={(val) => { setStatusFilter(val); setPage(1); fetchPayments(1); }}
+              options={[
+                { value: '', label: 'All Statuses' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'processing', label: 'Processing' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'failed', label: 'Failed' },
+                { value: 'refunded', label: 'Refunded' },
+              ]}
+              placeholder="All Statuses"
+            />
+          </div>
+          <div className="w-48">
+            <CustomSelect
+              value={methodFilter}
+              onChange={(val) => { setMethodFilter(val); setPage(1); fetchPayments(1); }}
+              options={[
+                { value: '', label: 'All Methods' },
+                { value: 'bkash', label: 'bKash' },
+                { value: 'bank_transfer', label: 'Bank transfer' },
+                { value: 'cash', label: 'Cash' },
+                { value: 'nagad', label: 'Nagad' },
+                { value: 'sslcommerz', label: 'SSLCommerz' },
+                { value: 'stripe', label: 'Stripe' },
+                { value: 'rocket', label: 'Rocket' },
+                { value: 'upay', label: 'Upay' },
+              ]}
+              placeholder="All Methods"
+            />
+          </div>
         </div>
         <Button variant="outline" size="md" className="gap-2" onClick={exportCsv}>
           <Download className="w-4 h-4" /> Export
@@ -340,17 +347,21 @@ export default function PaymentsPage() {
                       </td>
                       <td className="p-4 font-medium">{formatCurrency(Number(p.amount), p.currency)}</td>
                       <td className="p-4">
-                        <select
-                          value={p.status}
-                          onChange={(e) => handleStatusUpdate(p.id, e.target.value)}
-                          className="text-xs border border-gray-300 dark:border-gray-700 rounded-lg pl-2.5 pr-7 py-1.5 bg-white dark:bg-surface-container text-on-surface hover:border-gray-400 dark:hover:border-gray-600 focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="processing">Processing</option>
-                          <option value="completed">Completed</option>
-                          <option value="failed">Failed</option>
-                          <option value="refunded">Refunded</option>
-                        </select>
+                        <div className="w-32">
+                          <CustomSelect
+                            size="sm"
+                            value={p.status}
+                            onChange={(val) => handleStatusUpdate(p.id, val)}
+                            options={[
+                              { value: 'pending', label: 'Pending' },
+                              { value: 'processing', label: 'Processing' },
+                              { value: 'completed', label: 'Completed' },
+                              { value: 'failed', label: 'Failed' },
+                              { value: 'refunded', label: 'Refunded' },
+                            ]}
+                            triggerClassName="text-xs py-1"
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))

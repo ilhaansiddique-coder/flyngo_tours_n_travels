@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog, Modal, FormField, FormInput, FormSelect, FormTextarea } from '@/components/admin/ui';
+import { CustomSelect } from '@/components/ui/select';
 import { useApi } from '@/hooks/use-api';
 import { formatCurrency, formatDate, shortPaymentRef } from '@/lib/utils';
 import { BOOKING_STATUSES, STATUS_BADGE_VARIANT } from '@/lib/booking-statuses';
@@ -797,17 +798,15 @@ export default function BookingsPage() {
                               <Banknote className="w-3.5 h-3.5" /> Pay
                             </button>
                           )}
-                          <select
-                            value={b.status}
-                            onChange={(e) => handleStatusChange(b.id, e.target.value)}
-                            className="text-xs border border-outline-variant rounded-lg pl-2.5 pr-7 py-1.5 bg-surface-container text-on-surface hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-                          >
-                            {AVAILABLE_STATUSES.map((s) => (
-                              <option key={s.value} value={s.value}>
-                                {s.label}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="w-32">
+                            <CustomSelect
+                              size="sm"
+                              value={b.status}
+                              onChange={(val) => handleStatusChange(b.id, val)}
+                              options={AVAILABLE_STATUSES}
+                              triggerClassName="bg-surface-container py-1 text-xs"
+                            />
+                          </div>
                           <button
                             onClick={() => setCancelTarget(b)}
                             disabled={b.status === 'cancelled'}
@@ -847,16 +846,19 @@ export default function BookingsPage() {
                 ? 'No bookings match'
                 : `Showing ${(meta.page - 1) * meta.limit + 1}–${Math.min(meta.page * meta.limit, meta.total)} of ${meta.total} bookings`}
             </p>
-            <select
-              value={perPage}
-              onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
-              className="pl-2.5 pr-7 py-1 rounded-lg text-xs bg-surface-container-high text-on-surface border border-outline-variant hover:border-outline focus:outline-none transition-colors cursor-pointer shadow-xs"
-              title="Bookings per page"
-            >
-              <option value={10}>10 / page</option>
-              <option value={25}>25 / page</option>
-              <option value={50}>50 / page</option>
-            </select>
+            <div className="w-28">
+              <CustomSelect
+                size="sm"
+                value={perPage}
+                onChange={(val) => { setPerPage(Number(val)); setPage(1); }}
+                options={[
+                  { value: 10, label: '10 / page' },
+                  { value: 25, label: '25 / page' },
+                  { value: 50, label: '50 / page' },
+                ]}
+                aria-label="Bookings per page"
+              />
+            </div>
             <span className="inline-flex items-center gap-1.5 text-xs text-on-surface-variant" title="Auto-refreshes every 10 seconds">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60 animate-ping" />

@@ -10,6 +10,7 @@ import { useFormatCurrency } from '@/lib/utils';
 import { useBookingStore } from '@/stores/booking.store';
 import { useSearchQuery } from '@/hooks/use-search-query';
 import { SearchResultsBanner } from '@/components/ui/search-results-banner';
+import { CustomSelect } from '@/components/ui/select';
 import {
   Clock,
   Phone,
@@ -563,24 +564,25 @@ export default function HajjPage() {
                   style={{ borderColor: 'var(--color-outline-variant)' }}
                 />
                 <div className="flex gap-2">
-                  <select
-                    value={preReg.phoneCountry}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      const dial = findDialByCode(next)?.dial ?? '';
-                      const raw = preReg.phone.replace(/^\+\d+\s*/, '');
-                      setPreReg({ ...preReg, phoneCountry: next, phone: raw ? `${dial} ${raw}` : '' });
-                    }}
-                    className="w-36 pl-3 pr-8 py-2.5 rounded-xl border bg-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-                    style={{ borderColor: 'var(--color-outline-variant)' }}
-                    aria-label="Country code"
-                  >
-                    {COUNTRY_DIALS.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.flag} {c.dial}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="w-36 shrink-0">
+                    <CustomSelect
+                      value={preReg.phoneCountry}
+                      onChange={(next) => {
+                        const dial = findDialByCode(next)?.dial ?? '';
+                        const raw = preReg.phone.replace(/^\+\d+\s*/, '');
+                        setPreReg({ ...preReg, phoneCountry: next, phone: raw ? `${dial} ${raw}` : '' });
+                      }}
+                      options={COUNTRY_DIALS.map((c) => ({
+                        value: c.code,
+                        label: `${c.flag} ${c.dial}`,
+                        description: c.name,
+                      }))}
+                      searchable
+                      searchPlaceholder="Search country..."
+                      aria-label="Country code"
+                      minMenuWidth={220}
+                    />
+                  </div>
                   <input
                     required
                     type="tel"
@@ -624,19 +626,15 @@ export default function HajjPage() {
                   className="w-full px-3 py-2 rounded-md border bg-surface text-sm"
                   style={{ borderColor: 'var(--color-outline-variant)' }}
                 />
-                <select
+                <CustomSelect
                   value={preReg.packageTier}
-                  onChange={(e) => setPreReg({ ...preReg, packageTier: e.target.value })}
-                  className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border bg-surface text-sm hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-                  style={{ borderColor: 'var(--color-outline-variant)' }}
-                >
-                  <option value="">Preferred tier (optional)</option>
-                  {packages.map((p) => (
-                    <option key={p.id} value={p.tier}>
-                      {p.title}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setPreReg({ ...preReg, packageTier: val })}
+                  options={[
+                    { value: '', label: 'Preferred tier (optional)' },
+                    ...packages.map((p) => ({ value: p.tier, label: p.title })),
+                  ]}
+                  placeholder="Preferred tier (optional)"
+                />
                 <div className="flex gap-2 pt-2">
                   <button
                     type="button"

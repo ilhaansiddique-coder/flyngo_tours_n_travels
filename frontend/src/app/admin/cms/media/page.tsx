@@ -4,7 +4,8 @@ import { useApi } from '@/hooks/use-api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Modal, FormField, FormInput } from '@/components/admin/ui';
+import { Modal, FormField, FormInput, FormSelect } from '@/components/admin/ui';
+import { CustomSelect } from '@/components/ui/select';
 import { ImageUploader } from '@/components/admin/image-uploader';
 import { useEffect, useState } from 'react';
 import { Image as ImageIcon, Upload, Search, Trash2, Copy, ExternalLink, X, Filter } from 'lucide-react';
@@ -142,18 +143,17 @@ export default function MediaPage() {
               }}
             />
           </div>
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant pointer-events-none" />
-            <select
+          <div className="w-48">
+            <CustomSelect
               value={folder}
-              onChange={(e) => setFolder(e.target.value)}
-              className="pl-9 pr-10 py-2.5 text-sm border border-outline-variant rounded-xl bg-surface-container text-on-surface hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none cursor-pointer transition-colors shadow-xs"
-            >
-              <option value="">All folders</option>
-              {ALL_FOLDERS.map((f) => (
-                <option key={f} value={f}>{f}</option>
-              ))}
-            </select>
+              onChange={(val) => setFolder(val)}
+              options={[
+                { value: '', label: 'All folders' },
+                ...ALL_FOLDERS.map((f) => ({ value: f, label: f })),
+              ]}
+              icon={<Filter className="w-4 h-4 text-on-surface-variant" />}
+              placeholder="All folders"
+            />
           </div>
         </div>
         <Button size="md" className="gap-2" onClick={() => setUploadOpen(true)}>
@@ -270,15 +270,11 @@ export default function MediaPage() {
             </div>
           )}
           <FormField label="Folder">
-            <select
+            <FormSelect
               value={uploadFolder}
-              onChange={(e) => setUploadFolder(e.target.value)}
-              className="w-full border border-outline-variant rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-surface-container text-on-surface hover:border-outline focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-            >
-              {ALL_FOLDERS.map((f) => (
-                <option key={f} value={f}>{f}</option>
-              ))}
-            </select>
+              onChange={(val) => setUploadFolder(val)}
+              options={ALL_FOLDERS.map((f) => ({ value: f, label: f }))}
+            />
           </FormField>
           <FormField label="Alt Text (for accessibility)">
             <FormInput

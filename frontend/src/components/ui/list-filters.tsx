@@ -1,6 +1,7 @@
 'use client';
 
 import { SlidersHorizontal, X } from 'lucide-react';
+import { CustomSelect } from '@/components/ui/select';
 
 export interface ListFilterState {
   sort?: string;
@@ -81,16 +82,13 @@ export function ListFilters({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <div>
           <label className={labelClass} htmlFor="lf-sort">Sort by</label>
-          <select
+          <CustomSelect
             id="lf-sort"
-            className={selectClass}
             value={value.sort ?? ''}
-            onChange={(e) => set('sort', e.target.value)}
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+            onChange={(val) => set('sort', val)}
+            options={SORT_OPTIONS}
+            placeholder="Recommended"
+          />
         </div>
 
         <div>
@@ -124,89 +122,94 @@ export function ListFilters({
         {extras.includes('duration') && (
           <div>
             <label className={labelClass} htmlFor="lf-days">Trip length</label>
-            <select
+            <CustomSelect
               id="lf-days"
-              className={selectClass}
               value={value.maxDuration ?? ''}
-              onChange={(e) => set('maxDuration', e.target.value)}
-            >
-              <option value="">Any length</option>
-              <option value="3">Up to 3 days</option>
-              <option value="7">Up to 7 days</option>
-              <option value="14">Up to 14 days</option>
-              <option value="30">Up to 30 days</option>
-            </select>
+              onChange={(val) => set('maxDuration', val)}
+              options={[
+                { value: '', label: 'Any length' },
+                { value: '3', label: 'Up to 3 days' },
+                { value: '7', label: 'Up to 7 days' },
+                { value: '14', label: 'Up to 14 days' },
+                { value: '30', label: 'Up to 30 days' },
+              ]}
+              placeholder="Any length"
+            />
           </div>
         )}
 
         {extras.includes('difficulty') && (
           <div>
             <label className={labelClass} htmlFor="lf-diff">Difficulty</label>
-            <select
+            <CustomSelect
               id="lf-diff"
-              className={selectClass}
               value={value.difficulty ?? ''}
-              onChange={(e) => set('difficulty', e.target.value)}
-            >
-              <option value="">Any</option>
-              <option value="easy">Easy</option>
-              <option value="moderate">Moderate</option>
-              <option value="challenging">Challenging</option>
-            </select>
+              onChange={(val) => set('difficulty', val)}
+              options={[
+                { value: '', label: 'Any' },
+                { value: 'easy', label: 'Easy' },
+                { value: 'moderate', label: 'Moderate' },
+                { value: 'challenging', label: 'Challenging' },
+              ]}
+              placeholder="Any"
+            />
           </div>
         )}
 
         {extras.includes('stars') && (
           <div>
             <label className={labelClass} htmlFor="lf-stars">Star rating</label>
-            <select
+            <CustomSelect
               id="lf-stars"
-              className={selectClass}
               value={value.minStars ?? ''}
-              onChange={(e) => set('minStars', e.target.value)}
-            >
-              <option value="">Any rating</option>
-              <option value="3">3★ and up</option>
-              <option value="4">4★ and up</option>
-              <option value="5">5★ only</option>
-            </select>
+              onChange={(val) => set('minStars', val)}
+              options={[
+                { value: '', label: 'Any rating' },
+                { value: '3', label: '3★ and up' },
+                { value: '4', label: '4★ and up' },
+                { value: '5', label: '5★ only' },
+              ]}
+              placeholder="Any rating"
+            />
           </div>
         )}
 
         {extras.includes('cabin') && (
           <div>
             <label className={labelClass} htmlFor="lf-cabin">Cabin class</label>
-            <select
+            <CustomSelect
               id="lf-cabin"
-              className={selectClass}
               value={value.cabinClass ?? ''}
-              onChange={(e) => set('cabinClass', e.target.value)}
-            >
-              <option value="">Any class</option>
-              <option value="economy">Economy</option>
-              <option value="premium_economy">Premium economy</option>
-              <option value="business">Business</option>
-              <option value="first">First</option>
-            </select>
+              onChange={(val) => set('cabinClass', val)}
+              options={[
+                { value: '', label: 'Any class' },
+                { value: 'economy', label: 'Economy' },
+                { value: 'premium_economy', label: 'Premium economy' },
+                { value: 'business', label: 'Business' },
+                { value: 'first', label: 'First' },
+              ]}
+              placeholder="Any class"
+            />
           </div>
         )}
 
         {extras.includes('vehicle') && (
           <div>
             <label className={labelClass} htmlFor="lf-vehicle">Vehicle</label>
-            <select
+            <CustomSelect
               id="lf-vehicle"
-              className={selectClass}
               value={value.vehicleType ?? ''}
-              onChange={(e) => set('vehicleType', e.target.value)}
-            >
-              <option value="">Any vehicle</option>
-              <option value="car">Car</option>
-              <option value="microbus">Microbus</option>
-              <option value="bus">Bus</option>
-              <option value="shuttle">Shuttle</option>
-              <option value="ferry">Ferry</option>
-            </select>
+              onChange={(val) => set('vehicleType', val)}
+              options={[
+                { value: '', label: 'Any vehicle' },
+                { value: 'car', label: 'Car' },
+                { value: 'microbus', label: 'Microbus' },
+                { value: 'bus', label: 'Bus' },
+                { value: 'shuttle', label: 'Shuttle' },
+                { value: 'ferry', label: 'Ferry' },
+              ]}
+              placeholder="Any vehicle"
+            />
           </div>
         )}
       </div>

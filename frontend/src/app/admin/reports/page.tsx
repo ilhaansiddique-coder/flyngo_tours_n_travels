@@ -5,6 +5,7 @@ import { formatCurrency } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CustomSelect } from '@/components/ui/select';
 import { useEffect, useState } from 'react';
 import { BarChart3, TrendingUp, DollarSign, Users, BookOpen, ArrowUpRight, Download } from 'lucide-react';
 
@@ -185,16 +186,18 @@ export default function ReportsPage() {
               Track your business performance
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <select
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value as any)}
-              className="border border-gray-300 dark:border-gray-700 rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-white dark:bg-surface-container text-on-surface hover:border-gray-400 dark:hover:border-gray-600 focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-colors cursor-pointer shadow-xs"
-            >
-              <option value="overview">Overview Report</option>
-              <option value="bookings">Bookings Report</option>
-              <option value="users">Users Report</option>
-            </select>
+          <div className="flex gap-2 flex-wrap items-center">
+            <div className="w-52">
+              <CustomSelect
+                value={reportType}
+                onChange={(val) => setReportType(val as any)}
+                options={[
+                  { value: 'overview', label: 'Overview Report' },
+                  { value: 'bookings', label: 'Bookings Report' },
+                  { value: 'users', label: 'Users Report' },
+                ]}
+              />
+            </div>
             <Input
               type="date"
               value={dateRange.startDate}

@@ -209,6 +209,22 @@ function ItemSummaryCard({ t }: { t: (k: any) => string }) {
           <div className="font-display text-lg font-bold text-on-surface leading-tight">
             {item.title || item.name}
           </div>
+          {(item.originCode || item.destinationCode) && (
+            <div className="flex items-center gap-1.5 mt-1.5 text-xs font-semibold text-accent">
+              <Plane className="w-3.5 h-3.5 shrink-0" />
+              <span>
+                {[item.originCity, item.originCode].filter(Boolean).join(' ')} → {[item.destinationCity, item.destinationCode].filter(Boolean).join(' ')}
+              </span>
+            </div>
+          )}
+          {item.departureTime && (
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-muted">
+              <Clock className="w-3 h-3 text-accent shrink-0" />
+              <span>
+                Departs: {new Date(item.departureTime).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+              </span>
+            </div>
+          )}
           {item.destination?.name && (
             <div className="flex items-center gap-1 mt-1 text-xs text-muted">
               <MapPin className="w-3 h-3" />
@@ -835,7 +851,7 @@ export default function BookingPage() {
         reqMissing('phone', 'Phone');
         if (formData.email && !validateEmail(formData.email)) errors.email = 'Enter a valid email';
         if (formData.phone && !validatePhone(formData.phone)) errors.phone = 'Enter a valid phone';
-      } else if (currentStep === 2 && bookingType !== 'tour') {
+      } else if (currentStep === 2 && bookingType !== 'tour' && !(bookingType === 'flight' && isPresetBooking)) {
         reqMissing('destination', 'Destination');
         reqMissing('startDate', 'Start date');
         reqMissing('guests', 'Number of guests');
@@ -856,7 +872,9 @@ export default function BookingPage() {
     // Checkout step: payment is optional for preset bookings — only validate
     // the chosen method's fields when one has been selected (booking can be
     // submitted without payment and paid later via the invoice page).
-    const max = bookingType === 'custom' ? 5 : bookingType === 'visa' ? (isPresetBooking ? 3 : 4) : bookingType === 'tour' ? (isPresetBooking ? 3 : 2) : (isPresetBooking ? 4 : 3);
+    const isPresetFlight = bookingType === 'flight' && isPresetBooking;
+    const isSkipTripDetails = bookingType === 'tour' || isPresetFlight;
+    const max = bookingType === 'custom' ? 5 : bookingType === 'visa' ? (isPresetBooking ? 3 : 4) : isSkipTripDetails ? (isPresetBooking ? 3 : 2) : (isPresetBooking ? 4 : 3);
     if (currentStep === max && bookingType !== 'custom' && isPresetBooking && paymentMethod) {
       const isWalletMethod = wallets.some((w) => w.provider === paymentMethod);
       if (isWalletMethod && !bkashTrxId.trim()) {
@@ -908,8 +926,8 @@ export default function BookingPage() {
       const result = (await createBooking({
         type: sentType.current || bookingType,
         itemId: (typeof selectedItem === 'string' ? selectedItem : (selectedItem as any)?.id) || (bookingType === 'custom' ? 'custom-quote' : isPresetBooking ? 'demo' : 'inquiry'),
-        startDate: new Date(formData.startDate || new Date()).toISOString(),
-        endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
+        startDate: new Date(formData.startDate || item?.departureTime || new Date()).toISOString(),
+        endDate: formData.endDate ? new Date(formData.endDate).toISOString() : item?.arrivalTime ? new Date(item.arrivalTime).toISOString() : undefined,
         guests: Number(formData.guests) || 1,
         notes: formData.notes,
         firstName: formData.firstName,
@@ -1342,9 +1360,11 @@ export default function BookingPage() {
 
   // -------- STANDARD booking flow --------
   const isTour = bookingType === 'tour';
+  const isPresetFlight = bookingType === 'flight' && isPresetBooking;
+  const isSkipTripDetails = isTour || isPresetFlight;
   const isPresetVisa = bookingType === 'visa' && isPresetBooking;
-  const maxStep = bookingType === 'visa' ? (isPresetBooking ? 3 : 4) : isTour ? (isPresetBooking ? 3 : 2) : (isPresetBooking ? 4 : 3);
-  const steps = bookingType === 'visa' ? (isPresetBooking ? VISA_STEPS_PRESET : VISA_STEPS) : isTour ? (isPresetBooking ? TOUR_STEPS : TOUR_STEPS_GENERAL) : (isPresetBooking ? STANDARD_STEPS : STANDARD_STEPS_GENERAL);
+  const maxStep = bookingType === 'visa' ? (isPresetBooking ? 3 : 4) : isSkipTripDetails ? (isPresetBooking ? 3 : 2) : (isPresetBooking ? 4 : 3);
+  const steps = bookingType === 'visa' ? (isPresetBooking ? VISA_STEPS_PRESET : VISA_STEPS) : isSkipTripDetails ? (isPresetBooking ? TOUR_STEPS : TOUR_STEPS_GENERAL) : (isPresetBooking ? STANDARD_STEPS : STANDARD_STEPS_GENERAL);
   const isLastStep = currentStep === maxStep;
 
   return (
@@ -1564,10 +1584,13 @@ export default function BookingPage() {
               {/* STANDARD FLOW */}
               {currentStep === 1 && bookingType !== 'visa' && (
                 <div className="space-y-5">
-                  <SectionHeading title={t('booking_section_contact')} help={t('booking_section_contact_help')} />
+                  <SectionHeading
+                    title={isPresetFlight ? (isBn ? 'যাত্রীর বিবরণ' : 'Passenger Details') : t('booking_section_contact')}
+                    help={isPresetFlight ? (isBn ? 'ই-টিকিট নিশ্চিতকরণ ও প্রেরণের জন্য যোগাযোগের তথ্য দিন' : 'Contact details for ticket confirmation and e-ticket issuance') : t('booking_section_contact_help')}
+                  />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label={t('booking_first_name')} value={formData.firstName || ''} onChange={(e) => updateForm('firstName', e.target.value)} required error={fieldErrors.firstName} />
-                    <Input label={t('booking_last_name')} value={formData.lastName || ''} onChange={(e) => updateForm('lastName', e.target.value)} required error={fieldErrors.lastName} />
+                    <Input label={isPresetFlight ? (isBn ? 'নামের প্রথম অংশ' : 'First Name (as on Passport/ID)') : t('booking_first_name')} value={formData.firstName || ''} onChange={(e) => updateForm('firstName', e.target.value)} required error={fieldErrors.firstName} />
+                    <Input label={isPresetFlight ? (isBn ? 'নামের শেষ অংশ' : 'Last Name (as on Passport/ID)') : t('booking_last_name')} value={formData.lastName || ''} onChange={(e) => updateForm('lastName', e.target.value)} required error={fieldErrors.lastName} />
                   </div>
                   <Input label={t('booking_email')} type="email" value={formData.email || ''} onChange={(e) => updateForm('email', e.target.value)} error={fieldErrors.email} />
                   <PhoneInput
@@ -1585,14 +1608,14 @@ export default function BookingPage() {
                     required
                     error={fieldErrors.phone}
                   />
-                  {bookingType === 'tour' && (
+                  {(bookingType === 'tour' || isPresetFlight) && (
                     <div>
                       <AutoTranslateTextarea
                         label={t('booking_notes')}
                         value={formData.notes || ''}
                         onChange={(val) => updateForm('notes', val)}
                         rows={3}
-                        placeholder={isBn ? 'আপনার ভ্রমণ সম্পর্কে একটি সংক্ষিপ্ত নোট লিখুন' : 'Leave a short note about your trip (optional)'}
+                        placeholder={isBn ? 'বিশেষ কোনো অনুরোধ বা তথ্য থাকলে লিখুন (ঐচ্ছিক)' : 'Special requests or notes (optional)'}
                         helpText={isBn ? 'আপনার বুকিং নিশ্চিত হওয়ার পর আমরা আপনার সাথে যোগাযোগ করব।' : 'We will contact you after your booking is confirmed.'}
                       />
                     </div>
@@ -1600,7 +1623,7 @@ export default function BookingPage() {
                 </div>
               )}
 
-              {currentStep === 2 && bookingType !== 'visa' && bookingType !== 'tour' && (
+              {currentStep === 2 && bookingType !== 'visa' && !isSkipTripDetails && (
                 <div className="space-y-5">
                   <SectionHeading title={t('booking_section_trip')} help={t('booking_section_trip_help')} />
                   <DestinationAutocomplete
@@ -1628,8 +1651,10 @@ export default function BookingPage() {
                 </div>
               )}
 
-              {/* REVIEW (standard step 3 / tour step 2 / visa step 3 or 4) */}
-              {((currentStep === 3 && bookingType !== 'visa') || (bookingType === 'visa' && currentStep === (isPresetBooking ? 3 : 4)) || (currentStep === 2 && bookingType === 'tour')) && (
+              {/* REVIEW (standard step 3 / tour & preset flight step 2 / visa step 3 or 4) */}
+              {((currentStep === 3 && bookingType !== 'visa' && !isSkipTripDetails) ||
+                (currentStep === 2 && isSkipTripDetails) ||
+                (bookingType === 'visa' && currentStep === (isPresetBooking ? 3 : 4))) && (
                 <div className="space-y-5">
                   <SectionHeading title={t('booking_review_title')} help={t('booking_review_help')} />
                   {bookingType === 'visa' ? (
@@ -1653,20 +1678,37 @@ export default function BookingPage() {
                     <div className="space-y-3">
                       <ReviewRow label={t('booking_service')} value={displayName} />
                       <ReviewRow label={t('booking_type_label')} value={t(`booking_type_${bookingType}` as any)} />
-                      {bookingType !== 'tour' && <ReviewRow label={t('booking_destination')} value={formData.destination || '—'} />}
-                      <ReviewRow label={isBn ? 'অতিথির নাম' : 'Guest name'} value={`${formData.firstName || ''} ${formData.lastName || ''}`.trim() || '—'} />
+                      {isPresetFlight && (item.originCode || item.destinationCode) && (
+                        <ReviewRow
+                          label={isBn ? 'ফ্লাইট রুট' : 'Flight Route'}
+                          value={`${[item.originCity, item.originCode].filter(Boolean).join(' ')} → ${[item.destinationCity, item.destinationCode].filter(Boolean).join(' ')}`}
+                        />
+                      )}
+                      {isPresetFlight && item.departureTime && (
+                        <ReviewRow
+                          label={isBn ? 'প্রস্থানের সময়' : 'Departure Time'}
+                          value={new Date(item.departureTime).toLocaleString('en-US', {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })}
+                        />
+                      )}
+                      {!isSkipTripDetails && <ReviewRow label={t('booking_destination')} value={formData.destination || '—'} />}
+                      <ReviewRow label={isBn ? 'যাত্রী / অতিথির নাম' : 'Passenger / Guest name'} value={`${formData.firstName || ''} ${formData.lastName || ''}`.trim() || '—'} />
                       <ReviewRow label={t('booking_email')} value={formData.email || '—'} />
                       <ReviewRow label={t('booking_phone')} value={formData.phone || '—'} />
-                      {bookingType !== 'tour' && <ReviewRow label={t('booking_dates')} value={`${formData.startDate || '—'}${formData.endDate ? ` — ${formData.endDate}` : ''}`} />}
-                      {bookingType !== 'tour' && <ReviewRow label={t('booking_guests')} value={String(formData.guests || 1)} />}
+                      {!isSkipTripDetails && <ReviewRow label={t('booking_dates')} value={`${formData.startDate || '—'}${formData.endDate ? ` — ${formData.endDate}` : ''}`} />}
+                      {!isSkipTripDetails && <ReviewRow label={t('booking_guests')} value={String(formData.guests || 1)} />}
                       {formData.notes && <ReviewRow label={t('booking_notes')} value={formData.notes} />}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* CHECKOUT (preset bookings only: standard step 4 / tour step 3) */}
-              {isPresetBooking && ((currentStep === 4 && bookingType !== 'visa' && bookingType !== 'tour') || (currentStep === 3 && bookingType === 'tour')) && (
+              {/* CHECKOUT (preset bookings only: standard step 4 / tour & preset flight step 3) */}
+              {isPresetBooking &&
+                ((currentStep === 4 && bookingType !== 'visa' && !isSkipTripDetails) ||
+                  (currentStep === 3 && isSkipTripDetails)) && (
                 <div className="space-y-6">
                   <SectionHeading title={t('booking_step_checkout')} help={t('booking_checkout_help')} />
                   

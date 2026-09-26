@@ -1,8 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { Share2, MessageCircle, Mail, Facebook, Check, Send, Loader2, FileDown } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
+import { Share2, MessageCircle, Mail, Facebook, Check, Send, Loader2, FileDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const emptySubscribe = () => () => {};
+function useMounted() {
+  return useSyncExternalStore(emptySubscribe, () => true, () => false);
+}
 
 interface InvoiceShareMenuProps {
   invoiceId: string;
@@ -32,9 +38,76 @@ export function InvoiceShareMenu({
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
+  const mounted = useMounted();
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    openUpwards: boolean;
+  } | null>(null);
+
   const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
   const payUrl = bookingCode ? `${siteUrl}/pay/${bookingCode}` : siteUrl;
   const shareText = `Invoice ${invoiceNumber} — ${currency} ${Number(total).toLocaleString('en-BD', { minimumFractionDigits: 2 })}\n${payUrl}`;
+
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const menuWidth = 224; // w-56
+    const estimatedHeight = 260;
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUpwards = spaceBelow < estimatedHeight && spaceAbove > spaceBelow;
+
+    let left = rect.right - menuWidth;
+    if (left + menuWidth > window.innerWidth - 12) {
+      left = window.innerWidth - menuWidth - 12;
+    }
+    if (left < 12) {
+      left = 12;
+    }
+
+    const top = openUpwards ? rect.top - 8 : rect.bottom + 8;
+    setCoords({ top, left, openUpwards });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+
+    const handleScrollResize = () => {
+      updatePosition();
+    };
+
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        triggerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+
+    window.addEventListener('resize', handleScrollResize);
+    window.addEventListener('scroll', handleScrollResize, true);
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+
+    return () => {
+      window.removeEventListener('resize', handleScrollResize);
+      window.removeEventListener('scroll', handleScrollResize, true);
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open, updatePosition]);
 
   const handleWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
@@ -82,23 +155,33 @@ export function InvoiceShareMenu({
   };
 
   return (
-    <div className={cn('relative inline-block', className)}>
+    <div className={cn('relative inline-block', className)} ref={triggerRef}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-on-surface-variant hover:text-primary transition-colors"
+        className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
       >
         <Share2 className="w-3.5 h-3.5" />
         Share
       </button>
 
-      {open && (
-        <div className="absolute z-50 mt-2 right-0 w-56 rounded-2xl border border-outline-variant bg-surface shadow-xl p-1.5">
+      {mounted && open && coords && createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: `${coords.top}px`,
+            left: `${coords.left}px`,
+            transform: coords.openUpwards ? 'translateY(-100%)' : 'none',
+            zIndex: 9999,
+          }}
+          className="w-56 rounded-2xl border border-outline-variant bg-surface shadow-2xl p-1.5 animate-in fade-in zoom-in-95 duration-100"
+        >
           <div className="flex items-center justify-between px-3 py-2">
             <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Share invoice</span>
             <button type="button" onClick={() => setOpen(false)} className="p-1 text-on-surface-variant hover:text-on-surface">
               <span className="sr-only">Close</span>
-              &times;
+              <X className="w-4 h-4" />
             </button>
           </div>
 
@@ -106,7 +189,7 @@ export function InvoiceShareMenu({
             <button
               type="button"
               onClick={() => { handleWhatsApp(); setOpen(false); }}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container/70 transition-colors"
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container/70 transition-colors cursor-pointer"
             >
               <MessageCircle className="w-4 h-4 text-[#25D366]" />
               WhatsApp
@@ -114,7 +197,7 @@ export function InvoiceShareMenu({
             <button
               type="button"
               onClick={() => { handleFacebook(); setOpen(false); }}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container/70 transition-colors"
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container/70 transition-colors cursor-pointer"
             >
               <Facebook className="w-4 h-4 text-[#1877F2]" />
               Facebook
@@ -122,27 +205,27 @@ export function InvoiceShareMenu({
             <button
               type="button"
               onClick={() => { handleEmail(); setOpen(false); }}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container/70 transition-colors"
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container/70 transition-colors cursor-pointer"
             >
               <Mail className="w-4 h-4 text-on-surface-variant" />
               Email (link)
             </button>
 
-                onDownloadPdf && (
-                  <button
-                    type="button"
-                    onClick={handleDownloadPdf}
-                    disabled={downloading}
-                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container/70 transition-colors disabled:opacity-50"
-                  >
-                    {downloading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <FileDown className="w-4 h-4 text-on-surface-variant" />
-                    )}
-                    View / Download PDF
-                  </button>
-                )
+            {onDownloadPdf && (
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={downloading}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container/70 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                {downloading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileDown className="w-4 h-4 text-on-surface-variant" />
+                )}
+                View / Download PDF
+              </button>
+            )}
             {downloadError && (
               <div className="px-3 py-1 text-xs text-red-500">{downloadError}</div>
             )}
@@ -154,7 +237,7 @@ export function InvoiceShareMenu({
                   type="button"
                   onClick={handleSendEmail}
                   disabled={sending}
-                  className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-primary hover:bg-surface-container/70 transition-colors disabled:opacity-50"
+                  className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-primary hover:bg-surface-container/70 transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {sending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -171,7 +254,8 @@ export function InvoiceShareMenu({
               </>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

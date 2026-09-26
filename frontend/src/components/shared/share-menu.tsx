@@ -1,8 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { Share2, Link as LinkIcon, Facebook, MessageCircle, Mail, Twitter, Send, Linkedin, Check, X } from 'lucide-react';
 import { absoluteUrl, cn } from '@/lib/utils';
+
+const emptySubscribe = () => () => {};
+function useMounted() {
+  return useSyncExternalStore(emptySubscribe, () => true, () => false);
+}
 
 interface ShareMenuProps {
   path: string;
@@ -73,7 +79,14 @@ export function ShareMenu({
 }: ShareMenuProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const mounted = useMounted();
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    openUpwards: boolean;
+  } | null>(null);
 
   const isControlled = controlledOpen !== undefined;
   const isOpen = isControlled ? controlledOpen : internalOpen;
@@ -84,22 +97,70 @@ export function ShareMenu({
 
   const url = absoluteUrl(path);
 
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const menuWidth = 256; // w-64
+    const estimatedHeight = 280;
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUpwards = spaceBelow < estimatedHeight && spaceAbove > spaceBelow;
+
+    let left = align === 'right' ? rect.right - menuWidth : rect.left;
+
+    // Viewport clamping with safe margin
+    if (left + menuWidth > window.innerWidth - 12) {
+      left = window.innerWidth - menuWidth - 12;
+    }
+    if (left < 12) {
+      left = 12;
+    }
+
+    const top = openUpwards ? rect.top - 8 : rect.bottom + 8;
+
+    setCoords({
+      top,
+      left,
+      openUpwards,
+    });
+  }, [align]);
+
   useEffect(() => {
     if (!isOpen) return;
-    const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    updatePosition();
+
+    const handleScrollResize = () => {
+      updatePosition();
     };
+
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        triggerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
     };
+
+    window.addEventListener('resize', handleScrollResize);
+    window.addEventListener('scroll', handleScrollResize, true);
     document.addEventListener('mousedown', onClick);
     document.addEventListener('keydown', onKey);
+
     return () => {
+      window.removeEventListener('resize', handleScrollResize);
+      window.removeEventListener('scroll', handleScrollResize, true);
       document.removeEventListener('mousedown', onClick);
       document.removeEventListener('keydown', onKey);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, [isOpen, updatePosition]);
 
   const platforms = shareUrls(url, title, text || title);
 
@@ -134,26 +195,31 @@ export function ShareMenu({
   };
 
   return (
-    <div className={cn('relative inline-block', className)} ref={ref}>
+    <div className={cn('relative inline-block', className)} ref={triggerRef}>
       {trigger ? (
         <div onClick={() => setOpen(!isOpen)}>{trigger}</div>
       ) : (
         <button
           type="button"
           onClick={() => setOpen(!isOpen)}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant bg-transparent px-3 py-1.5 text-sm font-semibold text-on-surface hover:border-primary hover:text-primary transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant bg-transparent px-3 py-1.5 text-sm font-semibold text-on-surface hover:border-primary hover:text-primary transition-colors cursor-pointer"
         >
           <Share2 className="w-4 h-4" />
           {buttonLabel && <span>{buttonLabel}</span>}
         </button>
       )}
 
-      {isOpen && (
+      {mounted && isOpen && coords && createPortal(
         <div
-          className={cn(
-            'absolute z-50 mt-2 w-64 rounded-2xl border border-outline-variant bg-surface shadow-xl p-1.5',
-            align === 'right' ? 'right-0' : 'left-0',
-          )}
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: `${coords.top}px`,
+            left: `${coords.left}px`,
+            transform: coords.openUpwards ? 'translateY(-100%)' : 'none',
+            zIndex: 9999,
+          }}
+          className="w-64 rounded-2xl border border-outline-variant bg-surface shadow-2xl p-1.5 animate-in fade-in zoom-in-95 duration-100"
         >
           <div className="flex items-center justify-between px-3 py-2">
             <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Share</span>
@@ -199,7 +265,8 @@ export function ShareMenu({
               </button>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

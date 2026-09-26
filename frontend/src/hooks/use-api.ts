@@ -471,6 +471,12 @@ export function useApi() {
   const getHeroDefaults = useCallback(async () => api.get('/hero/defaults', auth()), [auth]);
   const saveHero = useCallback(async (body: any) => api.post('/hero', body, auth()), [auth]);
 
+  // Curated Experiences (Beyond booking. Beyond ordinary.)
+  const getCuratedExperiences = useCallback(async () => api.get('/curated-experiences'), []);
+  const getCuratedExperiencesAdmin = useCallback(async () => api.get('/curated-experiences/admin', auth()), [auth]);
+  const getCuratedExperiencesDefaults = useCallback(async () => api.get('/curated-experiences/defaults', auth()), [auth]);
+  const saveCuratedExperiences = useCallback(async (body: any) => api.post('/curated-experiences/admin', body, auth()), [auth]);
+
   // Globe cities + routes
   const listGlobeCities = useCallback(async () => api.get('/globe/admin/cities', auth()), [auth]);
   const createGlobeCity = useCallback(async (body: any) => api.post('/globe/admin/cities', body, auth()), [auth]);
@@ -598,6 +604,7 @@ export function useApi() {
     getTenantSettings, updateTenantSettings, issueCustomerCredentials,
     listMedia, uploadMedia, deleteMedia,
     getHero, getHeroDefaults, saveHero,
+    getCuratedExperiences, getCuratedExperiencesAdmin, getCuratedExperiencesDefaults, saveCuratedExperiences,
     listGlobeCities, createGlobeCity, updateGlobeCity, deleteGlobeCity,
     listGlobeRoutes, createGlobeRoute, updateGlobeRoute, deleteGlobeRoute,
     getAboutPage, getAboutMeta, saveAboutMeta,

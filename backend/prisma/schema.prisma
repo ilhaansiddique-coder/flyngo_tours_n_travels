@@ -1242,6 +1242,36 @@ model HeroSection {
 }
 
 // =============================================================================
+// CURATED EXPERIENCES (Homepage "Beyond booking. Beyond ordinary." section)
+// =============================================================================
+
+model CuratedExperiencesConfig {
+  id       String @id @default(uuid())
+  tenantId String @unique @map("tenant_id")
+
+  eyebrowEn        String?  @default("Curated Experiences") @map("eyebrow_en")
+  eyebrowBn        String?  @default("বাছাইকৃত অভিজ্ঞতা") @map("eyebrow_bn")
+  titlePrefixEn    String?  @default("Beyond booking.") @map("title_prefix_en")
+  titleHighlightEn String?  @default("Beyond ordinary.") @map("title_highlight_en")
+  titlePrefixBn    String?  @default("বুকিংয়ের চেয়েও বেশি।") @map("title_prefix_bn")
+  titleHighlightBn String?  @default("সাধারণের চেয়েও অনন্য।") @map("title_highlight_bn")
+  subtitleEn       String?  @default("Bespoke itineraries designed for those who value time, texture, and the quiet luxury of detail in their global travels.") @map("subtitle_en") @db.Text
+  subtitleBn       String?  @default("যারা বিশ্বভ্রমণে সময়, গুণমান ও আভিজাত্যকে মূল্যায়ন করেন—তাদের জন্যই আমাদের বিশেষ পরিকল্পনা।") @map("subtitle_bn") @db.Text
+  actionLabelEn    String?  @default("View all experiences") @map("action_label_en")
+  actionLabelBn    String?  @default("সব অভিজ্ঞতা দেখুন") @map("action_label_bn")
+  actionHref       String?  @default("/destinations") @map("action_href")
+  statusTextEn     String?  @default("live · updated daily") @map("status_text_en")
+  statusTextBn     String?  @default("লাইভ · প্রতিদিন আপডেট") @map("status_text_bn")
+  items            Json     @default("[]")
+  isActive         Boolean  @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("curated_experiences_configs")
+}
+
+// =============================================================================
 // GLOBE CITIES + ROUTES (powers the home hero globe animation)
 // =============================================================================
 

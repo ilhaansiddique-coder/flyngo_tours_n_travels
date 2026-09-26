@@ -1,6 +1,6 @@
 {
-  "version": "c85bb0244e5d292ae44f5c5e1f527f0bd733b197",
-  "shortVersion": "c85bb02",
-  "message": "fix(booking): streamline preset flight ticket bookings by removing redundant trip details step",
-  "builtAt": "2026-09-26T18:53:50.839Z"
+  "version": "994992b07898621a523fc7c93aa424ad84382e79",
+  "shortVersion": "994992b",
+  "message": "feat(booking): auto-fill and lock destination to hotel location for hotel bookings",
+  "builtAt": "2026-09-26T19:07:17.464Z"
 }

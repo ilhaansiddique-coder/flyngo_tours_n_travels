@@ -53,6 +53,7 @@ const navigation = [
   { label: 'CMS Pages', href: '/admin/cms/pages', icon: FileIcon },
   { label: 'CMS Blogs', href: '/admin/cms/blogs', icon: FileIcon },
   { label: 'Hero Section', href: '/admin/cms/hero', icon: Languages },
+  { label: 'Curated Experiences', href: '/admin/cms/experiences', icon: Sparkles },
   { label: 'About Us', href: '/admin/cms/about', icon: Info },
   { label: 'CEO Message', href: '/admin/cms/ceo', icon: MessageCircle },
   { label: 'Globe Cities', href: '/admin/cms/globe', icon: Globe },

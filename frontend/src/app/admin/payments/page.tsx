@@ -211,19 +211,19 @@ export default function PaymentsPage() {
         </Card>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-3 justify-between">
-        <div className="flex gap-2 flex-wrap">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+        <div className="flex gap-2 flex-wrap items-center w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
             <Input
               placeholder="Search transaction ID..."
-              className="pl-9 w-full sm:w-64"
+              className="pl-9 w-full"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') fetchPayments(1); }}
             />
           </div>
-          <div className="w-44">
+          <div className="w-full sm:w-44">
             <CustomSelect
               value={statusFilter}
               onChange={(val) => { setStatusFilter(val); setPage(1); fetchPayments(1); }}
@@ -238,7 +238,7 @@ export default function PaymentsPage() {
               placeholder="All Statuses"
             />
           </div>
-          <div className="w-48">
+          <div className="w-full sm:w-48">
             <CustomSelect
               value={methodFilter}
               onChange={(val) => { setMethodFilter(val); setPage(1); fetchPayments(1); }}
@@ -257,7 +257,7 @@ export default function PaymentsPage() {
             />
           </div>
         </div>
-        <Button variant="outline" size="md" className="gap-2" onClick={exportCsv}>
+        <Button variant="outline" size="md" className="gap-2 h-11" onClick={exportCsv}>
           <Download className="w-4 h-4" /> Export
         </Button>
       </div>

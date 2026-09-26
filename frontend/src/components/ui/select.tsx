@@ -270,9 +270,9 @@ export function CustomSelect({
 
   // Size styling variants
   const sizeClasses = {
-    sm: 'text-xs py-1.5 px-3 rounded-lg min-h-[32px]',
-    md: 'text-sm py-2 px-3.5 rounded-xl min-h-[40px]',
-    lg: 'text-base py-3 px-4 rounded-xl min-h-[48px]',
+    sm: 'text-xs py-1.5 px-3 rounded-lg min-h-[34px] h-[34px]',
+    md: 'text-sm py-2.5 px-3.5 rounded-xl min-h-[44px] h-11',
+    lg: 'text-base py-3 px-4 rounded-xl min-h-[48px] h-12',
   };
 
   const itemSizeClasses = {

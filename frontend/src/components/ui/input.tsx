@@ -25,7 +25,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             id={id}
             type={isPassword && visible ? 'text' : type}
             className={cn(
-              'w-full px-4 py-3 rounded-xl border bg-surface-container/60 backdrop-blur-md',
+              'w-full px-4 py-2.5 h-11 text-sm rounded-xl border bg-surface-container/60 backdrop-blur-md',
               'text-on-surface placeholder:text-on-surface-variant/60',
               'transition-all duration-200',
               'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50',

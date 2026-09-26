@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { CustomSelect } from '@/components/ui/select';
+import { ConfirmDialog } from '@/components/admin/ui';
 import { useApi } from '@/hooks/use-api';
 import { formatDate } from '@/lib/utils';
-import { FileCheck, Search, Phone, Mail, MapPin, Users, Calendar } from 'lucide-react';
+import { FileCheck, Search, Phone, Mail, MapPin, Users, Calendar, Trash2 } from 'lucide-react';
 
 interface PreReg {
   id: string;
@@ -33,11 +34,13 @@ const STATUSES = [
 ];
 
 export default function AdminHajjPreRegistrationsPage() {
-  const { getHajjPreRegistrations, updateHajjPreRegistrationStatus } = useApi();
+  const { getHajjPreRegistrations, updateHajjPreRegistrationStatus, deleteHajjPreRegistration } = useApi();
   const [items, setItems] = useState<PreReg[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<string>('');
+  const [deleteTarget, setDeleteTarget] = useState<PreReg | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -48,6 +51,8 @@ export default function AdminHajjPreRegistrationsPage() {
   useEffect(() => { load(); }, []);
 
   const filtered = items.filter((i) => {
+    // Exclude compliance test / dummy records
+    if (i.fullName?.trim().toLowerCase() === 'compliance test' || i.phone?.includes('8801700000001')) return false;
     if (filter && i.status !== filter) return false;
     if (search && !(`${i.fullName} ${i.phone} ${i.email ?? ''} ${i.district ?? ''}`.toLowerCase().includes(search.toLowerCase()))) return false;
     return true;
@@ -56,6 +61,18 @@ export default function AdminHajjPreRegistrationsPage() {
   const setStatus = async (id: string, status: string) => {
     await updateHajjPreRegistrationStatus(id, status);
     load();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteHajjPreRegistration(deleteTarget.id);
+      setDeleteTarget(null);
+      load();
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -110,14 +127,24 @@ export default function AdminHajjPreRegistrationsPage() {
                     </div>
                     {r.notes && <p className="text-xs text-muted mt-2 italic">{r.notes}</p>}
                   </div>
-                  <div className="flex flex-col gap-1.5 min-w-[160px]">
-                    <label className="text-xs text-muted">Update status</label>
-                    <CustomSelect
-                      size="sm"
-                      value={r.status}
-                      onChange={(val) => setStatus(r.id, val)}
-                      options={STATUSES}
-                    />
+                  <div className="flex flex-col gap-2 min-w-[160px] items-end">
+                    <div className="w-full flex flex-col gap-1.5">
+                      <label className="text-xs text-muted">Update status</label>
+                      <CustomSelect
+                        size="sm"
+                        value={r.status}
+                        onChange={(val) => setStatus(r.id, val)}
+                        options={STATUSES}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(r)}
+                      className="inline-flex items-center gap-1.5 text-xs text-error hover:bg-danger-soft px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                      title="Delete pre-registration"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
                   </div>
                 </div>
               </Card>
@@ -125,6 +152,14 @@ export default function AdminHajjPreRegistrationsPage() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Pre-Registration"
+        message={`Are you sure you want to permanently delete the pre-registration for "${deleteTarget?.fullName}"? This action cannot be undone.`}
+        onConfirm={handleDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

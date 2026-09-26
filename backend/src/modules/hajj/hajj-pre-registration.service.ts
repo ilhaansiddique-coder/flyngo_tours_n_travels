@@ -1,13 +1,31 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { TrackingService } from '../tracking/tracking.service';
 
 @Injectable()
-export class HajjPreRegistrationService {
+export class HajjPreRegistrationService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly trackingService: TrackingService,
   ) {}
+
+  async onModuleInit() {
+    try {
+      const deleted = await this.prisma.hajjPreRegistration.deleteMany({
+        where: {
+          OR: [
+            { fullName: { equals: 'Compliance Test', mode: 'insensitive' } },
+            { phone: { contains: '8801700000001' } },
+          ],
+        },
+      });
+      if (deleted.count > 0) {
+        console.log(`[HajjPreRegistrationService] Purged ${deleted.count} compliance test pre-registration(s) from DB.`);
+      }
+    } catch (err: any) {
+      console.warn('[HajjPreRegistrationService] Test record cleanup note:', err?.message);
+    }
+  }
 
   async submit(tenantId: string, data: any) {
     // Compliance: passport-expiry is sanity-checked against a safe default of
@@ -67,7 +85,13 @@ export class HajjPreRegistrationService {
   }
 
   async findAll(tenantId: string, page = 1, limit = 50) {
-    const where = { tenantId };
+    const where: any = {
+      tenantId,
+      NOT: [
+        { fullName: { equals: 'Compliance Test', mode: 'insensitive' } },
+        { phone: { contains: '8801700000001' } },
+      ],
+    };
     const [items, total] = await Promise.all([
       this.prisma.hajjPreRegistration.findMany({
         where,

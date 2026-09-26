@@ -1,6 +1,6 @@
 {
-  "version": "e48ad771b8ac281bd61c2c9825ea6ffbac29b318",
-  "shortVersion": "e48ad77",
-  "message": "style(visa): remove excessive blank space above visa processing badge",
-  "builtAt": "2026-09-25T13:21:12.245Z"
+  "version": "c85bb0244e5d292ae44f5c5e1f527f0bd733b197",
+  "shortVersion": "c85bb02",
+  "message": "fix(booking): streamline preset flight ticket bookings by removing redundant trip details step",
+  "builtAt": "2026-09-26T18:53:50.839Z"
 }

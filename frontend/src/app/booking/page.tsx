@@ -12,8 +12,8 @@ import {
   DEFAULT_COUNTRY_CODE,
   findDialByCode,
 } from '@/lib/country-dial-codes';
-import { useState, useEffect, useRef } from 'react';
-import { Check, Loader2, Sparkles, MapPin, Wallet, Users as UsersIcon, Heart, ArrowRight, ArrowLeft, AlertCircle, Compass, Building2, Plane, Briefcase, Banknote, Building, Smartphone, Copy, Upload, X, FileText, Info, Clock } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { Check, Loader2, Sparkles, MapPin, Wallet, Users as UsersIcon, Heart, ArrowRight, ArrowLeft, AlertCircle, Compass, Building2, Plane, Briefcase, Banknote, Building, Smartphone, Copy, Upload, X, FileText, Info, Clock, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/contexts/locale-context';
@@ -166,6 +166,7 @@ async function resolveBookedItem(
   type: ResolvableType,
   id: string,
   fetchers: ItemResolvers,
+  options?: { roomId?: string },
 ): Promise<Record<string, unknown> | null> {
   let list: any[] = [];
   try {
@@ -185,11 +186,19 @@ async function resolveBookedItem(
   const raw = list.find((r: any) => r?.id === id);
   if (!raw) return null;
 
-  const unitPrice = Number(raw.salePrice ?? raw.price ?? raw.pricePerNight ?? 0);
-  const name =
+  let unitPrice = Number(raw.salePrice ?? raw.price ?? raw.pricePerNight ?? 0);
+  let name =
     type === 'flight'
       ? [raw.airline, raw.flightNumber].filter(Boolean).join(' · ') || raw.title || raw.name || ''
       : raw.title || raw.name || '';
+
+  if (type === 'hotel' && options?.roomId && Array.isArray(raw.rooms)) {
+    const room = raw.rooms.find((r: any) => r.id === options.roomId);
+    if (room) {
+      if (room.pricePerNight != null) unitPrice = Number(room.pricePerNight);
+      name = `${raw.name || raw.title} (${room.name})`;
+    }
+  }
 
   return { ...raw, title: name, name, price: unitPrice, currency: raw.currency || 'BDT' };
 }
@@ -364,11 +373,38 @@ export default function BookingPage() {
   const [docUrls, setDocUrls] = useState<Record<string, string[]>>({});
   const [docUploading, setDocUploading] = useState<Record<string, boolean>>({});
 
+  const item = (selectedItem as any) || {};
+  const isPresetHotel = bookingType === 'hotel' && isPresetBooking;
+  const hotelLocation = useMemo(() => {
+    if (!isPresetHotel) return '';
+    const destName = item?.destination?.name;
+    const destCountry = item?.destination?.country;
+    const locParts = [destName, destCountry].filter(Boolean);
+    if (locParts.length > 0) return locParts.join(', ');
+    if (item?.address) return String(item.address);
+    return '';
+  }, [isPresetHotel, item]);
+
+  const currentDest = formData.destination;
+  useEffect(() => {
+    if (isPresetHotel && hotelLocation && currentDest !== hotelLocation) {
+      useBookingStore.getState().setFormData({
+        ...useBookingStore.getState().formData,
+        destination: hotelLocation,
+      });
+    }
+  }, [isPresetHotel, hotelLocation, currentDest]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const sp = new URLSearchParams(window.location.search);
     const urlType = sp.get('type');
     const urlId = sp.get('id');
+    const checkInParam = sp.get('checkIn');
+    const checkOutParam = sp.get('checkOut');
+    const guestsParam = sp.get('guests');
+    const roomIdParam = sp.get('roomId');
+
     // The booking store is a module-level singleton, so a previous booking's
     // step/form data would otherwise leak into the next one and jump straight
     // to the submission step. Every visit to /booking starts a fresh booking,
@@ -387,6 +423,17 @@ export default function BookingPage() {
       useBookingStore.getState().setSelectedItem(urlId);
     }
 
+    const initialFormUpdates: Record<string, any> = {};
+    if (checkInParam) initialFormUpdates.startDate = checkInParam;
+    if (checkOutParam) initialFormUpdates.endDate = checkOutParam;
+    if (guestsParam) initialFormUpdates.guests = guestsParam;
+
+    const saved = loadContact();
+    setFormData({
+      ...initialFormUpdates,
+      ...saved,
+    });
+
     // Resolve the real package from the server so review/checkout can show the
     // exact amount set on it instead of a placeholder 0.00. Non-fatal — if the
     // lookup fails the summary falls back to "Quote on request".
@@ -403,20 +450,27 @@ export default function BookingPage() {
             getTransport: (p) => itemFetchers.current.getTransport(p),
             getHajjPackages: (p) => itemFetchers.current.getHajjPackages(p),
             getUmrahPackages: (p) => itemFetchers.current.getUmrahPackages(p),
-          });
-          if (!resolveCancelled && found) useBookingStore.getState().setSelectedItem(found);
+          }, { roomId: roomIdParam || undefined });
+          if (!resolveCancelled && found) {
+            useBookingStore.getState().setSelectedItem(found);
+            if (resolveType === 'hotel') {
+              const rawFound = found as any;
+              const destParts = [rawFound?.destination?.name, rawFound?.destination?.country].filter(Boolean);
+              const loc = destParts.length > 0 ? destParts.join(', ') : (rawFound?.address as string) || '';
+              if (loc) {
+                useBookingStore.getState().setFormData({
+                  ...useBookingStore.getState().formData,
+                  destination: loc,
+                });
+              }
+            }
+          }
         } catch {
           // non-fatal — summary shows "Quote on request" until a package is selected
         }
       })();
     }
 
-    const saved = loadContact();
-    if (saved.firstName || saved.lastName || saved.phone || saved.email) {
-      setFormData({
-        ...saved,
-      });
-    }
     return () => {
       resolveCancelled = true;
     };
@@ -852,7 +906,16 @@ export default function BookingPage() {
         if (formData.email && !validateEmail(formData.email)) errors.email = 'Enter a valid email';
         if (formData.phone && !validatePhone(formData.phone)) errors.phone = 'Enter a valid phone';
       } else if (currentStep === 2 && bookingType !== 'tour' && !(bookingType === 'flight' && isPresetBooking)) {
-        reqMissing('destination', 'Destination');
+        if (!isPresetHotel) {
+          reqMissing('destination', 'Destination');
+        } else {
+          const loc = formData.destination || hotelLocation;
+          if (!loc) {
+            reqMissing('destination', 'Destination');
+          } else if (!formData.destination) {
+            setFormData({ ...formData, destination: loc });
+          }
+        }
         reqMissing('startDate', 'Start date');
         reqMissing('guests', 'Number of guests');
       }
@@ -993,7 +1056,6 @@ export default function BookingPage() {
     }
   };
 
-  const item = (selectedItem as any) || {};
   const displayName =
     item?.title ||
     item?.name ||
@@ -1626,26 +1688,72 @@ export default function BookingPage() {
               {currentStep === 2 && bookingType !== 'visa' && !isSkipTripDetails && (
                 <div className="space-y-5">
                   <SectionHeading title={t('booking_section_trip')} help={t('booking_section_trip_help')} />
-                  <DestinationAutocomplete
-                    label={t('booking_destination')}
-                    value={formData.destination || ''}
-                    onChange={(v) => updateForm('destination', v)}
-                    placeholder={t('booking_destination_ph')}
-                    required
-                    error={fieldErrors.destination}
-                  />
+                  {isPresetHotel ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider">
+                          {t('booking_destination')}
+                        </label>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          <Lock className="w-3 h-3" />
+                          {isBn ? 'হোটেল লোকেশন (স্থির)' : 'Hotel Location (Locked)'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-soft bg-surface-container/60 text-on-surface font-medium cursor-not-allowed select-none">
+                        <MapPin className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
+                        <span className="flex-1 truncate">
+                          {formData.destination || hotelLocation || (item?.name ? `${item.name}${item.address ? ` · ${item.address}` : ''}` : (isBn ? 'হোটেলের অবস্থান' : 'Hotel Location'))}
+                        </span>
+                        <Lock className="w-4 h-4 text-muted shrink-0" />
+                      </div>
+                      <p className="text-xs text-muted mt-1.5">
+                        {isBn
+                          ? 'এই বুকিংটি নির্বাচিত হোটেলের সাথে নির্দিষ্ট, তাই লোকেশন স্বয়ংক্রিয়ভাবে পূরণ ও অপরিবর্তনীয় রাখা হয়েছে।'
+                          : 'This booking is locked to the selected hotel, so the destination is auto-filled and cannot be edited.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <DestinationAutocomplete
+                      label={t('booking_destination')}
+                      value={formData.destination || ''}
+                      onChange={(v) => updateForm('destination', v)}
+                      placeholder={t('booking_destination_ph')}
+                      required
+                      error={fieldErrors.destination}
+                    />
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label={t('booking_start_date')} type="date" value={formData.startDate || ''} onChange={(e) => updateForm('startDate', e.target.value)} required error={fieldErrors.startDate} />
-                    <Input label={t('booking_end_date')} type="date" value={formData.endDate || ''} onChange={(e) => updateForm('endDate', e.target.value)} />
+                    <Input
+                      label={isPresetHotel ? (isBn ? 'চেক-ইন তারিখ' : 'Check-in Date') : t('booking_start_date')}
+                      type="date"
+                      value={formData.startDate || ''}
+                      onChange={(e) => updateForm('startDate', e.target.value)}
+                      required
+                      error={fieldErrors.startDate}
+                    />
+                    <Input
+                      label={isPresetHotel ? (isBn ? 'চেক-আউট তারিখ' : 'Check-out Date') : t('booking_end_date')}
+                      type="date"
+                      value={formData.endDate || ''}
+                      onChange={(e) => updateForm('endDate', e.target.value)}
+                    />
                   </div>
-                  <Input label={t('booking_guests')} type="number" min={1} value={formData.guests || ''} onChange={(e) => updateForm('guests', e.target.value)} required error={fieldErrors.guests} />
+                  <Input
+                    label={isPresetHotel ? (isBn ? 'অতিথির সংখ্যা' : 'Number of Guests') : t('booking_guests')}
+                    type="number"
+                    min={1}
+                    value={formData.guests || ''}
+                    onChange={(e) => updateForm('guests', e.target.value)}
+                    required
+                    error={fieldErrors.guests}
+                  />
                   <div>
                     <AutoTranslateTextarea
                       label={t('booking_notes')}
                       value={formData.notes || ''}
                       onChange={(val) => updateForm('notes', val)}
                       rows={3}
-                      placeholder={t('booking_notes_ph')}
+                      placeholder={isPresetHotel ? (isBn ? 'হোটেলের জন্য কোনো বিশেষ অনুরোধ থাকলে লিখুন (ঐচ্ছিক)' : 'Any special requests for the hotel (optional)') : t('booking_notes_ph')}
                     />
                   </div>
                 </div>
@@ -1697,8 +1805,8 @@ export default function BookingPage() {
                       <ReviewRow label={isBn ? 'যাত্রী / অতিথির নাম' : 'Passenger / Guest name'} value={`${formData.firstName || ''} ${formData.lastName || ''}`.trim() || '—'} />
                       <ReviewRow label={t('booking_email')} value={formData.email || '—'} />
                       <ReviewRow label={t('booking_phone')} value={formData.phone || '—'} />
-                      {!isSkipTripDetails && <ReviewRow label={t('booking_dates')} value={`${formData.startDate || '—'}${formData.endDate ? ` — ${formData.endDate}` : ''}`} />}
-                      {!isSkipTripDetails && <ReviewRow label={t('booking_guests')} value={String(formData.guests || 1)} />}
+                      {!isSkipTripDetails && <ReviewRow label={isPresetHotel ? (isBn ? 'চেক-ইন ও চেক-আউট' : 'Check-in & Check-out') : t('booking_dates')} value={`${formData.startDate || '—'}${formData.endDate ? ` — ${formData.endDate}` : ''}`} />}
+                      {!isSkipTripDetails && <ReviewRow label={isPresetHotel ? (isBn ? 'অতিথি সংখ্যা' : 'Number of Guests') : t('booking_guests')} value={String(formData.guests || 1)} />}
                       {formData.notes && <ReviewRow label={t('booking_notes')} value={formData.notes} />}
                     </div>
                   )}

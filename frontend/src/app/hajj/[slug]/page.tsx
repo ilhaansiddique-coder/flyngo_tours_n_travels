@@ -80,7 +80,7 @@ export default function HajjPackageDetailPage({ params }: { params: Promise<{ sl
     return (
       <main className="min-h-screen pt-32 px-4 sm:px-6 lg:px-16 max-w-[1200px] mx-auto">
         <Link href="/hajj" className="inline-flex items-center gap-2 text-sm mb-6 hover:underline" style={{ color: 'var(--color-nav-active)' }}>
-          <ArrowLeft className="w-4 h-4" /> Back to Hajj packages
+          <ArrowLeft className="w-4 h-4" /> Back to Hajj &amp; Umrah packages
         </Link>
         <h1 className="text-2xl font-display font-bold">Hajj package not found</h1>
       </main>
@@ -97,7 +97,7 @@ export default function HajjPackageDetailPage({ params }: { params: Promise<{ sl
     <main className="min-h-screen pt-28 pb-16 px-4 sm:px-6 lg:px-16 max-w-[1200px] mx-auto">
       <div className="flex items-start justify-between mb-6">
         <Link href="/hajj" className="inline-flex items-center gap-2 text-sm hover:underline" style={{ color: 'var(--color-nav-active)' }}>
-          <ArrowLeft className="w-4 h-4" /> Back to Hajj packages
+          <ArrowLeft className="w-4 h-4" /> Back to Hajj &amp; Umrah packages
         </Link>
         <ShareMenu path={`/hajj/${slug}`} title={displayTitle} />
       </div>

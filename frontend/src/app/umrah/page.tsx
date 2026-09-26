@@ -1,18 +1,5 @@
-import type { Metadata } from 'next';
-import { UmrahPageClient } from './content-client';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'Umrah',
-  description:
-    'Affordable all-inclusive Umrah packages with visa, flights, and ground transport — plus optional add-on trips to Doha, Istanbul, or Jordan.',
-  openGraph: {
-    title: 'Umrah',
-    description:
-      'Affordable all-inclusive Umrah packages with visa, flights, and ground transport — plus optional add-on trips to Doha, Istanbul, or Jordan.',
-    type: 'website',
-  },
-};
-
-export default function Page() {
-  return <UmrahPageClient />;
+export default function UmrahPage() {
+  redirect('/hajj?type=umrah');
 }

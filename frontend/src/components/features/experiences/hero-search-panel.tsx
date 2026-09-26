@@ -12,15 +12,14 @@ import { DEFAULT_COUNTRY_CODE, findDialByCode } from '@/lib/country-dial-codes';
 import { useApi } from '@/hooks/use-api';
 import { loadContact, saveContact, splitStoredPhone } from '@/lib/contact-persist';
 
-type TabKey = 'tours' | 'visa' | 'hotels' | 'flights' | 'hajj' | 'umrah' | 'transport';
+type TabKey = 'tours' | 'visa' | 'hotels' | 'flights' | 'hajj' | 'transport';
 
 const TABS: { key: TabKey; label: string; Icon: typeof Compass; href: string }[] = [
   { key: 'tours', label: 'Tour', Icon: Compass, href: '/tours' },
   { key: 'visa', label: 'Visa', Icon: FileCheck, href: '/visa' },
   { key: 'hotels', label: 'Hotel', Icon: Building2, href: '/hotels' },
   { key: 'flights', label: 'Flight', Icon: Plane, href: '/flights' },
-  { key: 'hajj', label: 'Hajj', Icon: Moon, href: '/hajj' },
-  { key: 'umrah', label: 'Umrah', Icon: Sparkles, href: '/umrah' },
+  { key: 'hajj', label: 'Hajj & Umrah', Icon: Moon, href: '/hajj' },
   { key: 'transport', label: 'Transport', Icon: Car, href: '/transport' },
 ];
 
@@ -199,8 +198,7 @@ export function HeroSearchPanel() {
   const destinationLabel = (() => {
     switch (tab) {
       case 'visa': return 'Which country do you need a visa for?';
-      case 'hajj': return 'Hajj package (optional)';
-      case 'umrah': return 'Umrah package (optional)';
+      case 'hajj': return 'Hajj or Umrah package (optional)';
       case 'transport': return 'Route or city (optional)';
       default: return 'Where do you want to go?';
     }
@@ -208,8 +206,7 @@ export function HeroSearchPanel() {
   const destinationPlaceholder = (() => {
     switch (tab) {
       case 'visa': return 'Country';
-      case 'hajj':
-      case 'umrah': return 'Search packages';
+      case 'hajj': return 'Search packages';
       case 'transport': return 'City or route';
       default: return 'Country or city';
     }

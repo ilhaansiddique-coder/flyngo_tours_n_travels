@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useState, Suspense } from 'react';
 import Script from 'next/script';
 import { useLocale } from '@/contexts/locale-context';
 import { useApi } from '@/hooks/use-api';
-import { useFormatCurrency } from '@/lib/utils';
+import { useFormatCurrency, cn } from '@/lib/utils';
 import { useBookingStore } from '@/stores/booking.store';
 import { useSearchQuery } from '@/hooks/use-search-query';
 import { SearchResultsBanner } from '@/components/ui/search-results-banner';
@@ -25,6 +25,7 @@ import {
   Compass,
   ShieldCheck,
   Headphones,
+  Moon,
 } from 'lucide-react';
 import {
   COUNTRY_DIALS,
@@ -35,13 +36,9 @@ import { SeatCounter } from '@/components/marketing/seat-counter';
 import { TrustBadges } from '@/components/marketing/trust-badges';
 import { touristTripJsonLd, breadcrumbJsonLd, travelAgencyJsonLd } from '@/lib/seo-schema';
 import { captureUtmFromUrl, trackEvent } from '@/lib/tracking-client';
-import { hajjImage } from '@/lib/entity-image';
+import { hajjImage, umrahImage } from '@/lib/entity-image';
 import { matchesSearch } from '@/lib/search';
 
-// Canonical site URL for structured data. Must be a build-time constant (NOT
-// window.location) so the JSON-LD is identical on server and client — otherwise
-// the <Script> hydration mismatches and breaks the whole page's hydration,
-// which stops the fetched packages from ever rendering.
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://flyngo.world';
 
 interface HajjPackage {
@@ -71,18 +68,57 @@ interface HajjPackage {
   metaImage?: string | null;
 }
 
-export default function HajjPage() {
+interface UmrahPackage {
+  id: string;
+  title: string;
+  titleBn?: string;
+  slug?: string;
+  durationDays: number;
+  price: number;
+  currency: string;
+  makkahNights: number;
+  madinahNights: number;
+  addOnCity?: string;
+  highlights: string[];
+  highlightsBn?: string[];
+  inclusions: string[];
+  inclusionsBn?: string[];
+  isFeatured: boolean;
+  order: number;
+  coverImageUrl?: string | null;
+  imageUrl?: string | null;
+}
+
+type CombinedPackage =
+  | ({ packageType: 'hajj' } & HajjPackage)
+  | ({ packageType: 'umrah' } & UmrahPackage);
+
+function HajjUmrahContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialType = searchParams?.get('type') || searchParams?.get('tab') || 'all';
+
   const { t, locale } = useLocale();
   const isBn = locale === 'bn';
-  const { getHajjPackages, submitHajjPreRegistration } = useApi();
+  const { getHajjPackages, getUmrahPackages, submitHajjPreRegistration } = useApi();
   const setSelectedItem = useBookingStore((s) => s.setSelectedItem);
   const fmt = useFormatCurrency();
   const q = useSearchQuery();
-  const [packages, setPackages] = useState<HajjPackage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedTier, setSelectedTier] = useState<string | null>(null);
 
+  const [hajjPkgs, setHajjPkgs] = useState<HajjPackage[]>([]);
+  const [umrahPkgs, setUmrahPkgs] = useState<UmrahPackage[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Type filter: 'all' | 'hajj' | 'umrah'
+  const [selectedType, setSelectedType] = useState<'all' | 'hajj' | 'umrah'>(
+    initialType === 'hajj' || initialType === 'umrah' ? initialType : 'all'
+  );
+
+  // Sub-filters
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [selectedAddon, setSelectedAddon] = useState<string | null>(null);
+
+  // Pre-registration modal state
   const [showPreReg, setShowPreReg] = useState(false);
   const [preReg, setPreReg] = useState({
     fullName: '',
@@ -97,39 +133,98 @@ export default function HajjPage() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    getHajjPackages({ limit: '50' })
-      .then((r: any) => {
-        const list = r?.data ?? r?.items ?? [];
-        setPackages(list.filter((p: any) => p.isActive !== false));
+    setLoading(true);
+    Promise.all([
+      getHajjPackages({ limit: '100' }).catch(() => ({ data: [] })),
+      getUmrahPackages({ limit: '100' }).catch(() => ({ data: [] })),
+    ])
+      .then(([hRes, uRes]: any[]) => {
+        const hList = hRes?.data ?? hRes?.items ?? [];
+        const uList = uRes?.items ?? uRes?.data ?? [];
+        setHajjPkgs(hList.filter((p: any) => p.isActive !== false));
+        setUmrahPkgs(uList.filter((p: any) => p.isActive !== false));
       })
       .finally(() => setLoading(false));
-  }, [getHajjPackages]);
+  }, [getHajjPackages, getUmrahPackages]);
 
-  const bookPackage = (id: string) => {
+  // Sync if query param changes externally
+  useEffect(() => {
+    const tParam = searchParams?.get('type') || searchParams?.get('tab');
+    if (tParam === 'hajj' || tParam === 'umrah') {
+      setSelectedType(tParam);
+    }
+  }, [searchParams]);
+
+  const bookPackage = (id: string, type: 'hajj' | 'umrah') => {
     setSelectedItem(id);
-    router.push(`/booking?type=hajj&id=${id}`);
+    router.push(`/booking?type=${type}&id=${id}`);
   };
 
-  const tiers = useMemo(() => {
+  // Distinct Hajj tiers
+  const hajjTiers = useMemo(() => {
     const set = new Set<string>();
-    for (const p of packages) {
-      if (p.tier) set.add(p.tier);
+    for (const p of hajjPkgs) {
+      if (p.tier) set.add(p.tier.trim());
     }
     return Array.from(set);
-  }, [packages]);
+  }, [hajjPkgs]);
 
-  const shown = useMemo(() => {
-    let result = packages;
-    if (selectedTier) {
-      result = result.filter((p) => p.tier?.toLowerCase() === selectedTier.toLowerCase());
+  // Distinct Umrah add-on destinations
+  const addonPills = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of umrahPkgs) {
+      if (p.addOnCity) set.add(p.addOnCity.trim());
     }
-    if (q) {
-      result = result.filter((p: any) =>
-        matchesSearch([p.title, p.titleBn, p.name, p.description, p.destination?.name], q),
+    return Array.from(set);
+  }, [umrahPkgs]);
+
+  // Combined packages list based on selectedType
+  const combinedPackages: CombinedPackage[] = useMemo(() => {
+    const hajjTagged = hajjPkgs.map((p) => ({ ...p, packageType: 'hajj' as const }));
+    const umrahTagged = umrahPkgs.map((p) => ({ ...p, packageType: 'umrah' as const }));
+
+    if (selectedType === 'hajj') return hajjTagged;
+    if (selectedType === 'umrah') return umrahTagged;
+    return [...hajjTagged, ...umrahTagged];
+  }, [hajjPkgs, umrahPkgs, selectedType]);
+
+  // Filtered packages
+  const shown = useMemo(() => {
+    let result = combinedPackages;
+
+    if (selectedType === 'hajj' && selectedTier) {
+      result = result.filter(
+        (p) => p.packageType === 'hajj' && p.tier?.toLowerCase() === selectedTier.toLowerCase()
       );
     }
+
+    if (selectedType === 'umrah' && selectedAddon) {
+      result = result.filter(
+        (p) =>
+          p.packageType === 'umrah' &&
+          (p.addOnCity || '').toLowerCase().trim() === selectedAddon.toLowerCase().trim()
+      );
+    }
+
+    if (q) {
+      result = result.filter((p: any) =>
+        matchesSearch(
+          [
+            p.title,
+            p.titleBn,
+            p.packageType,
+            p.tier,
+            p.addOnCity,
+            ...(p.highlights || []),
+            ...(p.inclusions || []),
+          ],
+          q
+        )
+      );
+    }
+
     return result;
-  }, [packages, selectedTier, q]);
+  }, [combinedPackages, selectedType, selectedTier, selectedAddon, q]);
 
   const handlePreReg = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,15 +257,15 @@ export default function HajjPage() {
           }),
           breadcrumbJsonLd([
             { name: 'Home', url: '/' },
-            { name: 'Hajj', url: '/hajj' },
+            { name: 'Hajj & Umrah', url: '/hajj' },
           ]),
-          ...packages.map((p) =>
+          ...hajjPkgs.map((p) =>
             touristTripJsonLd({
               name: p.title,
               description:
                 p.metaDescription ||
                 `${p.durationDays}-day Hajj package with ${p.makkahNights} Makkah nights and ${p.madinahNights} Madinah nights`,
-              url: `${SITE_URL}/hajj`,
+              url: `${SITE_URL}/hajj/${p.slug || ''}`,
               image: p.metaImage || undefined,
               price: Number(p.price),
               priceCurrency: p.currency,
@@ -186,7 +281,24 @@ export default function HajjPage() {
                   : p.totalSeats && p.totalSeats > 0 && p.totalSeats - (p.seatsBooked ?? 0) <= 10
                   ? 'https://schema.org/LimitedAvailability'
                   : 'https://schema.org/InStock',
-            }),
+            })
+          ),
+          ...umrahPkgs.map((p) =>
+            touristTripJsonLd({
+              name: p.title,
+              description: `${p.durationDays}-day Umrah package with ${p.makkahNights} Makkah nights and ${p.madinahNights} Madinah nights${
+                p.addOnCity ? ` plus ${p.addOnCity}` : ''
+              }`,
+              url: `${SITE_URL}/umrah/${p.slug || ''}`,
+              image: p.coverImageUrl || p.imageUrl || undefined,
+              price: Number(p.price),
+              priceCurrency: p.currency,
+              durationDays: p.durationDays,
+              destination: p.addOnCity
+                ? `Makkah, Saudi Arabia & ${p.addOnCity}`
+                : 'Makkah, Saudi Arabia',
+              availability: 'https://schema.org/InStock',
+            })
           ),
         ])}
       </Script>
@@ -223,7 +335,7 @@ export default function HajjPage() {
           <div className="flex flex-wrap gap-3 mb-8">
             <a
               href="#packages"
-              className="inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:opacity-95"
+              className="inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:opacity-95 cursor-pointer"
               style={{
                 background: 'linear-gradient(90deg, #10b981 0%, var(--color-tertiary) 100%)',
                 boxShadow: '0 12px 28px -8px color-mix(in oklab, #10b981 30%, transparent)',
@@ -235,7 +347,7 @@ export default function HajjPage() {
             <button
               type="button"
               onClick={() => setShowPreReg(true)}
-              className="inline-flex items-center gap-2 rounded-2xl border px-6 py-3 text-sm font-semibold glass hover:-translate-y-0.5 transition"
+              className="inline-flex items-center gap-2 rounded-2xl border px-6 py-3 text-sm font-semibold glass hover:-translate-y-0.5 transition cursor-pointer"
               style={{
                 color: 'var(--color-on-surface)',
                 borderColor: 'var(--color-outline-variant)',
@@ -271,7 +383,7 @@ export default function HajjPage() {
               },
               {
                 icon: Plane,
-                label: isBn ? 'সরাসরি ফ্লাইট' : 'Direct Flights',
+                label: isBn ? 'সরাসরি ফ্লাইট ও ৫★ হোটেল' : 'Direct Flights & 5★ Hotels',
                 tint: 'text-blue-700 dark:text-blue-300 border-blue-500/30',
               },
             ].map((item) => (
@@ -289,38 +401,134 @@ export default function HajjPage() {
 
       <TrustBadges />
 
-      <section id="packages" className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 pt-2 pb-8">
-        {/* Tier filter pills */}
-        {tiers.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-10">
+      <section id="packages" className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 pt-2 pb-16">
+        {/* Navigation & Type Filter Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="inline-flex p-1 rounded-2xl bg-surface-container border border-outline-variant glass">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedType('all');
+                setSelectedTier(null);
+                setSelectedAddon(null);
+              }}
+              className={cn(
+                'px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer flex items-center gap-2',
+                selectedType === 'all'
+                  ? 'bg-primary text-on-primary shadow-md'
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
+              )}
+            >
+              <Globe className="w-4 h-4" />
+              <span>{isBn ? 'সকল প্যাকেজ' : 'All Packages'}</span>
+              <span
+                className={cn(
+                  'text-xs px-2 py-0.5 rounded-full',
+                  selectedType === 'all'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-surface-container-highest text-muted'
+                )}
+              >
+                {hajjPkgs.length + umrahPkgs.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedType('hajj');
+                setSelectedAddon(null);
+              }}
+              className={cn(
+                'px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer flex items-center gap-2',
+                selectedType === 'hajj'
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
+              )}
+            >
+              <Moon className="w-4 h-4 text-emerald-400" />
+              <span>{isBn ? 'হজ্জ' : 'Hajj'}</span>
+              <span
+                className={cn(
+                  'text-xs px-2 py-0.5 rounded-full',
+                  selectedType === 'hajj'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-surface-container-highest text-muted'
+                )}
+              >
+                {hajjPkgs.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedType('umrah');
+                setSelectedTier(null);
+              }}
+              className={cn(
+                'px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer flex items-center gap-2',
+                selectedType === 'umrah'
+                  ? 'bg-cyan-600 text-white shadow-md'
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
+              )}
+            >
+              <Sparkles className="w-4 h-4 text-cyan-300" />
+              <span>{isBn ? 'ওমরাহ' : 'Umrah'}</span>
+              <span
+                className={cn(
+                  'text-xs px-2 py-0.5 rounded-full',
+                  selectedType === 'umrah'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-surface-container-highest text-muted'
+                )}
+              >
+                {umrahPkgs.length}
+              </span>
+            </button>
+          </div>
+
+          {/* Hajj Pre-Registration Trigger Button */}
+          <button
+            type="button"
+            onClick={() => setShowPreReg(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-emerald-500" />
+            <span>{isBn ? 'হজ্জ প্রি-রেজিস্ট্রেশন' : 'Hajj Pre-Registration 2027'}</span>
+          </button>
+        </div>
+
+        {/* Sub-filter Pills: Hajj Tiers */}
+        {selectedType === 'hajj' && hajjTiers.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-8">
             <button
               type="button"
               onClick={() => setSelectedTier(null)}
-              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-medium border glass hover:-translate-y-0.5 transition-all ${
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium border glass transition-all cursor-pointer',
                 selectedTier === null
                   ? 'ring-2 ring-emerald-500/60 border-emerald-500/80 bg-emerald-500/15 text-emerald-900 dark:text-emerald-200'
-                  : ''
-              }`}
-              style={{ borderColor: selectedTier === null ? undefined : 'var(--color-outline-variant)' }}
+                  : 'text-on-surface-variant border-outline-variant hover:bg-surface-container'
+              )}
             >
-              <Globe className="w-4 h-4 text-muted" />
-              All Packages
+              All Hajj Tiers
             </button>
-            {tiers.map((tier) => {
+            {hajjTiers.map((tier) => {
               const isSelected = selectedTier?.toLowerCase() === tier.toLowerCase();
               return (
                 <button
                   key={tier}
                   type="button"
                   onClick={() => setSelectedTier(isSelected ? null : tier)}
-                  className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-medium border glass hover:-translate-y-0.5 transition-all ${
+                  className={cn(
+                    'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium border glass transition-all cursor-pointer',
                     isSelected
                       ? 'ring-2 ring-emerald-500/60 border-emerald-500/80 bg-emerald-500/15 text-emerald-900 dark:text-emerald-200'
-                      : ''
-                  }`}
-                  style={{ borderColor: isSelected ? undefined : 'var(--color-outline-variant)' }}
+                      : 'text-on-surface-variant border-outline-variant hover:bg-surface-container'
+                  )}
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                  <Sparkles className="w-3 h-3 text-emerald-500" />
                   {tier.replace(/_/g, ' ')}
                 </button>
               );
@@ -328,81 +536,179 @@ export default function HajjPage() {
           </div>
         )}
 
-        <h2 className="font-display text-2xl sm:text-3xl font-semibold text-on-surface mb-6">
-          {isBn ? 'আমাদের হজ্জ প্যাকেজ' : 'Available Hajj packages'}
-        </h2>
+        {/* Sub-filter Pills: Umrah Add-on Cities */}
+        {selectedType === 'umrah' && addonPills.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-8">
+            <button
+              type="button"
+              onClick={() => setSelectedAddon(null)}
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium border glass transition-all cursor-pointer',
+                selectedAddon === null
+                  ? 'ring-2 ring-cyan-500/60 border-cyan-500/80 bg-cyan-500/15 text-cyan-900 dark:text-cyan-200'
+                  : 'text-on-surface-variant border-outline-variant hover:bg-surface-container'
+              )}
+            >
+              All Umrah Packages
+            </button>
+            {addonPills.map((city) => {
+              const isSelected = selectedAddon?.toLowerCase() === city.toLowerCase();
+              return (
+                <button
+                  key={city}
+                  type="button"
+                  onClick={() => setSelectedAddon(isSelected ? null : city)}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium border glass transition-all cursor-pointer',
+                    isSelected
+                      ? 'ring-2 ring-cyan-500/60 border-cyan-500/80 bg-cyan-500/15 text-cyan-900 dark:text-cyan-200'
+                      : 'text-on-surface-variant border-outline-variant hover:bg-surface-container'
+                  )}
+                >
+                  <Sparkles className="w-3 h-3 text-cyan-500" />
+                  + {city}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-display text-2xl sm:text-3xl font-semibold text-on-surface">
+            {selectedType === 'hajj'
+              ? (isBn ? 'আমাদের হজ্জ প্যাকেজসমূহ' : 'Available Hajj Packages')
+              : selectedType === 'umrah'
+              ? (isBn ? 'আমাদের ওমরাহ প্যাকেজসমূহ' : 'Available Umrah Packages')
+              : (isBn ? 'আমাদের হজ্জ ও ওমরাহ প্যাকেজসমূহ' : 'Available Hajj & Umrah Packages')}
+          </h2>
+          <span className="text-sm text-muted">
+            {shown.length} {shown.length === 1 ? 'package' : 'packages'}
+          </span>
+        </div>
 
         {loading ? (
-          <p className="text-sm text-muted">Loading packages…</p>
-        ) : packages.length === 0 ? (
-          <div className="rounded-2xl border glass p-12 text-center" style={{ borderColor: 'var(--color-outline-variant)' }}>
+          <div className="py-20 text-center text-muted">
+            <div className="animate-spin h-8 w-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-3" />
+            <p className="text-sm">Loading pilgrimage packages…</p>
+          </div>
+        ) : combinedPackages.length === 0 ? (
+          <div
+            className="rounded-2xl border glass p-12 text-center"
+            style={{ borderColor: 'var(--color-outline-variant)' }}
+          >
             <Globe className="w-12 h-12 mx-auto mb-4 opacity-40" />
             <p className="text-lg font-medium text-on-surface">No packages available right now</p>
           </div>
         ) : (
           <>
-            {(q || selectedTier) && (
+            {(q || selectedTier || selectedAddon) && (
               <SearchResultsBanner
-                query={q || selectedTier?.replace(/_/g, ' ') || ''}
+                query={q || selectedTier?.replace(/_/g, ' ') || selectedAddon || ''}
                 count={shown.length}
                 noun="packages"
               />
             )}
 
             {shown.length === 0 ? (
-              <div className="rounded-2xl border glass p-12 text-center" style={{ borderColor: 'var(--color-outline-variant)' }}>
+              <div
+                className="rounded-2xl border glass p-12 text-center"
+                style={{ borderColor: 'var(--color-outline-variant)' }}
+              >
                 <Globe className="w-12 h-12 mx-auto mb-4 opacity-40" />
                 <p className="text-lg font-medium text-on-surface">
-                  No packages match &ldquo;{q || selectedTier}&rdquo;.
+                  No packages match &ldquo;{q || selectedTier || selectedAddon}&rdquo;.
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {shown.map((pkg) => {
+                  const isHajj = pkg.packageType === 'hajj';
                   const displayTitle = isBn && pkg.titleBn ? pkg.titleBn : pkg.title;
                   const displayHighlights =
                     isBn && pkg.highlightsBn && pkg.highlightsBn.length > 0
                       ? pkg.highlightsBn
                       : pkg.highlights || [];
+                  const imageUrl = isHajj ? hajjImage(pkg) : umrahImage(pkg);
+                  const detailUrl = isHajj
+                    ? (pkg.slug ? `/hajj/${pkg.slug}` : `/booking?type=hajj&id=${pkg.id}`)
+                    : (pkg.slug ? `/umrah/${pkg.slug}` : `/booking?type=umrah&id=${pkg.id}`);
 
                   return (
                     <div
-                      key={pkg.id}
+                      key={`${pkg.packageType}-${pkg.id}`}
                       className="group flex flex-col rounded-2xl border glass overflow-hidden hover:-translate-y-1 transition-all"
                       style={{
                         borderColor: 'var(--color-outline-variant)',
-                        boxShadow: '0 8px 24px -12px rgba(16, 185, 129, 0.18)',
+                        boxShadow: isHajj
+                          ? '0 8px 24px -12px rgba(16, 185, 129, 0.22)'
+                          : '0 8px 24px -12px rgba(6, 182, 212, 0.22)',
                       }}
                     >
-                      <div className="relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-700 to-amber-700">
+                      <div className="relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-800 to-amber-900">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={hajjImage(pkg)}
+                          src={imageUrl}
                           alt={displayTitle}
                           loading="lazy"
                           className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-                        {pkg.isFeatured ? (
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+
+                        {/* Top Badges */}
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5">
                           <span
-                            className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] tracking-widest uppercase font-bold text-white shadow"
-                            style={{ backgroundColor: 'var(--color-accent)' }}
+                            className={cn(
+                              'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] tracking-wider uppercase font-bold text-white shadow-md backdrop-blur-sm',
+                              isHajj ? 'bg-emerald-600/90' : 'bg-cyan-600/90'
+                            )}
                           >
-                            Featured
+                            {isHajj ? <Moon className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
+                            {isHajj ? 'Hajj' : 'Umrah'}
                           </span>
-                        ) : null}
-                        <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-widest font-bold bg-black/40 text-white backdrop-blur-sm shadow">
-                          {pkg.tier.replace(/_/g, ' ')}
-                        </span>
+                          {pkg.isFeatured ? (
+                            <span
+                              className="px-2.5 py-1 rounded-full text-[10px] tracking-widest uppercase font-bold text-white shadow"
+                              style={{ backgroundColor: 'var(--color-accent)' }}
+                            >
+                              Featured
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                          {isHajj && (pkg as any).tier ? (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] uppercase tracking-widest font-bold bg-black/50 text-white backdrop-blur-sm shadow border border-white/10">
+                              {(pkg as any).tier.replace(/_/g, ' ')}
+                            </span>
+                          ) : null}
+                          {!isHajj && (pkg as any).addOnCity ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-cyan-950 bg-cyan-300 shadow">
+                              + {(pkg as any).addOnCity}
+                            </span>
+                          ) : null}
+                        </div>
+
                         <span className="absolute bottom-2.5 left-3 right-3 truncate text-white font-display font-bold text-lg drop-shadow">
-                          Makkah & Madinah
+                          Makkah & Madinah{' '}
+                          {!isHajj && (pkg as any).addOnCity ? `· + ${(pkg as any).addOnCity}` : ''}
                         </span>
                       </div>
 
                       <div className="p-5 flex flex-col flex-1">
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-[11px] uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-400">
-                            Hajj {pkg.tier.replace(/_/g, ' ')}
+                          <span
+                            className={cn(
+                              'text-[11px] uppercase tracking-widest font-bold',
+                              isHajj
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-cyan-600 dark:text-cyan-400'
+                            )}
+                          >
+                            {isHajj
+                              ? `Hajj ${(pkg as any).tier ? '· ' + (pkg as any).tier.replace(/_/g, ' ') : 'Pilgrimage'}`
+                              : (pkg as any).addOnCity
+                              ? `Umrah + ${(pkg as any).addOnCity}`
+                              : 'Umrah Journey'}
                           </span>
                         </div>
 
@@ -413,13 +719,14 @@ export default function HajjPage() {
                         <div className="flex items-center gap-1.5 text-xs text-muted mt-2">
                           <Clock className="w-3.5 h-3.5 text-muted flex-shrink-0" />
                           <span>
-                            {pkg.durationDays} {isBn ? 'দিন' : 'Days'} · {pkg.makkahNights}N Makkah · {pkg.madinahNights}N Madinah
+                            {pkg.durationDays} {isBn ? 'দিন' : 'Days'} · {pkg.makkahNights}N Makkah ·{' '}
+                            {pkg.madinahNights}N Madinah
                           </span>
                         </div>
 
                         {displayHighlights.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2.5">
-                            {displayHighlights.slice(0, 2).map((h, i) => (
+                            {displayHighlights.slice(0, 2).map((h: string, i: number) => (
                               <span
                                 key={i}
                                 className="text-[10px] px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant truncate max-w-[130px]"
@@ -435,9 +742,11 @@ export default function HajjPage() {
                           </div>
                         )}
 
-                        <div className="mt-3">
-                          <SeatCounter packageId={pkg.id} currency={pkg.currency} />
-                        </div>
+                        {isHajj && (
+                          <div className="mt-3">
+                            <SeatCounter packageId={pkg.id} currency={pkg.currency} />
+                          </div>
+                        )}
 
                         <div className="mt-auto pt-4 flex flex-col gap-3">
                           <div>
@@ -449,21 +758,26 @@ export default function HajjPage() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2 pt-0.5">
+                          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-outline-variant">
                             <Link
-                              href={`/hajj/${pkg.slug}`}
-                              className="inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs sm:text-sm font-semibold border border-outline-variant text-on-surface hover:bg-surface-container-high transition hover:border-primary/50"
+                              href={detailUrl}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-outline-variant px-3 py-2 text-xs font-semibold text-on-surface hover:bg-surface-container transition-colors"
                             >
-                              <Eye className="w-3.5 h-3.5 text-muted" />
-                              View
+                              <Eye className="w-3.5 h-3.5" />
+                              {isBn ? 'বিস্তারিত' : 'Details'}
                             </Link>
                             <button
                               type="button"
-                              onClick={() => bookPackage(pkg.id)}
-                              className="inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:opacity-90 shadow-sm"
-                              style={{ background: 'linear-gradient(90deg, #10b981 0%, var(--color-tertiary) 100%)' }}
+                              onClick={() => bookPackage(pkg.id, pkg.packageType)}
+                              className={cn(
+                                'inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:opacity-95 cursor-pointer',
+                                isHajj
+                                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-700'
+                                  : 'bg-gradient-to-r from-cyan-600 to-blue-600'
+                              )}
                             >
-                              Book Now <ArrowRight className="w-3.5 h-3.5" />
+                              {isBn ? 'বুক করুন' : 'Book Now'}
+                              <ArrowRight className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
@@ -477,10 +791,14 @@ export default function HajjPage() {
         )}
       </section>
 
+      {/* Why Choose Us */}
       <section className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-12">
-        <div className="rounded-2xl border p-8 glass" style={{ borderColor: 'var(--color-outline-variant)' }}>
+        <div
+          className="rounded-2xl border p-8 glass"
+          style={{ borderColor: 'var(--color-outline-variant)' }}
+        >
           <h3 className="font-display text-xl font-semibold text-on-surface mb-3">
-            {isBn ? 'কেন আমাদের হজ্জ সেবা বেছে নেবেন?' : 'Why choose our Hajj service?'}
+            {isBn ? 'কেন আমাদের হজ্জ ও ওমরাহ সেবা বেছে নেবেন?' : 'Why choose our Hajj & Umrah service?'}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
             <div>
@@ -490,7 +808,7 @@ export default function HajjPage() {
               </div>
               <p className="text-on-surface-variant">
                 {isBn
-                  ? 'হজ্জের প্রতিটি রুকন ও হুকুম যথাযথভাবে পালনে সার্বক্ষণিক দিকনির্দেশনা।'
+                  ? 'হজ্জ ও ওমরাহর প্রতিটি রুকন ও হুকুম যথাযথভাবে পালনে সার্বক্ষণিক দিকনির্দেশনা।'
                   : 'Dedicated scholars providing step-by-step guidance through every essential ritual.'}
               </p>
             </div>
@@ -520,6 +838,7 @@ export default function HajjPage() {
         </div>
       </section>
 
+      {/* Pre-Registration Modal */}
       {showPreReg && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -543,7 +862,7 @@ export default function HajjPage() {
                     setShowPreReg(false);
                     setSubmitted(false);
                   }}
-                  className="px-5 py-2 rounded-full text-sm font-semibold text-white"
+                  className="px-5 py-2 rounded-full text-sm font-semibold text-white cursor-pointer"
                   style={{ background: 'linear-gradient(90deg, #10b981 0%, var(--color-tertiary) 100%)' }}
                 >
                   Close
@@ -631,7 +950,8 @@ export default function HajjPage() {
                   onChange={(val) => setPreReg({ ...preReg, packageTier: val })}
                   options={[
                     { value: '', label: 'Preferred tier (optional)' },
-                    ...packages.map((p) => ({ value: p.tier, label: p.title })),
+                    ...hajjTiers.map((t) => ({ value: t, label: t.replace(/_/g, ' ') })),
+                    ...hajjPkgs.map((p) => ({ value: p.tier || p.title, label: p.title })),
                   ]}
                   placeholder="Preferred tier (optional)"
                 />
@@ -639,7 +959,7 @@ export default function HajjPage() {
                   <button
                     type="button"
                     onClick={() => setShowPreReg(false)}
-                    className="flex-1 px-4 py-2 rounded-md border text-sm"
+                    className="flex-1 px-4 py-2 rounded-md border text-sm cursor-pointer"
                     style={{ borderColor: 'var(--color-outline-variant)' }}
                   >
                     Cancel
@@ -647,7 +967,7 @@ export default function HajjPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 px-4 py-2 rounded-md text-sm font-semibold text-white"
+                    className="flex-1 px-4 py-2 rounded-md text-sm font-semibold text-white cursor-pointer"
                     style={{ background: 'linear-gradient(90deg, #10b981 0%, var(--color-tertiary) 100%)' }}
                   >
                     {submitting ? 'Submitting…' : 'Submit'}
@@ -659,5 +979,13 @@ export default function HajjPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function HajjPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen pt-32 text-center text-muted">Loading Hajj &amp; Umrah packages…</div>}>
+      <HajjUmrahContent />
+    </Suspense>
   );
 }

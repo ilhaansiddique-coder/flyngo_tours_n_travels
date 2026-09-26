@@ -10,7 +10,6 @@ import { useBookingStore } from '@/stores/booking.store';
 import { ReviewsSection } from '@/components/features/reviews/reviews-section';
 import { ShareMenu } from '@/components/shared/share-menu';
 import { LeadForm } from '@/components/marketing/lead-form';
-import { Section, Container } from '@/components/ui/section';
 import { Badge } from '@/components/ui/badge';
 import {
   ArrowLeft, ArrowRight, Clock, Check, ChevronDown,
@@ -715,14 +714,6 @@ export default function VisaCountryDetailPage({ params }: { params: Promise<{ sl
           )}
         </aside>
       </div>
-
-      <Section background="subtle" className="mt-4">
-        <Container>
-          <div className="text-center text-sm text-on-surface-variant">
-            Overstay and emergency fees are governed by the respective embassy / immigration rules of {country.name}. We provide consultancy and processing services only.
-          </div>
-        </Container>
-      </Section>
     </main>
   );
 }

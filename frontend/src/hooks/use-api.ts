@@ -370,13 +370,14 @@ export function useApi() {
     api.patch(`/hajj-pre-registration/${id}/status`, { status }, auth()), [auth]);
   const deleteHajjPreRegistration = useCallback(async (id: string) =>
     api.delete(`/hajj-pre-registration/${id}`, auth()), [auth]);
-  // Hajj/Umrah bookings live in their own table with their own admin endpoints.
   const getHajjUmrahBookings = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/hajj-umrah-bookings/admin/all' + qs, auth());
   }, [auth]);
   const updateHajjUmrahBookingStatus = useCallback(async (id: string, status: string) =>
     api.patch(`/hajj-umrah-bookings/admin/${id}/status`, { status }, auth()), [auth]);
+  const deleteHajjUmrahBooking = useCallback(async (id: string) =>
+    api.delete(`/hajj-umrah-bookings/admin/${id}`, auth()), [auth]);
   const createTransport = useCallback(async (body: any) => api.post('/transport', body, auth()), [auth]);
   const updateTransport = useCallback(async (id: string, body: any) => api.patch(`/transport/${id}`, body, auth()), [auth]);
   const deleteTransport = useCallback(async (id: string) => api.delete(`/transport/${id}`, auth()), [auth]);
@@ -589,7 +590,7 @@ export function useApi() {
     getUmrahPackages, createUmrahPackage, updateUmrahPackage, deleteUmrahPackage,
     getVisaCountries, createVisaCountry, updateVisaCountry, deleteVisaCountry,
     submitHajjPreRegistration, getHajjPreRegistrations, updateHajjPreRegistrationStatus, deleteHajjPreRegistration,
-    getHajjUmrahBookings, updateHajjUmrahBookingStatus,
+    getHajjUmrahBookings, updateHajjUmrahBookingStatus, deleteHajjUmrahBooking,
     getReviews, approveReview, deleteReview, getPublicReviews, submitReview,
     getNotifications, sendNotification, deleteNotification,
     getMyProfile, updateMyProfile, uploadMyAvatar, getMyDocuments, uploadMyDocument, deleteMyDocument,

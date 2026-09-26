@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Query, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Query, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { HajjUmrahBookingService } from './hajj-umrah-booking.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -62,5 +62,15 @@ export class HajjUmrahBookingController {
     @Body() body: { status: string; paymentStatus?: string },
   ) {
     return this.service.changeStatus(id, tenantId, body.status, body.paymentStatus);
+  }
+
+  @Delete('admin/:id')
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: 'Delete a Hajj/Umrah booking (admin)' })
+  async remove(
+    @Param('id') id: string,
+    @CurrentTenantId() tenantId: string,
+  ) {
+    return this.service.remove(id, tenantId);
   }
 }

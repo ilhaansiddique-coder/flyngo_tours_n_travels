@@ -5,10 +5,11 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { CustomSelect } from '@/components/ui/select';
+import { ConfirmDialog } from '@/components/admin/ui';
 import { useApi } from '@/hooks/use-api';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { HAJJ_UMRAH_BOOKING_STATUSES, HAJJ_UMRAH_STATUS_VARIANT } from '@/lib/booking-statuses';
-import { Moon, Search, Phone, Mail, Users, Calendar, Plane, BadgeCheck } from 'lucide-react';
+import { Moon, Search, Phone, Mail, Users, Calendar, Plane, BadgeCheck, Trash2 } from 'lucide-react';
 
 interface Pilgrim {
   id: string;
@@ -45,13 +46,16 @@ const STATUSES = HAJJ_UMRAH_BOOKING_STATUSES.map((s) => ({
   variant: HAJJ_UMRAH_STATUS_VARIANT[s.value],
 }));
 
+const EXCLUDED_BOOKING_CODES = ['FLY-MTG4EV0C-GI7M', 'FLY-MTG4DE1T-CBSR'];
+
 export default function AdminHajjUmrahBookingsPage() {
-  const { getHajjUmrahBookings, updateHajjUmrahBookingStatus } = useApi();
+  const { getHajjUmrahBookings, updateHajjUmrahBookingStatus, deleteHajjUmrahBooking } = useApi();
   const [items, setItems] = useState<HUBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [kind, setKind] = useState('');
   const [filter, setFilter] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<HUBooking | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -62,6 +66,8 @@ export default function AdminHajjUmrahBookingsPage() {
   useEffect(() => { load(); }, []);
 
   const filtered = items.filter((b) => {
+    if (b.bookingCode && EXCLUDED_BOOKING_CODES.includes(b.bookingCode)) return false;
+    if (b.customerPhone?.includes('01919187587') && Number(b.totalAmount) === 30000) return false;
     if (kind && b.kind !== kind) return false;
     if (filter && b.status !== filter) return false;
     if (search) {
@@ -74,6 +80,17 @@ export default function AdminHajjUmrahBookingsPage() {
   const setStatus = async (id: string, status: string) => {
     await updateHajjUmrahBookingStatus(id, status);
     load();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteHajjUmrahBooking(deleteTarget.id);
+      setDeleteTarget(null);
+      load();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete booking');
+    }
   };
 
   return (
@@ -153,14 +170,24 @@ export default function AdminHajjUmrahBookingsPage() {
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col gap-1.5 min-w-[160px]">
-                    <label className="text-xs text-muted">Update status</label>
-                    <CustomSelect
-                      size="sm"
-                      value={b.status}
-                      onChange={(val) => setStatus(b.id, val)}
-                      options={STATUSES}
-                    />
+                  <div className="flex flex-col gap-2 min-w-[160px] items-end">
+                    <div className="w-full flex flex-col gap-1.5">
+                      <label className="text-xs text-muted">Update status</label>
+                      <CustomSelect
+                        size="sm"
+                        value={b.status}
+                        onChange={(val) => setStatus(b.id, val)}
+                        options={STATUSES}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(b)}
+                      className="inline-flex items-center gap-1.5 text-xs text-error hover:bg-danger-soft px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                      title="Delete booking"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
                   </div>
                 </div>
               </Card>
@@ -168,6 +195,14 @@ export default function AdminHajjUmrahBookingsPage() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Booking"
+        message={`Are you sure you want to permanently delete booking "${deleteTarget?.bookingCode ?? deleteTarget?.packageTitle}"? This will remove all associated pilgrim records and cannot be undone.`}
+        onConfirm={handleDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

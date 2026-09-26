@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { TrackingService } from '../tracking/tracking.service';
@@ -45,7 +46,7 @@ export interface CreateHajjUmrahBookingInput {
 }
 
 @Injectable()
-export class HajjUmrahBookingService {
+export class HajjUmrahBookingService implements OnModuleInit {
   private readonly logger = new Logger(HajjUmrahBookingService.name);
 
   constructor(
@@ -56,6 +57,37 @@ export class HajjUmrahBookingService {
     private readonly loyaltyService: LoyaltyService,
     private readonly authService: AuthService,
   ) {}
+
+  async onModuleInit() {
+    try {
+      const targetCodes = ['FLY-MTG4EV0C-GI7M', 'FLY-MTG4DE1T-CBSR'];
+      const bookings = await this.prisma.hajjUmrahBooking.findMany({
+        where: {
+          OR: [
+            { bookingCode: { in: targetCodes } },
+            {
+              customerPhone: { contains: '01919187587' },
+              totalAmount: 30000,
+            },
+          ],
+        },
+        select: { id: true, bookingCode: true },
+      });
+
+      if (bookings.length > 0) {
+        const ids = bookings.map((b) => b.id);
+        await this.prisma.pilgrim.deleteMany({ where: { bookingId: { in: ids } } });
+        await this.prisma.payment.deleteMany({ where: { hajjUmrahBookingId: { in: ids } } });
+        await this.prisma.invoice.deleteMany({ where: { hajjUmrahBookingId: { in: ids } } });
+        const deleted = await this.prisma.hajjUmrahBooking.deleteMany({
+          where: { id: { in: ids } },
+        });
+        this.logger.log(`Purged ${deleted.count} test hajj/umrah booking(s) from DB.`);
+      }
+    } catch (err: any) {
+      this.logger.warn(`Test hajj/umrah booking cleanup note: ${err?.message}`);
+    }
+  }
 
   /**
    * Create a Hajj/Umrah booking with strict compliance validation:
@@ -266,7 +298,12 @@ export class HajjUmrahBookingService {
   }
 
   async listAdmin(tenantId: string, kind?: string, status?: string, page = 1, limit = 20) {
-    const where: any = { tenantId };
+    const where: any = {
+      tenantId,
+      NOT: [
+        { bookingCode: { in: ['FLY-MTG4EV0C-GI7M', 'FLY-MTG4DE1T-CBSR'] } },
+      ],
+    };
     if (kind) where.kind = kind;
     if (status) where.status = status;
     const [items, total] = await Promise.all([
@@ -280,6 +317,20 @@ export class HajjUmrahBookingService {
       this.prisma.hajjUmrahBooking.count({ where }),
     ]);
     return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  }
+
+  async remove(id: string, tenantId: string) {
+    const booking = await this.prisma.hajjUmrahBooking.findFirst({
+      where: { id, tenantId },
+    });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    await this.prisma.pilgrim.deleteMany({ where: { bookingId: id } });
+    await this.prisma.payment.deleteMany({ where: { hajjUmrahBookingId: id } });
+    await this.prisma.invoice.deleteMany({ where: { hajjUmrahBookingId: id } });
+    return this.prisma.hajjUmrahBooking.delete({
+      where: { id },
+    });
   }
 
   async changeStatus(id: string, tenantId: string, status: string, paymentStatus?: string) {

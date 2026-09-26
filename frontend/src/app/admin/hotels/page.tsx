@@ -8,12 +8,13 @@ import { formatCurrency, pagerPages } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import { Modal, FormField, FormInput, FormSelect, FormTextarea, ConfirmDialog } from '@/components/admin/ui';
 import { ImageUploader } from '@/components/admin/image-uploader';
+import { MultiImageUploader } from '@/components/admin/multi-image-uploader';
 import { CountryAutocomplete } from '@/components/admin/country-autocomplete';
 import { MultiCountryAutocomplete } from '@/components/admin/multi-country-autocomplete';
 import type { CountryOption } from '@/components/admin/country-autocomplete';
 import { HotelRoomsManager } from '@/components/admin/hotel-rooms-manager';
 import { hotelImage } from '@/lib/entity-image';
-import { Building2, Plus, Pencil, Trash2, Star, Search, BedDouble, Share2 } from 'lucide-react';
+import { Building2, Plus, Pencil, Trash2, Star, Search, BedDouble, Share2, Images } from 'lucide-react';
 import { ShareMenu } from '@/components/shared/share-menu';
 
 const LIMIT = 10;
@@ -38,6 +39,7 @@ interface Hotel {
   checkInTime?: string;
   checkOutTime?: string;
   coverImageUrl?: string;
+  images?: Array<{ id?: string; url: string; alt?: string | null }>;
   isActive: boolean;
   pointsAwarded?: number;
 }
@@ -61,6 +63,7 @@ const defaultForm = {
   checkInTime: '',
   checkOutTime: '',
   coverImageUrl: '',
+  images: [] as string[],
   isActive: true,
 };
 
@@ -128,6 +131,10 @@ export default function AdminHotelsPage() {
 
   const openEdit = (hotel: Hotel) => {
     setEditingHotel(hotel);
+    const existingImages = (hotel.images || [])
+      .map((img: any) => (typeof img === 'string' ? img : img?.url))
+      .filter((url): url is string => Boolean(url));
+
     setForm({
       name: hotel.name || '',
       destinationId: hotel.destinationId || hotel.destination?.id || '',
@@ -140,6 +147,7 @@ export default function AdminHotelsPage() {
       checkInTime: hotel.checkInTime || '',
       checkOutTime: hotel.checkOutTime || '',
       coverImageUrl: hotel.coverImageUrl || '',
+      images: existingImages,
       isActive: hotel.isActive ?? true,
     });
     setDestName(hotel.destination?.name || '');
@@ -175,6 +183,7 @@ export default function AdminHotelsPage() {
         checkInTime: form.checkInTime || undefined,
         checkOutTime: form.checkOutTime || undefined,
         coverImageUrl: form.coverImageUrl || undefined,
+        images: form.images.filter(Boolean),
         isActive: form.isActive,
       };
       if (editingHotel) {
@@ -279,14 +288,25 @@ export default function AdminHotelsPage() {
                       <td className="p-4">
                         {(() => {
                           const url = hotelImage(h);
+                          const extraCount = (h.images || []).length;
                           return (
-                            <a href={url} target="_blank" rel="noreferrer">
-                              <img
-                                src={url}
-                                alt={h.name}
-                                className="w-14 h-10 object-cover rounded-lg border border-outline-variant"
-                              />
-                            </a>
+                            <div className="relative inline-block">
+                              <a href={url} target="_blank" rel="noreferrer">
+                                <img
+                                  src={url}
+                                  alt={h.name}
+                                  className="w-14 h-10 object-cover rounded-lg border border-outline-variant"
+                                />
+                              </a>
+                              {extraCount > 0 && (
+                                <span
+                                  className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-primary text-on-primary shadow-xs"
+                                  title={`${extraCount} additional room/gallery photos`}
+                                >
+                                  +{extraCount}
+                                </span>
+                              )}
+                            </div>
                           );
                         })()}
                       </td>
@@ -470,6 +490,24 @@ export default function AdminHotelsPage() {
               }}
               aspectRatio={1.7777}
             />
+            <p className="text-xs text-on-surface-variant/70 mt-1">
+              Primary cover photo for cards, search results, and hotel headers.
+            </p>
+          </FormField>
+
+          <FormField label="Room & Gallery Photos (Auto / Manually Slidable)">
+            <MultiImageUploader
+              values={form.images}
+              onChange={(urls) => setForm((f) => ({ ...f, images: urls }))}
+              onUpload={async (file) => {
+                const res = await uploadMedia(file, { folder: 'hotels' });
+                return { url: (res as any).url };
+              }}
+              onSetCover={(url) => setForm((f) => ({ ...f, coverImageUrl: url }))}
+            />
+            <p className="text-xs text-on-surface-variant/70 mt-1">
+              Add multiple room, amenity, or view photos. Except the cover photo, these photos will be automatically and manually slidable on the hotel details page.
+            </p>
           </FormField>
 
           <FormField label="Star Rating">

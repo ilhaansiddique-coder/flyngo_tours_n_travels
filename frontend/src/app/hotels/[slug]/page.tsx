@@ -9,7 +9,8 @@ import { hotelImage } from '@/lib/entity-image';
 import { Button } from '@/components/ui/button';
 import { ShareMenu } from '@/components/shared/share-menu';
 import { ReviewsSection } from '@/components/features/reviews/reviews-section';
-import { ArrowLeft, MapPin, Star, Clock, Sparkles } from 'lucide-react';
+import { HotelPhotosSlider } from '@/components/features/hotels/hotel-photos-slider';
+import { ArrowLeft, MapPin, Star, Clock, Sparkles, BedDouble } from 'lucide-react';
 
 interface HotelImage {
   id: string;
@@ -41,7 +42,6 @@ export default function HotelDetailPage() {
   const [hotel, setHotel] = useState<HotelDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeImage, setActiveImage] = useState(0);
 
   useEffect(() => {
     if (!slug) return;
@@ -97,13 +97,11 @@ export default function HotelDetailPage() {
     );
   }
 
-  const realGallery = Array.from(
-    new Set([hotel.coverImageUrl, ...(hotel.images ?? []).map((i) => i.url)].filter(Boolean) as string[]),
-  );
-  // Fall back to the SAME deterministic photo the list card uses so the hero is
-  // never an empty gradient and matches the hotel's list card.
-  const gallery = realGallery.length > 0 ? realGallery : [hotelImage(hotel, 1200, 700)];
-  const mainImage = gallery[activeImage % Math.max(gallery.length, 1)];
+  const coverPhoto = hotel.coverImageUrl || hotelImage(hotel, 1200, 700);
+
+  // Other photos (rooms, interior, amenities, views) excluding the cover photo
+  const otherPhotos = (hotel.images ?? [])
+    .filter((img) => img.url && img.url !== hotel.coverImageUrl);
 
   return (
     <main className="min-h-screen bg-background pt-28 pb-20 px-4 sm:px-6 lg:px-16 max-w-[1200px] mx-auto">
@@ -116,30 +114,14 @@ export default function HotelDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
         <div>
-          {/* Hero image gallery */}
-          <div className="relative h-72 sm:h-96 overflow-hidden rounded-2xl mb-3 bg-gradient-to-br from-primary to-tertiary">
-            {mainImage && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={mainImage} alt={hotel.name} className="w-full h-full object-cover" />
-            )}
-          </div>
-          {gallery.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-1 mb-8">
-              {gallery.map((url, i) => (
-                <button
-                  key={url}
-                  onClick={() => setActiveImage(i)}
-                  className={`relative w-24 h-16 shrink-0 overflow-hidden rounded-lg border transition-all ${
-                    i === activeImage ? 'border-accent ring-2 ring-accent/40' : 'border-hairline opacity-70 hover:opacity-100'
-                  }`}
-                  aria-label={`View image ${i + 1}`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={`${hotel.name} ${i + 1}`} className="w-full h-full object-cover" />
-                </button>
-              ))}
+          {/* Cover Photo */}
+          <div className="relative h-72 sm:h-96 overflow-hidden rounded-2xl mb-6 bg-gradient-to-br from-primary/10 to-tertiary/10 border border-outline-variant/30 shadow-xs">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={coverPhoto} alt={hotel.name} className="w-full h-full object-cover" />
+            <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5 border border-white/10 shadow">
+              <span>Cover Photo</span>
             </div>
-          )}
+          </div>
 
           <div className="flex items-center gap-1 mb-3">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -180,6 +162,24 @@ export default function HotelDetailPage() {
               </span>
             )}
           </div>
+
+          {/* Room & Property Photos Slider (Auto & Manually Slidable) */}
+          {otherPhotos.length > 0 && (
+            <section className="mb-8">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <BedDouble className="w-5 h-5 text-accent" />
+                  <h2 className="text-xl font-display font-semibold text-on-surface">
+                    Room &amp; Property Gallery
+                  </h2>
+                </div>
+                <span className="text-xs px-2.5 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent font-medium">
+                  {otherPhotos.length} {otherPhotos.length === 1 ? 'photo' : 'photos'}
+                </span>
+              </div>
+              <HotelPhotosSlider images={otherPhotos} hotelName={hotel.name} />
+            </section>
+          )}
 
           <section className="mb-8">
             <h2 className="text-xl font-display font-semibold text-on-surface mb-3">About this hotel</h2>

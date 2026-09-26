@@ -120,6 +120,15 @@ export class HotelsService {
         isActive: data.isActive ?? true,
         pointsAwarded: Number(data.pointsAwarded) || 0,
         coverImageUrl: data.coverImageUrl,
+        images: Array.isArray(data.images) && data.images.length > 0 ? {
+          create: data.images
+            .map((img: any) => ({
+              tenantId,
+              url: typeof img === 'string' ? img.trim() : (img?.url?.trim() || ''),
+              alt: typeof img === 'object' ? img?.alt : null,
+            }))
+            .filter((img: any) => Boolean(img.url)),
+        } : undefined,
         rooms: data.rooms ? {
           create: data.rooms.map((r: any) => ({
             name: r.name,
@@ -156,6 +165,22 @@ export class HotelsService {
         .filter((did) => did !== primaryId)
         .map((did, i) => ({ tenantId, destinationId: did, position: i }));
       additionalUpdate = { deleteMany: {}, create: ids };
+    }
+
+    if (data.images !== undefined) {
+      await this.prisma.media.deleteMany({ where: { hotelId: id } });
+      const rawImages: any[] = Array.isArray(data.images) ? data.images : [];
+      const imagesToCreate = rawImages
+        .map((img) => {
+          const url = typeof img === 'string' ? img.trim() : (img?.url?.trim() || '');
+          const alt = typeof img === 'object' ? img?.alt : null;
+          return { tenantId, hotelId: id, url, alt };
+        })
+        .filter((img) => Boolean(img.url));
+
+      if (imagesToCreate.length > 0) {
+        await this.prisma.media.createMany({ data: imagesToCreate });
+      }
     }
 
     return this.prisma.hotel.update({

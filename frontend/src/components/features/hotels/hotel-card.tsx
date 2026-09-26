@@ -6,7 +6,7 @@ import { hotelImage } from '@/lib/entity-image';
 import { useFormatCurrency } from '@/lib/utils';
 import { useBookingStore } from '@/stores/booking.store';
 import { getCountryFlagByName } from '@/lib/world-places';
-import { Star, Eye, ArrowRight } from 'lucide-react';
+import { Star, Eye, ArrowRight, Images } from 'lucide-react';
 
 interface HotelCardProps {
   id: string;
@@ -20,6 +20,7 @@ interface HotelCardProps {
   amenities?: string[];
   imageUrl?: string | null;
   coverImageUrl?: string | null;
+  images?: Array<{ id?: string; url: string; alt?: string | null } | string>;
 }
 
 export function HotelCard({
@@ -33,6 +34,7 @@ export function HotelCard({
   amenities = [],
   imageUrl,
   coverImageUrl,
+  images,
 }: HotelCardProps) {
   const router = useRouter();
   const setSelectedItem = useBookingStore((s) => s.setSelectedItem);
@@ -78,6 +80,12 @@ export function HotelCard({
           <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
           {starRating}.0 Star
         </span>
+        {images && images.length > 0 && (
+          <span className="absolute bottom-2.5 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-white bg-black/60 backdrop-blur-xs border border-white/10 shadow">
+            <Images className="w-3 h-3 text-accent" />
+            {images.length + 1} photos
+          </span>
+        )}
         {destinationName ? (
           <span className="absolute bottom-2.5 left-3 right-3 truncate text-white font-display font-bold text-lg drop-shadow">
             {destinationName}

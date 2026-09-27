@@ -305,27 +305,34 @@ export function useApi() {
   const getMyInvoices = useCallback(async () => api.get('/invoices/my', auth()), [auth]);
   const getInvoice = useCallback(async (id: string) => api.get(`/invoices/${id}`, auth()), [auth]);
   const sendInvoiceEmail = useCallback(async (id: string) => api.post(`/invoices/${id}/send-email`, {}, auth()), [auth]);
-  const downloadInvoicePdf = useCallback(async (id: string) => {
-    const { accessToken } = useAuthStore.getState();
-    const headers: Record<string, string> = {};
-    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
-    const res = await fetch(`/api/v1/invoices/${id}/pdf`, { headers });
-    if (!res.ok) throw new Error('Could not download invoice');
-    return await res.blob();
-  }, []);
-  const openInvoicePdf = useCallback(async (id: string) => {
+  const downloadInvoicePdf = useCallback(async (id: string, bookingCode?: string) => {
+    try {
+      return await api.getBlob(`/invoices/${id}/pdf`, auth());
+    } catch (err: any) {
+      if (bookingCode) {
+        return await api.getBlob(`/invoices/public/${encodeURIComponent(bookingCode)}/${id}/pdf`);
+      }
+      throw err;
+    }
+  }, [auth]);
+  const openInvoicePdf = useCallback(async (id: string, bookingCode?: string) => {
     // Open the window synchronously (before any await) so the browser does not
     // treat it as a popup, then navigate it to the downloaded blob once ready.
-    const win = window.open('', '_blank');
-    const blob = await downloadInvoicePdf(id);
-    const url = URL.createObjectURL(blob);
-    if (win) {
-      win.location.href = url;
-    } else {
-      window.location.href = url;
+    const win = typeof window !== 'undefined' ? window.open('', '_blank') : null;
+    try {
+      const blob = await downloadInvoicePdf(id, bookingCode);
+      const url = URL.createObjectURL(blob);
+      if (win) {
+        win.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+      // Revoke the object URL once the window has had a chance to load it.
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      if (win) win.close();
+      throw err;
     }
-    // Revoke the object URL once the window has had a chance to load it.
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }, [downloadInvoicePdf]);
   const getAdminInvoices = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';

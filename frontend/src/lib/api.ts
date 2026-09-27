@@ -258,6 +258,43 @@ class ApiClient {
     const json = await response.json();
     return (json.data ?? json) as T;
   }
+
+  async getBlob(
+    endpoint: string,
+    options: FetchOptions = {},
+    allowRefresh = true,
+  ): Promise<Blob> {
+    const { token: providedToken, ...fetchOptions } = options;
+    const token = await this.resolveToken(providedToken, allowRefresh);
+    const headers: Record<string, string> = { ...(fetchOptions.headers as Record<string, string>) };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      ...fetchOptions,
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      if (response.status === 401 && allowRefresh) {
+        const result = await this.refreshAccessToken();
+        if (result.ok) {
+          return this.getBlob(endpoint, { ...options, token: result.accessToken }, false);
+        }
+        if (result.reason === 'invalid') clearAuthAndRedirect();
+      }
+      let errorMsg = 'Failed to download file';
+      try {
+        const errorJson = await response.json();
+        errorMsg = errorJson.message || errorMsg;
+      } catch {
+        errorMsg = response.statusText || errorMsg;
+      }
+      throw new ApiError(response.status, errorMsg);
+    }
+
+    return await response.blob();
+  }
 }
 
 export class ApiError extends Error {

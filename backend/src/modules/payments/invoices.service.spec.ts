@@ -451,5 +451,36 @@ describe('InvoicesService', () => {
       expect(result.buffer).toBeInstanceOf(Buffer);
       expect(result.invoiceNumber).toBe('INV-1');
     });
+
+    it('should safely handle Unicode, Bengali text, and Taka currency symbols in PDF generation', async () => {
+      const invoice = {
+        id: 'inv-2',
+        tenantId: 'tenant-1',
+        invoiceNumber: 'INV-2',
+        status: 'issued',
+        subtotal: 5000,
+        discount: 500,
+        total: 4500,
+        paidAmount: 2000,
+        currency: '৳',
+        lineItems: [
+          { description: 'কক্সবাজার ৩ দিন ২ রাত প্যাকেজ 🏖️', quantity: 2, unitPrice: 2500, amount: 5000 },
+        ],
+        issuedAt: new Date(),
+        paidAt: null,
+        user: { id: 'user-2', fullName: 'মোঃ ইলহান কবির', email: 'user@example.com', phone: '+8801700000000' },
+        booking: { bookingCode: 'BK-BANGLA', bookingType: 'ট্যুর' },
+        hajjUmrahBooking: null,
+        payment: { method: 'bkash', transactionId: 'TRX-12345' },
+      };
+      mockPrisma.invoice.findFirst.mockResolvedValue(invoice);
+      mockPrisma.tenantSettings.findUnique.mockResolvedValue({ companyName: 'ফ্লাইএনগো Flyngo Travels — Dhaka' });
+
+      const result = await service.getPdf('inv-2', 'tenant-1', 'user-2');
+
+      expect(result.buffer).toBeInstanceOf(Buffer);
+      expect(result.buffer.length).toBeGreaterThan(0);
+      expect(result.invoiceNumber).toBe('INV-2');
+    });
   });
 });

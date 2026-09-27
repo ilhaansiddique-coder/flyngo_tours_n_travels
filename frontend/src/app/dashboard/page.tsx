@@ -15,6 +15,7 @@ import {
 import TierBadge from '@/components/ui/tier-badge';
 import { CustomSelect } from '@/components/ui/select';
 import { InvoiceShareMenu } from '@/components/shared/invoice-share-menu';
+import { toast } from 'sonner';
 import {
   COUNTRY_DIALS,
   DEFAULT_COUNTRY_CODE,
@@ -545,7 +546,13 @@ export default function DashboardPage() {
                       <div>
                         <button
                           type="button"
-                          onClick={() => openInvoicePdf(inv.id)}
+                          onClick={async () => {
+                            try {
+                              await openInvoicePdf(inv.id, inv.booking?.bookingCode || undefined);
+                            } catch (err: any) {
+                              toast.error(err?.message || 'Could not download invoice');
+                            }
+                          }}
                           className="font-semibold font-mono text-brand-600 hover:underline"
                           title={`Open ${inv.invoiceNumber}`}
                         >
@@ -565,13 +572,17 @@ export default function DashboardPage() {
                         <button
                           className="text-[10px] text-brand-600 hover:underline"
                           onClick={async () => {
-                            const full = (await getInvoice(inv.id)) as { html?: string };
-                            if (!full?.html) return;
-                            const w = window.open('', '_blank');
-                            if (!w) return;
-                            w.document.write(full.html);
-                            w.document.close();
-                            w.print();
+                            try {
+                              const full = (await getInvoice(inv.id)) as { html?: string };
+                              if (!full?.html) return;
+                              const w = window.open('', '_blank');
+                              if (!w) return;
+                              w.document.write(full.html);
+                              w.document.close();
+                              w.print();
+                            } catch (err: any) {
+                              toast.error(err?.message || 'Could not load invoice');
+                            }
                           }}
                         >
                           Print
@@ -584,7 +595,7 @@ export default function DashboardPage() {
                           total={Number(inv.total)}
                           onSendEmail={sendInvoiceEmail}
                           onDownloadPdf={async (id) => {
-                            await openInvoicePdf(id);
+                            await openInvoicePdf(id, inv.booking?.bookingCode || undefined);
                           }}
                         />
                       </div>

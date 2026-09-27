@@ -9,6 +9,7 @@ import { formatCurrency, shortPaymentRef } from '@/lib/utils';
 import { useApi } from '@/hooks/use-api';
 import { useEffect, useState } from 'react';
 import { CreditCard, Search, DollarSign, AlertCircle, CheckCircle, Download } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Payment {
   id: string;
@@ -310,7 +311,13 @@ export default function PaymentsPage() {
                         {p.invoice && (
                         <button
                           type="button"
-                          onClick={() => openInvoicePdf(p.invoice!.id)}
+                          onClick={async () => {
+                            try {
+                              await openInvoicePdf(p.invoice!.id);
+                            } catch (err: any) {
+                              toast.error(err?.message || 'Could not download invoice');
+                            }
+                          }}
                           className="text-[10px] text-primary hover:underline font-mono mt-1"
                           title={`Open ${p.invoice.invoiceNumber}`}
                         >

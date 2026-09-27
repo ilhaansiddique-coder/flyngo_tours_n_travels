@@ -14,6 +14,42 @@ const DEFAULT_LOGO_PATH = path.resolve(__dirname, '../../../assets/flyngo_logo.p
 /** White brand logo used on the blue invoice header (PDF + HTML). */
 const DEFAULT_WHITE_LOGO_PATH = path.resolve(__dirname, '../../../assets/flyngo_logo_white.png');
 
+function toSafePdfText(input: unknown): string {
+  if (input === null || input === undefined) return '';
+  const str = String(input)
+    .replace(/৳/g, 'BDT ')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/\u2026/g, '...')
+    .replace(/[\u2022\u25CF]/g, '*');
+
+  let safe = '';
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    if (code >= 32 && code <= 126) {
+      safe += str[i];
+    } else if (code === 10 || code === 13 || code === 9) {
+      safe += ' ';
+    } else if (code >= 160 && code <= 255) {
+      safe += str[i];
+    } else {
+      const winAnsiExtended = [
+        0x20AC, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021,
+        0x02C6, 0x2030, 0x0160, 0x2039, 0x0152, 0x017D,
+        0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
+        0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x017E, 0x0178,
+      ];
+      if (winAnsiExtended.includes(code)) {
+        safe += str[i];
+      } else {
+        safe += ' ';
+      }
+    }
+  }
+  return safe.replace(/\s+/g, ' ').trim();
+}
+
 @Injectable()
 export class InvoicesService {
   private readonly logger = new Logger(InvoicesService.name);
@@ -314,7 +350,9 @@ export class InvoicesService {
     };
 
     const wrapText = (text: string, maxWidth: number, fontSize: number, fontToUse: typeof font): string[] => {
-      const words = text.split(' ');
+      const safe = toSafePdfText(text);
+      if (!safe) return [''];
+      const words = safe.split(' ');
       const lines: string[] = [];
       let currentLine = '';
       for (const word of words) {
@@ -331,11 +369,17 @@ export class InvoicesService {
       return lines.length > 0 ? lines : [''];
     };
 
+    const safeDrawText = (text: string, options: Parameters<typeof currentPage.drawText>[1]) => {
+      const safe = toSafePdfText(text);
+      if (!safe) return;
+      currentPage.drawText(safe, options);
+    };
+
     const drawWrappedText = (text: string, x: number, maxWidth: number, fontSize: number, fontToUse: typeof font, color: typeof dark) => {
       const lines = wrapText(text, maxWidth, fontSize, fontToUse);
       for (const line of lines) {
         ensureSpace(fontSize + 4);
-        currentPage.drawText(line, { x, y, size: fontSize, font: fontToUse, color });
+        safeDrawText(line, { x, y, size: fontSize, font: fontToUse, color });
         y -= fontSize + 4;
       }
     };
@@ -346,43 +390,49 @@ export class InvoicesService {
       const logoY = pageHeight - 55;
       currentPage.drawImage(logoImage.img, { x: margin, y: logoY, width: logoImage.width, height: logoImage.height });
     } else {
-      const companyLines = wrapText(company, pageWidth - 2 * margin - 100, 22, bold);
-      currentPage.drawText(companyLines[0] || company, { x: margin, y: pageHeight - 44, size: 22, font: bold, color: rgb(1, 1, 1) });
+      const safeCompany = toSafePdfText(company) || 'Flyngo Tours & Travels';
+      const companyLines = wrapText(safeCompany, pageWidth - 2 * margin - 100, 22, bold);
+      safeDrawText(companyLines[0] || safeCompany, { x: margin, y: pageHeight - 44, size: 22, font: bold, color: rgb(1, 1, 1) });
     }
-    currentPage.drawText('INVOICE', { x: pageWidth - margin - 70, y: pageHeight - 44, size: 18, font: bold, color: rgb(1, 1, 1) });
+    safeDrawText('INVOICE', { x: pageWidth - margin - 70, y: pageHeight - 44, size: 18, font: bold, color: rgb(1, 1, 1) });
 
     y = pageHeight - 100;
 
     // Invoice number / dates
-    currentPage.drawText(`Invoice No:  ${invoice.invoiceNumber}`, { x: margin, y, size: 11, font: bold, color: dark });
+    safeDrawText(`Invoice No:  ${toSafePdfText(invoice.invoiceNumber)}`, { x: margin, y, size: 11, font: bold, color: dark });
     y -= 16;
-    currentPage.drawText(`Issued:  ${new Date(invoice.issuedAt).toLocaleDateString()}`,
+    safeDrawText(`Issued:  ${new Date(invoice.issuedAt).toLocaleDateString()}`,
       { x: margin, y, size: 10, font, color: gray });
     if (invoice.paidAt) {
-      currentPage.drawText(`Paid:  ${new Date(invoice.paidAt).toLocaleDateString()}`,
+      safeDrawText(`Paid:  ${new Date(invoice.paidAt).toLocaleDateString()}`,
         { x: margin + 180, y, size: 10, font, color: gray });
     }
     y -= 14;
-    currentPage.drawText(`Status:  ${invoice.status.toUpperCase()}`,
+    const safeStatus = toSafePdfText(invoice.status || 'issued').toUpperCase();
+    safeDrawText(`Status:  ${safeStatus}`,
       { x: margin, y, size: 10, font: bold, color: invoice.status === 'paid' ? rgb(0.05, 0.63, 0.34) : orange });
     y -= 34;
 
     // Bill to + company
-    currentPage.drawText('BILL TO', { x: margin, y, size: 10, font: bold, color: gray });
+    safeDrawText('BILL TO', { x: margin, y, size: 10, font: bold, color: gray });
     y -= 16;
-    const customerName = invoice.user?.fullName || 'Customer';
+    const customerName = toSafePdfText(invoice.user?.fullName) || 'Customer';
     drawWrappedText(customerName, margin, pageWidth - 2 * margin, 11, bold, dark);
     if (invoice.user?.email) {
-      drawWrappedText(invoice.user.email, margin, pageWidth - 2 * margin, 10, font, gray);
+      const safeEmail = toSafePdfText(invoice.user.email);
+      if (safeEmail) drawWrappedText(safeEmail, margin, pageWidth - 2 * margin, 10, font, gray);
     }
     if (invoice.user?.phone) {
-      drawWrappedText(invoice.user.phone, margin, pageWidth - 2 * margin, 10, font, gray);
+      const safePhone = toSafePdfText(invoice.user.phone);
+      if (safePhone) drawWrappedText(safePhone, margin, pageWidth - 2 * margin, 10, font, gray);
     }
     y -= 4;
-    const bookingCode = invoice.booking?.bookingCode || invoice.hajjUmrahBooking?.bookingCode || '—';
-    const service = invoice.booking?.bookingType || invoice.hajjUmrahBooking?.kind || 'booking';
-    currentPage.drawText(`Booking:  ${bookingCode}`, { x: pageWidth - margin - 220, y: y - 2, size: 10, font: bold, color: dark });
-    currentPage.drawText(`Service:  ${service}`, { x: pageWidth - margin - 220, y: y - 16, size: 10, font, color: gray });
+    const rawBookingCode = invoice.booking?.bookingCode || invoice.hajjUmrahBooking?.bookingCode || '-';
+    const bookingCode = toSafePdfText(rawBookingCode) || '-';
+    const rawService = invoice.booking?.bookingType || invoice.hajjUmrahBooking?.kind || 'booking';
+    const service = toSafePdfText(rawService) || 'booking';
+    safeDrawText(`Booking:  ${bookingCode}`, { x: pageWidth - margin - 220, y: y - 2, size: 10, font: bold, color: dark });
+    safeDrawText(`Service:  ${service}`, { x: pageWidth - margin - 220, y: y - 16, size: 10, font, color: gray });
 
     y -= 40;
 
@@ -395,10 +445,10 @@ export class InvoicesService {
       amt: pageWidth - margin - 60,
     };
     currentPage.drawRectangle({ x: margin - 8, y: lineY - 22, width: pageWidth - 2 * margin + 16, height: 24, color: rgb(0.96, 0.97, 0.98) });
-    currentPage.drawText('DESCRIPTION', { x: col.desc, y: lineY - 16, size: 9, font: bold, color: gray });
-    currentPage.drawText('QTY', { x: col.qty, y: lineY - 16, size: 9, font: bold, color: gray });
-    currentPage.drawText('UNIT', { x: col.unit, y: lineY - 16, size: 9, font: bold, color: gray });
-    currentPage.drawText('AMOUNT', { x: col.amt, y: lineY - 16, size: 9, font: bold, color: gray });
+    safeDrawText('DESCRIPTION', { x: col.desc, y: lineY - 16, size: 9, font: bold, color: gray });
+    safeDrawText('QTY', { x: col.qty, y: lineY - 16, size: 9, font: bold, color: gray });
+    safeDrawText('UNIT', { x: col.unit, y: lineY - 16, size: 9, font: bold, color: gray });
+    safeDrawText('AMOUNT', { x: col.amt, y: lineY - 16, size: 9, font: bold, color: gray });
     y = lineY - 44;
 
     const items: any[] = Array.isArray(invoice.lineItems) ? invoice.lineItems : [];
@@ -407,13 +457,13 @@ export class InvoicesService {
       ensureSpace(22);
       const descLines = wrapText(String(it.description || ''), descMaxWidth, 10, font);
       for (const line of descLines) {
-        currentPage.drawText(line, { x: col.desc, y, size: 10, font, color: dark });
+        safeDrawText(line, { x: col.desc, y, size: 10, font, color: dark });
         y -= 14;
       }
       y += 14;
-      currentPage.drawText(String(it.quantity), { x: col.qty, y, size: 10, font, color: dark });
-      currentPage.drawText(this.money(it.unitPrice, invoice.currency), { x: col.unit, y, size: 10, font, color: dark });
-      currentPage.drawText(this.money(it.amount, invoice.currency), { x: col.amt, y, size: 10, font, color: dark });
+      safeDrawText(String(it.quantity || 1), { x: col.qty, y, size: 10, font, color: dark });
+      safeDrawText(this.money(it.unitPrice, invoice.currency), { x: col.unit, y, size: 10, font, color: dark });
+      safeDrawText(this.money(it.amount, invoice.currency), { x: col.amt, y, size: 10, font, color: dark });
       y -= 22;
     }
 
@@ -425,27 +475,28 @@ export class InvoicesService {
       { label: 'Discount', value: this.money(invoice.discount, invoice.currency) },
     ];
     for (const t of totals) {
-      currentPage.drawText(t.label, { x: col.unit, y, size: 10, font, color: gray });
-      currentPage.drawText(t.value, { x: col.amt, y, size: 10, font, color: dark });
+      safeDrawText(t.label, { x: col.unit, y, size: 10, font, color: gray });
+      safeDrawText(t.value, { x: col.amt, y, size: 10, font, color: dark });
       y -= 18;
     }
     currentPage.drawLine({ start: { x: margin, y }, end: { x: pageWidth - margin, y }, color: gray, thickness: 0.8 });
     y -= 22;
-    currentPage.drawText('TOTAL', { x: col.unit, y, size: 12, font: bold, color: dark });
-    currentPage.drawText(this.money(invoice.total, invoice.currency), { x: col.amt - 10, y, size: 13, font: bold, color: orange });
+    safeDrawText('TOTAL', { x: col.unit, y, size: 12, font: bold, color: dark });
+    safeDrawText(this.money(invoice.total, invoice.currency), { x: col.amt - 10, y, size: 13, font: bold, color: orange });
     y -= 18;
-    currentPage.drawText('PAID', { x: col.unit, y, size: 10, font: bold, color: gray });
-    currentPage.drawText(this.money(invoice.paidAmount, invoice.currency), { x: col.amt - 10, y, size: 10, font: bold, color: dark });
+    safeDrawText('PAID', { x: col.unit, y, size: 10, font: bold, color: gray });
+    safeDrawText(this.money(invoice.paidAmount, invoice.currency), { x: col.amt - 10, y, size: 10, font: bold, color: dark });
     
     if (Number(invoice.total) > Number(invoice.paidAmount)) {
       y -= 18;
       const balanceDue = Number(invoice.total) - Number(invoice.paidAmount);
-      currentPage.drawText('BALANCE DUE', { x: col.unit, y, size: 10, font: bold, color: orange });
-      currentPage.drawText(this.money(balanceDue, invoice.currency), { x: col.amt - 10, y, size: 10, font: bold, color: orange });
+      safeDrawText('BALANCE DUE', { x: col.unit, y, size: 10, font: bold, color: orange });
+      safeDrawText(this.money(balanceDue, invoice.currency), { x: col.amt - 10, y, size: 10, font: bold, color: orange });
     }
     y -= 40;
 
-    currentPage.drawText(`Thank you for travelling with ${company}`, { x: margin, y, size: 10, font, color: gray });
+    const safeFooterCompany = toSafePdfText(company) || 'Flyngo Tours & Travels';
+    safeDrawText(`Thank you for travelling with ${safeFooterCompany}`, { x: margin, y, size: 10, font, color: gray });
 
     return {
       buffer: Buffer.from(await doc.save()),
@@ -454,7 +505,8 @@ export class InvoicesService {
   }
 
   private money(n: any, currency: string) {
-    return `${currency} ${Number(n || 0).toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const safeCurrency = toSafePdfText(currency) || 'BDT';
+    return `${safeCurrency} ${Number(n || 0).toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
   async voidInvoice(id: string, tenantId: string) {

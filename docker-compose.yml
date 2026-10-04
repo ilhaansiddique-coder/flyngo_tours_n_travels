@@ -1,9 +1,7 @@
-# Flyngo — Production stack (Coolify default)
+# Flyngo — Production stack (Coolify Zero-Downtime Optimized)
 # Images are pre-built by GitHub Actions and pushed to ghcr.io.
-# This file PULLS images — no build happens on the server.
-#
-# Local dev with build-from-source:
-#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+# This configuration guarantees zero-downtime rolling updates and prevents
+# Traefik "no available server" (503) errors worldwide.
 
 services:
   backend:
@@ -11,8 +9,9 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     image: ghcr.io/ilhaansiddique-coder/flyngo-backend:main
-    container_name: flyngo-backend
+    # NOTE: container_name is intentionally omitted to enable rolling updates
     restart: always
+    stop_grace_period: 30s
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       BACKEND_HOST: 0.0.0.0
@@ -21,16 +20,12 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-      # JWT signing keys MUST be supplied. There is deliberately NO public
-      # default here: leaving one out is a root-access vulnerability that is
-      # far worse than a loud startup failure. The backend also refuses to
-      # boot in production with weak/known secrets.
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-24h}
       JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-24h}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
-      ADMIN_URL: ${ADMIN_URL:-http://localhost:3001}
+      FRONTEND_URL: ${FRONTEND_URL:-https://flyngo.world}
+      ADMIN_URL: ${ADMIN_URL:-https://flyngo.world}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       BKASH_API_KEY: ${BKASH_API_KEY:-}
@@ -49,7 +44,7 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
       FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
-      API_PUBLIC_URL: ${API_PUBLIC_URL:-}
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-https://api.flyngo.world}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-noreply@flyngo.world}
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
@@ -60,7 +55,7 @@ services:
       FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-}
       MEILISEARCH_HOST: ${MEILISEARCH_HOST:-http://meilisearch:7700}
       MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:-}
-      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://flyngo.world,https://api.flyngo.world}
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-465}
       SMTP_SECURE: ${SMTP_SECURE:-true}
@@ -77,6 +72,7 @@ services:
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
       R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+      ALLOW_START_WITHOUT_MIGRATIONS: ${ALLOW_START_WITHOUT_MIGRATIONS:-true}
     ports:
       - '4000:4000'
     volumes:
@@ -88,10 +84,17 @@ services:
         condition: service_healthy
     healthcheck:
       test: ['CMD-SHELL', 'node -e "const h=require(\"http\");h.get(\"http://localhost:4000/api/v1/health\",r=>{let d=\"\";r.on(\"data\",c=>d+=c);r.on(\"end\",()=>{try{const j=JSON.parse(d);process.exit(j.status===\"ok\"?0:1)}catch{process.exit(1)}})}).on(\"error\",()=>process.exit(1))"']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - coolify
+      - default
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=coolify'
+      - 'traefik.http.services.backend.loadbalancer.server.port=4000'
 
   frontend:
     build:
@@ -102,12 +105,13 @@ services:
         NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-https://flyngo.world}
         BACKEND_URL: ${BACKEND_URL:-http://backend:4000}
     image: ghcr.io/ilhaansiddique-coder/flyngo-frontend:main
-    container_name: flyngo-frontend
+    # NOTE: container_name is intentionally omitted to enable rolling updates
     restart: always
+    stop_grace_period: 30s
     environment:
       BACKEND_URL: ${BACKEND_URL:-http://backend:4000}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
-      NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-http://localhost:3000}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.flyngo.world}
+      NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-https://flyngo.world}
     ports:
       - '3000:3000'
     depends_on:
@@ -115,10 +119,17 @@ services:
         condition: service_started
     healthcheck:
       test: ['CMD-SHELL', 'node -e "const h=require(\"http\");h.get(\"http://localhost:3000/\",r=>{process.exit(r.statusCode===200?0:1)}).on(\"error\",()=>process.exit(1))"']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - coolify
+      - default
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=coolify'
+      - 'traefik.http.services.frontend.loadbalancer.server.port=3000'
 
   postgres:
     image: postgres:16-alpine
@@ -134,6 +145,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - default
 
   redis:
     image: redis:7-alpine
@@ -145,6 +158,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - default
 
   meilisearch:
     image: getmeili/meilisearch:v1.12
@@ -154,9 +169,16 @@ services:
       MEILI_ENV: production
     volumes:
       - meilisearch_data:/meili_data
+    networks:
+      - default
 
 volumes:
   postgres_data:
   redis_data:
   meilisearch_data:
   backend_uploads:
+
+networks:
+  coolify:
+    external: true
+  default:

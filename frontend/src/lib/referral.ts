@@ -14,14 +14,14 @@ export const REFERRAL_COOKIE_DAYS = 30;
  */
 export const DEFAULT_SHARE_TEMPLATES: Record<string, string> = {
   whatsapp:
-    'Join me on {brand} and get {refereeReward} on your first booking! Use my code: {referralCode} {shareLink}',
-  facebook: 'I just joined {brand} — they offer {refereeReward} off your first booking. Use my code {referralCode}',
-  twitter: 'Save {refereeReward} on your first {brand} booking with my code {referralCode}',
-  telegram: 'Try {brand} — {refereeReward} off with code {referralCode}',
-  email_subject: 'Travel with me on {brand}',
+    'Join me on {brand} and get 100 bonus points on signup! Use my code: {referralCode} {shareLink}',
+  facebook: 'I just joined {brand} — sign up with my code {referralCode} to get 100 bonus points!',
+  twitter: 'Join {brand} with my code {referralCode} and get 100 bonus points on signup!',
+  telegram: 'Try {brand} — get 100 bonus points with code {referralCode}: {shareLink}',
+  email_subject: 'Join me on {brand}',
   email_body:
-    'Use my code {referralCode} and get {refereeReward} on your first booking: {shareLink}',
-  signup_banner: 'You were invited with code {referralCode} — you will get a welcome discount.',
+    'Use my code {referralCode} to join {brand} and get 100 bonus points on creating your account: {shareLink}',
+  signup_banner: 'You were invited with code {referralCode} — you will get 100 points upon sign up.',
 };
 
 export type ShareChannel =
@@ -155,6 +155,7 @@ export function buildReferralShareLink(baseUrl: string, code: string): string {
 }
 
 export function formatRewardText(type: string, value: number, _currency: string): string {
+  if (value <= 0) return '0';
   if (type === 'percentage') return `${value}% off`;
   return `৳${Number(value).toLocaleString()} off`;
 }

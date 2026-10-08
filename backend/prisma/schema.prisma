@@ -202,10 +202,8 @@ model ReferralSetting {
   referrerMaxReward   Decimal? @map("referrer_max_reward") @db.Decimal(10, 2)
 
   /// Loyalty points awarded to the REFERRER when a user they referred signs up.
-  /// Default 0 (off): the referrer's real earning is the commission on the
-  /// referee's actual purchases (conversion). Set > 0 to also reward the signup
-  /// itself. Only credited for verified signups, to limit fake-signup farming.
-  referrerSignupPoints Int @default(0) @map("referrer_signup_points")
+  /// Default: 250 points per referral.
+  referrerSignupPoints Int @default(250) @map("referrer_signup_points")
 
   /// Default affiliate type assigned to newly enrolled referrers:
   /// fixed_commission | commission_less
@@ -216,7 +214,7 @@ model ReferralSetting {
   fixedCommissionValue Decimal @default(5.0) @map("fixed_commission_value") @db.Decimal(10, 2)
 
   /// Conditions for "commission-less" affiliates — loyalty points per signup
-  commissionlessSignupPoints Int @default(500) @map("commissionless_signup_points")
+  commissionlessSignupPoints Int @default(250) @map("commissionless_signup_points")
 
   /// Signup bonus — loyalty points every new user receives the moment they
   /// register (independent of referrals). Credited as available immediately.
@@ -224,7 +222,7 @@ model ReferralSetting {
 
   // Referee (the person who was referred) reward
   refereeRewardType  String   @default("percentage") @map("referee_reward_type")
-  refereeRewardValue Decimal  @default(5.0) @map("referee_reward_value") @db.Decimal(10, 2)
+  refereeRewardValue Decimal  @default(0.0) @map("referee_reward_value") @db.Decimal(10, 2)
   refereeMaxReward   Decimal? @map("referee_max_reward") @db.Decimal(10, 2)
 
   // Cookie window — days the referral attribution is valid after the link is clicked

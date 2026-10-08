@@ -131,9 +131,8 @@ export class LoyaltyService {
     return { total: users.length, credited };
   }
 
-  async awardReferralSignup(tenantId: string, _referrerUserId: string, referredUserId: string, _pointsOverride?: number) {
-    // Compatibility method: it is safe only when the verification marker exists.
-    return this.onUserVerified(tenantId, referredUserId);
+  async awardReferralSignup(tenantId: string, referrerUserId: string, referredUserId: string, pointsOverride?: number) {
+    return this.referrals.awardReferralSignup(tenantId, referrerUserId, referredUserId, pointsOverride);
   }
 
   async awardBookingConfirmation(

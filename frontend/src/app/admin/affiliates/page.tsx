@@ -954,16 +954,14 @@ export default function AdminAffiliatesPage() {
                   />
                 </FormField>
                 <p className="text-[11px] text-on-surface-variant mt-1">
-                  Loyalty points the referrer earns when a user they referred signs up and verifies.
-                  Default 0 (off) — the referrer earns commission on actual purchases instead.
+                  Loyalty points the referrer earns when a user they referred signs up (default 250).
                 </p>
               </div>
 
               <h4 className="font-bold text-sm uppercase tracking-widest text-on-surface-variant pt-4">Referee reward</h4>
               <p className="text-[11px] text-on-surface-variant -mt-1">
-                The discount a referred friend gets on their <b>first booking</b> after signing
-                up through your share link. Configurable as a percentage (e.g. 5%) or a fixed
-                amount (e.g. 500 {settingsForm.payoutCurrency}).
+                Optional discount a referred friend gets on their <b>first booking</b> (default 0%).
+                Leave at 0 for points-only rewards (100 pts on signup, 250 pts on referral), or set &gt; 0 for an extra booking discount.
               </p>
               <FormField label="Type">
                 <FormSelect

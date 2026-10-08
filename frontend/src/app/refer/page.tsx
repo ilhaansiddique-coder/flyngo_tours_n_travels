@@ -40,6 +40,9 @@ interface Program {
   referrerRewardValue: number;
   refereeRewardType: string;
   refereeRewardValue: number;
+  signupBonusPoints?: number;
+  referrerSignupPoints?: number;
+  commissionlessSignupPoints?: number;
   payoutCurrency: string;
   heroTitle: string;
   heroSubtitle: string;
@@ -108,14 +111,8 @@ export default function ReferLandingPage() {
     );
   }
 
-  const referrerRewardText =
-    program.referrerRewardType === 'percentage'
-      ? `${program.referrerRewardValue}%`
-      : `${formatCurrency(program.referrerRewardValue, program.payoutCurrency)}`;
-  const refereeRewardText =
-    program.refereeRewardType === 'percentage'
-      ? `${program.refereeRewardValue}%`
-      : `${formatCurrency(program.refereeRewardValue, program.payoutCurrency)}`;
+  const signupPoints = program.signupBonusPoints ?? 100;
+  const referralPoints = program.referrerSignupPoints ?? 250;
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,19 +130,19 @@ export default function ReferLandingPage() {
             {program.heroTitle || 'Refer friends. Earn travel rewards.'}
           </h1>
           <p className="text-lg sm:text-xl text-on-surface-variant max-w-2xl mx-auto mb-10">
-            {program.heroSubtitle}
+            {program.heroSubtitle || 'Get 100 points for creating an account. 250 points for a referral.'}
           </p>
 
           <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto mb-10">
             <Card className="!p-6 bg-surface-container-high/80 backdrop-blur" hover={false}>
               <Heart className="w-8 h-8 text-accent mb-3 mx-auto" />
-              <p className="text-3xl font-bold mb-1">{refereeRewardText}</p>
-              <p className="text-sm text-on-surface-variant">Off for your friend on their first booking</p>
+              <p className="text-3xl font-bold mb-1">{signupPoints} points</p>
+              <p className="text-sm text-on-surface-variant">Get {signupPoints} points for creating an account</p>
             </Card>
             <Card className="!p-6 bg-surface-container-high/80 backdrop-blur" hover={false}>
               <Gift className="w-8 h-8 text-accent mb-3 mx-auto" />
-              <p className="text-3xl font-bold mb-1">{referrerRewardText}</p>
-              <p className="text-sm text-on-surface-variant">Earned by you when they complete eligible bookings</p>
+              <p className="text-3xl font-bold mb-1">{referralPoints} points</p>
+              <p className="text-sm text-on-surface-variant">Earn {referralPoints} points for every friend who signs up with your referral link</p>
             </Card>
           </div>
 
@@ -167,7 +164,7 @@ export default function ReferLandingPage() {
               <>
                 <Link href="/auth/register">
                   <Button size="lg">
-                    Sign up & get {refereeRewardText} off <ArrowRight className="w-4 h-4 ml-2" />
+                    Sign up & get {signupPoints} points <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
                 <Link href="/auth/login">
@@ -196,7 +193,7 @@ export default function ReferLandingPage() {
             <p className="text-sm text-on-surface-variant">
               {isLoggedIn
                 ? 'Open your referral dashboard to copy your personal referral link and see your rewards.'
-                : 'Create a free FlynGo account — your personal referral link is generated automatically. New users who sign up through your link get a discount on their first booking.'}
+                : `Create a free FlynGo account to get ${signupPoints} points. Your personal referral link is generated automatically.`}
             </p>
           </Card>
           <Card hover={false} className="text-center !p-6">
@@ -212,9 +209,9 @@ export default function ReferLandingPage() {
             <div className="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto mb-4">
               <Wallet className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="font-bold mb-2">3. Earn on every trip</h3>
+            <h3 className="font-bold mb-2">3. Earn on every referral</h3>
             <p className="text-sm text-on-surface-variant">
-              When friends book — Hajj, Umrah, tours, hotels — you earn real cash or travel credit.
+              You get {referralPoints} points when your friend joins, plus rewards on eligible bookings.
             </p>
           </Card>
         </div>
@@ -356,16 +353,16 @@ export default function ReferLandingPage() {
       {/* CTA */}
       <section className="max-w-3xl mx-auto px-4 py-16 text-center">
         <h2 className="font-display text-3xl font-bold mb-4">
-          {isLoggedIn ? 'Ready to share and earn?' : 'Ready to get your discount?'}
+          {isLoggedIn ? 'Ready to share and earn?' : `Get your ${signupPoints} points today`}
         </h2>
         <p className="text-on-surface-variant mb-6">
           {isLoggedIn
-            ? 'Share your referral link and track your rewards from your dashboard.'
-            : `Sign up in 30 seconds and get ${refereeRewardText} off your first booking. Use a friend's referral link to unlock this exclusive discount.`}
+            ? `Share your referral link and get ${referralPoints} points for every friend who joins.`
+            : `Sign up in 30 seconds and get ${signupPoints} points for creating an account.`}
         </p>
         <Link href={isLoggedIn ? '/dashboard/refer' : '/auth/register'}>
           <Button size="lg">
-            {isLoggedIn ? 'Get my referral link' : 'Sign up now'}
+            {isLoggedIn ? 'Get my referral link' : `Sign up & get ${signupPoints} points`}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </Link>

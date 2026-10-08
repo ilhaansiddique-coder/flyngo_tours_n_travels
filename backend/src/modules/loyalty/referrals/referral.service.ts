@@ -13,34 +13,31 @@ export class LoyaltyReferralService {
   ) {}
 
   /**
-   * Callable by a future email/OTP verification handler. Phase 1 has no such
-   * handler, so raw password registration deliberately does not call this.
-   * There is no referral reward cap in the Phase 1 policy.
+   * Award referral signup points (default 250) to the referrer when a referred
+   * user registers. Idempotent via the ledger's referral:${referredUserId}:signup key.
    */
-  async onUserVerified(tenantId: string, referredUserId: string) {
+  async awardReferralSignup(
+    tenantId: string,
+    referrerUserId: string,
+    referredUserId: string,
+    pointsOverride?: number,
+  ) {
     const settings = await this.prisma.referralSetting.findUnique({ where: { tenantId } });
     if (settings && !settings.isEnabled) return null;
+
     const referred = await this.prisma.user.findFirst({
       where: { id: referredUserId, tenantId, deletedAt: null },
-      select: { id: true, referredByCode: true, emailVerifiedAt: true, phoneVerifiedAt: true, phone: true },
+      select: { id: true, referredByCode: true, phone: true },
     });
-    if (!referred || (!referred.emailVerifiedAt && !referred.phoneVerifiedAt) || !referred.referredByCode) return null;
+    if (!referred) return null;
 
     const referrer = await this.prisma.user.findFirst({
-      where: { tenantId, referralCode: referred.referredByCode, deletedAt: null, isActive: true },
+      where: { id: referrerUserId, tenantId, deletedAt: null, isActive: true },
       select: { id: true, phone: true },
     });
     if (!referrer || referrer.id === referred.id || this.samePhone(referrer.phone, referred.phone)) return null;
 
-    // Record the attribution regardless of whether signup points are awarded —
-    // the referrer's real earning is the commission on the referee's purchases.
-    await this.prisma.affiliateReferral.updateMany({
-      where: { tenantId, referredUserId: referred.id, status: { in: ['pending', 'registered'] } },
-      data: { status: 'registered', registeredAt: new Date() },
-    });
-
-    // Optional referrer signup reward — configurable, default 0 (off).
-    const reward = settings?.referrerSignupPoints ?? 0;
+    const reward = pointsOverride ?? settings?.referrerSignupPoints ?? 250;
     if (reward <= 0) return null;
 
     const result = await this.ledger.post({
@@ -53,6 +50,33 @@ export class LoyaltyReferralService {
       metadata: { referredUserId: referred.id, reward },
     });
     return result.transaction;
+  }
+
+  /**
+   * Verification hook called when user verifies their account.
+   */
+  async onUserVerified(tenantId: string, referredUserId: string) {
+    const settings = await this.prisma.referralSetting.findUnique({ where: { tenantId } });
+    if (settings && !settings.isEnabled) return null;
+    const referred = await this.prisma.user.findFirst({
+      where: { id: referredUserId, tenantId, deletedAt: null },
+      select: { id: true, referredByCode: true, emailVerifiedAt: true, phoneVerifiedAt: true, phone: true },
+    });
+    if (!referred || !referred.referredByCode) return null;
+
+    const referrer = await this.prisma.user.findFirst({
+      where: { tenantId, referralCode: referred.referredByCode, deletedAt: null, isActive: true },
+      select: { id: true, phone: true },
+    });
+    if (!referrer || referrer.id === referred.id || this.samePhone(referrer.phone, referred.phone)) return null;
+
+    // Record the attribution
+    await this.prisma.affiliateReferral.updateMany({
+      where: { tenantId, referredUserId: referred.id, status: { in: ['pending', 'registered'] } },
+      data: { status: 'registered', registeredAt: new Date() },
+    });
+
+    return this.awardReferralSignup(tenantId, referrer.id, referred.id);
   }
 
   /**

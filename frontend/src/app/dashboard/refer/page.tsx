@@ -30,6 +30,8 @@ import {
 interface ReferralSettings {
   referrerRewardType: string;
   referrerRewardValue: number;
+  referrerSignupPoints?: number;
+  signupBonusPoints?: number;
   commissionlessSignupPoints?: number;
   refereeRewardType: string;
   refereeRewardValue: number;
@@ -271,19 +273,28 @@ export default function ReferDashboardPage() {
     ? buildReferralShareLink(window.location.origin, summary.user.referralCode)
     : `https://example.com/?ref=${summary.user.referralCode}`;
 
-  // Fixed-commission affiliates earn at their own rate; commission-less earn points
-  const referrerText = summary.conditions?.type === 'commission_less'
-    ? `${summary.settings.commissionlessSignupPoints ?? 500} pts per signup`
-    : formatRewardText(
-        summary.settings.referrerRewardType,
-        summary.affiliate?.commissionRate ?? summary.settings.referrerRewardValue,
+  const signupPoints = summary.settings.signupBonusPoints ?? 100;
+  const referralPoints = summary.settings.referrerSignupPoints ?? 250;
+  const hasRefereeDiscount = Number(summary.settings.refereeRewardValue) > 0;
+
+  // Fixed-commission affiliates earn points on signup plus optional booking rates
+  const referrerText =
+    referralPoints > 0
+      ? `${referralPoints} pts per referral`
+      : summary.conditions?.type === 'commission_less'
+        ? `${summary.settings.commissionlessSignupPoints ?? 250} pts per signup`
+        : formatRewardText(
+            summary.settings.referrerRewardType,
+            summary.affiliate?.commissionRate ?? summary.settings.referrerRewardValue,
+            summary.settings.payoutCurrency,
+          );
+  const refereeText = hasRefereeDiscount
+    ? formatRewardText(
+        summary.settings.refereeRewardType,
+        summary.settings.refereeRewardValue,
         summary.settings.payoutCurrency,
-      );
-  const refereeText = formatRewardText(
-    summary.settings.refereeRewardType,
-    summary.settings.refereeRewardValue,
-    summary.settings.payoutCurrency,
-  );
+      )
+    : `${signupPoints} points`;
 
   const copyLink = async () => {
     try {
@@ -379,11 +390,10 @@ export default function ReferDashboardPage() {
               <span className="text-xs uppercase tracking-widest font-bold text-accent">Refer & Earn</span>
             </div>
             <h1 className="font-display text-3xl sm:text-4xl font-bold text-on-surface mb-2">
-              Share your link. Earn {referrerText}.
+              Share your link. Earn {referralPoints} points per referral.
             </h1>
             <p className="text-on-surface-variant mb-6 max-w-xl">
-              Invite friends to FlynGo. They get {refereeText} on their first booking, you earn
-               real cash or credit when they complete eligible bookings.
+              Invite friends to FlynGo. They get {signupPoints} points for creating an account, you earn {referralPoints} points for the referral.
             </p>
 
             {/* Referral link + share */}
@@ -391,7 +401,7 @@ export default function ReferDashboardPage() {
               <div className="flex flex-col gap-3">
                 <div className="w-full">
                   <label className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-1 block">
-                    Your referral link — new users sign up and get {refereeText} off their first booking
+                    Your referral link — friends get {signupPoints} points on signup, you get {referralPoints} points
                   </label>
                   <div className="flex items-center gap-2">
                     <Input

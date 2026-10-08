@@ -22,14 +22,14 @@ export interface ShareMessageTemplates {
 
 export const DEFAULT_SHARE_TEMPLATES: ShareMessageTemplates = {
   whatsapp:
-    'Join me on {brand} and get {refereeReward} on your first booking! Use my code: {referralCode} {shareLink}',
-  facebook: 'I just joined {brand} — they offer {refereeReward} off your first booking. Use my code {referralCode}',
-  twitter: 'Save {refereeReward} on your first {brand} booking with my code {referralCode}',
-  telegram: 'Try {brand} — {refereeReward} off with code {referralCode}',
-  email_subject: 'Travel with me on {brand}',
+    'Join me on {brand} and get {refereeReward} on signup! Use my code: {referralCode} {shareLink}',
+  facebook: 'I just joined {brand} — sign up with my code {referralCode} to get {refereeReward}!',
+  twitter: 'Join {brand} with my code {referralCode} and get {refereeReward} on signup!',
+  telegram: 'Try {brand} — get {refereeReward} with code {referralCode}: {shareLink}',
+  email_subject: 'Join me on {brand}',
   email_body:
-    'Use my code {referralCode} and get {refereeReward} on your first booking: {shareLink}',
-  signup_banner: 'You were invited with code {referralCode} — you will get a welcome discount.',
+    'Use my code {referralCode} to join {brand} and get {refereeReward} on creating your account: {shareLink}',
+  signup_banner: 'You were invited with code {referralCode} — you will get 100 points upon sign up.',
 };
 
 export const SHARE_TEMPLATE_VARS = [
@@ -215,16 +215,21 @@ export class ReferralService {
       referrerRewardValue: Number(settings.referrerRewardValue),
       refereeRewardType: settings.refereeRewardType,
       refereeRewardValue: Number(settings.refereeRewardValue),
-      refereeRewardText: this.formatRewardText(
-        settings.refereeRewardType,
-        Number(settings.refereeRewardValue),
-        settings.payoutCurrency,
-      ),
+      signupBonusPoints: Number(settings.signupBonusPoints ?? 100),
+      referrerSignupPoints: Number(settings.referrerSignupPoints ?? 250),
+      commissionlessSignupPoints: Number(settings.commissionlessSignupPoints ?? 250),
+      refereeRewardText: Number(settings.refereeRewardValue) > 0
+        ? this.formatRewardText(
+            settings.refereeRewardType,
+            Number(settings.refereeRewardValue),
+            settings.payoutCurrency,
+          )
+        : `${settings.signupBonusPoints ?? 100} points`,
       payoutCurrency: settings.payoutCurrency,
       heroTitle: settings.heroTitle || 'Refer friends, earn rewards',
       heroSubtitle:
         settings.heroSubtitle ||
-        'Share your link. Friends get a discount. You earn cash or credit on eligible bookings they complete.',
+        'Get 100 points for creating an account. 250 points for a referral.',
       termsText: settings.termsText,
       shareMessageTemplates: mergeShareTemplates((settings as any).shareMessageTemplates),
       tiers: tiers.map((t) => ({
@@ -259,16 +264,22 @@ export class ReferralService {
       select: { name: true },
     });
     const brand = tenant?.name || 'FlynGo';
-    const refereeReward = this.formatRewardText(
-      settings.refereeRewardType,
-      Number(settings.refereeRewardValue),
-      settings.payoutCurrency,
-    );
-    const referrerReward = this.formatRewardText(
-      settings.referrerRewardType,
-      Number(settings.referrerRewardValue),
-      settings.payoutCurrency,
-    );
+    const refereeReward =
+      Number(settings.refereeRewardValue) > 0
+        ? this.formatRewardText(
+            settings.refereeRewardType,
+            Number(settings.refereeRewardValue),
+            settings.payoutCurrency,
+          )
+        : `${settings.signupBonusPoints ?? 100} bonus points`;
+    const referrerReward =
+      Number(settings.referrerSignupPoints) > 0
+        ? `${settings.referrerSignupPoints} points`
+        : this.formatRewardText(
+            settings.referrerRewardType,
+            Number(settings.referrerRewardValue),
+            settings.payoutCurrency,
+          );
     const referralCode = (code || '').toUpperCase();
     const origin = process.env.FRONTEND_URL || process.env.ADMIN_URL || 'https://flyngo.world';
     const shareLink = referralCode
@@ -290,6 +301,7 @@ export class ReferralService {
   }
 
   private formatRewardText(type: string, value: number, currency: string): string {
+    if (value <= 0) return '0';
     if (type === 'percentage') return `${value}% off`;
     return `${value} ${currency} off`;
   }
@@ -398,6 +410,13 @@ export class ReferralService {
               registeredAt: new Date(),
             },
           });
+          // Award referral signup points to referrer (250 points)
+          try {
+            await this.loyaltyService.awardReferralSignup(tenantId, referrer.id, newUser.id);
+          } catch (err: any) {
+            this.logger.warn(`Could not award referral points to referrer ${referrer.id}: ${err.message}`);
+          }
+
           await this.notifications.sendEmail(
             // We don't have email here reliably — log instead
             '',
@@ -506,20 +525,25 @@ export class ReferralService {
         ((aff as any).affiliateType ?? 'fixed_commission') === 'commission_less'
           ? {
               type: 'commission_less' as const,
-              label: `Earn ${Number(settings.commissionlessSignupPoints)} points per friend who signs up`,
+              label: `Earn ${Number(settings.commissionlessSignupPoints ?? 250)} points per friend who signs up`,
               payoutEligible: false,
             }
           : {
               type: 'fixed_commission' as const,
               label:
-                settings.referrerRewardType === 'percentage'
-                  ? `Earn ${Number((aff as any).commissionRate)}% commission on eligible bookings your friends complete`
-                  : `Earn ${settings.payoutCurrency} ${Number((aff as any).commissionRate)} on eligible bookings your friends complete`,
+                Number(settings.referrerSignupPoints) > 0
+                  ? `Earn ${Number(settings.referrerSignupPoints)} points per referral + ${settings.referrerRewardType === 'percentage' ? `${Number((aff as any).commissionRate)}%` : `${settings.payoutCurrency} ${Number((aff as any).commissionRate)}`} on bookings`
+                  : settings.referrerRewardType === 'percentage'
+                    ? `Earn ${Number((aff as any).commissionRate)}% commission on eligible bookings your friends complete`
+                    : `Earn ${settings.payoutCurrency} ${Number((aff as any).commissionRate)} on eligible bookings your friends complete`,
               payoutEligible: true,
             },
       settings: {
         referrerRewardType: settings.referrerRewardType,
         referrerRewardValue: Number(settings.referrerRewardValue),
+        referrerSignupPoints: Number(settings.referrerSignupPoints ?? 250),
+        signupBonusPoints: Number(settings.signupBonusPoints ?? 100),
+        commissionlessSignupPoints: Number(settings.commissionlessSignupPoints ?? 250),
         refereeRewardType: settings.refereeRewardType,
         refereeRewardValue: Number(settings.refereeRewardValue),
         payoutCurrency: settings.payoutCurrency,

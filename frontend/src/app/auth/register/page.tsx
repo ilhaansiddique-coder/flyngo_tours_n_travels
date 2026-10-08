@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
 import Link from 'next/link';
-import { useState } from 'react';
-import { Lock, User, FileCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Lock, User, FileCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { getOAuthUrl, FACEBOOK_LOGIN_ENABLED } from '@/lib/oauth';
+import { captureReferralFromUrl, getStoredReferralCode } from '@/lib/referral';
 import Image from 'next/image';
 import logoImg from '@/images/flyngo_transparent.png';
 import {
@@ -20,13 +21,19 @@ export default function RegisterPage() {
   const [phoneCountry, setPhoneCountry] = useState<string>(DEFAULT_COUNTRY_CODE);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [refCode, setRefCode] = useState<string | null>(null);
   const { register, loading, error } = useAuth();
+
+  useEffect(() => {
+    const code = captureReferralFromUrl() || getStoredReferralCode();
+    if (code) setRefCode(code);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const dial = findDialByCode(phoneCountry)?.dial ?? '';
     const combined = phoneNumber.trim() ? `${dial} ${phoneNumber.trim()}` : '';
-    await register(name, '', combined, password);
+    await register(name, '', combined, password, refCode || undefined);
   };
 
   const startOAuth = (provider: 'google' | 'facebook') => {
@@ -65,6 +72,14 @@ export default function RegisterPage() {
               {error}
             </div>
           )}
+          <div className="mb-4 p-3 rounded-xl bg-accent/10 border border-accent/30 text-accent text-xs flex items-center justify-center gap-2 text-center">
+            <Sparkles className="w-4 h-4 flex-shrink-0" />
+            <span>
+              {refCode
+                ? `Invited with referral code ${refCode} — get 100 points on sign up!`
+                : 'Get 100 points for creating an account!'}
+            </span>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">

@@ -7,17 +7,17 @@ export async function NavBar() {
   const lang = await getServerLang();
   const t = (_key: string, en: string, bn: string) => (lang === 'bn' ? bn : en);
 
+  // Exact navigation item structure matching As-Sunnah Foundation:
+  // Home, About Us, Activities, Gallery, Connect With Us (Membership), Blogs, Notice, Contact
   const items: NavItem[] = [
     { href: '/', label: t('home', 'Home', 'হোম') },
-    { href: '/about', label: t('about', 'About', 'আমাদের সম্পর্কে') },
-    { href: '/activities', label: t('activities', 'Projects', 'প্রকল্প') },
-    { href: '/membership', label: t('membership', 'Membership', 'সদস্যপদ') },
-    { href: '/blog', label: t('blog', 'Blog', 'ব্লগ') },
+    { href: '/about', label: t('about', 'About Us', 'আমাদের সম্পর্কে') },
+    { href: '/activities', label: t('activities', 'Activities', 'কার্যক্রমসমূহ') },
     { href: '/gallery', label: t('gallery', 'Gallery', 'গ্যালারি') },
-    { href: '/notice', label: t('notices', 'Notices', 'নোটিশ') },
-    { href: '/faqs', label: t('faqs', 'FAQ', 'প্রশ্নোত্তর') },
+    { href: '/get-involved', label: t('membership', 'Connect With Us', 'আমাদের সাথে যুক্ত হোন') },
+    { href: '/blog', label: t('blog', 'Blogs', 'ব্লগ') },
+    { href: '/notice', label: t('notices', 'Notice', 'নোটিশ') },
     { href: '/contact', label: t('contact', 'Contact', 'যোগাযোগ') },
-    { href: '/get-involved', label: t('getInvolved', 'Get Involved', 'যুক্ত হন') },
   ];
 
   return (
@@ -25,8 +25,8 @@ export async function NavBar() {
       items={items}
       logo="/images/brand/logo.png"
       siteName={lang === 'bn' ? settings.nameBn || 'ভলান্টিয়ার বাংলাদেশ ট্রাস্ট' : settings.name || 'Volunteer Bangladesh Trust'}
-      membershipLabel={t('membershipBtn', 'Membership', 'সদস্যপদ')}
-      loginLabel={t('login', 'Login', 'লগইন')}
+      donateLabel={lang === 'bn' ? 'দান করুন' : 'Donate'}
+      profileLabel={lang === 'bn' ? 'প্রোফাইল' : 'Profile'}
       menuLabel={t('menu', 'Menu', 'মেনু')}
     />
   );

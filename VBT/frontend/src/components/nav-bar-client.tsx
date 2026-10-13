@@ -269,9 +269,6 @@ export function NavBarClient({
           </div>
         </div>
       )}
-
-      {/* Spacer to keep page content below fixed navbar on all pages */}
-      <div className="h-20 md:h-24" />
     </>
   );
 }

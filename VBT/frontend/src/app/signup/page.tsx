@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: 'Sign up' };
 
 export default function SignupPage() {
   return (
-    <section className="section-pad bg-[var(--color-mist)]">
+    <section className="section-pad pt-28 sm:pt-36 bg-[var(--color-mist)]">
       <div className="container-site max-w-md">
         <SignupForm />
       </div>

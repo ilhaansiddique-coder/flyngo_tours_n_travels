@@ -143,7 +143,7 @@ export default async function LandingSlugPage({
           <img src={heroSrc} alt="" className="absolute inset-0 h-full w-full object-cover opacity-50" />
         ) : null}
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-primary-darker)]/70 via-transparent to-transparent" />
-        <div className="container-site relative z-10 px-6 py-20 text-center sm:py-28">
+        <div className="container-site relative z-10 px-6 pt-32 pb-20 text-center sm:pt-40 sm:pb-28">
           <span className="mb-4 inline-block rounded-full bg-white/15 px-4 py-1 text-xs font-bold uppercase tracking-widest">
             {lang === 'bn' ? 'ল্যান্ডিং পেজ' : 'Campaign'}
           </span>

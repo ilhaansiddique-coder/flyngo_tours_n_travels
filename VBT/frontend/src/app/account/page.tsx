@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: 'My account' };
 
 export default function AccountPage() {
   return (
-    <section className="section-pad bg-[var(--color-mist)]">
+    <section className="section-pad pt-28 sm:pt-36 bg-[var(--color-mist)]">
       <div className="container-site max-w-3xl">
         <AccountPanel />
       </div>

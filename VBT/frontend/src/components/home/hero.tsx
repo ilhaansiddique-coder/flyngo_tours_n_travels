@@ -15,7 +15,7 @@ export async function HomeHero({ hero }: { hero: Hero | null }) {
 
   return (
     <section
-      className="relative flex min-h-[80vh] items-end overflow-hidden lg:min-h-[560px]"
+      className="relative flex min-h-[92vh] items-end overflow-hidden sm:min-h-[640px] lg:min-h-[760px]"
       style={{
         backgroundImage: `linear-gradient(97deg, rgba(0,0,0,.88) 28%, rgba(0,0,0,.25) 75%, rgba(0,0,0,.05) 100%), url(${assetUrl(
           hero.backgroundImage,
@@ -24,7 +24,7 @@ export async function HomeHero({ hero }: { hero: Hero | null }) {
         backgroundPosition: 'center',
       }}
     >
-      <div className="container-site relative z-10 py-24 lg:py-32">
+      <div className="container-site relative z-10 pt-32 pb-20 sm:pt-40 sm:pb-24 lg:pt-48 lg:pb-32">
         <div className="animate-fade-in-up max-w-2xl">
           {tagline ? (
             <p className="mb-4 flex flex-wrap items-center gap-2 text-sm font-semibold uppercase tracking-widest text-[var(--color-gold-deep)]">

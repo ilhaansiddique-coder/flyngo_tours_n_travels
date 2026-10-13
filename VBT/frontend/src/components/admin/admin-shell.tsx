@@ -61,18 +61,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[80vh] bg-[var(--color-mist)]">
-      <div className="hidden border-b border-black/5 bg-[var(--color-primary-darker)] lg:block">
-        <div className="container-site flex h-14 items-center justify-between">
-          <div className="flex items-center gap-2.5 text-white">
-            <ShieldCheck size={18} className="text-[var(--color-gold-deep)]" />
-            <span className="font-bold">Volunteer Bangladesh Trust Admin</span>
-          </div>
-          <button onClick={logout} className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white">
-            <LogOut size={16} /> Sign out
-          </button>
-        </div>
-      </div>
-
       <div className="container-site flex flex-col gap-6 py-8 lg:flex-row">
         <aside className="shrink-0 lg:w-56">
           <div className="space-y-1 rounded-2xl border border-black/5 bg-white p-3 shadow-[var(--shadow-card)]">
@@ -96,7 +84,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             })}
             <button
               onClick={logout}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[var(--color-crimson)] hover:bg-[var(--color-crimson-light)] lg:hidden"
+              className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[var(--color-crimson)] hover:bg-[var(--color-crimson-light)]"
             >
               <LogOut size={16} /> Sign out
             </button>

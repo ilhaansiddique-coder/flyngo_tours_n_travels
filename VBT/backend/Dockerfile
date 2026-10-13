@@ -2,9 +2,11 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+ENV NODE_ENV=development
+
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
-RUN npm install --no-audit --no-fund --prefer-offline && npm run db:generate
+RUN npm install --include=dev --no-audit --no-fund && npm run db:generate
 
 COPY . .
 RUN npm run build

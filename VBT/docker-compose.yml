@@ -8,8 +8,10 @@
 
 services:
   backend:
-    image: ghcr.io/ilhaansiddique-coder/vbt-backend:main
-    pull_policy: always
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: vbt-backend:prod
     container_name: vbt-backend
     restart: always
     environment:
@@ -34,8 +36,15 @@ services:
       start_period: 30s
 
   frontend:
-    image: ghcr.io/ilhaansiddique-coder/vbt-frontend:main
-    pull_policy: always
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        BACKEND_URL: http://backend:4000
+        NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-https://flyngo.world}
+        NEXT_PUBLIC_VBT_BASE_PATH: ${NEXT_PUBLIC_VBT_BASE_PATH:-/VBT}
+        NEXT_PUBLIC_VBT_USE_BASEPATH: ${NEXT_PUBLIC_VBT_USE_BASEPATH:-true}
+    image: vbt-frontend:prod
     container_name: vbt-frontend
     restart: always
     environment:

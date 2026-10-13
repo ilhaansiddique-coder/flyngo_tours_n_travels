@@ -55,37 +55,6 @@ export function NavBarClient({
     <header
       className={`sticky top-0 z-50 w-full bg-white/95 backdrop-blur transition-shadow ${scrolled ? 'shadow-sm' : ''}`}
     >
-      <div className="border-b border-black/5 bg-[var(--color-primary-darker)] text-white">
-        <div className="container-site flex h-9 items-center justify-between text-xs">
-          <span className="hidden items-center gap-4 sm:flex">
-            <span className="inline-flex items-center gap-1.5 opacity-80">
-              ✦ welcome — for Humanity
-            </span>
-          </span>
-          <div className="flex items-center gap-3">
-            <LangToggle className="hover:bg-white/10" />
-            <span className="hidden items-center gap-3 sm:flex">
-              <a
-                href="https://www.facebook.com/volunteerbdtrust"
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-[var(--color-gold-deep)]"
-              >
-                Facebook
-              </a>
-              <a
-                href="https://www.youtube.com/@VolunteerBangladeshTrust"
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-[var(--color-gold-deep)]"
-              >
-                YouTube
-              </a>
-            </span>
-          </div>
-        </div>
-      </div>
-
       <div className="container-site flex h-16 items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-3">
           <img src={assetUrl(logo)} alt={siteName} className="h-10 w-10 rounded-xl object-cover" />

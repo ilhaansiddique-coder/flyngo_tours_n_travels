@@ -16,18 +16,39 @@ export async function serverFetch<T>(
 ): Promise<T> {
   const backend = process.env.BACKEND_URL || 'http://localhost:4000';
   const url = `${backend}/api/v1${path}`;
-  const res = await fetch(url, {
-    cache: options.revalidate !== undefined ? 'default' : 'no-store',
-    next: options.revalidate ? { revalidate: options.revalidate } : undefined,
-    headers: options.lang ? { 'Accept-Language': options.lang } : undefined,
-  });
-  if (!res.ok) {
-    if (res.status === 404) {
-      throw new Response('Not found', { status: 404 });
+  try {
+    const res = await fetch(url, {
+      cache: options.revalidate !== undefined ? 'default' : 'no-store',
+      next: options.revalidate ? { revalidate: options.revalidate } : undefined,
+      headers: options.lang ? { 'Accept-Language': options.lang } : undefined,
+    });
+    if (!res.ok) {
+      if (res.status === 404) {
+        throw new Response('Not found', { status: 404 });
+      }
+      throw new Error(`API ${path} failed: ${res.status}`);
     }
-    throw new Error(`API ${path} failed: ${res.status}`);
+    return (await res.json()) as Promise<T>;
+  } catch (err) {
+    if (
+      process.env.NODE_ENV !== 'production' ||
+      backend.includes('localhost') ||
+      backend.includes('127.0.0.1')
+    ) {
+      try {
+        const fallbackRes = await fetch(`https://flyngo.world/VBT/api/v1${path}`, {
+          cache: options.revalidate !== undefined ? 'default' : 'no-store',
+          headers: options.lang ? { 'Accept-Language': options.lang } : undefined,
+        });
+        if (fallbackRes.ok) {
+          return (await fallbackRes.json()) as Promise<T>;
+        }
+      } catch {
+        // ignore fallback error and throw original
+      }
+    }
+    throw err;
   }
-  return res.json() as Promise<T>;
 }
 
 /**

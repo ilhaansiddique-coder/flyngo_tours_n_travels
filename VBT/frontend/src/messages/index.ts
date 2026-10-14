@@ -39,7 +39,7 @@ const en = {
     amount: 'Amount',
     amountPlaceholder: '100',
     contact: 'Mobile / Email',
-    contactPlaceholder: '+8801919187587',
+    contactPlaceholder: '+880 1X00-000000',
     product: 'Fund',
     causePlaceholder: 'Select a fund',
     button: 'Donate',

@@ -173,7 +173,7 @@ async function main() {
     create: {
       email: 'demo@vbt.world',
       name: 'Demo Volunteer',
-      phone: '+880 1700-000000',
+      phone: '+880 1X00-000000',
       role: 'USER',
       passwordHash: await bcrypt.hash('demo1234', 10),
     },

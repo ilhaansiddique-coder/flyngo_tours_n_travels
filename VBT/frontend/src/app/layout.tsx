@@ -52,8 +52,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = await getServerLang();
 
   return (
-    <html lang={lang} className={`${publicSans.variable} ${hindSiliguri.variable}`}>
-      <body className="flex min-h-screen flex-col">
+    <html lang={lang} className={`${publicSans.variable} ${hindSiliguri.variable}`} suppressHydrationWarning>
+      <body className="flex min-h-screen flex-col" suppressHydrationWarning>
         <style dangerouslySetInnerHTML={{ __html: KONKSHO_FACE_STYLE }} />
         <I18nProvider initialLang={lang}>
           <NavBar />

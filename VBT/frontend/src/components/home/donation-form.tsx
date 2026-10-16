@@ -69,7 +69,7 @@ export function DonationForm({
             {t('donate.title')}
           </h2>
 
-          <form onSubmit={submit} className="mt-5 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-end">
+          <form onSubmit={submit} className="mt-5 mb-1.5 sm:mt-6 sm:mb-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-end">
             <div>
               <label className="mb-1.5 block text-sm sm:text-base font-bold text-[#0f2920]">
                 {t('donate.product')} <span className="text-[#f45630] font-bold">*</span>

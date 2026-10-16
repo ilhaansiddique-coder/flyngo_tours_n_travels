@@ -104,11 +104,11 @@ export function NavBarClient({
   return (
     <>
       <header
-        className={`fixed inset-x-0 top-0 z-50 px-3 pt-3 transition-transform duration-300 md:px-6 md:pt-4 ${
+        className={`fixed inset-x-0 top-0 z-50 px-2 pt-[env(safe-area-inset-top,0.5rem)] transition-transform duration-300 md:px-6 md:pt-4 ${
           visible ? 'translate-y-0' : '-translate-y-full'
         }`}
       >
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 rounded-2xl border border-black/10 bg-white/85 px-4 shadow-[0_8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md md:h-[72px] md:px-6">
+        <div className="mx-auto flex h-14 max-w-[1550px] items-center justify-between gap-2 rounded-lg border border-black/10 bg-white/85 px-3 shadow-[0_8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md md:h-[72px] md:gap-3 md:px-6">
           {/* Left: Brand Logo & Title */}
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <img
@@ -123,7 +123,7 @@ export function NavBarClient({
           </Link>
 
           {/* Center: Desktop Navigation Links (Underline on Active/Hover identical to As-Sunnah) */}
-          <nav className="hidden items-center gap-5 xl:flex">
+          <nav className="hidden items-center gap-8 xl:flex">
             {items.map((item) => {
               const active = pathname === item.href;
               return (

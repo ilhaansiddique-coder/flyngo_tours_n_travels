@@ -1,10 +1,12 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Public_Sans, Hind_Siliguri } from 'next/font/google';
 import { I18nProvider } from '@/lib/i18n';
 import { getServerLang } from '@/lib/server-lang';
 import { NavBar } from '@/components/nav-bar';
 import { Footer } from '@/components/footer';
 import { FloatingDonate } from '@/components/floating-donate';
+import { MobileBottomNav } from '@/components/mobile-bottom-nav';
+import { ScrollToTop } from '@/components/scroll-to-top';
 import './globals.css';
 
 const publicSans = Public_Sans({
@@ -22,6 +24,15 @@ const hindSiliguri = Hind_Siliguri({
 });
 
 export const dynamic = 'force-dynamic';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#09904a',
+};
 
 const USE_BASE_PATH = process.env.NEXT_PUBLIC_VBT_USE_BASEPATH !== 'false';
 const BASE_PATH = USE_BASE_PATH ? process.env.NEXT_PUBLIC_VBT_BASE_PATH || '/VBT' : '';
@@ -46,6 +57,14 @@ export const metadata: Metadata = {
       'Volunteer Bangladesh Trust — a registered Bangladeshi charity devoted to education, service, Dawah and human welfare. Membership, volunteering, Quran, Sunnah, articles, lectures and resources.',
     images: [`${BASE_PATH}/images/brand/logo.png`],
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'VBT',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -60,6 +79,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <main className="flex-1">{children}</main>
           <Footer />
           <FloatingDonate />
+          <MobileBottomNav />
+           <ScrollToTop />
         </I18nProvider>
       </body>
     </html>

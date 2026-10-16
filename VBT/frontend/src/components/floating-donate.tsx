@@ -14,7 +14,7 @@ export function FloatingDonate() {
 
   return (
     <motion.div
-      className="fixed z-40"
+      className="fixed z-40 hidden md:block"
       style={{
         top: 118,
         right: 'max(1.25rem, calc((100vw - 1320px) / 2 + 1.25rem))',

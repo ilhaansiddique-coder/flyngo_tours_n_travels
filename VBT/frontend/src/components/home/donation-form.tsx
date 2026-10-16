@@ -56,9 +56,9 @@ export function DonationForm({
 
   return (
     <section className="relative z-20">
-      <div className="container-site max-w-6xl">
+      <div className="container-site">
         <div
-          className="mx-auto -translate-y-8 sm:-translate-y-12 rounded-2xl p-5 sm:p-8 lg:px-9 lg:py-7 shadow-2xl"
+          className="mx-auto max-w-5xl -translate-y-8 sm:-translate-y-12 rounded-2xl p-5 sm:p-6 lg:px-8 lg:py-10 shadow-2xl"
           style={{
             backgroundColor: '#e8b65d',
             backgroundImage: `url(${assetUrl('/images/home/donation-pattern.svg')})`,
@@ -78,7 +78,7 @@ export function DonationForm({
                 <select
                   value={productId}
                   onChange={(e) => setProductId(e.target.value)}
-                  className="h-12 w-full appearance-none rounded-xl border-0 bg-white px-4 pr-10 text-sm sm:text-base font-medium text-slate-800 shadow-sm outline-none transition focus:ring-2 focus:ring-[#008e48]"
+                  className="h-[50px] w-full appearance-none rounded-xl border-0 bg-white px-4 pr-10 text-sm sm:text-base font-medium text-slate-800 shadow-sm outline-none transition focus:ring-2 focus:ring-[#008e48]"
                 >
                   {products.length === 0 ? (
                     <option value="">{t('donate.causePlaceholder')}</option>
@@ -118,7 +118,7 @@ export function DonationForm({
                 value={contact}
                 onChange={(e) => setContact(e.target.value)}
                 placeholder={t('donate.contactPlaceholder')}
-                className="h-12 w-full rounded-xl border-0 bg-white px-4 text-sm sm:text-base font-medium text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:ring-2 focus:ring-[#008e48]"
+                className="h-[50px] w-full rounded-xl border-0 bg-white px-4 text-sm sm:text-base font-medium text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:ring-2 focus:ring-[#008e48]"
               />
             </div>
 
@@ -137,7 +137,7 @@ export function DonationForm({
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder={t('donate.amountPlaceholder')}
-                  className="h-12 w-full rounded-xl border-0 bg-white pl-9 pr-4 text-sm sm:text-base font-semibold text-slate-800 shadow-sm outline-none transition focus:ring-2 focus:ring-[#008e48]"
+                  className="h-[50px] w-full rounded-xl border-0 bg-white pl-9 pr-4 text-sm sm:text-base font-semibold text-slate-800 shadow-sm outline-none transition focus:ring-2 focus:ring-[#008e48]"
                 />
               </div>
             </div>
@@ -146,7 +146,7 @@ export function DonationForm({
               <button
                 type="submit"
                 disabled={state === 'loading'}
-                className="h-12 w-full rounded-xl bg-[#008e48] px-6 text-base sm:text-lg font-bold text-white shadow-sm transition-all hover:bg-[#007a3e] active:scale-[0.99] disabled:opacity-75 flex items-center justify-center cursor-pointer"
+                className="h-[50px] w-full rounded-xl bg-[#008e48] px-6 text-base sm:text-lg font-bold text-white shadow-sm transition-all hover:bg-[#007a3e] active:scale-[0.99] disabled:opacity-75 flex items-center justify-center cursor-pointer"
               >
                 {state === 'loading' ? (
                   <span className="inline-flex items-center gap-2">
@@ -159,6 +159,7 @@ export function DonationForm({
             </div>
           </form>
 
+          {/* Temporarily commented out:
           <div className="mt-4 sm:mt-5 text-center text-xs sm:text-sm font-medium text-[#0f2920]">
             <span>
               {lang === 'bn'
@@ -172,6 +173,7 @@ export function DonationForm({
               {lang === 'bn' ? 'বিস্তারিত জানতে ক্লিক করুন।' : 'Click to learn more.'}
             </Link>
           </div>
+          */}
 
           {(state === 'done' || state === 'error') && (
             <div

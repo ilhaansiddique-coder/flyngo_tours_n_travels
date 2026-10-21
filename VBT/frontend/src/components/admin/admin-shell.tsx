@@ -26,10 +26,16 @@ const NAV = [
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const isLogin = pathname === '/admin/login' || pathname?.endsWith('/admin/login');
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    if (!getAdminToken()) {
+    if (isLogin) {
+      setChecked(false);
+      return;
+    }
+    const token = getAdminToken();
+    if (!token) {
       router.replace('/admin/login');
       return;
     }
@@ -39,19 +45,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         clearAdminToken();
         router.replace('/admin/login');
       });
-  }, [router]);
+  }, [router, pathname, isLogin]);
 
-  const isLogin = pathname === '/admin/login';
+  if (isLogin) return <>{children}</>;
 
-  if (!checked && !isLogin) {
+  if (!checked) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center gap-2 text-[var(--color-ink-soft)]">
         <Loader2 size={20} className="animate-spin" /> Loading dashboard…
       </div>
     );
   }
-
-  if (isLogin) return <>{children}</>;
 
   const logout = () => {
     clearAdminToken();

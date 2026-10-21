@@ -139,9 +139,15 @@ export async function Footer() {
           <span>
             © {new Date().getFullYear()} {siteName}. {bn ? 'সর্বস্বত্ব সংরক্ষিত।' : 'All rights reserved.'}
           </span>
-          <span>
-            {bn ? 'নিবন্ধন নং' : 'Registration'}: {settings.registration || 'S-13111/2019'}
-          </span>
+          <div className="flex items-center gap-4">
+            <span>
+              {bn ? 'নিবন্ধন নং' : 'Registration'}: {settings.registration || 'S-13111/2019'}
+            </span>
+            <span>•</span>
+            <Link href="/admin" className="hover:text-white transition-colors">
+              {bn ? 'অ্যাডমিন' : 'Admin'}
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

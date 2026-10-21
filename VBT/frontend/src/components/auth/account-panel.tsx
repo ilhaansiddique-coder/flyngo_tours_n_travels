@@ -103,6 +103,14 @@ export function AccountPanel() {
             <span className="mt-1 inline-block rounded-full bg-[var(--color-royal-light)] px-3 py-0.5 text-xs font-bold text-[var(--color-royal)]">
               {user.role}
             </span>
+            {user.role === 'ADMIN' && (
+              <Link
+                href="/admin"
+                className="mt-1 ml-2 inline-block rounded-full bg-[var(--color-royal)] px-3 py-0.5 text-xs font-bold text-white hover:bg-[var(--color-royal-dark)]"
+              >
+                {bn ? 'অ্যাডমিন ড্যাশবোর্ড →' : 'Admin Dashboard →'}
+              </Link>
+            )}
           </div>
         </div>
         <button

@@ -17,7 +17,7 @@ export function FloatingDonate() {
       className="fixed z-40 hidden md:block"
       style={{
         top: 118,
-        right: 'max(1.25rem, calc((100vw - 1320px) / 2 + 1.25rem))',
+        right: '1.5rem',
       }}
       animate={{ y: [0, -8, 0] }}
       transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}

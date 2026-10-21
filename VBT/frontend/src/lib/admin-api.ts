@@ -6,7 +6,20 @@ const TOKEN_KEY = 'vbt_admin_token';
 
 export function getAdminToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem(TOKEN_KEY);
+  const adminToken = window.localStorage.getItem(TOKEN_KEY);
+  if (adminToken) return adminToken;
+  try {
+    const userRaw = window.localStorage.getItem('vbt_user');
+    if (userRaw) {
+      const u = JSON.parse(userRaw);
+      if (u?.role === 'ADMIN') {
+        return window.localStorage.getItem('vbt_user_token');
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
 }
 
 export function setAdminToken(token: string) {

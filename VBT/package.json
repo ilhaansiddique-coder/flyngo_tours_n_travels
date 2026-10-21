@@ -24,5 +24,8 @@
   "devDependencies": {
     "concurrently": "^9.0.0",
     "cross-env": "^7.0.0"
+  },
+  "dependencies": {
+    "@openrouter/sdk": "^1.4.25"
   }
 }

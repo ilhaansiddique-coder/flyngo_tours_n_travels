@@ -3,7 +3,7 @@ import type { NextConfig } from 'next';
 
 const useBasePath = process.env.NEXT_PUBLIC_VBT_USE_BASEPATH !== 'false';
 const BASE_PATH = useBasePath ? process.env.NEXT_PUBLIC_VBT_BASE_PATH || '/VBT' : '';
-const backend = process.env.BACKEND_URL || 'http://localhost:4000';
+const backend = process.env.BACKEND_URL || 'http://127.0.0.1:4000';
 const apiPrefix = BASE_PATH || '';
 
 const nextConfig: NextConfig = {
@@ -13,6 +13,29 @@ const nextConfig: NextConfig = {
   basePath: BASE_PATH,
   turbopack: {
     root: path.resolve(__dirname),
+  },
+  async redirects() {
+    if (!BASE_PATH) return [];
+    return [
+      {
+        source: '/admin',
+        destination: `${BASE_PATH}/admin`,
+        permanent: false,
+        basePath: false,
+      },
+      {
+        source: '/admin/:path*',
+        destination: `${BASE_PATH}/admin/:path*`,
+        permanent: false,
+        basePath: false,
+      },
+      {
+        source: '/login',
+        destination: `${BASE_PATH}/login`,
+        permanent: false,
+        basePath: false,
+      },
+    ];
   },
   async rewrites() {
     return [

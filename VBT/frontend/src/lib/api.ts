@@ -14,7 +14,7 @@ export async function serverFetch<T>(
   path: string,
   options: { lang?: string; revalidate?: number } = {},
 ): Promise<T> {
-  const backend = process.env.BACKEND_URL || 'http://localhost:4000';
+  const backend = process.env.BACKEND_URL || 'http://127.0.0.1:4000';
   const url = `${backend}/api/v1${path}`;
   try {
     const res = await fetch(url, {

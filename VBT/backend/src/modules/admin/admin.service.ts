@@ -86,10 +86,23 @@ export class AdminService {
   }
 
   async me(payload: AdminTokenPayload) {
-    const admin = await this.prisma.admin.findUnique({
+    let admin = await this.prisma.admin.findUnique({
       where: { id: payload.sub },
     });
-    if (!admin) throw new NotFoundException('Admin not found');
+    if (!admin && payload.email) {
+      admin = await this.prisma.admin.findUnique({
+        where: { email: payload.email.toLowerCase() },
+      });
+    }
+    if (!admin) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
+      if (user && user.role === 'ADMIN') {
+        return { id: user.id, email: user.email ?? '', name: user.name };
+      }
+      throw new NotFoundException('Admin not found');
+    }
     return { id: admin.id, email: admin.email, name: admin.name };
   }
 

@@ -40,7 +40,7 @@ export function AdminDashboard() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 ">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <Link href="/admin/members" className="text-sm font-semibold text-[var(--color-royal)] hover:underline">

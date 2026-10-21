@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { PasswordInput } from '@/components/password-input';
 import { adminFetch, setAdminToken } from '@/lib/admin-api';
+import { BASE_PATH } from '@/lib/api';
 
 export function AdminLoginForm() {
   const router = useRouter();
@@ -21,8 +22,7 @@ export function AdminLoginForm() {
         { method: 'POST', body: JSON.stringify({ email: data.email, password: data.password }) },
       );
       setAdminToken(res.token);
-      router.push('/admin');
-      router.refresh();
+      window.location.href = `${BASE_PATH}/admin`;
     } catch (err) {
       setState('error');
       setMessage((err as Error).message);

@@ -119,6 +119,10 @@ function makeEventId(eventName: string): string {
 
 let cachedSettings: PublicTrackingSettings | null = null;
 
+export function invalidateTrackingSettingsCache() {
+  cachedSettings = null;
+}
+
 export async function loadTrackingSettings(): Promise<PublicTrackingSettings> {
   if (cachedSettings) return cachedSettings;
   try {

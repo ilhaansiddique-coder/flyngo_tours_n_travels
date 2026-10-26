@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useApi } from '@/hooks/use-api';
+import { invalidateTrackingSettingsCache } from '@/lib/tracking-client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -128,13 +129,13 @@ export default function AdminTrackingPage() {
       setSettings(s as TrackingSettings);
       setSettingsForm({
         metaPixelId: (s as TrackingSettings).metaPixelId ?? '',
-        metaCapiToken: '', // secrets are masked — leave blank to keep current
+        metaCapiToken: (s as TrackingSettings).metaCapiToken ?? '',
         metaCapiTestCode: (s as TrackingSettings).metaCapiTestCode ?? '',
         metaCapiEnabled: (s as TrackingSettings).metaCapiEnabled,
         requireMarketingConsent: (s as TrackingSettings).requireMarketingConsent ?? false,
         metaLduEnabled: (s as TrackingSettings).metaLduEnabled ?? false,
         ga4MeasurementId: (s as TrackingSettings).ga4MeasurementId ?? '',
-        ga4ApiSecret: '',
+        ga4ApiSecret: (s as TrackingSettings).ga4ApiSecret ?? '',
         gtmContainerId: (s as TrackingSettings).gtmContainerId ?? '',
         googleAdsConversionId: (s as TrackingSettings).googleAdsConversionId ?? '',
         googleAdsConversionLabel: (s as TrackingSettings).googleAdsConversionLabel ?? '',
@@ -172,6 +173,7 @@ export default function AdminTrackingPage() {
         catch { body.trustBadges = []; }
       }
       await updateTrackingSettings(body);
+      invalidateTrackingSettingsCache();
       setSavedAt(Date.now());
       await fetchAll();
     } catch (err: any) {

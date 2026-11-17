@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, Req, Res, UseGuards, UseFilters, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, Req, Res, UseGuards, UseFilters, Logger, BadRequestException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
@@ -20,6 +20,8 @@ import { PrismaService } from '../../database/prisma.service';
 import { GoogleOAuthGuard, FacebookOAuthGuard } from './guards/oauth.guards';
 import { OAuthRedirectFilter } from './filters/oauth-redirect.filter';
 import { AccountDeletionService } from '../users/account-deletion.service';
+import { SessionService, SessionTokens } from './session.service';
+import { assertSessionOrigin, clearSessionCookies, deliverSession, refreshCookieName } from './session-http';
 
 @ApiTags('Authentication')
 @UseFilters(OAuthRedirectFilter)
@@ -32,6 +34,7 @@ export class AuthController {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly accountDeletion: AccountDeletionService,
+    private readonly sessions: SessionService,
   ) {}
 
   @Post('login')
@@ -43,9 +46,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiBody({ type: LoginDto })
   @ApiResponse({ status: 200, type: TokenResponseDto })
-  async login(@Body() dto: LoginDto, @Req() req: Request) {
+  async login(@Body() dto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    assertSessionOrigin(req, this.configService);
     const tenantId = this.getTenantId(req);
-    return this.authService.login(dto, tenantId);
+    return this.respondWithSession(req, res, await this.authService.login(dto, tenantId), true);
   }
 
   @Post('register')
@@ -55,7 +59,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Register new customer account' })
   @ApiBody({ type: RegisterDto })
   @ApiResponse({ status: 201, type: TokenResponseDto })
-  async register(@Body() dto: RegisterDto, @Req() req: Request) {
+  async register(@Body() dto: RegisterDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    assertSessionOrigin(req, this.configService);
     const tenantId = this.getTenantId(req);
     // Read referral code from (in order): body, custom header, the cookie the
     // frontend actually sets (`flyngo_ref_code`), and finally a legacy `ref_code`
@@ -67,16 +72,61 @@ export class AuthController {
       (cookies['flyngo_ref_code'] || '').trim() ||
       (cookies['ref_code'] || '').trim() ||
       null;
-    return this.authService.register(dto, tenantId, refCode);
+    return this.respondWithSession(req, res, await this.authService.register(dto, tenantId, refCode), true);
   }
 
   @Post('refresh')
   @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })
-  async refresh(@Body('refreshToken') refreshToken: string, @Req() req: Request) {
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    assertSessionOrigin(req, this.configService);
     const tenantId = this.getTenantId(req);
-    return this.authService.refreshToken(refreshToken, tenantId);
+    try {
+      return this.respondWithSession(req, res, await this.authService.refreshToken(req.cookies?.[refreshCookieName(this.configService)], tenantId));
+    } catch (error) {
+      if (error instanceof UnauthorizedException) clearSessionCookies(res, this.configService);
+      throw error;
+    }
+  }
+
+  @Post('logout')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    assertSessionOrigin(req, this.configService);
+    await this.sessions.revokeCookie(req.cookies?.[refreshCookieName(this.configService)]);
+    const [type, token] = req.headers.authorization?.split(' ') || [];
+    if (type === 'Bearer') await this.sessions.revokeAccessToken(token);
+    clearSessionCookies(res, this.configService);
+    res.setHeader('Cache-Control', 'no-store');
+    return { success: true };
+  }
+
+  @Post('session')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async restoreSession(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    assertSessionOrigin(req, this.configService);
+    res.setHeader('Cache-Control', 'private, no-store');
+    const token = req.cookies?.[refreshCookieName(this.configService)];
+    if (!token) return { authenticated: false };
+    try {
+      return this.respondWithSession(req, res, await this.authService.refreshToken(token, this.getTenantId(req)));
+    } catch (error) {
+      if (!(error instanceof UnauthorizedException)) throw error;
+      clearSessionCookies(res, this.configService);
+      return { authenticated: false };
+    }
+  }
+
+  @Post('logout-all')
+  @HttpCode(HttpStatus.OK)
+  async logoutAll(@Req() req: Request, @CurrentUser() user: { id: string; tenantId: string }, @Res({ passthrough: true }) res: Response) {
+    assertSessionOrigin(req, this.configService);
+    await this.sessions.revokeAll(user.id, user.tenantId);
+    clearSessionCookies(res, this.configService);
+    return { success: true };
   }
 
   @Post('forgot-password/options')
@@ -144,16 +194,19 @@ export class AuthController {
   async changePassword(
     @Body() body: { changePasswordToken: string; currentPassword: string; newPassword: string },
     @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ) {
     // @Public() because the caller holds a scoped token, which JwtAuthGuard
     // deliberately rejects everywhere. Verify it here instead.
+    assertSessionOrigin(req, this.configService);
     const payload = await this.authService.verifyScopedToken(body?.changePasswordToken, 'password_change');
-    return this.authService.completePasswordChange(
+    const tokens = await this.authService.completePasswordChange(
       this.getTenantId(req),
       payload.sub,
       body?.currentPassword ?? '',
       body?.newPassword ?? '',
     );
+    return this.respondWithSession(req, res, tokens, true);
   }
 
   @Post('reset-password')
@@ -356,12 +409,8 @@ export class AuthController {
         ((req.cookies as any)?.flyngo_ref_code || (req.cookies as any)?.ref_code || '').trim() || null;
       const tokens = await this.authService.validateOAuthUser(profile, tenantId, referralCode);
       const frontendUrl = this.configService.get('FRONTEND_URL');
-      const params = new URLSearchParams({
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        expiresIn: String(tokens.expiresIn),
-        provider,
-      });
+      await this.respondWithSession(req, res, tokens, true);
+      const params = new URLSearchParams({ provider });
       return res.redirect(`${frontendUrl}/auth/callback?${params.toString()}`);
     } catch (err: any) {
       this.logger.error(`${provider} OAuth callback failed: ${err?.message ?? err}`);
@@ -372,6 +421,13 @@ export class AuthController {
   private errorRedirect(reason: string): string {
     const frontendUrl = this.configService.get('FRONTEND_URL');
     return `${frontendUrl}/auth/callback?error=${encodeURIComponent(reason)}`;
+  }
+
+  private async respondWithSession(req: Request, res: Response, tokens: SessionTokens, replace = false) {
+    res.setHeader('Cache-Control', 'private, no-store');
+    if (!tokens.refreshToken) return tokens; // scoped first-login challenge, not a session
+    if (replace) await this.sessions.revokeCookie(req.cookies?.[refreshCookieName(this.configService)]);
+    return deliverSession(res, this.configService, tokens);
   }
 
   private getTenantId(req: Request): string {

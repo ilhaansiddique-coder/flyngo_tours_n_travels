@@ -5,8 +5,5 @@ export class TokenResponseDto {
   accessToken: string;
 
   @ApiProperty()
-  refreshToken: string;
-
-  @ApiProperty()
   expiresIn: number;
 }

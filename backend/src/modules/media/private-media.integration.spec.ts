@@ -32,6 +32,8 @@ databaseTests('private media against PostgreSQL and HTTP', () => {
   let ownerId: string;
   let otherId: string;
   let roleId: string;
+  let ownerSessionId: string;
+  let otherSessionId: string;
   let bookingId: string;
   let oldUrl: string;
   let receiptUrl: string;
@@ -56,6 +58,8 @@ databaseTests('private media against PostgreSQL and HTTP', () => {
     roleId = role.id;
     ownerId = (await db.user.create({ data: { tenantId, roleId, fullName: 'Document owner' } })).id;
     otherId = (await db.user.create({ data: { tenantId, roleId, fullName: 'Other customer' } })).id;
+    ownerSessionId = (await db.authSession.create({ data: { tenantId, userId: ownerId, expiresAt: new Date(Date.now() + 3600_000) } })).id;
+    otherSessionId = (await db.authSession.create({ data: { tenantId, userId: otherId, expiresAt: new Date(Date.now() + 3600_000) } })).id;
     async function legacy(folder: string) {
       const key = folder + '/' + randomUUID() + '.pdf';
       const target = path.join(process.cwd(), 'uploads', key);
@@ -132,17 +136,17 @@ databaseTests('private media against PostgreSQL and HTTP', () => {
   it('blocks anonymous, invalid-token and other-customer downloads through HTTP', async () => {
     await request(app.getHttpServer()).get(privateUrl).expect(404);
     await request(app.getHttpServer()).get(privateUrl).set('Authorization', 'Bearer invalid').expect(404);
-    await request(app.getHttpServer()).get(privateUrl).set('Authorization', 'Bearer ' + jwt.sign({ sub: otherId, tenantId })).expect(404);
+    await request(app.getHttpServer()).get(privateUrl).set('Authorization', 'Bearer ' + jwt.sign({ sub: otherId, tenantId, sid: otherSessionId })).expect(404);
   });
   it('returns raw bytes only to the owner with non-cacheable download headers', async () => {
-    const result = await request(app.getHttpServer()).get(privateUrl).set('Authorization', 'Bearer ' + jwt.sign({ sub: ownerId, tenantId })).expect(200);
+    const result = await request(app.getHttpServer()).get(privateUrl).set('Authorization', 'Bearer ' + jwt.sign({ sub: ownerId, tenantId, sid: ownerSessionId })).expect(200);
     expect(result.headers['cache-control']).toContain('no-store');
     expect(result.headers['content-disposition']).toContain('attachment');
     expect(result.headers['content-type']).toContain('application/pdf');
     expect(result.body).toEqual(content);
   });
   it('rejects the owner’s existing token immediately after account deactivation', async () => {
-    const token = jwt.sign({ sub: ownerId, tenantId });
+    const token = jwt.sign({ sub: ownerId, tenantId, sid: ownerSessionId });
     await db.user.update({ where: { id: ownerId }, data: { isActive: false } });
     await request(app.getHttpServer()).get(privateUrl).set('Authorization', 'Bearer ' + token).expect(404);
     await db.user.update({ where: { id: ownerId }, data: { isActive: true } });

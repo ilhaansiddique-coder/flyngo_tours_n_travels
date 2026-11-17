@@ -8,6 +8,7 @@ import { LocaleProvider } from '@/contexts/locale-context';
 import { CurrencyProvider } from '@/contexts/currency-context';
 import { UpdateNotifier } from '@/components/update-notifier';
 import { ReferralCapture } from '@/components/referral-capture';
+import { AuthBootstrap } from '@/components/auth-bootstrap';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -24,6 +25,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <AuthBootstrap />
       <ThemeProvider
         attribute="class"
         defaultTheme="system"

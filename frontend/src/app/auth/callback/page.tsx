@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, ShieldX, MailWarning, AlertCircle } from 'lucide-react';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore, broadcastSession } from '@/stores/auth.store';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 
@@ -37,14 +37,10 @@ const DEFAULT_ERROR: ErrorCopy = {
 function AuthCallbackInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const setTokens = useAuthStore((s) => s.setTokens);
-  const setUser = useAuthStore((s) => s.setUser);
-  const [message, setMessage] = useState('Completing sign in...');
+  const message = 'Completing sign in...';
   const [error, setError] = useState<ErrorCopy | null>(null);
 
   useEffect(() => {
-    const accessToken = params.get('accessToken');
-    const refreshToken = params.get('refreshToken');
     const errorReason = params.get('error');
 
     if (errorReason) {
@@ -52,30 +48,13 @@ function AuthCallbackInner() {
       return;
     }
 
-    if (!accessToken || !refreshToken) {
-      setMessage('Missing authentication tokens. Redirecting...');
-      const t = setTimeout(() => router.replace('/auth/login'), 2000);
-      return () => clearTimeout(t);
-    }
-
     let cancelled = false;
     (async () => {
       try {
-        setTokens(accessToken, refreshToken);
-        const profile = await api.get<{
-          id: string;
-          email: string | null;
-          fullName: string;
-          role: { code: string; permissions: Array<{ permission: { code: string } }> };
-        }>('/users/me', { token: accessToken });
+        await api.initializeSession();
         if (cancelled) return;
-        setUser({
-          id: profile.id,
-          email: profile.email ?? '',
-          fullName: profile.fullName,
-          role: profile.role.code,
-          permissions: profile.role.permissions.map((p) => p.permission.code),
-        });
+        if (!useAuthStore.getState().accessToken) { router.replace('/auth/login'); return; }
+        broadcastSession('login');
         router.replace('/');
       } catch (err: any) {
         if (cancelled) return;
@@ -91,7 +70,7 @@ function AuthCallbackInner() {
     return () => {
       cancelled = true;
     };
-  }, [params, router, setTokens, setUser]);
+  }, [params, router]);
 
   if (error) {
     const { title, description, Icon } = error;

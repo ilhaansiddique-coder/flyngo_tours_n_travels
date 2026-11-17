@@ -14,8 +14,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: { sub: string; tenantId: string; scope?: string }) {
+  async validate(payload: { sub: string; tenantId: string; sid?: string; scope?: string }) {
     if (payload.scope) throw new UnauthorizedException('This token cannot be used for this request');
+    if (!payload.sid || !await this.prisma.authSession.findFirst({ where: {
+      id: payload.sid, userId: payload.sub, tenantId: payload.tenantId, revokedAt: null, expiresAt: { gt: new Date() },
+    }, select: { id: true } })) throw new UnauthorizedException('Session has ended');
     const user = await this.prisma.user.findFirst({
       where: { id: payload.sub, tenantId: payload.tenantId, deletedAt: null, isActive: true },
       select: { id: true },

@@ -40,6 +40,9 @@ export class OptionalJwtAuthGuard implements CanActivate {
       // A scoped token (e.g. password_change) is not a session. Treat the caller
       // as a guest rather than attributing a booking to a half-claimed account.
       if (payload.scope) return true;
+      if (!payload.sid || !await this.prisma.authSession.findFirst({ where: {
+        id: payload.sid, userId: payload.sub, tenantId: payload.tenantId, revokedAt: null, expiresAt: { gt: new Date() },
+      }, select: { id: true } })) return true;
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
         include: {
@@ -53,6 +56,7 @@ export class OptionalJwtAuthGuard implements CanActivate {
       if (!user || user.deletedAt || !user.isActive) return true;
       request['user'] = {
         id: user.id,
+        sessionId: payload.sid,
         email: user.email,
         fullName: user.fullName,
         roleId: user.roleId,

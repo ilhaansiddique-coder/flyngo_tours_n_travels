@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/stores/auth.store';
+import { withSessionLock } from './session-lock';
 
 const API_BASE = '/api/v1';
 
@@ -15,26 +16,13 @@ interface FetchOptions extends RequestInit {
 
 interface RefreshResponse {
   accessToken?: string;
-  refreshToken?: string;
 }
 
 type RefreshResult = { ok: true; accessToken: string } | { ok: false; reason: 'invalid' | 'error' };
 
-function getRefreshTokenFromCookie(): string | null {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(/(?:^|; )flyngo-auth=([^;]*)/);
-  if (!match) return null;
-  try {
-    const parsed = JSON.parse(decodeURIComponent(match[1]));
-    return parsed?.state?.refreshToken || null;
-  } catch {
-    return null;
-  }
-}
-
 function clearAuthAndRedirect() {
+  useAuthStore.getState().clearSession();
   if (typeof document === 'undefined') return;
-  useAuthStore.getState().logout();
   document.cookie = 'flyngo-auth=; path=/; max-age=0';
   if (window.location.pathname.startsWith('/admin')) {
     window.location.href = '/auth/login?callbackUrl=' + encodeURIComponent(window.location.pathname);
@@ -60,8 +48,31 @@ function decodeJwtExp(token: string): number | null {
 const TOKEN_EXPIRY_BUFFER = 30;
 
 
-class ApiClient {
+export class ApiClient {
   private refreshPromise: Promise<RefreshResult> | null = null;
+  private bootstrapPromise: Promise<void> | null = null;
+
+  async initializeSession(force = false): Promise<void> {
+    if (useAuthStore.getState().hasHydrated && !force) return;
+    if (this.bootstrapPromise) return this.bootstrapPromise;
+    this.bootstrapPromise = (async () => {
+      try {
+        const result = await this.refreshAccessToken(true);
+        if (result.ok) {
+          const user = await this.get<{ id: string; email: string | null; fullName: string;
+            role: { code: string; permissions: { permission: { code: string } }[] } }>('/users/me', { token: result.accessToken });
+          if (useAuthStore.getState().accessToken === result.accessToken) useAuthStore.getState().setUser({
+            id: user.id, email: user.email || '', fullName: user.fullName, role: user.role.code,
+            permissions: user.role.permissions.map((item) => item.permission.code),
+          });
+        } else if (result.reason === 'invalid') useAuthStore.getState().clearSession();
+      } finally {
+        useAuthStore.getState().setHasHydrated(true);
+        this.bootstrapPromise = null;
+      }
+    })();
+    return this.bootstrapPromise;
+  }
 
   /**
    * Try to refresh the access token. Distinguishes a genuinely invalid session
@@ -70,30 +81,33 @@ class ApiClient {
    * prevents the app from bouncing an already-logged-in user to /auth/login on
    * a momentary blip (the reported bug).
    */
-  private async refreshAccessToken(): Promise<RefreshResult> {
-    const refreshToken = useAuthStore.getState().refreshToken ?? getRefreshTokenFromCookie();
-    if (!refreshToken) return { ok: false, reason: 'invalid' };
-
+  private async refreshAccessToken(restore = false): Promise<RefreshResult> {
     if (this.refreshPromise) return this.refreshPromise;
-
+    const epoch = useAuthStore.getState().sessionEpoch;
     this.refreshPromise = (async (): Promise<RefreshResult> => {
       try {
-        const response = await fetch(`${API_BASE}/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
-        });
-        if (!response.ok) return { ok: false, reason: 'invalid' };
-        let json: any = {};
-        try {
-          json = await response.json();
-        } catch {
-          return { ok: false, reason: 'error' };
-        }
-        const tokens = (json.data ?? json) as RefreshResponse;
-        if (!tokens.accessToken || !tokens.refreshToken) return { ok: false, reason: 'invalid' };
-        useAuthStore.getState().setTokens(tokens.accessToken, tokens.refreshToken);
-        return { ok: true, accessToken: tokens.accessToken };
+        const rotate = async (): Promise<RefreshResult> => {
+          if (useAuthStore.getState().sessionEpoch !== epoch) return { ok: false, reason: 'error' };
+          const response = await fetch(`${API_BASE}/auth/${restore ? 'session' : 'refresh'}`, {
+            method: 'POST',
+            credentials: 'same-origin', cache: 'no-store',
+            headers: { 'X-Requested-With': 'Flyngo' },
+          });
+          if (!response.ok) return { ok: false, reason: [401, 403].includes(response.status) ? 'invalid' : 'error' };
+          let json: any = {};
+          try {
+            json = await response.json();
+          } catch {
+            return { ok: false, reason: 'error' };
+          }
+          const tokens = (json.data ?? json) as RefreshResponse;
+          if (useAuthStore.getState().sessionEpoch !== epoch) return { ok: false, reason: 'error' };
+          if (!tokens.accessToken) return { ok: false, reason: 'invalid' };
+          useAuthStore.getState().setTokens(tokens.accessToken);
+          return { ok: true, accessToken: tokens.accessToken };
+        };
+        // Serialize rotation across browser tabs; cookies carry the newest token automatically.
+        return await withSessionLock(rotate);
       } catch {
         return { ok: false, reason: 'error' };
       } finally {
@@ -111,9 +125,8 @@ class ApiClient {
    * session intact.
    */
   private async resolve401<T>(endpoint: string, options: FetchOptions, allowRefresh: boolean): Promise<T | null> {
-    const { token } = options;
-
-    if (token && allowRefresh) {
+    if (/^\/auth\/(login|register|refresh|logout|change-password)/.test(endpoint)) return null;
+    if (allowRefresh) {
       const result = await this.refreshAccessToken();
       if (result.ok) {
         return this.request<T>(endpoint, { ...options, token: result.accessToken }, false);
@@ -121,12 +134,6 @@ class ApiClient {
       // result.reason === 'invalid' → session truly over; end it.
       // reason === 'error' → transient blip; keep the session, surface error.
       if (result.reason === 'invalid') clearAuthAndRedirect();
-      return null;
-    }
-
-    // No token was sent (e.g. the call raced auth hydration) but a persisted
-    // session still exists — keep it, don't redirect to login.
-    if (getRefreshTokenFromCookie() || useAuthStore.getState().refreshToken) {
       return null;
     }
 
@@ -144,6 +151,7 @@ class ApiClient {
    * runs).
    */
   private async resolveToken(providedToken: string | undefined, allowRefresh: boolean): Promise<string | undefined> {
+    if (!useAuthStore.getState().hasHydrated && !providedToken && allowRefresh) await this.initializeSession().catch(() => undefined);
     let token = providedToken ?? useAuthStore.getState().accessToken ?? undefined;
     if (!token || !allowRefresh) return token;
 
@@ -162,6 +170,7 @@ class ApiClient {
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'X-Requested-With': 'Flyngo',
       ...(fetchOptions.headers as Record<string, string>),
     };
 
@@ -169,10 +178,12 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const send = () => fetch(`${API_BASE}${endpoint}`, {
+      credentials: 'same-origin',
       ...fetchOptions,
       headers,
     });
+    const response = /^\/auth\/(login|register|change-password|logout)/.test(endpoint) ? await withSessionLock(send) : await send();
 
     if (!response.ok) {
       if (response.status === 401) {

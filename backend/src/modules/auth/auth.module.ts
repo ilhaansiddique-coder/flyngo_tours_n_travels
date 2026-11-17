@@ -13,6 +13,7 @@ import { TrackingModule } from '../tracking/tracking.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import type { SignOptions } from 'jsonwebtoken';
 import { AccountDeletionModule } from '../users/account-deletion.module';
+import { SessionService } from './session.service';
 
 class UnconfiguredFacebookStrategy {
   readonly name = 'facebook';
@@ -54,6 +55,7 @@ class UnconfiguredFacebookStrategy {
   controllers: [AuthController],
   providers: [
     AuthService,
+    SessionService,
     JwtStrategy,
     GoogleStrategy,
     {
@@ -73,6 +75,6 @@ class UnconfiguredFacebookStrategy {
       },
     },
   ],
-  exports: [AuthService, JwtModule],
+  exports: [AuthService, SessionService, JwtModule],
 })
 export class AuthModule {}

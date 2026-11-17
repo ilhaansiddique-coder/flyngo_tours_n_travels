@@ -304,9 +304,8 @@ export default function DashboardPage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push('/');
+  const handleLogout = async () => {
+    if (await logout()) router.push('/');
   };
 
   return (
@@ -834,13 +833,22 @@ function EmptyState({ icon: Icon, title, description, cta, href }: { icon: typeo
 }
 
 function PrivacySection() {
-  const { exportMyData, deleteMyAccount } = useApi();
+  const { exportMyData, deleteMyAccount, logoutAllSessions } = useApi();
   const { logout } = useAuthStore();
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [revoking, setRevoking] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const handleLogoutAll = async () => {
+    setRevoking(true);
+    setSessionError(null);
+    try { await logoutAllSessions(); window.location.href = '/auth/login'; }
+    catch { setSessionError('Could not sign out all devices. Please try again.'); }
+    finally { setRevoking(false); }
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -872,7 +880,7 @@ function PrivacySection() {
     try {
       await deleteMyAccount({ confirmation: confirmText });
       // Server permanently deleted the account. Clear local session and bounce.
-      logout();
+      await logout();
       window.location.href = '/?account-deleted=1';
     } catch (err: any) {
       setDeleteError(err?.message || 'Deletion failed');
@@ -883,6 +891,11 @@ function PrivacySection() {
   return (
     <div className="rounded-2xl border p-6 space-y-4 max-w-xl mt-6" style={{ borderColor: 'var(--color-outline-variant)' }}>
       <h2 className="font-display text-xl font-bold">Privacy & data</h2>
+      <button type="button" onClick={handleLogoutAll} disabled={revoking}
+        className="px-4 py-2 rounded-md text-sm font-semibold border border-outline-variant">
+        {revoking ? 'Signing out…' : 'Sign out all devices'}
+      </button>
+      {sessionError && <p role="alert" className="text-sm text-red-600">{sessionError}</p>}
       <p className="text-sm text-muted">
         You can download every piece of personal data we hold on you, or request that we delete
         your account. Deletion permanently removes your profile, contact details, documents,

@@ -9,7 +9,7 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     const clientID = config.getOrNull('FACEBOOK_APP_ID');
     const clientSecret = config.getOrNull('FACEBOOK_APP_SECRET');
 
-    const apiBase = config.getOrNull('API_PUBLIC_URL')
+    const apiBase = config.get('FRONTEND_URL') || config.getOrNull('API_PUBLIC_URL')
       || config.getOrNull('BACKEND_PUBLIC_URL')
       || config.get('FRONTEND_URL');
 
@@ -22,7 +22,7 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     super({
       clientID,
       clientSecret,
-      callbackURL: `${apiBase}/api/v1/auth/facebook/callback`,
+      callbackURL: `${apiBase.replace(/\/+$/, '')}/api/v1/auth/facebook/callback`,
       profileFields: ['id', 'emails', 'displayName', 'name'],
       scope: ['email'],
       enableProof: true,

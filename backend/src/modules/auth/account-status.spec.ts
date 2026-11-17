@@ -14,6 +14,7 @@ describe('account status authentication enforcement', () => {
   let prisma: any;
   let jwt: any;
   let config: any;
+  let sessions: any;
   const activeUser = {
     id: 'customer-1', tenantId: 'tenant-1', isActive: true, deletedAt: null,
     passwordHash: 'hash', fullName: 'Customer', email: 'customer@example.com',
@@ -32,16 +33,18 @@ describe('account status authentication enforcement', () => {
         create: jest.fn(),
       },
       passwordReset: { findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
+      authSession: { findFirst: jest.fn().mockResolvedValue({ id: 'session-1' }), updateMany: jest.fn() },
       $transaction: jest.fn().mockResolvedValue([]),
     };
     jwt = {
-      verifyAsync: jest.fn().mockResolvedValue({ sub: activeUser.id, tenantId: activeUser.tenantId }),
+      verifyAsync: jest.fn().mockResolvedValue({ sub: activeUser.id, tenantId: activeUser.tenantId, sid: 'session-1' }),
       signAsync: jest.fn().mockResolvedValue('new-token'),
     };
     config = { get: jest.fn((_key, fallback) => fallback || 'test-secret') };
+    sessions = { create: jest.fn().mockResolvedValue({ accessToken: 'token' }), rotate: jest.fn().mockResolvedValue({ accessToken: 'token' }), revokeAll: jest.fn() };
     service = new AuthService(prisma, jwt, config, {
       onUserVerified: jest.fn().mockResolvedValue(undefined),
-    } as any, {} as any, {} as any);
+    } as any, {} as any, {} as any, sessions);
   });
 
   it.each([false, true])('blocks disabled password login (mustChangePassword=%s) without issuing any token', async (mustChangePassword) => {
@@ -58,7 +61,7 @@ describe('account status authentication enforcement', () => {
   });
 
   it('blocks refresh tokens issued before deactivation', async () => {
-    prisma.user.findFirst.mockResolvedValue({ ...activeUser, isActive: false });
+    sessions.rotate.mockRejectedValue(new UnauthorizedException('Invalid session'));
     await expect(service.refreshToken('existing-refresh-token', 'tenant-1')).rejects.toThrow(UnauthorizedException);
     expect(jwt.signAsync).not.toHaveBeenCalled();
   });
@@ -176,7 +179,7 @@ describe('account status authentication enforcement', () => {
   it('makes the Passport strategy reject inactive or deleted accounts', async () => {
     prisma.user.findFirst.mockResolvedValue(null);
     const strategy = new JwtStrategy(config, prisma);
-    await expect(strategy.validate({ sub: activeUser.id, tenantId: 'tenant-1' })).rejects.toThrow(UnauthorizedException);
+    await expect(strategy.validate({ sub: activeUser.id, tenantId: 'tenant-1', sid: 'session-1' })).rejects.toThrow(UnauthorizedException);
     expect(prisma.user.findFirst).toHaveBeenCalledWith({
       where: { id: activeUser.id, tenantId: 'tenant-1', deletedAt: null, isActive: true },
       select: { id: true },
@@ -185,7 +188,7 @@ describe('account status authentication enforcement', () => {
 
   it('keeps the Passport strategy working for active accounts', async () => {
     const strategy = new JwtStrategy(config, prisma);
-    await expect(strategy.validate({ sub: activeUser.id, tenantId: 'tenant-1' }))
+    await expect(strategy.validate({ sub: activeUser.id, tenantId: 'tenant-1', sid: 'session-1' }))
       .resolves.toEqual({ id: activeUser.id, tenantId: 'tenant-1' });
   });
 });

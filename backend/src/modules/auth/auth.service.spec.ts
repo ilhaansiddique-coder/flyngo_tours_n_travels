@@ -7,6 +7,7 @@ import { ConfigService } from '../../config/config.service';
 import { ReferralService } from '../referral/referral.service';
 import { TrackingService } from '../tracking/tracking.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SessionService } from './session.service';
 import { UnauthorizedException, ConflictException } from '@nestjs/common';
 
 describe('AuthService', () => {
@@ -37,6 +38,8 @@ describe('AuthService', () => {
     signAsync: jest.fn().mockResolvedValue('mock-token'),
     verifyAsync: jest.fn(),
   };
+  const sessionTokens = { accessToken: 'mock-token', refreshToken: 'mock-refresh', expiresIn: 900, refreshExpiresAt: new Date(Date.now() + 86400_000) };
+  const mockSessions = { create: jest.fn().mockResolvedValue(sessionTokens), rotate: jest.fn().mockResolvedValue(sessionTokens), revokeAll: jest.fn() };
 
   const mockConfig = {
     get: jest.fn((key: string) => {
@@ -80,6 +83,7 @@ describe('AuthService', () => {
         { provide: ReferralService, useValue: mockReferralService },
         { provide: TrackingService, useValue: mockTrackingService },
         { provide: NotificationsService, useValue: mockNotifications },
+        { provide: SessionService, useValue: mockSessions },
       ],
     }).compile();
 
@@ -113,7 +117,7 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
       expect(result).toHaveProperty('expiresIn');
-      expect(mockJwtService.signAsync).toHaveBeenCalledTimes(2);
+      expect(mockSessions.create).toHaveBeenCalledWith('user-1', 'tenant-1', passwordHash);
     });
 
     it('should throw UnauthorizedException for invalid email', async () => {
@@ -345,7 +349,7 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException for invalid token', async () => {
-      mockJwtService.verifyAsync.mockRejectedValue(new Error('Invalid'));
+      mockSessions.rotate.mockRejectedValueOnce(new UnauthorizedException('Invalid session'));
 
       await expect(
         service.refreshToken('invalid-token', 'tenant-1'),

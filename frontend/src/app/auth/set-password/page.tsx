@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore, broadcastSession } from '@/stores/auth.store';
 import { api } from '@/lib/api';
 import { useLocale } from '@/contexts/locale-context';
 import { KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -76,14 +76,14 @@ export default function SetPasswordPage() {
 
     setSubmitting(true);
     try {
-      const res = await api.post<{ accessToken: string; refreshToken: string }>('/auth/change-password', {
+      const res = await api.post<{ accessToken: string }>('/auth/change-password', {
         changePasswordToken: token,
         currentPassword: tempPassword,
         newPassword,
       });
       // The change returns a real session, so the customer lands signed in
       // rather than being asked to log in a second time.
-      setTokens(res.accessToken, res.refreshToken);
+      setTokens(res.accessToken);
 
       // Tokens alone aren't enough: /dashboard (and the admin shell) gate on the
       // cached profile, so without this the customer is bounced straight back to
@@ -106,6 +106,7 @@ export default function SetPasswordPage() {
         // Non-fatal: they are signed in, the profile will load on next request.
       }
 
+      broadcastSession('login');
       setDone(true);
       setTimeout(() => router.push(callbackUrl ?? '/dashboard'), 900);
     } catch (err: any) {

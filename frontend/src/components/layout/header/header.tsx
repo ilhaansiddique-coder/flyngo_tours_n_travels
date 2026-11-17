@@ -374,7 +374,7 @@ export function Header() {
                 </span>
               </Link>
               <button
-                onClick={() => { logout(); window.location.href = '/'; }}
+                onClick={async () => { await logout(); }}
                 className="transition-all hover:scale-110 p-2"
                 style={{ color: 'var(--color-header-text-muted)' }}
                 title="Logout"
@@ -655,7 +655,7 @@ export function Header() {
                     Dashboard
                   </Link>
                   <button
-                    onClick={() => { logout(); setIsMobileMenuOpen(false); window.location.href = '/'; }}
+                    onClick={async () => { if (await logout()) setIsMobileMenuOpen(false); }}
                     className="px-4 py-2.5 rounded-xl text-base font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left"
                   >
                     Logout

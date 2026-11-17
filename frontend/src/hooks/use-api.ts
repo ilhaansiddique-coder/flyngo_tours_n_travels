@@ -3,23 +3,16 @@
 import { useCallback } from 'react';
 import { api } from '@/lib/api';
 import { rememberPrivateUpload, privateUploadTokens, bookingUploadTokens } from '@/lib/private-files';
-import { useAuthStore } from '@/stores/auth.store';
-
-function getTokenFromCookie(): string | null {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp('(?:^|; )flyngo-auth=([^;]*)'));
-  if (!match) return null;
-  try {
-    const parsed = JSON.parse(decodeURIComponent(match[1]));
-    return parsed?.state?.accessToken || null;
-  } catch {
-    return null;
-  }
-}
+import { useAuthStore, broadcastSession } from '@/stores/auth.store';
 
 export function useApi() {
   const accessToken = useAuthStore((s) => s.accessToken);
-  const auth = useCallback(() => ({ token: accessToken ?? getTokenFromCookie() ?? undefined }), [accessToken]);
+  const auth = useCallback(() => ({ token: accessToken ?? undefined }), [accessToken]);
+  const logoutAllSessions = useCallback(async () => {
+    await api.post('/auth/logout-all', {}, auth());
+    useAuthStore.getState().clearSession();
+    broadcastSession('logout');
+  }, [auth]);
 
   const getTours = useCallback(async (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
@@ -594,7 +587,7 @@ export function useApi() {
     passwordResetOptions, sendPasswordReset, resetPassword,
     getBookings, createBooking, createHotelBooking, createHajjUmrahBooking, trackBooking, adminCreateBooking, cancelBooking, updateBookingStatus,
     deleteBooking, getTrashedBookings, restoreBooking, purgeBooking, repairMissingBookingCustomers,
-    getPayments, getPaymentStats, updatePaymentStatus, recordAdminPayment,
+    getPayments, getPaymentStats, updatePaymentStatus, recordAdminPayment, logoutAllSessions,
     getPaymentMethods, getBookingPayment, uploadPaymentReceipt, submitPaymentConfirmation,
     getBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount,
     getMobileWallets, createMobileWallet, updateMobileWallet, deleteMobileWallet,

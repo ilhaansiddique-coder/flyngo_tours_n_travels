@@ -14,11 +14,10 @@ import { PrismaService } from '../../database/prisma.service';
 import { ConfigService } from '../../config/config.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { TokenResponseDto } from './dto/token-response.dto';
+import { SessionService, SessionTokens } from './session.service';
 import { ReferralService } from '../referral/referral.service';
 import { TrackingService } from '../tracking/tracking.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import type { SignOptions } from 'jsonwebtoken';
 
 // Single definition, shared with booking provisioning — see phone.util.ts for
 // why the login rule and the account key must be the same function.
@@ -35,9 +34,10 @@ export class AuthService {
     private readonly referralService: ReferralService,
     private readonly trackingService: TrackingService,
     private readonly notifications: NotificationsService,
+    private readonly sessions: SessionService,
   ) {}
 
-  async login(dto: LoginDto, tenantId: string): Promise<TokenResponseDto> {
+  async login(dto: LoginDto, tenantId: string): Promise<SessionTokens> {
     // Users can sign in by either email or phone. The frontend sends both keys
     // with the unused one blank, so only non-empty identifiers become filters:
     // an `undefined` value would be dropped by Prisma and let the OR match an
@@ -88,10 +88,10 @@ export class AuthService {
 
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 
-    return this.generateTokens(user.id, tenantId);
+    return this.generateTokens(user.id, tenantId, user.passwordHash);
   }
 
-  async register(dto: RegisterDto, tenantId: string, refCode?: string | null): Promise<TokenResponseDto> {
+  async register(dto: RegisterDto, tenantId: string, refCode?: string | null): Promise<SessionTokens> {
     // Uniqueness check — at least one of (email, phone) must be present
     // and neither can already be registered for this tenant.
     const orFilters: any[] = [];
@@ -189,24 +189,8 @@ export class AuthService {
     return this.generateTokens(user.id, tenantId);
   }
 
-  async refreshToken(refreshToken: string, tenantId: string): Promise<TokenResponseDto> {
-    try {
-      const payload = await this.jwtService.verifyAsync(refreshToken, {
-        secret: this.configService.get('JWT_REFRESH_SECRET'),
-      });
-
-      const user = await this.prisma.user.findFirst({
-        where: { id: payload.sub, tenantId },
-      });
-
-      if (!user || user.deletedAt || !user.isActive || !user.passwordHash) {
-        throw new UnauthorizedException('Invalid refresh token');
-      }
-
-      return this.generateTokens(user.id, tenantId);
-    } catch {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
+  async refreshToken(refreshToken: string, tenantId: string): Promise<SessionTokens> {
+    return this.sessions.rotate(refreshToken, tenantId);
   }
 
   async validateOAuthUser(
@@ -478,6 +462,7 @@ export class AuthService {
           claimedAt: new Date(),
         },
       }),
+      this.prisma.authSession.updateMany({ where: { userId: record.userId, tenantId: record.tenantId, revokedAt: null }, data: { revokedAt: new Date() } }),
       this.prisma.passwordReset.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
       this.prisma.passwordReset.updateMany({
         where: { userId: record.userId, usedAt: null, id: { not: record.id } },
@@ -659,6 +644,8 @@ export class AuthService {
       },
     });
 
+    await this.sessions.revokeAll(userId, tenantId);
+
     await this.prisma.auditLog.create({
       data: {
         tenantId,
@@ -700,10 +687,11 @@ export class AuthService {
       throw new BadRequestException('Choose a password different from the temporary one');
     }
 
+    const newHash = await bcryptjs.hash(newPassword, 12);
     await this.prisma.user.update({
-      where: { id: user.id },
+      where: { id: user.id, tenantId, isActive: true, deletedAt: null, passwordHash: user.passwordHash },
       data: {
-        passwordHash: await bcryptjs.hash(newPassword, 12),
+        passwordHash: newHash,
         mustChangePassword: false,
         tempPasswordExpiresAt: null,
         accountStatus: 'active',
@@ -714,7 +702,8 @@ export class AuthService {
       },
     });
 
-    return this.generateTokens(user.id, tenantId);
+    await this.sessions.revokeAll(user.id, tenantId);
+    return this.generateTokens(user.id, tenantId, newHash);
   }
 
   /**
@@ -750,28 +739,7 @@ export class AuthService {
       .join('');
   }
 
-  private async generateTokens(userId: string, tenantId: string): Promise<TokenResponseDto> {
-    const payload = { sub: userId, tenantId };
-
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload),
-      this.jwtService.signAsync(payload, {
-        secret: this.configService.get('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get('JWT_REFRESH_EXPIRY', '24h') as SignOptions['expiresIn'],
-      }),
-    ]);
-
-    // Report the ACTUAL access-token lifetime (seconds) to the client instead
-    // of a hardcoded value that silently disagrees with the configured expiry.
-    const accessExpiry = this.configService.get('JWT_ACCESS_EXPIRY', '24h');
-    const seconds = String(accessExpiry).endsWith('h')
-      ? Number(accessExpiry.replace(/h$/, '')) * 3600
-      : Number(accessExpiry);
-
-    return {
-      accessToken,
-      refreshToken,
-      expiresIn: Number.isFinite(seconds) && seconds > 0 ? seconds : 86400,
-    };
+  private async generateTokens(userId: string, tenantId: string, expectedPasswordHash?: string): Promise<SessionTokens> {
+    return expectedPasswordHash === undefined ? this.sessions.create(userId, tenantId) : this.sessions.create(userId, tenantId, expectedPasswordHash);
   }
 }

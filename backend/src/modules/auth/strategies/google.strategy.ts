@@ -9,7 +9,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     const clientID = config.getOrNull('GOOGLE_CLIENT_ID');
     const clientSecret = config.getOrNull('GOOGLE_CLIENT_SECRET');
 
-    const apiBase = config.getOrNull('API_PUBLIC_URL')
+    const apiBase = config.get('FRONTEND_URL') || config.getOrNull('API_PUBLIC_URL')
       || config.getOrNull('BACKEND_PUBLIC_URL')
       || config.get('FRONTEND_URL');
 
@@ -22,7 +22,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     super({
       clientID,
       clientSecret,
-      callbackURL: `${apiBase}/api/v1/auth/google/callback`,
+      callbackURL: `${apiBase.replace(/\/+$/, '')}/api/v1/auth/google/callback`,
       scope: ['email', 'profile'],
     });
   }

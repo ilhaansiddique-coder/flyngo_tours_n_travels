@@ -1,13 +1,12 @@
 'use client';
 
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore, broadcastSession } from '@/stores/auth.store';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface TokenResponse {
   accessToken: string;
-  refreshToken: string;
   expiresIn: number;
   // Returned instead of a session when the account still holds a staff-issued
   // temporary password. changePasswordToken is scoped to /auth/change-password
@@ -41,7 +40,7 @@ interface PrismaUser {
 }
 
 export function useAuth() {
-  const { accessToken, refreshToken, user, setTokens, setUser, logout: storeLogout, isAuthenticated } = useAuthStore();
+  const { user, setTokens, setUser, logout: storeLogout, isAuthenticated } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -86,9 +85,11 @@ export function useAuth() {
         return;
       }
 
-      setTokens(tokens.accessToken, tokens.refreshToken);
+      useAuthStore.getState().clearSession();
+      setTokens(tokens.accessToken);
       const profile = await fetchProfile(tokens.accessToken);
       setUser(profile);
+      broadcastSession('login');
       router.push(redirectTarget() ?? '/');
     } catch (err: any) {
       setError(err.message || 'Login failed');
@@ -110,9 +111,11 @@ export function useAuth() {
         address: address?.trim() || undefined,
       };
       const tokens = await api.post<TokenResponse>('/auth/register', body);
-      setTokens(tokens.accessToken, tokens.refreshToken);
+      useAuthStore.getState().clearSession();
+      setTokens(tokens.accessToken);
       const profile = await fetchProfile(tokens.accessToken);
       setUser(profile);
+      broadcastSession('login');
       router.push(redirectTarget() ?? '/');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
@@ -121,9 +124,10 @@ export function useAuth() {
     }
   };
 
-  const logout = () => {
-    storeLogout();
-    router.push('/');
+  const logout = async () => {
+    const success = await storeLogout();
+    if (success) router.push('/');
+    return success;
   };
 
   return {

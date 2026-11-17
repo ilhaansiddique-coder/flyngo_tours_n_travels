@@ -31,7 +31,7 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Access token not found');
     }
 
-    let payload: { sub: string; tenantId: string; scope?: string };
+    let payload: { sub: string; tenantId: string; sid?: string; scope?: string };
     try {
       payload = await this.jwtService.verifyAsync(token, {
         secret: this.configService.get('JWT_ACCESS_SECRET'),
@@ -51,6 +51,9 @@ export class JwtAuthGuard implements CanActivate {
     if (payload.scope) {
       throw new UnauthorizedException('This token cannot be used for this request');
     }
+    if (!payload.sid || !await this.prisma.authSession.findFirst({ where: {
+      id: payload.sid, userId: payload.sub, tenantId: payload.tenantId, revokedAt: null, expiresAt: { gt: new Date() },
+    }, select: { id: true } })) throw new UnauthorizedException('Session has ended. Sign in again.');
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
@@ -80,6 +83,7 @@ export class JwtAuthGuard implements CanActivate {
 
     request['user'] = {
       id: user.id,
+      sessionId: payload.sid,
       email: user.email,
       fullName: user.fullName,
       roleId: user.roleId,

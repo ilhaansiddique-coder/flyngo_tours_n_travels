@@ -16,14 +16,14 @@ account's token as anonymous and does not attach that user's identity or
 permissions to the request. This is consistent with its handling of expired
 tokens; it is not a ban on anonymous browsing or guest submissions.
 
-Deactivation does not delete customer data or change their password. Reactivation
-restores the existing authentication policy, including acceptance of otherwise
-valid unexpired tokens. This change does not implement permanent session
-revocation across reactivation. Requests already executing when an administrator
-disables an account are not cancelled.
+Deactivation does not delete customer data or change their password. It now revokes
+server-managed sessions. Reactivation requires a new sign-in; old access and
+refresh credentials remain invalid. Requests already executing when an
+administrator disables an account are not cancelled.
 
-No database migration or environment variable is required. Deploy the updated
-backend to apply these rules to production.
+The is_active field already exists. Server-managed session enforcement requires
+the session database migration and coordinated frontend/backend deployment;
+see [session deployment instructions](server-managed-sessions.md).
 
 ## Staging acceptance checks
 

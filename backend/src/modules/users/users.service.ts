@@ -285,6 +285,9 @@ export class UsersService {
       },
       include: { role: true },
     });
+    if (data.isActive === false || passwordHash) {
+      await this.prisma.authSession.updateMany({ where: { userId: id, tenantId, revokedAt: null }, data: { revokedAt: new Date() } });
+    }
     const { passwordHash: _ph, ...rest } = user;
     return rest;
   }

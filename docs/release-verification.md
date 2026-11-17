@@ -78,11 +78,14 @@ unconfigured for browser tests, so these tests issue no real messages or payment
 
 Local verification on 17 November 2026 used Node 22.23.5 and isolated PostgreSQL
 18 databases: 268 backend unit cases, 43 required database/HTTP integration cases,
-24 frontend unit cases and all 28 Chromium/Firefox cases passed. Both production
+28 frontend unit cases and all 30 Chromium/Firefox cases passed. Both production
 builds, lint, typechecks and actionlint 1.7.12 validation passed. Migration-based
 databases matched the Prisma schema after all 62 migrations. Hosted CI separately
 uses PostgreSQL 16, matching the deployment's database major version. Browser tests
 do not certify real OAuth, payment-provider or message-provider delivery.
+The homepage now uses an SVG globe when WebGL2 is unavailable. Browser coverage
+deliberately disables WebGL to verify that navigation remains usable without
+uncaught rendering errors; unsupported graphics is not ignored by the test gate.
 
 Configure branch protection/rulesets to require **Release verification**. In
 Coolify, use the GHCR image-based Compose deployment and disable independent Git

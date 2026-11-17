@@ -27,6 +27,19 @@ test('homepage navigation reaches the seeded tour catalogue', async ({ page }) =
   await expect(page.getByRole('heading', { name: 'Release Test Tour', exact: true })).toBeVisible();
 });
 
+test('homepage remains usable when WebGL is unavailable', async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...args: any[]) {
+      if (type === 'webgl2' || type === 'webgl' || type === 'experimental-webgl') return null;
+      return original.apply(this, [type, ...args] as any);
+    } as typeof original;
+  });
+  await page.goto('/');
+  await expect(page.getByRole('img', { name: 'Travel destinations globe' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+});
+
 for (const path of ['destinations', 'hotels', 'flights', 'visa', 'hajj', 'umrah']) {
   test(`public /${path} loads without assuming demo inventory`, async ({ page }) => {
     const response = await page.goto(`/${path}`);

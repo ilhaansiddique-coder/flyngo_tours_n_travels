@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useCallback } from "react";
+import { useEffect, useMemo, useRef, useCallback, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -13,6 +13,8 @@ import {
   type City,
 } from "@/lib/geo";
 import Plane from "./Plane";
+import { supportsWebGL2 } from '@/lib/webgl';
+import { GlobeFallback } from './GlobeFallback';
 
 const RADIUS = 1;
 
@@ -430,6 +432,7 @@ export default function Globe({
   routes?: GlobeRoute[];
 }) {
   const palette: Palette = PALETTE;
+  const [canRender3D] = useState(supportsWebGL2);
 
   const normalizedCities: (City & { id?: string })[] = useMemo(() => {
     if (!citiesProp || citiesProp.length === 0) return CITIES;
@@ -459,6 +462,8 @@ export default function Globe({
 
   const memoCities = useMemo(() => normalizedCities, [normalizedCities]);
   const memoRoutes = useMemo(() => routes, [routes]);
+
+  if (!canRender3D) return <GlobeFallback />;
 
   return (
     <Canvas

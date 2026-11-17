@@ -85,7 +85,7 @@ export function FlightsPageClient() {
             Tickets <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">made simple</span>
           </h1>
           <p className="text-lg text-on-surface-variant max-w-2xl leading-relaxed">
-            Search hundreds of trusted airlines for the best airfares and instant tickets worldwide. Instant e-ticket confirmation, 24/7 flight assistance, and rewards on every route.
+            Ask our team about available routes, fares and ticket conditions. Booking and ticket issuance are subject to confirmation.
           </p>
         </div>
       </section>
@@ -172,18 +172,18 @@ export function FlightsPageClient() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
             <div>
               <CheckCircle2 className="w-5 h-5 text-primary mb-2" />
-              <div className="font-semibold mb-1">Instant confirmation & e-tickets</div>
-              <p className="text-on-surface-variant">Immediate PNR generation and official e-tickets sent straight to your email.</p>
+              <div className="font-semibold mb-1">Ticket confirmation</div>
+              <p className="text-on-surface-variant">Our team will confirm availability and provide ticket details once issued.</p>
             </div>
             <div>
               <ShieldCheck className="w-5 h-5 text-primary mb-2" />
               <div className="font-semibold mb-1">Transparent airfares</div>
-              <p className="text-on-surface-variant">All taxes and airline surcharges included upfront with zero hidden fees.</p>
+              <p className="text-on-surface-variant">Review the fare, taxes, baggage allowances and applicable charges before confirming.</p>
             </div>
             <div>
               <Headphones className="w-5 h-5 text-primary mb-2" />
-              <div className="font-semibold mb-1">24/7 flight assistance</div>
-              <p className="text-on-surface-variant">Round-the-clock support for seat selection, meal preferences, and re-routing.</p>
+              <div className="font-semibold mb-1">Flight enquiries</div>
+              <p className="text-on-surface-variant">Ask about seat selection, meal preferences, route changes and available support.</p>
             </div>
           </div>
         </div>

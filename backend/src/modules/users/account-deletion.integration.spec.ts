@@ -76,6 +76,7 @@ describeDatabase('permanent account deletion against PostgreSQL', () => {
     await db.pilgrim.create({ data: { bookingId: pilgrimage.id, fullName: 'Pilgrim', passportNumber: 'PRIVATE', passportExpiry: new Date(), dateOfBirth: new Date() } });
     const payment = await db.payment.create({ data: { tenantId, userId: target.id, bookingId: booking.id, amount: 100, method: 'cash', transactionId: randomUUID(), receiptUrls: [privateFile] } });
     await db.invoice.create({ data: { tenantId, userId: target.id, bookingId: booking.id, paymentId: payment.id, invoiceNumber: randomUUID(), subtotal: 100, total: 100, lineItems: [] } });
+    await db.newsletterSubscription.create({ data: { tenantId, email: target.email!, consentVersion: 'newsletter-v1', unsubscribeHash: randomUUID() } });
     await db.deviceToken.create({ data: { tenantId, userId: target.id, token: randomUUID() } });
     await db.passwordReset.create({ data: { tenantId, userId: target.id, tokenHash: randomUUID(), channel: 'email', destination: target.email, expiresAt: new Date() } });
     await db.notification.create({ data: { tenantId, userId: target.id, type: 'email', title: 'Private', body: 'Contact data' } });
@@ -108,7 +109,7 @@ describeDatabase('permanent account deletion against PostgreSQL', () => {
     expect(await db.booking.findUnique({ where: { id: booking.id } })).toBeNull();
     expect(await db.booking.findUnique({ where: { id: guest.id } })).toBeNull();
     expect(await db.hajjUmrahBooking.findUnique({ where: { id: pilgrimage.id } })).toBeNull();
-    for (const model of ['payment', 'invoice', 'bookingTraveler', 'paymentMilestone', 'notification', 'review', 'blogPost', 'lead', 'hajjPreRegistration', 'trackingEvent', 'auditLog', 'affiliate', 'affiliateReferral', 'affiliateCommission', 'referralPayout', 'referralLedger', 'loyaltyAccount', 'loyaltyTransaction'] as const) {
+    for (const model of ['payment', 'invoice', 'bookingTraveler', 'paymentMilestone', 'notification', 'newsletterSubscription', 'review', 'blogPost', 'lead', 'hajjPreRegistration', 'trackingEvent', 'auditLog', 'affiliate', 'affiliateReferral', 'affiliateCommission', 'referralPayout', 'referralLedger', 'loyaltyAccount', 'loyaltyTransaction'] as const) {
       expect(await (db[model] as any).count({ where: { tenantId } })).toBe(0);
     }
     expect(await db.pilgrim.count({ where: { bookingId: pilgrimage.id } })).toBe(0);
@@ -217,6 +218,7 @@ describeDatabase('permanent account deletion against PostgreSQL', () => {
     files.push(unattachedPrivate.url);
     await db.userDocument.create({ data: { tenantId, userId: target.id, url: privateFile, filename: 'private.pdf' } });
     await db.deviceToken.create({ data: { tenantId, userId: target.id, token: randomUUID() } });
+    await db.newsletterSubscription.create({ data: { tenantId, email: target.email!, consentVersion: 'newsletter-v1', unsubscribeHash: randomUUID(), createdAt: old, lastRequestedAt: old } });
     await db.passwordReset.create({ data: { tenantId, userId: target.id, tokenHash: randomUUID(), channel: 'email', expiresAt: new Date() } });
     const booking = await db.booking.create({ data: { tenantId, userId: target.id, bookingType: 'tour', itemId: 'sql-test', bookingCode: randomUUID(), startDate: old, meta: { files: [privateFile] } } });
     await db.bookingTraveler.create({ data: { tenantId, bookingId: booking.id, fullName: 'SQL traveler' } });
@@ -244,6 +246,7 @@ describeDatabase('permanent account deletion against PostgreSQL', () => {
     const file = await fs.readFile(path.resolve(__dirname, '../../../prisma/maintenance/purge-non-admin-accounts.sql'), 'utf8');
     const sql = file.slice(file.indexOf('DO $cleanup$'), file.indexOf('$cleanup$;') + '$cleanup$;'.length);
     await db.$executeRawUnsafe(sql);
+    expect(await db.newsletterSubscription.count({ where: { tenantId } })).toBe(0);
     expect(await db.user.findMany({ where: { tenantId } })).toEqual([expect.objectContaining({
       id: keeper.id, email: keeper.email, passwordHash: keeper.passwordHash, avatarUrl: sharedFile,
     })]);

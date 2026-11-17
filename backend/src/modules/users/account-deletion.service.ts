@@ -36,6 +36,8 @@ export class AccountDeletionService {
         tenantId, id: { not: id }, deletedAt: null, email: { equals: email, mode: 'insensitive' },
       }, select: { id: true } })) email = null;
 
+      if (email) await tx.newsletterSubscription.deleteMany({ where: { tenantId, email, createdAt: { lte: cutoff }, OR: [{ lastRequestedAt: null }, { lastRequestedAt: { lte: cutoff } }] } });
+
       // Table/column arguments below are fixed application constants, never request input.
       const contactIds = async (table: string, phone: string, mail?: string, guestOnly = false) => {
         if (!key && !(mail && email)) return [] as string[];

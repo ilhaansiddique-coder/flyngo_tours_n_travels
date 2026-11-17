@@ -13,7 +13,7 @@ const PILLARS = [
   {
     icon: Plane,
     title: 'Flights',
-    description: 'Best-fare airfares across 400+ carriers, including private and chartered jets.',
+    description: 'Ask our team about available flight routes and fares.',
     tone: 'text-accent',
     ring: 'var(--color-accent)',
   },
@@ -27,14 +27,14 @@ const PILLARS = [
   {
     icon: FileCheck,
     title: 'Visas',
-    description: 'Hassle-free documentation with express turnaround and 98% approval rate.',
+    description: 'Get guidance on visa documents. Decisions and processing times are determined by the relevant authority.',
     tone: 'text-emerald-500 dark:text-emerald-300',
     ring: '#10b981',
   },
   {
     icon: Sparkles,
     title: 'Hajj & Umrah',
-    description: 'Licensed pilgrimage logistics with stays steps from the Haram.',
+    description: 'Review the accommodation and arrangements listed for each pilgrimage package.',
     tone: 'text-tertiary',
     ring: 'var(--color-tertiary)',
   },
@@ -129,7 +129,7 @@ export function WhyFlynGo() {
                 <Headphones className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
                 <div>
                   <div className="flex items-center gap-2 text-sm font-bold text-on-surface">
-                    24/7 Human Support
+                    Contact our travel team
                     <span
                       className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold"
                       style={{
@@ -138,12 +138,11 @@ export function WhyFlynGo() {
                       }}
                     >
                       <Clock className="w-2.5 h-2.5" />
-                      Always on
+                      Availability enquiries
                     </span>
                   </div>
                   <p className="text-[13px] text-muted leading-relaxed mt-1">
-                    Real humans in your timezone, on the ground and in the air — ready the
-                    moment you need them.
+                    Contact our team to discuss your plans and available support.
                   </p>
                 </div>
               </div>

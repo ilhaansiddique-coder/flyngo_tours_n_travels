@@ -318,18 +318,18 @@ export default function TransportPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
             <div>
               <Clock className="w-5 h-5 text-primary mb-2" />
-              <div className="font-semibold mb-1">On-time guarantee</div>
-              <p className="text-on-surface-variant">Real-time flight tracking and 60-minute complimentary wait time on airport pickups.</p>
+              <div className="font-semibold mb-1">Journey arrangements</div>
+              <p className="text-on-surface-variant">Confirm pickup times, waiting allowances and any additional charges before travel.</p>
             </div>
             <div>
               <Shield className="w-5 h-5 text-primary mb-2" />
-              <div className="font-semibold mb-1">Vetted professional drivers</div>
-              <p className="text-on-surface-variant">All drivers are licensed, insured, background-checked, and trained in hospitality.</p>
+              <div className="font-semibold mb-1">Driver arrangements</div>
+              <p className="text-on-surface-variant">Ask our team about the operator, driver and applicable transport conditions.</p>
             </div>
             <div>
               <MapPin className="w-5 h-5 text-primary mb-2" />
-              <div className="font-semibold mb-1">Global coverage</div>
-              <p className="text-on-surface-variant">Reliable private and group transfers available across 200+ cities in 60 countries.</p>
+              <div className="font-semibold mb-1">Available routes</div>
+              <p className="text-on-surface-variant">Browse listed routes or contact our team to check availability.</p>
             </div>
           </div>
         </div>

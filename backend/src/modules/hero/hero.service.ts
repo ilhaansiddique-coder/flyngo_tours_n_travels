@@ -30,8 +30,8 @@ export interface HeroSectionInput {
 }
 
 const DEFAULT_HERO: HeroSectionInput = {
-  badgeTextEn: 'Trusted by 50,000+ travelers',
-  badgeTextBn: '৫০,০০০+ যাত্রীর বিশ্বস্ত পছন্দ',
+  badgeTextEn: 'Plan your next journey',
+  badgeTextBn: 'আপনার পরবর্তী ভ্রমণের পরিকল্পনা করুন',
   titleLineAEn: 'Your escape,',
   titleLineABn: 'আপনার ছুটি,',
   titleLineBEn: 'purely refined.',
@@ -48,12 +48,7 @@ const DEFAULT_HERO: HeroSectionInput = {
   ctaVisaBn: 'ভিসা সেবা',
   ctaDestinationsEn: 'Destinations',
   ctaDestinationsBn: 'গন্তব্য',
-  stats: [
-    { value: '500+', labelEn: 'Destinations', labelBn: 'গন্তব্য' },
-    { value: '50K+', labelEn: 'Happy travelers', labelBn: 'খুশি যাত্রী' },
-    { value: '1K+', labelEn: 'Tour packages', labelBn: 'ট্যুর প্যাকেজ' },
-    { value: '24/7', labelEn: 'Concierge', labelBn: 'পরিষেবা' },
-  ],
+  stats: [],
   quickPlaces: ['Bali', 'Dubai', 'Maldives', 'Switzerland', 'Thailand'],
   isActive: true,
 };

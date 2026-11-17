@@ -201,16 +201,16 @@ export function ToursPageClient() {
             <div>
               <Compass className="w-5 h-5 text-primary mb-2" />
               <div className="font-semibold mb-1">Handpicked experiences</div>
-              <p className="text-on-surface-variant">Carefully crafted itineraries led by certified local guides and travel experts.</p>
+              <p className="text-on-surface-variant">Review each itinerary for its included activities and guiding arrangements.</p>
             </div>
             <div>
               <ShieldCheck className="w-5 h-5 text-primary mb-2" />
-              <div className="font-semibold mb-1">Best price guarantee</div>
-              <p className="text-on-surface-variant">Transparent pricing with no hidden charges, flexible bookings, and points on every tour.</p>
+              <div className="font-semibold mb-1">Package pricing</div>
+              <p className="text-on-surface-variant">Review the package price, inclusions, exclusions and booking conditions.</p>
             </div>
             <div>
               <Headphones className="w-5 h-5 text-primary mb-2" />
-              <div className="font-semibold mb-1">24/7 dedicated support</div>
+              <div className="font-semibold mb-1">Travel enquiries</div>
               <p className="text-on-surface-variant">White-glove concierge support before, during, and after your trip.</p>
             </div>
           </div>

@@ -10,12 +10,7 @@ import {
   type GlobeCity,
 } from '@/hooks/use-homepage-data';
 
-const STAT_FALLBACK: HeroStat[] = [
-  { value: '500+', labelEn: 'Destinations', labelBn: 'গন্তব্য' },
-  { value: '50K+', labelEn: 'Happy travelers', labelBn: 'খুশি যাত্রী' },
-  { value: '1K+', labelEn: 'Tour packages', labelBn: 'ট্যুর প্যাকেজ' },
-  { value: '24/7', labelEn: 'Concierge', labelBn: 'পরিষেবা' },
-];
+const STAT_FALLBACK: HeroStat[] = [];
 
 const QUICK_PLACES_FALLBACK = ['Bali', 'Dubai', 'Maldives', 'Switzerland', 'Thailand'];
 

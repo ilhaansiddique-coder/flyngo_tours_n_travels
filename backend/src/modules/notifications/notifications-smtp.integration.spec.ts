@@ -58,4 +58,16 @@ describe('patched SMTP transport compatibility', () => {
     expect(message).toContain('Subject: Payment received');
     expect(message).toContain('Payment of 100 BDT');
   });
+
+  it('preserves newsletter confirmation links in a real SMTP message', async () => {
+    const values: Record<string, string> = { SMTP_HOST: '127.0.0.1', SMTP_PORT: String(port), SMTP_SECURE: 'false',
+      SMTP_USER: 'test-mailer', SMTP_PASSWORD: 'test-password', EMAIL_FROM: 'Flyngo <noreply@example.invalid>' };
+    const service = new NotificationsService({} as any, { getOrNull: (key: string) => values[key] || null } as any);
+    await expect(service.sendRawHtmlEmail('subscriber@example.invalid', 'Confirm subscription',
+      '<p><a href="https://example.invalid/newsletter/confirm#token=test-token">Confirm subscription</a></p>'))
+      .resolves.toMatchObject({ sent: true, provider: 'smtp' });
+    expect(commands).toContain('RCPT TO:<subscriber@example.invalid>');
+    expect(message).toContain('newsletter/confirm#token');
+    expect(message).toContain('Content-Type: text/html');
+  });
 });

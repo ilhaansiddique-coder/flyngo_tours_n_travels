@@ -130,6 +130,9 @@ BEGIN
   DELETE FROM public.referral_payouts WHERE tenant_id = scope_id AND affiliate_id IN (SELECT id FROM _purge_affiliates);
   DELETE FROM public.affiliate_referrals WHERE id IN (SELECT id FROM _purge_referrals);
   DELETE FROM public.affiliates WHERE id IN (SELECT id FROM _purge_affiliates);
+  DELETE FROM public.newsletter_subscriptions n WHERE n.tenant_id = scope_id AND EXISTS (
+    SELECT 1 FROM _purge_contacts c WHERE n.created_at <= c.cutoff AND n.email = c.email
+      AND (n.last_requested_at IS NULL OR n.last_requested_at <= c.cutoff));
   DELETE FROM public.leads WHERE id IN (SELECT id FROM _purge_leads);
   DELETE FROM public.hajj_pre_registrations WHERE id IN (SELECT id FROM _purge_pre_registrations);
   DELETE FROM public.tracking_events e WHERE e.tenant_id = scope_id AND

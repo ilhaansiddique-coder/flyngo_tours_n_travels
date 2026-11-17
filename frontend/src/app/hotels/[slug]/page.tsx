@@ -243,7 +243,7 @@ export default function HotelDetailPage() {
           </span>
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400">
             <ShieldCheck className="w-3.5 h-3.5" />
-            Best Rate Guaranteed
+            Review room rates
           </span>
         </div>
 
@@ -369,12 +369,12 @@ export default function HotelDetailPage() {
             </div>
             <div className="flex flex-col items-center gap-1">
               <CheckCircle2 className="w-5 h-5 text-accent" />
-              <span className="text-xs font-semibold text-on-surface">Instant Confirmation</span>
+              <span className="text-xs font-semibold text-on-surface">Subject to confirmation</span>
               <span className="text-[11px] text-on-surface-variant">Direct voucher issued</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <PhoneCall className="w-5 h-5 text-accent" />
-              <span className="text-xs font-semibold text-on-surface">24/7 Support</span>
+              <span className="text-xs font-semibold text-on-surface">Contact support</span>
               <span className="text-[11px] text-on-surface-variant">Concierge assistance</span>
             </div>
           </div>
@@ -438,11 +438,11 @@ export default function HotelDetailPage() {
                             </span>
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
                               <CheckCircle2 className="w-3.5 h-3.5" />
-                              Free Cancellation
+                              Check cancellation terms
                             </span>
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium">
                               <Coffee className="w-3.5 h-3.5" />
-                              Breakfast Included
+                              Check meal inclusions
                             </span>
                           </div>
 
@@ -587,7 +587,7 @@ export default function HotelDetailPage() {
                   <span>Cancellation &amp; Prepayment</span>
                 </div>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
-                  Free cancellation available up to 48 hours prior to arrival. Late cancellations may incur a 1-night fee depending on room policy.
+                  Cancellation deadlines, prepayment requirements and fees depend on the selected room and supplier. Confirm these conditions before booking.
                 </p>
               </div>
 
@@ -607,7 +607,7 @@ export default function HotelDetailPage() {
                   <span>Accepted Payments</span>
                 </div>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
-                  We accept bKash, Nagad, Visa, MasterCard, and American Express. Secure encrypted transactions guaranteed.
+                  Available payment methods are shown at checkout. Submitted payment details are reviewed by our team.
                 </p>
               </div>
             </div>
@@ -765,22 +765,22 @@ export default function HotelDetailPage() {
             </Button>
 
             <p className="text-[11px] text-center text-muted">
-              You won&apos;t be charged yet. Instant confirmation.
+              Submit your request for our team to review availability and confirm the booking.
             </p>
 
             {/* Trust Assurances */}
             <div className="pt-3 border-t border-hairline space-y-2 text-xs text-on-surface-variant">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Best Rate Guarantee — No hidden fees</span>
+                <span>Review room pricing and inclusions</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" />
-                <span>Free cancellation up to 48h prior</span>
+                <span>Check the selected cancellation policy</span>
               </div>
               <div className="flex items-center gap-2">
                 <PhoneCall className="w-4 h-4 text-accent shrink-0" />
-                <span>24/7 Dedicated Customer Concierge</span>
+                <span>Contact our travel team</span>
               </div>
             </div>
           </div>

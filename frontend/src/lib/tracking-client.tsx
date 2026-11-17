@@ -174,7 +174,7 @@ export function TrackingScripts() {
   // SPA PageView: the pixel's own 'PageView' fires once on mount; every
   // subsequent route change needs an explicit call (no full page reload).
   useEffect(() => {
-    if (!settings?.metaPixelId) return;
+    if (pathname.startsWith('/newsletter') || !settings?.metaPixelId) return;
     if (firstPath.current) {
       firstPath.current = false;
       return;
@@ -193,7 +193,7 @@ export function TrackingScripts() {
     } catch {}
   }, [pathname, settings, consent]);
 
-  if (!settings) return null;
+  if (!settings || pathname.startsWith('/newsletter')) return null;
 
   const consentOk = !settings.requireMarketingConsent || consent === 'all';
 
@@ -267,6 +267,7 @@ export async function trackEvent(
     fullName?: string;
   } = {},
 ) {
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/newsletter')) return;
   const utm = getStoredUtm();
   const sid = getOrCreateSessionId();
   const fp = getMetaFingerprint();

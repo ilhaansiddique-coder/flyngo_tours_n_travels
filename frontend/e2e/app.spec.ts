@@ -40,6 +40,45 @@ test('homepage remains usable when WebGL is unavailable', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
 });
 
+test('newsletter keeps the address and shows a failure when submission cannot reach the server', async ({ page }) => {
+  await page.route('**/api/v1/newsletter/subscribe', (route) => route.abort('failed'));
+  await page.goto('/');
+  const form = page.getByRole('form', { name: 'Newsletter signup' });
+  await form.getByRole('textbox', { name: 'Newsletter email' }).fill('browser@example.invalid');
+  await form.getByRole('checkbox').check();
+  await form.getByRole('button', { name: 'Subscribe', exact: true }).click();
+  await expect(form.getByRole('alert')).toBeVisible();
+  await expect(form.getByRole('status')).toHaveCount(0);
+  await expect(form.getByRole('textbox')).toHaveValue('browser@example.invalid');
+});
+
+test('confirmation links are noindex and do not change consent on page load', async ({ page }) => {
+  let posts = 0;
+  page.on('request', (request) => { if (request.url().endsWith('/api/v1/newsletter/confirm') && request.method() === 'POST') posts++; });
+  await page.goto(`/newsletter/confirm#token=${'a'.repeat(64)}`);
+  await expect(page.getByRole('button', { name: 'Confirm subscription', exact: true })).toBeEnabled();
+  expect(posts).toBe(0);
+  await expect(page).not.toHaveURL(/#/);
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await page.getByRole('button', { name: 'Confirm subscription', exact: true }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'invalid or expired' })).toBeVisible();
+  expect(posts).toBe(1);
+});
+
+test('every generated sitemap URL resolves and includes live seeded inventory', async ({ request }) => {
+  const sitemap = await request.get('/sitemap.xml');
+  expect(sitemap.status()).toBe(200);
+  const xml = await sitemap.text();
+  const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+  expect(urls).toContain('http://127.0.0.1:3108/tours/release-test-tour');
+  expect(urls).not.toContain('http://127.0.0.1:3108/visa-countries');
+  for (const url of urls) {
+    expect(new URL(url).origin).toBe('http://127.0.0.1:3108');
+    expect((await request.get(url)).status(), url).toBe(200);
+  }
+  expect((await request.get('/api/v1/newsletter/admin/subscriptions')).status()).toBe(401);
+});
+
 for (const path of ['destinations', 'hotels', 'flights', 'visa', 'hajj', 'umrah']) {
   test(`public /${path} loads without assuming demo inventory`, async ({ page }) => {
     const response = await page.goto(`/${path}`);

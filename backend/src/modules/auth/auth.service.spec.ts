@@ -222,16 +222,15 @@ describe('AuthService', () => {
       }) });
     });
 
-    it('checks the canonical phone key even for formatted or soft-deleted accounts', async () => {
-      mockPrisma.user.findFirst.mockResolvedValue({ id: 'reserved-user', deletedAt: new Date() });
+    it('checks only non-deleted accounts, allowing reuse with a fresh account ID', async () => {
+      mockPrisma.user.findFirst.mockResolvedValue(null);
       await expect(service.register({
         fullName: 'New User', phone: '+880 1712345678', password: 'Password123!',
-      }, 'tenant-1')).rejects.toThrow(ConflictException);
+      }, 'tenant-1')).resolves.toHaveProperty('accessToken');
       expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({ where: {
-        tenantId: 'tenant-1', OR: expect.arrayContaining([{ phoneKey: '1712345678' }]),
+        tenantId: 'tenant-1', deletedAt: null, OR: expect.arrayContaining([{ phoneKey: '1712345678' }]),
       } });
-      expect(mockPrisma.user.create).not.toHaveBeenCalled();
-      expect(mockJwtService.signAsync).not.toHaveBeenCalled();
+      expect(mockPrisma.user.create).toHaveBeenCalled();
     });
 
     it('returns a conflict if a concurrent booking reserves the phone', async () => {
@@ -301,6 +300,9 @@ describe('AuthService', () => {
       }, 'tenant-1');
       expect(mockPrisma.user.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ creationSource: 'oauth' }),
+      });
+      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
+        where: { tenantId: 'tenant-1', email: { equals: 'social@example.com', mode: 'insensitive' }, deletedAt: null },
       });
     });
 

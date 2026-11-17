@@ -34,7 +34,10 @@ describe('AdminService', () => {
     },
     user: {
       count: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
     },
+    $transaction: jest.fn(async (callback) => callback(mockPrisma)),
     payment: {
       aggregate: jest.fn(),
     },
@@ -58,6 +61,36 @@ describe('AdminService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe('restore customer identifiers', () => {
+    beforeEach(() => {
+      mockPrisma.user.findFirst.mockReset();
+      mockPrisma.user.update.mockReset();
+    });
+
+    it('reclaims a released key when neither identifier has been reused', async () => {
+      mockPrisma.user.findFirst.mockResolvedValueOnce({
+        id: 'deleted-user', phone: '+880 1325169442', email: 'customer@example.com', deletedAt: new Date(),
+      }).mockResolvedValueOnce(null);
+      await expect(service.restoreTrashItem('tenant-1', 'user', 'deleted-user')).resolves.toMatchObject({ restored: true });
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'deleted-user' }, data: { deletedAt: null, isActive: true, phoneKey: '1325169442' },
+      });
+    });
+
+    it('blocks restoring over an account that has reused either contact detail', async () => {
+      mockPrisma.user.findFirst.mockResolvedValueOnce({
+        id: 'deleted-user', phone: '+880 1325169442', email: 'customer@example.com', deletedAt: new Date(),
+      }).mockResolvedValueOnce({ id: 'replacement-user' });
+      await expect(service.restoreTrashItem('tenant-1', 'user', 'deleted-user')).rejects.toThrow(ConflictException);
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+      expect(mockPrisma.user.findFirst).toHaveBeenLastCalledWith({ where: {
+        tenantId: 'tenant-1', deletedAt: null, id: { not: 'deleted-user' }, OR: [
+          { phoneKey: '1325169442' }, { email: { equals: 'customer@example.com', mode: 'insensitive' } },
+        ],
+      }, select: { id: true } });
+    });
   });
 
   describe('getDashboardStats', () => {

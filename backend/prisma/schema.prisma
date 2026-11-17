@@ -121,8 +121,8 @@ model User {
 
   // Canonical phone match key (last 10 digits) — the same rule login already
   // used, so "+880 1712345678", "01712345678" and "8801712345678" resolve to one
-  // account instead of three. Unique per tenant; this is what makes the upsert
-  // on a booking safe.
+  // account instead of three. Unique per tenant for non-deleted accounts;
+  // deletion clears the key, and restoration reclaims it after a conflict check.
   phoneKey String? @map("phone_key")
 
   mustChangePassword    Boolean   @default(false) @map("must_change_password")

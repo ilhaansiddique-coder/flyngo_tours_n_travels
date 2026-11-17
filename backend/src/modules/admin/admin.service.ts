@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { phoneKey } from '../../common/utils/phone.util';
 
 @Injectable()
 export class AdminService {
@@ -103,6 +104,22 @@ export class AdminService {
     const row = await model.findFirst({ where: { id, tenantId, deletedAt: { not: null } } });
     if (!row) throw new NotFoundException(`${def.label} not found in trash`);
     try {
+      if (entity === 'user') {
+        await this.prisma.$transaction(async (tx) => {
+          const key = phoneKey(row.phone);
+          const identifiers: any[] = [];
+          if (key) identifiers.push({ phoneKey: key });
+          if (row.email) identifiers.push({ email: { equals: row.email, mode: 'insensitive' } });
+          if (identifiers.length && await tx.user.findFirst({
+            where: { tenantId, deletedAt: null, id: { not: id }, OR: identifiers },
+            select: { id: true },
+          })) {
+            throw new ConflictException('Cannot restore this customer because another current account uses their phone number or email.');
+          }
+          await tx.user.update({ where: { id }, data: { deletedAt: null, isActive: true, phoneKey: key } });
+        });
+        return { restored: true, entity, id };
+      }
       await model.update({
         where: { id },
         data: { deletedAt: null, ...(def.isActive ? { isActive: true } : {}) },

@@ -21,3 +21,16 @@ Deploy the backend and frontend together. The backend entrypoint applies
 starting. Confirm that migration succeeded before serving the new backend;
 the code requires its new columns. No database reset or historical backfill
 is needed. Existing creation timestamps are preserved.
+
+## Deleted contact details
+
+Deleted accounts do not reserve phone numbers or email addresses. Their raw
+contact details remain in historical rows, but deletion clears the canonical
+phone key and creation checks only current accounts. A new registration creates
+a new ID, with its own creator and creation timestamp; old history is not
+transferred. The `20261117150000_release_deleted_customer_identifiers` migration
+also releases keys held by earlier deletions.
+
+Restoration reclaims the phone key only if the phone and email are not currently
+used by another account. Otherwise it returns a conflict and leaves both records
+unchanged. Editing a deleted record does not reserve its phone key again.

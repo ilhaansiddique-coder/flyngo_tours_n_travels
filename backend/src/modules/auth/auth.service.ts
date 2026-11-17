@@ -95,18 +95,18 @@ export class AuthService {
     // Uniqueness check — at least one of (email, phone) must be present
     // and neither can already be registered for this tenant.
     const orFilters: any[] = [];
-    if (dto.email) orFilters.push({ email: dto.email });
+    if (dto.email) orFilters.push({ email: { equals: dto.email, mode: 'insensitive' } });
     const core = phoneCore(dto.phone);
     if (core) orFilters.push({ phone: { endsWith: core } });
     else if (dto.phone) orFilters.push({ phone: dto.phone });
 
     const existing = await this.prisma.user.findFirst({
-      // The unique phone key also covers formatted and soft-deleted rows.
-      // Keep these reserved: registration must never claim an existing account.
+      // A deleted account's identifiers are reusable; a new signup gets a new ID.
       where: {
         tenantId,
+        deletedAt: null,
         OR: [
-          { AND: [{ deletedAt: null }, { OR: orFilters }] },
+          ...orFilters,
           ...(core ? [{ phoneKey: core }] : []),
         ],
       },
@@ -215,7 +215,7 @@ export class AuthService {
     referralCode?: string | null,
   ) {
     let user = await this.prisma.user.findFirst({
-      where: { email: profile.email, tenantId },
+      where: { email: { equals: profile.email, mode: 'insensitive' }, tenantId, deletedAt: null },
     });
 
     if (user) {

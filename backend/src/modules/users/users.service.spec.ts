@@ -5,7 +5,7 @@ import { LoyaltyService } from '../loyalty/loyalty.service';
 
 describe('customer creation attribution', () => {
   const prisma = {
-    user: { findFirst: jest.fn(), create: jest.fn(), findMany: jest.fn(), count: jest.fn() },
+    user: { findFirst: jest.fn(), create: jest.fn(), findMany: jest.fn(), count: jest.fn(), update: jest.fn() },
     role: { findFirst: jest.fn() },
   };
   const loyalty = { awardSignupBonus: jest.fn().mockResolvedValue(undefined) };
@@ -55,18 +55,39 @@ describe('customer creation attribution', () => {
     }));
   });
 
-  it('rejects a deleted customer phone before insertion, preserving its identity and creator', async () => {
+  it('allows a new account to reuse a deleted account’s phone and email', async () => {
     prisma.user.findFirst.mockResolvedValueOnce({ id: 'staff-1' })
-      .mockResolvedValueOnce({ id: 'deleted-customer', deletedAt: new Date() });
+      .mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     await expect(service.createUser('tenant-1', {
-      fullName: 'Replacement Customer', phone: '+880 1919187588',
-    }, 'staff-1')).rejects.toThrow('Restore that customer from Trash');
-    expect(prisma.user.findFirst).toHaveBeenLastCalledWith({
-      where: { tenantId: 'tenant-1', phoneKey: '1919187588' },
-      select: { id: true, deletedAt: true },
+      fullName: 'Replacement Customer', phone: '+880 1919187588', email: 'customer@example.com',
+    }, 'staff-1')).resolves.toHaveProperty('id');
+    expect(prisma.user.findFirst).toHaveBeenNthCalledWith(2, {
+      where: { tenantId: 'tenant-1', email: { equals: 'customer@example.com', mode: 'insensitive' }, deletedAt: null },
     });
-    expect(prisma.user.create).not.toHaveBeenCalled();
-    expect(loyalty.awardSignupBonus).not.toHaveBeenCalled();
+    expect(prisma.user.findFirst).toHaveBeenLastCalledWith({
+      where: { tenantId: 'tenant-1', phoneKey: '1919187588', deletedAt: null },
+      select: { id: true },
+    });
+    expect(prisma.user.create).toHaveBeenCalled();
+  });
+
+  it('releases the phone key on deletion without removing historical contact details', async () => {
+    await service.removeUser('customer-1', 'tenant-1');
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'customer-1' },
+      data: { deletedAt: expect.any(Date), phoneKey: null, refreshToken: null },
+    });
+  });
+
+  it('does not reserve a phone key while editing a deleted customer', async () => {
+    prisma.user.findFirst.mockResolvedValueOnce({
+      id: 'deleted-customer', phone: '+8801919187588', deletedAt: new Date(), roleId: 'role-customer',
+    });
+    prisma.user.update.mockResolvedValueOnce({ id: 'deleted-customer' });
+    await service.updateUser('deleted-customer', 'tenant-1', { fullName: 'Updated Historical Name' });
+    expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ phoneKey: null }),
+    }));
   });
 
   it.each([

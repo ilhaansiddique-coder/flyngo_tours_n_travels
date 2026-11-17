@@ -33,7 +33,9 @@ export class UsersService {
     // matches any existing null-email user and wrongly reports a conflict.
     const email = typeof data.email === 'string' ? data.email.trim() : '';
     if (email) {
-      const existing = await this.prisma.user.findFirst({ where: { tenantId, email } });
+      const existing = await this.prisma.user.findFirst({
+        where: { tenantId, email: { equals: email, mode: 'insensitive' }, deletedAt: null },
+      });
       if (existing) throw new ConflictException('A user with this email already exists');
     }
 
@@ -43,15 +45,11 @@ export class UsersService {
     const phone = typeof data.phone === 'string' ? data.phone.trim() || null : null;
     const key = phoneKey(phone);
     if (key) {
-      // The database reserves this key even after soft deletion. Check those
-      // rows too, rather than attempting an insert the unique index rejects.
+      // Deletion releases the canonical key; only current accounts reserve it.
       const dup = await this.prisma.user.findFirst({
-        where: { tenantId, phoneKey: key },
-        select: { id: true, deletedAt: true },
+        where: { tenantId, phoneKey: key, deletedAt: null },
+        select: { id: true },
       });
-      if (dup?.deletedAt) {
-        throw new ConflictException('A deleted customer already uses this phone number. Restore that customer from Trash or use a different number.');
-      }
       if (dup) throw new ConflictException('A user with this phone number already exists');
     }
 
@@ -106,7 +104,7 @@ export class UsersService {
       const target = error?.meta?.target;
       const fields = Array.isArray(target) ? target : [target ?? ''];
       if (error?.code === 'P2002' && fields.some((field) => /phone_?key|email/i.test(field))) {
-        throw new ConflictException('A user with this email or phone already exists. Check Customers and Trash before trying again.');
+        throw new ConflictException('A user with this email or phone already exists. Check Customers before trying again.');
       }
       throw err;
     });
@@ -134,7 +132,7 @@ export class UsersService {
   }
 
   async findByEmail(email: string, tenantId: string) {
-    return this.prisma.user.findFirst({ where: { email, tenantId } });
+    return this.prisma.user.findFirst({ where: { email, tenantId, deletedAt: null } });
   }
 
   async updateProfile(
@@ -260,7 +258,8 @@ export class UsersService {
     // Re-normalize the phone key whenever the phone changes, so login-by-phone
     // and booking auto-provisioning keep matching the updated number.
     const phone = typeof data.phone === 'string' ? data.phone.trim() || null : existing.phone;
-    const key = phoneKey(phone);
+    // Editing a trashed record must not reserve its number again.
+    const key = existing.deletedAt ? null : phoneKey(phone);
     if (key) {
       const dup = await this.prisma.user.findFirst({
         where: { tenantId, phoneKey: key, deletedAt: null, id: { not: id } },
@@ -332,7 +331,11 @@ export class UsersService {
   async removeUser(id: string, tenantId: string) {
     const existing = await this.prisma.user.findFirst({ where: { id, tenantId } });
     if (!existing) throw new NotFoundException('User not found');
-    return this.prisma.user.update({ where: { id }, data: { deletedAt: new Date() } });
+    return this.prisma.user.update({
+      where: { id },
+      // Preserve historical contact details while releasing the unique login key.
+      data: { deletedAt: new Date(), phoneKey: null, refreshToken: null },
+    });
   }
 
   // ===========================================================================
@@ -471,6 +474,7 @@ export class UsersService {
           fullName: '[deleted user]',
           email: tombstoneEmail,
           phone: null,
+          phoneKey: null,
           avatarUrl: null,
           passwordHash: null,
           provider: null,

@@ -1,159 +1,138 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Flyngo Public Site', () => {
-  test('homepage loads successfully', async ({ page }) => {
-    await page.goto('/');
-
-    await expect(page.locator('h1')).toContainText('Extraordinary Journey');
-    await expect(page.locator('text=Explore Tours')).toBeVisible();
-    await expect(page.locator('text=View Destinations')).toBeVisible();
-  });
-
-  test('navigation works', async ({ page }) => {
-    await page.goto('/');
-    await page.click('text=Destinations');
-    await expect(page).toHaveURL('/destinations');
-    await expect(page.locator('h1')).toContainText('Explore Destinations');
-  });
-
-  test('tours page shows cards', async ({ page }) => {
-    await page.goto('/tours');
-    await expect(page.locator('h1')).toContainText('Explore Our Tours');
-    await expect(page.locator('text=Bali Paradise Explorer')).toBeVisible();
-    await expect(page.locator('text=Dubai Luxury Experience')).toBeVisible();
-  });
-
-  test('hotels page loads', async ({ page }) => {
-    await page.goto('/hotels');
-    await expect(page.locator('h1')).toContainText('Find Your Perfect Stay');
-  });
-
-  test('flights page loads', async ({ page }) => {
-    await page.goto('/flights');
-    await expect(page.locator('h1')).toContainText('Find & Book Flights');
-  });
-
-  test('auth pages work', async ({ page }) => {
-    await page.goto('/auth/login');
-    await expect(page.locator('text=Welcome Back')).toBeVisible();
-    await expect(page.locator('input[type="email"]')).toBeVisible();
-    await expect(page.locator('input[type="password"]')).toBeVisible();
-
-    await page.goto('/auth/register');
-    await expect(page.locator('text=Create Your Account')).toBeVisible();
-  });
-
-  test('booking flow renders steps', async ({ page }) => {
-    await page.goto('/booking');
-    await expect(page.locator('text=Details')).toBeVisible();
-    await expect(page.locator('text=Review')).toBeVisible();
-    await expect(page.locator('text=Payment')).toBeVisible();
-    await expect(page.locator('text=Continue')).toBeVisible();
-  });
-});
-
-test.describe('Flyngo Admin Panel', () => {
-  test('admin dashboard loads', async ({ page }) => {
-    await page.goto('/admin/dashboard');
-    await expect(page.locator('text=Flyngo Admin')).toBeVisible();
-    await expect(page.locator('text=Total Bookings')).toBeVisible();
-  });
-
-  test('admin sidebar navigation', async ({ page }) => {
-    await page.goto('/admin/dashboard');
-    await page.click('text=Bookings');
-    await expect(page).toHaveURL('/admin/bookings');
-    await page.click('text=Customers');
-    await expect(page).toHaveURL('/admin/customers');
-  });
-
-  test('admin CRUD tables render', async ({ page }) => {
-    for (const pagePath of ['bookings', 'tours', 'hotels', 'flights', 'coupons']) {
-      await page.goto(`/admin/${pagePath}`);
-      await expect(page.locator('table')).toBeVisible();
+let serverErrors: string[] = [];
+let runtimeErrors: string[] = [];
+test.beforeEach(async ({ page }) => {
+  serverErrors = [];
+  runtimeErrors = [];
+  page.on('response', (response) => {
+    if (response.url().startsWith('http://127.0.0.1:3108/api/v1/') && response.status() >= 500) {
+      serverErrors.push(`${response.status()} ${new URL(response.url()).pathname}`);
     }
   });
-
-  test('CMS pages load', async ({ page }) => {
-    await page.goto('/admin/cms/pages');
-    await expect(page.locator('text=New Page')).toBeVisible();
-
-    await page.goto('/admin/cms/blogs');
-    await expect(page.locator('text=New Post')).toBeVisible();
-
-    await page.goto('/admin/cms/media');
-    await expect(page.locator('text=Upload')).toBeVisible();
-  });
+  page.on('pageerror', (error) => runtimeErrors.push(error.message));
+});
+test.afterEach(() => {
+  expect(serverErrors, 'API server failures during the browser flow').toEqual([]);
+  expect(runtimeErrors, 'Uncaught browser exceptions').toEqual([]);
 });
 
-test.describe('Flyngo Search & Discovery', () => {
-  test('/search renders for a destination keyword', async ({ page }) => {
-    await page.goto('/search?q=dubai');
-    await expect(page.locator('h1')).toContainText('Results for');
-  });
-
-  test('smart search bar accepts nationality + residence', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('input[placeholder="Search destinations or packages"]').fill('malaysia');
-    await page.locator('input[placeholder="Search destinations or packages"]').press('Enter');
-    await expect(page).toHaveURL(/\/search\?q=malaysia/);
-  });
-
-  test('visa country grid renders cards', async ({ page }) => {
-    await page.goto('/visa');
-    await expect(page.locator('text=Malaysia')).toBeVisible();
-    await expect(page.locator('text=Thailand')).toBeVisible();
-  });
-
-  test('visa country detail page loads', async ({ page }) => {
-    await page.goto('/visa/malaysia');
-    await expect(page.locator('h1')).toContainText('Malaysia Visa');
-    await expect(page.locator('text=Apply now')).toBeVisible();
-  });
-
-  test('hajj page renders packages', async ({ page }) => {
-    await page.goto('/hajj');
-    await expect(page.locator('text=Hajj Packages').first()).toBeVisible();
-  });
-
-  test('umrah page renders packages', async ({ page }) => {
-    await page.goto('/umrah');
-    await expect(page.locator('text=Our Umrah Packages')).toBeVisible();
-  });
+// Real local API + PostgreSQL fixtures from prepare-release-tests.cjs. No mocked
+// authentication, production URLs, demo inventory or browser-storage tokens.
+test('homepage navigation reaches the seeded tour catalogue', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+  await page.locator('header').getByRole('link', { name: 'Tours', exact: true }).first().click();
+  await expect(page).toHaveURL(/\/tours$/);
+  await expect(page.getByRole('heading', { name: 'Release Test Tour', exact: true })).toBeVisible();
 });
 
-test.describe('Flyngo Auth Flow', () => {
-  test('login form validates required fields', async ({ page }) => {
-    await page.goto('/auth/login');
-    const emailInput = page.locator('input[type="email"]');
-    const passwordInput = page.locator('input[type="password"]');
-    await expect(emailInput).toBeVisible();
-    await expect(passwordInput).toBeVisible();
+for (const path of ['destinations', 'hotels', 'flights', 'visa', 'hajj', 'umrah']) {
+  test(`public /${path} loads without assuming demo inventory`, async ({ page }) => {
+    const response = await page.goto(`/${path}`);
+    expect(response?.status()).toBe(200);
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+    await expect(page.getByText('Application error', { exact: false })).toHaveCount(0);
   });
+}
 
-  test('forgot password page is reachable', async ({ page }) => {
-    await page.goto('/auth/forgot-password');
-    await expect(page.locator('h1, h2').first()).toBeVisible();
-  });
-
-  test('register form has full name field', async ({ page }) => {
-    await page.goto('/auth/register');
-    await expect(page.locator('input').first()).toBeVisible();
-  });
+test('real tour data opens the current preset booking flow', async ({ page }) => {
+  await page.goto('/tours');
+  await expect(page.getByRole('heading', { name: 'Release Test Tour' })).toBeVisible();
+  await page.getByRole('button', { name: 'Book Now' }).first().click();
+  await expect(page).toHaveURL(/\/booking\?type=tour&id=/);
+  await expect(page.getByText('Your details', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Continue', exact: true })).toBeVisible();
 });
 
-test.describe('Flyngo Booking Flow', () => {
-  test('standard booking shows the step indicator', async ({ page }) => {
-    await page.goto('/booking');
-    await expect(page.locator('text=Your details')).toBeVisible();
-    await expect(page.locator('text=Trip details')).toBeVisible();
-    await expect(page.locator('text=Review')).toBeVisible();
-    await expect(page.locator('text=Confirm & pay')).toBeVisible();
-  });
+test('search finds seeded inventory and opens its real detail page', async ({ page }) => {
+  await page.goto('/search?q=Release%20Test%20Tour');
+  await page.getByRole('link', { name: /Release Test Tour/ }).click();
+  await expect(page).toHaveURL(/\/tours\/release-test-tour$/);
+  await expect(page.getByRole('heading', { name: 'Release Test Tour', exact: true })).toBeVisible();
+});
 
-  test('visa booking type shows 4-step visa flow', async ({ page }) => {
-    await page.goto('/booking?type=visa&q=Malaysia');
-    // The visa booking flow has Applicant / Travel / Documents / Confirm & pay
-    await expect(page.locator('text=Applicant')).toBeVisible();
-  });
+test('visa booking uses applicant/document steps', async ({ page }) => {
+  await page.goto('/booking?type=visa&q=Release%20Test');
+  await expect(page.getByText('Applicant', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Documents', { exact: true }).first()).toBeVisible();
+});
+
+test('anonymous users cannot view the admin customer table', async ({ page, request }) => {
+  await page.goto('/admin/customers');
+  await expect(page).toHaveURL(/\/auth\/login\?callbackUrl=/);
+  await expect(page.getByPlaceholder('Email or phone number')).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Created By' })).toHaveCount(0);
+  expect((await request.get('/api/v1/users')).status()).toBe(401);
+});
+
+test('login accepts email or phone and rejects incorrect credentials', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.getByPlaceholder('Email or phone number').fill('missing@release.invalid');
+  await page.getByPlaceholder('Password', { exact: true }).fill('Wrong-password-123!');
+  await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+  await expect(page.getByText('Invalid credentials', { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Forgot password?' }).click();
+  await expect(page).toHaveURL(/\/auth\/forgot-password$/);
+});
+
+test('phone signup restores an HttpOnly session and cannot enter admin', async ({ page, context }, testInfo) => {
+  await page.goto('/auth/register');
+  await page.getByPlaceholder('Full name', { exact: true }).fill(`Browser Customer ${testInfo.project.name}`);
+  await page.getByPlaceholder('e.g. 1712345678').fill(`17${Date.now().toString().slice(-8)}`);
+  await page.getByPlaceholder('Password (min 8 characters)').fill('Browser-customer-123!');
+  await page.getByRole('checkbox').check();
+  const signup = page.waitForResponse((r) => r.url().endsWith('/api/v1/auth/register') && r.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Create Account', exact: true }).click();
+  const response = await signup;
+  expect(response.status()).toBe(201);
+  const body = await response.json();
+  const tokens = body.data ?? body;
+  expect(tokens.accessToken).toBeTruthy();
+  expect(tokens.refreshToken).toBeUndefined();
+  await expect(page).toHaveURL('http://127.0.0.1:3108/');
+  expect((await context.cookies()).find((c) => c.name === 'flyngo-refresh')?.httpOnly).toBe(true);
+  expect(await page.evaluate(() => document.cookie)).not.toContain('flyngo-refresh');
+  expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain(tokens.accessToken);
+  const restoration = page.waitForResponse((r) => r.url().endsWith('/api/v1/auth/session') && r.request().method() === 'POST');
+  await page.reload();
+  const restored = await restoration;
+  expect(restored.status()).toBe(200);
+  const restoredBody = await restored.json();
+  const restoredTokens = restoredBody.data ?? restoredBody;
+  expect(restoredTokens.accessToken).toBeTruthy();
+  const intent = await context.request.post('/api/v1/payments/intent', { headers: { Authorization: `Bearer ${restoredTokens.accessToken}` }, data: { bookingId: 'test', method: 'stripe', amount: 1 } });
+  expect(intent.status()).toBe(503);
+  await page.goto('/admin/customers');
+  await expect(page).toHaveURL(/\/auth\/login\?callbackUrl=/);
+  expect((await context.request.post('/api/v1/auth/logout', { headers: { 'X-Requested-With': 'Flyngo', Origin: 'http://127.0.0.1:3108' } })).ok()).toBe(true);
+  const signedOut = await context.request.post('/api/v1/auth/session', { headers: { 'X-Requested-With': 'Flyngo', Origin: 'http://127.0.0.1:3108' } });
+  const signedOutBody = await signedOut.json();
+  expect((signedOutBody.data ?? signedOutBody).authenticated).toBe(false);
+});
+
+test('admin login, customer creation, audit columns and logout work', async ({ page }, testInfo) => {
+  await page.goto('/auth/login?callbackUrl=%2Fadmin%2Fcustomers');
+  await page.getByPlaceholder('Email or phone number').fill('admin@release.invalid');
+  await page.getByPlaceholder('Password', { exact: true }).fill('Release-test-only-123!');
+  await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/customers$/);
+  await expect(page.getByRole('columnheader', { name: 'Created at', exact: true })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Created By', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Add Customer', exact: true }).click();
+  const name = `Created by browser ${testInfo.project.name} ${Date.now()}`;
+  await page.getByPlaceholder('Full name', { exact: true }).fill(name);
+  const created = page.waitForResponse((r) => r.url().endsWith('/api/v1/users') && r.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Create Customer', exact: true }).click();
+  expect((await created).status()).toBe(201);
+  await expect(page.getByRole('row').filter({ hasText: name })).toContainText('Release Test Admin');
+  await page.locator('aside').getByRole('link', { name: 'CMS Pages', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/cms\/pages$/);
+  await expect(page.getByRole('button', { name: 'New Page', exact: true })).toBeVisible();
+  const logout = page.waitForResponse((r) => r.url().endsWith('/api/v1/auth/logout') && r.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  expect((await logout).status()).toBe(200);
+  await expect(page).not.toHaveURL(/\/admin\//);
+  await page.goto('/admin/customers');
+  await expect(page).toHaveURL(/\/auth\/login\?callbackUrl=/);
 });

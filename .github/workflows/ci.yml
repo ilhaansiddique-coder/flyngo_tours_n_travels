@@ -5,69 +5,164 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: release-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   backend:
-    name: Backend — lint + test + typecheck
+    name: Backend — unit, PostgreSQL integration and production build
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      RELEASE_TEST_DATABASE_BASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+      SESSION_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/flyngo_sessions_test?schema=public
+      PRIVATE_MEDIA_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/flyngo_private_media_test?schema=public
+      ACCOUNT_DELETION_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/flyngo_account_deletion_test?schema=public
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/flyngo_sessions_test?schema=public
     defaults:
       run:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: backend/package-lock.json
-
       - run: npm ci --no-audit --prefer-offline
+      - run: npm audit --audit-level=high
+      - name: Migrate disposable PostgreSQL databases
+        run: node scripts/prepare-release-tests.cjs
+      - name: Lint (read-only)
+        run: npm run lint -- --quiet
+      - run: npx tsc --noEmit
+      - run: npm run test:unit
+      - name: Required database integration tests (missing URLs fail)
+        run: npm run test:integration
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-backend-${{ github.sha }}
+          path: backend/dist
+          if-no-files-found: error
 
-      - name: Dependency security audit
-        run: npm audit --audit-level=high
-
-      - name: Prisma generate
-        run: npx prisma generate
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npx tsc --noEmit
-
-      - name: Test
-        run: npm test
-
-  frontend:
-    name: Frontend — lint + test + typecheck
+  browser:
+    name: Frontend — unit, production build and Chromium/Firefox integration
+    needs: backend
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      RELEASE_TEST_DATABASE_BASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+      E2E_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/flyngo_browser_test?schema=public
+      BACKEND_URL: http://127.0.0.1:4107
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3108
+      NEXT_TELEMETRY_DISABLED: '1'
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
       - run: npm ci --no-audit --prefer-offline
+        working-directory: backend
+      - run: npm ci --no-audit --prefer-offline
+        working-directory: frontend
+      - run: npm audit --audit-level=high
+        working-directory: frontend
+      - run: npm run lint -- --quiet
+        working-directory: frontend
+      - run: npm test -- --runInBand
+        working-directory: frontend
+      - name: Migrate and seed disposable browser database
+        run: node scripts/prepare-release-tests.cjs --browser-only
+        working-directory: backend
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-backend-${{ github.sha }}
+          path: backend/dist
+      - run: npm run build
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium firefox
+        working-directory: frontend
+      - name: Browser tests against production builds and real PostgreSQL API
+        run: npm run test:e2e
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-results-${{ github.sha }}
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          retention-days: 14
 
-      - name: Dependency security audit
-        run: npm audit --audit-level=high
+  release-verification:
+    name: Release verification
+    needs: [backend, browser]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every verification job
+        env:
+          BACKEND_RESULT: ${{ needs.backend.result }}
+          BROWSER_RESULT: ${{ needs.browser.result }}
+        run: test "$BACKEND_RESULT" = success && test "$BROWSER_RESULT" = success
 
-      - name: Lint
-        run: npm run lint
+  publish-backend:
+    needs: release-verification
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/backend.yml
+    secrets: inherit
 
-      - name: Typecheck
-        run: npx tsc --noEmit
+  publish-frontend:
+    needs: release-verification
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/frontend.yml
+    secrets: inherit
 
-      - name: Test
-        run: npm test
+  deploy:
+    name: Deploy verified images
+    needs: [publish-backend, publish-frontend]
+    if: github.ref == 'refs/heads/main' && vars.COOLIFY_DEPLOY_WEBHOOK != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Coolify only after both images are published
+        env:
+          WEBHOOK_URL: ${{ vars.COOLIFY_DEPLOY_WEBHOOK }}
+          API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 30 \
+            --request POST --header "Authorization: Bearer $API_TOKEN" \
+            "$WEBHOOK_URL" --output /tmp/coolify-response.txt

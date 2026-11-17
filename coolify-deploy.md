@@ -6,11 +6,15 @@
 git push origin main
         │
         ▼
-GitHub Actions ──┬─ backend.yml  → build & push ghcr.io/.../flyngo-backend:main
-                 └─ frontend.yml → build & push ghcr.io/.../flyngo-frontend:main
+GitHub Actions (ci.yml)
+   ├─ backend lint/unit + migrated PostgreSQL integration + production build
+   ├─ frontend lint/unit + production build + Chromium/Firefox against local API
+   └─ Release verification
+        ├─ backend.yml  → publish verified flyngo-backend:main
+        └─ frontend.yml → publish verified flyngo-frontend:main
         │
         ▼
-CI triggers Coolify deploy webhook (COOLIFY_DEPLOY_WEBHOOK)
+CI triggers Coolify once, only after both images publish successfully
         │
         ▼
 Coolify (on the server)
@@ -43,7 +47,12 @@ Create these:
 | `NEXT_PUBLIC_CLARITY_ID` | *(optional)* |
 | `COOLIFY_DEPLOY_WEBHOOK` | `https://<your-coolify>/webhooks/deploy/<uuid>` |
 
-`COOLIFY_DEPLOY_WEBHOOK` enables **instant auto-deploy** — CI fires the deploy webhook the moment it finishes pushing the new Docker image. Get the URL from Coolify → your resource → Deploy Webhooks → copy.
+`COOLIFY_DEPLOY_WEBHOOK` enables deployment after the release verification gate
+and both image publications succeed. A rejected webhook fails the deployment job.
+Get the URL from Coolify → your resource → Deploy Webhooks → copy.
+Disable any separate Coolify Git-push auto-deployment or registry webhook that
+bypasses this workflow. Repository code cannot enforce an external auto-deploy
+setting. Use **CI / Release verification** as a required branch check.
 
 ### 2. Make ghcr.io packages public (one click per package)
 
@@ -95,8 +104,8 @@ These override the defaults in `docker-compose.yml`.
 ## Deploy flow (every push)
 
 1. Push code to `main`
-2. GitHub Actions builds both images (~3-5 min)
-3. CI triggers Coolify deploy webhook → Coolify pulls new images and redeploys
+2. GitHub Actions runs mandatory database integration, browser tests and production builds
+3. After every check passes, both images publish; one CI webhook triggers Coolify
 4. Backend auto-runs `prisma migrate deploy` on startup — no manual steps
 5. Total downtime: ~5 seconds
 

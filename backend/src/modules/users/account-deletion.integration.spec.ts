@@ -241,7 +241,7 @@ describeDatabase('permanent account deletion against PostgreSQL', () => {
     await db.loyaltyTransaction.create({ data: { tenantId, accountId: loyalty.id, type: 'signup', points: 100 } });
     await db.pointTransaction.create({ data: { userId: target.id, type: 'SIGNUP_BONUS', referenceType: 'SIGNUP', referenceId: target.id, amount: 100, idempotencyKey: randomUUID(), balanceAfter: {} } });
     await db.webhookEventLog.create({ data: { provider: 'stripe', eventId: randomUUID(), payload: { data: { object: { id: payment.transactionId } } } } });
-    const file = await fs.readFile(path.join(process.cwd(), 'prisma/maintenance/purge-non-admin-accounts.sql'), 'utf8');
+    const file = await fs.readFile(path.resolve(__dirname, '../../../prisma/maintenance/purge-non-admin-accounts.sql'), 'utf8');
     const sql = file.slice(file.indexOf('DO $cleanup$'), file.indexOf('$cleanup$;') + '$cleanup$;'.length);
     await db.$executeRawUnsafe(sql);
     expect(await db.user.findMany({ where: { tenantId } })).toEqual([expect.objectContaining({

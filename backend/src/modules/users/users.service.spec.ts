@@ -54,4 +54,39 @@ describe('customer creation attribution', () => {
       include: expect.objectContaining({ createdBy: { select: { id: true, fullName: true } } }),
     }));
   });
+
+  it('rejects a deleted customer phone before insertion, preserving its identity and creator', async () => {
+    prisma.user.findFirst.mockResolvedValueOnce({ id: 'staff-1' })
+      .mockResolvedValueOnce({ id: 'deleted-customer', deletedAt: new Date() });
+    await expect(service.createUser('tenant-1', {
+      fullName: 'Replacement Customer', phone: '+880 1919187588',
+    }, 'staff-1')).rejects.toThrow('Restore that customer from Trash');
+    expect(prisma.user.findFirst).toHaveBeenLastCalledWith({
+      where: { tenantId: 'tenant-1', phoneKey: '1919187588' },
+      select: { id: true, deletedAt: true },
+    });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(loyalty.awardSignupBonus).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { target: ['tenant_id', 'phone_key'] },
+    { target: 'users_tenant_phone_key_key' },
+    { target: ['tenant_id', 'email'] },
+  ])('returns 409 for a concurrent identifier collision (%j)', async ({ target }) => {
+    prisma.user.findFirst.mockResolvedValueOnce({ id: 'staff-1' }).mockResolvedValueOnce(null);
+    prisma.user.create.mockRejectedValueOnce({ code: 'P2002', meta: { target } });
+    const promise = service.createUser('tenant-1', {
+      fullName: 'Customer', phone: '+8801919187588', password: 'Password123!',
+    }, 'staff-1');
+    await expect(promise).rejects.toMatchObject({ status: 409 });
+    expect(loyalty.awardSignupBonus).not.toHaveBeenCalled();
+  });
+
+  it('does not disguise other database failures as duplicate accounts', async () => {
+    const failure = new Error('Database unavailable');
+    prisma.user.create.mockRejectedValueOnce(failure);
+    await expect(service.createUser('tenant-1', { fullName: 'Customer', password: 'Password123!' }, 'staff-1'))
+      .rejects.toBe(failure);
+  });
 });

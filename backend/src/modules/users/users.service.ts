@@ -43,7 +43,15 @@ export class UsersService {
     const phone = typeof data.phone === 'string' ? data.phone.trim() || null : null;
     const key = phoneKey(phone);
     if (key) {
-      const dup = await this.prisma.user.findFirst({ where: { tenantId, phoneKey: key, deletedAt: null } });
+      // The database reserves this key even after soft deletion. Check those
+      // rows too, rather than attempting an insert the unique index rejects.
+      const dup = await this.prisma.user.findFirst({
+        where: { tenantId, phoneKey: key },
+        select: { id: true, deletedAt: true },
+      });
+      if (dup?.deletedAt) {
+        throw new ConflictException('A deleted customer already uses this phone number. Restore that customer from Trash or use a different number.');
+      }
       if (dup) throw new ConflictException('A user with this phone number already exists');
     }
 
@@ -92,6 +100,15 @@ export class UsersService {
         isActive: data.isActive ?? true,
       },
       include: { role: true },
+    }).catch((err: unknown) => {
+      // A concurrent signup/booking may reserve the number after the check.
+      const error = err as { code?: string; meta?: { target?: string[] | string } };
+      const target = error?.meta?.target;
+      const fields = Array.isArray(target) ? target : [target ?? ''];
+      if (error?.code === 'P2002' && fields.some((field) => /phone_?key|email/i.test(field))) {
+        throw new ConflictException('A user with this email or phone already exists. Check Customers and Trash before trying again.');
+      }
+      throw err;
     });
     const { passwordHash: _ph, ...rest } = user;
 

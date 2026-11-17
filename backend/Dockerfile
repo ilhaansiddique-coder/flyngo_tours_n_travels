@@ -4,7 +4,8 @@ WORKDIR /app
 
 COPY .npmrc package.json package-lock.json* ./
 COPY prisma ./prisma
-RUN npm install --no-audit --no-fund --prefer-offline
+RUN npm ci --no-audit --no-fund --prefer-offline && \
+    npm audit --omit=dev --audit-level=high
 
 COPY . .
 

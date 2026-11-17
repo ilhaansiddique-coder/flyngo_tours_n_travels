@@ -176,4 +176,20 @@ databaseTests('private media against PostgreSQL and HTTP', () => {
     for (const file of [linked, unattached]) await expect(fs.access(privateFilePath(file.url.slice(PRIVATE_MEDIA_PREFIX.length)))).rejects.toThrow();
     expect(await db.user.findUnique({ where: { id: ownerId } })).not.toBeNull();
   });
+  it('accepts a real multipart document upload using the patched Multer interceptor', async () => {
+    const result = await request(app.getHttpServer()).post('/api/v1/media/documents?folder=visa-documents')
+      .attach('file', content, { filename: 'passport.pdf', contentType: 'application/pdf' }).expect(201);
+    const uploaded = result.body.data;
+    expect(uploaded.url).toMatch(/^\/api\/v1\/media\/private\//);
+    expect(uploaded.uploadToken).toHaveLength(64);
+    privateFiles.push(privateFilePath(uploaded.url.slice(PRIVATE_MEDIA_PREFIX.length)));
+    await request(app.getHttpServer()).get(uploaded.url).expect(404);
+    await request(app.getHttpServer()).get(uploaded.url).set('X-Upload-Token', uploaded.uploadToken).expect(200);
+  });
+  it('rejects oversized multipart files before writing a private media record', async () => {
+    const before = await db.media.count({ where: { tenantId } });
+    await request(app.getHttpServer()).post('/api/v1/media/documents?folder=visa-documents')
+      .attach('file', Buffer.alloc(10 * 1024 * 1024 + 1), { filename: 'too-large.pdf', contentType: 'application/pdf' }).expect(413);
+    expect(await db.media.count({ where: { tenantId } })).toBe(before);
+  });
 });

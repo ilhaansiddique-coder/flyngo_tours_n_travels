@@ -3,12 +3,13 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY .npmrc* package.json package-lock.json* ./
-RUN npm install --no-audit --prefer-offline
+RUN npm ci --no-audit --no-fund --prefer-offline && \
+    npm audit --omit=dev --audit-level=high
 
 COPY . .
 
 # NEXT_PUBLIC_* are baked into the bundle at build time.
-# NEXT_PUBLIC_API_URL is required for OAuth redirects (must point to the public backend).
+# OAuth uses the same-origin /api/v1 proxy; callbacks use backend FRONTEND_URL.
 ARG BACKEND_URL=http://backend:4000
 ARG NEXT_PUBLIC_SITE_URL
 ARG NEXT_PUBLIC_API_URL

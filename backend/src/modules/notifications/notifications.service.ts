@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
-import * as admin from 'firebase-admin';
+import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 import { PrismaService } from '../../database/prisma.service';
 import { ConfigService } from '../../config/config.service';
 
@@ -66,9 +67,9 @@ export class NotificationsService {
     if (projectId && clientEmail && privateKeyRaw) {
       try {
         const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
-        if (!admin.apps.length) {
-          admin.initializeApp({
-            credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
+        if (!getApps().length) {
+          initializeApp({
+            credential: cert({ projectId, clientEmail, privateKey }),
           });
         }
         this.firebaseInitialized = true;
@@ -299,7 +300,7 @@ export class NotificationsService {
     }
 
     try {
-      const res = await admin.messaging().sendEachForMulticast({
+      const res = await getMessaging().sendEachForMulticast({
         tokens: tokens.map((t) => t.token),
         notification: { title, body },
         data: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])),

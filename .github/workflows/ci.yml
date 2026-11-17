@@ -28,6 +28,9 @@ jobs:
 
       - run: npm ci --no-audit --prefer-offline
 
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
+
       - name: Prisma generate
         run: npx prisma generate
 
@@ -56,6 +59,9 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - run: npm ci --no-audit --prefer-offline
+
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
 
       - name: Lint
         run: npm run lint

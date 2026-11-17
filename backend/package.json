@@ -22,6 +22,7 @@
     "db:seed": "ts-node prisma/seed.ts",
     "db:backfill-flags": "ts-node src/scripts/backfill-destination-flags.ts",
     "db:studio": "prisma studio",
+    "accounts:purge-except-primary-admin": "node dist/scripts/purge-non-admin-accounts.js",
     "db:reset": "prisma migrate reset --force",
     "clean-services": "node prisma/clean-services.js"
   },

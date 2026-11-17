@@ -7,6 +7,8 @@ import { ConfigService } from '../../config/config.service';
 import { MediaService } from '../media/media.service';
 import { MediaDeletionService } from '../media/media-deletion.service';
 import { AccountDeletionService } from './account-deletion.service';
+import { PRIMARY_ADMIN_EMAIL, PRIMARY_ADMIN_ID } from '../../common/constants/primary-admin';
+import { purgeNonAdminAccounts } from '../../scripts/purge-non-admin-accounts';
 
 // Explicit opt-in; this suite must never run against a production database.
 const databaseUrl = process.env.ACCOUNT_DELETION_TEST_DATABASE_URL;
@@ -142,4 +144,42 @@ describeDatabase('permanent account deletion against PostgreSQL', () => {
     expect(await db.booking.findUnique({ where: { id: booking.id } })).not.toBeNull();
     await expect(fs.access(diskPath(uploadUrl))).resolves.toBeUndefined();
   }, 60_000);
+
+  it('purges 23 legacy/current accounts and linked records while preserving the exact primary admin', async () => {
+    let keeper = await db.user.findUnique({ where: { id: PRIMARY_ADMIN_ID }, include: { tenant: true } });
+    if (keeper && !keeper.tenant.slug.startsWith('bulk-cleanup-test-')) {
+      throw new Error('Refusing to touch an existing local primary admin outside this test fixture');
+    }
+    if (!keeper) {
+      const tenant = await db.tenant.create({ data: { name: 'Bulk cleanup test', slug: `bulk-cleanup-test-${randomUUID()}` } });
+      const role = await db.role.create({ data: { tenantId: tenant.id, name: 'Super Admin', code: 'super_admin' } });
+      keeper = await db.user.create({ data: { id: PRIMARY_ADMIN_ID, tenantId: tenant.id, roleId: role.id,
+        fullName: 'Super Admin', email: PRIMARY_ADMIN_EMAIL, passwordHash: 'test-only-preserve-this-hash' }, include: { tenant: true } });
+    }
+    const tenantId = keeper.tenantId;
+    expect(await db.user.count({ where: { tenantId, id: { not: keeper.id } } })).toBe(0);
+    const role = await db.role.upsert({ where: { tenantId_code: { tenantId, code: 'customer' } },
+      create: { tenantId, code: 'customer', name: 'Customer' }, update: {} });
+    await db.user.createMany({ data: Array.from({ length: 23 }, (_, index) => ({
+      id: randomUUID(), tenantId, roleId: role.id, fullName: `Legacy customer ${index}`,
+      phone: `+880${1999000000 + index}`, phoneKey: index === 22 ? `${1999000000 + index}` : null,
+      email: `legacy-${index}@cleanup.invalid`, deletedAt: index < 22 ? new Date() : null,
+    })) });
+    const first = await db.user.findFirstOrThrow({ where: { tenantId, id: { not: keeper.id } } });
+    const booking = await db.booking.create({ data: { tenantId, userId: first.id, bookingCode: randomUUID(),
+      bookingType: 'tour', itemId: 'test', startDate: new Date(), customerPhone: first.phone } });
+    await db.notification.create({ data: { tenantId, userId: first.id, type: 'email', title: 'Legacy', body: first.email! } });
+    const preview = await purgeNonAdminAccounts(db, deletion);
+    expect(preview).toMatchObject({ mode: 'preview', targetCount: 23 });
+    expect(await db.user.count({ where: { tenantId } })).toBe(24);
+    const result = await purgeNonAdminAccounts(db, deletion, { execute: true, expectedCount: 23 });
+    expect(result).toMatchObject({ deletedCount: 23, remaining: 0, pendingFileDeletions: 0, failures: [] });
+    const remaining = await db.user.findMany({ where: { tenantId } });
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]).toMatchObject({ id: keeper.id, email: keeper.email, passwordHash: keeper.passwordHash,
+      roleId: keeper.roleId, createdAt: keeper.createdAt, deletedAt: null });
+    expect(await db.booking.findUnique({ where: { id: booking.id } })).toBeNull();
+    expect(await db.notification.count({ where: { tenantId, userId: first.id } })).toBe(0);
+    await expect(deletion.remove(keeper.id, tenantId)).rejects.toThrow('cannot be deleted');
+  }, 120_000);
 });

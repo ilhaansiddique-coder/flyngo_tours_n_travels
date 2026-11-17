@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { MediaService } from '../media/media.service';
 import { MediaDeletionService } from '../media/media-deletion.service';
 import { phoneKey } from '../../common/utils/phone.util';
+import { PRIMARY_ADMIN_ID } from '../../common/constants/primary-admin';
 
 /** Deletes one account's owned data; never follows creator/referrer links into another user. */
 @Injectable()
@@ -15,6 +16,7 @@ export class AccountDeletionService {
   ) {}
 
   async remove(id: string, tenantId: string) {
+    if (id === PRIMARY_ADMIN_ID) throw new ConflictException('The primary Super Admin account cannot be deleted.');
     const queuedFiles = await this.prisma.$transaction(async (tx) => {
       // Stop a concurrent booking from attaching to the account during deletion.
       await tx.$queryRaw`SELECT id FROM users WHERE id = ${id} AND tenant_id = ${tenantId} FOR UPDATE`;

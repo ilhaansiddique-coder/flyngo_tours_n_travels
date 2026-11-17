@@ -417,7 +417,8 @@ export default function UsersPage() {
                           </button>
                           <button
                             className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
-                            title="Delete"
+                            title={u.id === '00000000-0000-0000-0000-00000000admin' ? 'Primary Super Admin cannot be deleted' : 'Delete'}
+                            disabled={u.id === '00000000-0000-0000-0000-00000000admin'}
                             onClick={() => setConfirmDelete({ open: true, kind: 'user', id: u.id })}
                           >
                             <Trash2 className="w-4 h-4" />

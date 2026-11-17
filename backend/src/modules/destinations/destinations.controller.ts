@@ -4,7 +4,7 @@ import { DestinationsService } from './destinations.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { DestinationQueryDto } from './dto/destination-query.dto';
 
 @ApiTags('Destinations')
 @Controller('destinations')
@@ -16,11 +16,9 @@ export class DestinationsController {
   @ApiOperation({ summary: 'List all destinations' })
   async findAll(
     @CurrentTenantId() tenantId: string,
-    @Query() pagination: PaginationDto,
-    @Query('toursOnly') toursOnly?: string,
-    @Query('featured') featured?: string,
+    @Query() pagination: DestinationQueryDto,
   ) {
-    return this.destinationsService.findAll(tenantId, pagination.page, pagination.limit, pagination.q, toursOnly === 'true', featured === 'true');
+    return this.destinationsService.findAll(tenantId, pagination.page, pagination.limit, pagination.q, pagination.toursOnly === 'true', pagination.featured === 'true');
   }
 
   @Get('autocomplete')

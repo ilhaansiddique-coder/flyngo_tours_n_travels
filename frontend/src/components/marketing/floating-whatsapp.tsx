@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { trackEvent } from '@/lib/tracking-client';
+import { useAuthStore } from '@/stores/auth.store';
 
 const WHATSAPP_ICON = 'https://img.icons8.com/?size=100&id=16713&format=png&color=000000';
 
@@ -19,7 +20,13 @@ interface UnreadCountResponse {
 export function FloatingWhatsApp() {
   const [settings, setSettings] = useState<TrackingPublicSettings | null>(null);
   const [open, setOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState<number | null>(null);
+  const [unread, setUnread] = useState<{ token: string; count: number } | null>(null);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
+  const role = useAuthStore((state) => state.user?.role);
+  const isAdmin = role === 'admin' || role === 'super_admin';
+  const unreadCount = hasHydrated && isAdmin && accessToken && unread?.token === accessToken
+    ? unread.count : null;
 
   useEffect(() => {
     let mounted = true;
@@ -32,17 +39,18 @@ export function FloatingWhatsApp() {
     return () => { mounted = false; };
   }, []);
 
-  // Fetch unread lead count for admin users (silently ignored if not logged in)
+  // The widget is public; only authenticated admins can read lead counts.
   useEffect(() => {
+    if (!hasHydrated || !accessToken || !isAdmin) return;
     let mounted = true;
     (async () => {
       try {
-        const res = (await api.get('/tracking/admin/leads/unread-count')) as UnreadCountResponse;
-        if (mounted && typeof res?.count === 'number') setUnreadCount(res.count);
+        const res = (await api.get('/tracking/admin/leads/unread-count', { token: accessToken })) as UnreadCountResponse;
+        if (mounted && typeof res?.count === 'number') setUnread({ token: accessToken, count: res.count });
       } catch { /* not admin or not logged in — ignore */ }
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [hasHydrated, accessToken, isAdmin]);
 
   const phone = (settings?.whatsappNumber || '8801322913530').replace(/[^\d]/g, '');
   const greeting = settings?.whatsappGreeting || 'Hi! I am interested in your Hajj/Umrah/travel packages. Could you share more details?';

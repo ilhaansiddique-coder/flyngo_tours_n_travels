@@ -504,13 +504,14 @@ export default function CustomersPage() {
                     <th className="p-4 font-medium">Passport No.</th>
                     <th className="p-4 font-medium">Passport Copy</th>
                     <th className="p-4 font-medium">Status</th>
+                    <th className="p-4 font-medium">Created at</th>
                     <th className="p-4 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="p-12 text-center text-gray-500">
+                      <td colSpan={9} className="p-12 text-center text-gray-500">
                         <Users className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                         <p>No customers found</p>
                       </td>
@@ -586,6 +587,9 @@ export default function CustomersPage() {
                               <Badge variant="info">Credentials sent</Badge>
                             )}
                           </div>
+                        </td>
+                        <td className="p-4 text-gray-500 whitespace-nowrap">
+                          <time dateTime={u.createdAt}>{formatDate(u.createdAt)}</time>
                         </td>
                         <td className="p-4">
                           <div className="flex gap-1">

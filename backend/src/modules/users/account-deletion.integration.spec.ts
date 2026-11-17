@@ -33,6 +33,7 @@ describeDatabase('permanent account deletion against PostgreSQL', () => {
 
   afterAll(async () => {
     for (const url of files) await media.deleteAccountObject(url);
+    await db.mediaDeletionJob.deleteMany({ where: { url: { in: files } } });
     await db.$disconnect();
   });
 
@@ -157,6 +158,10 @@ describeDatabase('permanent account deletion against PostgreSQL', () => {
         fullName: 'Super Admin', email: PRIMARY_ADMIN_EMAIL, passwordHash: 'test-only-preserve-this-hash' }, include: { tenant: true } });
     }
     const tenantId = keeper.tenantId;
+    // This fixture survives repeated local runs. Drain jobs left by earlier
+    // interrupted test runs before asserting this run's cleanup counts.
+    await db.mediaDeletionJob.updateMany({ where: { tenantId }, data: { retryAfter: new Date(0) } });
+    await worker.flush(tenantId);
     expect(await db.user.count({ where: { tenantId, id: { not: keeper.id } } })).toBe(0);
     const role = await db.role.upsert({ where: { tenantId_code: { tenantId, code: 'customer' } },
       create: { tenantId, code: 'customer', name: 'Customer' }, update: {} });
@@ -181,5 +186,72 @@ describeDatabase('permanent account deletion against PostgreSQL', () => {
     expect(await db.booking.findUnique({ where: { id: booking.id } })).toBeNull();
     expect(await db.notification.count({ where: { tenantId, userId: first.id } })).toBe(0);
     await expect(deletion.remove(keeper.id, tenantId)).rejects.toThrow('cannot be deleted');
+  }, 120_000);
+  it('runs the SQL cleanup atomically and keeps the exact Super Admin and shared assets', async () => {
+    let keeper = await db.user.findUnique({ where: { id: PRIMARY_ADMIN_ID }, include: { tenant: true } });
+    if (keeper && !keeper.tenant.slug.startsWith('bulk-cleanup-test-')) throw new Error('Unexpected primary admin test fixture');
+    if (!keeper) {
+      const tenant = await db.tenant.create({ data: { name: 'SQL cleanup test', slug: `bulk-cleanup-test-${randomUUID()}` } });
+      const role = await db.role.create({ data: { tenantId: tenant.id, name: 'Super Admin', code: 'super_admin' } });
+      keeper = await db.user.create({ data: { id: PRIMARY_ADMIN_ID, tenantId: tenant.id, roleId: role.id,
+        fullName: 'Super Admin', email: PRIMARY_ADMIN_EMAIL, passwordHash: 'test-only-preserve-this-hash' }, include: { tenant: true } });
+    }
+    const tenantId = keeper.tenantId;
+    expect(await db.user.count({ where: { tenantId, id: { not: keeper.id } } })).toBe(0);
+    const role = await db.role.upsert({ where: { tenantId_code: { tenantId, code: 'customer' } },
+      create: { tenantId, code: 'customer', name: 'Customer' }, update: {} });
+    const old = new Date('2026-07-01T00:00:00Z');
+    const deletedAt = new Date('2026-08-01T00:00:00Z');
+    await db.user.createMany({ data: Array.from({ length: 23 }, (_, index) => ({ id: randomUUID(),
+      tenantId, roleId: role.id, fullName: `SQL legacy ${index}`, email: `sql-${index}@cleanup.invalid`,
+      phone: `+880${1888000000 + index}`, phoneKey: null, deletedAt, createdAt: old,
+    })) });
+    const target = await db.user.findFirstOrThrow({ where: { tenantId, id: { not: keeper.id } } });
+    const privateFile = await upload(tenantId);
+    const sharedFile = await upload(tenantId);
+    await db.user.update({ where: { id: target.id }, data: { passportUrl: privateFile, avatarUrl: sharedFile } });
+    await db.user.update({ where: { id: keeper.id }, data: { avatarUrl: sharedFile } });
+    await db.userDocument.create({ data: { tenantId, userId: target.id, url: privateFile, filename: 'private.pdf' } });
+    await db.deviceToken.create({ data: { tenantId, userId: target.id, token: randomUUID() } });
+    await db.passwordReset.create({ data: { tenantId, userId: target.id, tokenHash: randomUUID(), channel: 'email', expiresAt: new Date() } });
+    const booking = await db.booking.create({ data: { tenantId, userId: target.id, bookingType: 'tour', itemId: 'sql-test', bookingCode: randomUUID(), startDate: old, meta: { files: [privateFile] } } });
+    await db.bookingTraveler.create({ data: { tenantId, bookingId: booking.id, fullName: 'SQL traveler' } });
+    await db.paymentMilestone.create({ data: { tenantId, bookingId: booking.id, stage: 'deposit', label: 'Deposit', amount: 100, dueDate: old } });
+    const pilgrimage = await db.hajjUmrahBooking.create({ data: { tenantId, userId: target.id, kind: 'umrah', packageId: 'sql-test', packageTitle: 'SQL test', packageSlug: 'sql-test', departureDate: old } });
+    await db.pilgrim.create({ data: { bookingId: pilgrimage.id, fullName: 'SQL pilgrim', passportNumber: 'PRIVATE', passportExpiry: new Date(), dateOfBirth: old } });
+    const payment = await db.payment.create({ data: { tenantId, userId: target.id, bookingId: booking.id, transactionId: randomUUID(), amount: 100, method: 'cash', receiptUrls: [privateFile] } });
+    await db.invoice.create({ data: { tenantId, userId: target.id, bookingId: booking.id, paymentId: payment.id, invoiceNumber: randomUUID(), subtotal: 100, total: 100, lineItems: [] } });
+    await db.notification.create({ data: { tenantId, userId: target.id, type: 'email', title: 'Private', body: target.email! } });
+    await db.review.create({ data: { tenantId, userId: target.id, itemType: 'tour', itemId: 'sql-test', rating: 5, content: 'Private' } });
+    await db.blogPost.create({ data: { tenantId, authorId: target.id, title: 'Private', slug: randomUUID(), content: 'Private', tags: [] } });
+    await db.lead.create({ data: { tenantId, fullName: 'SQL lead', phone: target.phone!, createdAt: old } });
+    await db.hajjPreRegistration.create({ data: { tenantId, fullName: 'SQL preregistration', phone: target.phone!, createdAt: old } });
+    await db.trackingEvent.create({ data: { tenantId, eventName: 'signup', userId: target.id } });
+    await db.auditLog.create({ data: { tenantId, userId: keeper.id, entity: 'User', entityId: target.id, action: 'create' } });
+    const affiliate = await db.affiliate.create({ data: { tenantId, userId: target.id, referralCode: randomUUID() } });
+    await db.affiliateReferral.create({ data: { tenantId, affiliateId: affiliate.id, referredUserId: keeper.id } });
+    await db.affiliateCommission.create({ data: { tenantId, affiliateId: affiliate.id, bookingId: booking.id, amount: 5 } });
+    await db.referralPayout.create({ data: { tenantId, affiliateId: affiliate.id, amount: 5, method: 'cash' } });
+    await db.referralLedger.create({ data: { tenantId, affiliateId: affiliate.id, referredUserId: target.id, type: 'signup', amount: 5 } });
+    const loyalty = await db.loyaltyAccount.create({ data: { tenantId, userId: target.id } });
+    await db.loyaltyTransaction.create({ data: { tenantId, accountId: loyalty.id, type: 'signup', points: 100 } });
+    await db.pointTransaction.create({ data: { userId: target.id, type: 'SIGNUP_BONUS', referenceType: 'SIGNUP', referenceId: target.id, amount: 100, idempotencyKey: randomUUID(), balanceAfter: {} } });
+    await db.webhookEventLog.create({ data: { provider: 'stripe', eventId: randomUUID(), payload: { data: { object: { id: payment.transactionId } } } } });
+    const file = await fs.readFile(path.join(process.cwd(), 'prisma/maintenance/purge-non-admin-accounts.sql'), 'utf8');
+    const sql = file.slice(file.indexOf('DO $cleanup$'), file.indexOf('$cleanup$;') + '$cleanup$;'.length);
+    await db.$executeRawUnsafe(sql);
+    expect(await db.user.findMany({ where: { tenantId } })).toEqual([expect.objectContaining({
+      id: keeper.id, email: keeper.email, passwordHash: keeper.passwordHash, avatarUrl: sharedFile,
+    })]);
+    for (const model of ['booking', 'payment', 'invoice', 'notification', 'review', 'blogPost', 'lead', 'hajjPreRegistration', 'trackingEvent', 'auditLog', 'affiliate', 'affiliateReferral', 'affiliateCommission', 'referralLedger', 'referralPayout', 'loyaltyAccount', 'loyaltyTransaction'] as const) {
+      expect(await (db[model] as any).count({ where: { tenantId } })).toBe(0);
+    }
+    expect(await db.hajjUmrahBooking.findUnique({ where: { id: pilgrimage.id } })).toBeNull();
+    expect(await db.mediaDeletionJob.count({ where: { tenantId, url: privateFile } })).toBe(1);
+    await worker.flush(tenantId);
+    await expect(fs.access(diskPath(privateFile))).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(fs.access(diskPath(sharedFile))).resolves.toBeUndefined();
+    await expect(db.$executeRawUnsafe(sql)).rejects.toThrow('expected 23');
+    expect(await db.user.count({ where: { tenantId } })).toBe(1);
   }, 120_000);
 });

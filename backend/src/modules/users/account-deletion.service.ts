@@ -159,7 +159,9 @@ export class AccountDeletionService {
         if (registeredMedia.some((file) => file.url === url && (file.tenantId !== tenantId || file.tourId || file.hotelId))) continue;
         // Shared uploads remain in use by their surviving owner.
         if (await this.fileDeletion.hasLiveReferences(url, tx)) continue;
-        await tx.mediaDeletionJob.upsert({ where: { tenantId_url: { tenantId, url } }, create: { tenantId, url }, update: {} });
+        // A new job is immediately due regardless of database timezone/clock precision.
+        await tx.mediaDeletionJob.upsert({ where: { tenantId_url: { tenantId, url } },
+          create: { tenantId, url, retryAfter: new Date(0), createdAt: new Date() }, update: { retryAfter: new Date(0) } });
         await tx.media.deleteMany({ where: { tenantId, url } });
         queued.push(url);
       }

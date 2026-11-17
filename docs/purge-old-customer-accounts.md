@@ -45,3 +45,26 @@ SELECT id, full_name, phone, email, deleted_at FROM users;
 Only the protected Super Admin should remain in a single-tenant Flyngo database.
 Other tenants are outside this tool's scope. Backups and copies already sent to
 external services are outside live database and file cleanup.
+
+## SQL alternative for the existing psql terminal
+
+`backend/prisma/maintenance/purge-non-admin-accounts.sql` is a single atomic
+cleanup statement plus a verification query, for the supplied 24-row account
+list. It checks for the exact active Super Admin and exactly 23 other accounts
+before any deletion. The latest backend migrations must already be applied.
+
+Copy the complete file into a fresh `flyngo=#` prompt. It removes dependent
+records, verifies the protected admin, and queues registered, unshared files
+for the backend cleanup worker. A failure rolls back the database cleanup.
+The expected notice reports 23 deleted accounts; the final query returns only
+Super Admin for the selected tenant. If targets have already been removed or
+the count has changed, it refuses to run and leaves the remaining data intact.
+
+Find the protected account independently with:
+
+```sql
+SELECT id, full_name, email, is_active, deleted_at
+FROM users
+WHERE id = '00000000-0000-0000-0000-00000000admin'
+  AND lower(trim(email)) = 'admin@flyngo.com';
+```

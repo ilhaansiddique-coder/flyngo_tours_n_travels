@@ -29,7 +29,7 @@ const sections = [
   },
   {
     title: '6. Data Retention',
-    body: 'We retain booking and payment records for at least 7 years to comply with tax, accounting, and airline reporting requirements. Marketing data is retained until you unsubscribe or delete your account.',
+    body: 'Deleting an account permanently removes its profile and linked records, including bookings, payments, invoices, documents, and rewards, from the live application. Uploaded files are removed through a retryable cleanup process. Previously created backups and copies already sent to external services are separate from the live application database.',
   },
   {
     title: '7. Your Rights',

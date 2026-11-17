@@ -2343,6 +2343,20 @@ model UserDocument {
   @@map("user_documents")
 }
 
+// File URLs exist here only until the physical object has been removed.
+model MediaDeletionJob {
+  id String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  url String
+  attempts Int @default(0)
+  retryAfter DateTime @default(now()) @map("retry_after")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([tenantId, url])
+  @@index([retryAfter])
+  @@map("media_deletion_jobs")
+}
+
 model Vendor {
   id          String             @id @default(uuid())
   tenantId    String             @map("tenant_id")

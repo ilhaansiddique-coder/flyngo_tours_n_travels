@@ -796,7 +796,9 @@ export default function UsersPage() {
         onClose={() => setConfirmDelete({ open: false, kind: null, id: null })}
         onConfirm={handleDelete}
         title={`Delete ${confirmDelete.kind}`}
-        message="Are you sure you want to delete this item? This action cannot be undone."
+        message={confirmDelete.kind === 'user'
+          ? 'Permanently delete this account and its documents, bookings, payments, invoices, and linked rewards? It will not go to Trash. This cannot be undone.'
+          : 'Are you sure you want to delete this item? This action cannot be undone.'}
       />
     </div>
   );

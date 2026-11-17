@@ -2,10 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AdminService } from './admin.service';
 import { PrismaService } from '../../database/prisma.service';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { AccountDeletionService } from '../users/account-deletion.service';
 
 describe('AdminService', () => {
   let service: AdminService;
   let prisma: PrismaService;
+  const accountDeletion = { remove: jest.fn().mockResolvedValue({ deleted: true, permanent: true }) };
 
   const mockPrisma = {
     role: {
@@ -52,6 +54,7 @@ describe('AdminService', () => {
       providers: [
         AdminService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: AccountDeletionService, useValue: accountDeletion },
       ],
     }).compile();
 

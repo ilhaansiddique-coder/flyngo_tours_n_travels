@@ -357,9 +357,10 @@ export default function CustomersPage() {
     if (!confirmDelete.id) return;
     setActionError(null);
     try {
-      await deleteUser(confirmDelete.id);
+      const result = await deleteUser(confirmDelete.id) as { pendingFileDeletions?: number };
       setConfirmDelete({ open: false, id: null });
       fetchUsers();
+      if (result?.pendingFileDeletions) setActionError('Account and linked records deleted. Uploaded files are queued for removal and will be retried automatically.');
     } catch (err: any) {
       setConfirmDelete({ open: false, id: null });
       setActionError(err?.message || 'Could not delete this customer. Please try again.');
@@ -873,8 +874,8 @@ export default function CustomersPage() {
         open={confirmDelete.open}
         onClose={() => setConfirmDelete({ open: false, id: null })}
         onConfirm={handleDelete}
-        title="Delete Customer"
-        message="Are you sure you want to delete this customer? This action cannot be undone."
+        title="Permanently Delete Customer"
+        message="Permanently delete this account, contact details, documents, bookings, payments, invoices, and linked rewards? The customer will not go to Trash. This cannot be undone."
       />
 
       {/* Credentials modal */}

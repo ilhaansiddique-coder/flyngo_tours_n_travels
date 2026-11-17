@@ -83,20 +83,20 @@ export default function FacebookDataDeletionPage() {
               Data we delete
             </h2>
             <ul className="text-on-surface-variant space-y-2 mt-3">
-              <li>Your Flyngo profile (if you have no other booking history)</li>
+              <li>Your Flyngo profile and contact details</li>
               <li>The link between your Flyngo account and your Facebook account</li>
               <li>Active sessions and access tokens linked to Facebook Login</li>
               <li>Marketing preferences tied to your Facebook-linked email</li>
+              <li>Linked bookings, payments, invoices, documents, and rewards</li>
             </ul>
 
             <h2 className="font-display text-2xl font-bold text-on-surface mt-12">
-              Data we retain
+              Backups and external copies
             </h2>
             <p className="text-on-surface-variant mt-3">
-              Booking and payment records are retained for at least 7 years to comply with
-              tax, accounting, and airline reporting requirements. These records are
-              anonymized where possible and are not linked to your Facebook account after
-              deletion.
+              Account deletion removes linked records from the live application database.
+              Uploaded files are removed through a retryable cleanup process. Previously
+              created backups and copies already sent to external services are separate.
             </p>
 
             <h2 className="font-display text-2xl font-bold text-on-surface mt-12">

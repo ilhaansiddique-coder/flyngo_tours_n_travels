@@ -22,15 +22,32 @@ starting. Confirm that migration succeeded before serving the new backend;
 the code requires its new columns. No database reset or historical backfill
 is needed. Existing creation timestamps are preserved.
 
-## Deleted contact details
+## Account deletion
 
-Deleted accounts do not reserve phone numbers or email addresses. Their raw
-contact details remain in historical rows, but deletion clears the canonical
-phone key and creation checks only current accounts. A new registration creates
-a new ID, with its own creator and creation timestamp; old history is not
-transferred. The `20261117150000_release_deleted_customer_identifiers` migration
-also releases keys held by earlier deletions.
+Account deletion now permanently removes the account and its owned records,
+including bookings, travelers, payments, invoices, credentials, documents,
+notifications, reviews, posts, rewards, referral entries, and attributable
+leads/tracking records. It is used by the admin account delete action,
+self-service account deletion, Facebook's verified deletion callback, and the
+user purge action in Trash. New account deletions do not go to Trash.
 
-Restoration reclaims the phone key only if the phone and email are not currently
-used by another account. Otherwise it returns a conflict and leaves both records
-unchanged. Editing a deleted record does not reserve its phone key again.
+All database changes run in a transaction. Other accounts, shared content,
+tenant settings and catalog items are preserved. Creator/processor references
+to the removed account are detached; affected rewards/payment totals are
+reconciled. A new registration using the same phone/email receives a new ID.
+
+Managed uploaded objects are queued in `media_deletion_jobs` inside that same
+transaction. Physical deletion runs immediately and retries every minute on
+storage failure. Shared files still referenced by surviving data are preserved.
+The API reports `pendingFileDeletions` until storage cleanup succeeds.
+
+The `20261117160000_account_file_deletion_queue` migration must succeed before
+the new backend serves deletion requests. Compose defaults to refusing startup
+if migrations fail. Existing backups and copies already sent to third parties
+are outside this live application deletion process.
+
+Previously soft-deleted accounts are not automatically purged by deployment.
+They can still be explicitly purged through Trash. Legacy restoration is
+blocked if another current account uses the phone or email. The earlier
+`20261117150000_release_deleted_customer_identifiers` migration releases keys
+held by those historical deletions.

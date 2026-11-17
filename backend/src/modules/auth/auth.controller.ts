@@ -19,6 +19,7 @@ import { ConfigService } from '../../config/config.service';
 import { PrismaService } from '../../database/prisma.service';
 import { GoogleOAuthGuard, FacebookOAuthGuard } from './guards/oauth.guards';
 import { OAuthRedirectFilter } from './filters/oauth-redirect.filter';
+import { AccountDeletionService } from '../users/account-deletion.service';
 
 @ApiTags('Authentication')
 @UseFilters(OAuthRedirectFilter)
@@ -30,6 +31,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly accountDeletion: AccountDeletionService,
   ) {}
 
   @Post('login')
@@ -252,7 +254,7 @@ export class AuthController {
 <li><strong>Direct request:</strong> email us at <a href="mailto:support@flyngo.world">support@flyngo.world</a> with the subject “Delete my account”. We will verify your identity and permanently delete your profile and associated bookings data.</li>
 </ol>
 <p>When a deletion is processed you receive a confirmation code you can track on our <a href="/auth/facebook-data-deletion">data deletion status page</a>.</p>
-<p class="muted">Deletion removes your name, email address and Facebook ID from our systems. Records required by law (e.g. completed invoices) are retained in anonymised form only.</p>
+<p class="muted">Deletion permanently removes your account and linked records from the live application, including bookings, payments and invoices. Uploaded files are removed through a retryable cleanup process. Previously created backups and copies sent to external services are separate.</p>
 </div>
 </body>
 </html>`;
@@ -288,14 +290,8 @@ export class AuthController {
     const confirmationCode = crypto.randomBytes(16).toString('hex');
 
     if (user) {
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          deletedAt: new Date(),
-          providerId: null,
-        },
-      });
-      this.logger.log(`Facebook data deletion processed for user ${user.id} (fb:${fbUserId})`);
+      await this.accountDeletion.remove(user.id, tenantId);
+      this.logger.log('Facebook account deletion processed');
     } else {
       this.logger.warn(`Facebook data deletion: no matching user for fb:${fbUserId}`);
     }

@@ -872,7 +872,7 @@ function PrivacySection() {
     setDeleteError(null);
     try {
       await deleteMyAccount({ confirmation: confirmText });
-      // Server anonymized + soft-deleted us. Clear local session and bounce.
+      // Server permanently deleted the account. Clear local session and bounce.
       logout();
       window.location.href = '/?account-deleted=1';
     } catch (err: any) {
@@ -886,8 +886,8 @@ function PrivacySection() {
       <h2 className="font-display text-xl font-bold">Privacy & data</h2>
       <p className="text-sm text-muted">
         You can download every piece of personal data we hold on you, or request that we delete
-        your account. Deletion anonymises your profile but keeps booking, payment and audit
-        records for legal reasons.
+        your account. Deletion permanently removes your profile, contact details, documents,
+        bookings, payments, invoices, and linked rewards from the live application.
       </p>
 
       <div className="flex flex-wrap gap-2">
@@ -914,7 +914,7 @@ function PrivacySection() {
         <div className="rounded-md p-4 space-y-2 border" style={{ borderColor: 'var(--color-error, #dc2626)' }}>
           <p className="text-sm">
             To confirm, type <code className="font-mono">DELETE MY ACCOUNT</code> below. This
-            cannot be undone.
+            permanently deletes your account and linked records and cannot be undone.
           </p>
           <input
             value={confirmText}

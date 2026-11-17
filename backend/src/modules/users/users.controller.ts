@@ -80,27 +80,27 @@ export class UsersController {
 
   /**
    * GDPR Article 17 — Right to erasure ("right to be forgotten").
-   * Anonymizes PII + soft-deletes the user. Booking, payment, referral
-   * and loyalty records are kept (financial/legal obligation) but the
-   * personal data is wiped.
+   * Permanently deletes the account and its linked application records.
    *
    * Pass `confirmation: "DELETE MY ACCOUNT"` in the body to confirm.
    */
   @Delete('me')
   @HttpCode(200)
-  @ApiOperation({ summary: 'GDPR: anonymize + soft-delete my account' })
+  @ApiOperation({ summary: 'Permanently delete my account and linked records' })
   async deleteMyAccount(
     @CurrentUser() user: any,
     @Body() body: { confirmation?: string } = {},
   ) {
-    const result = await this.usersService.anonymizeAndSoftDelete(
+    const result = await this.usersService.permanentlyDeleteOwnAccount(
       user.id,
       user.tenantId,
       body?.confirmation || '',
     );
     return {
       success: true,
-      message: 'Your account has been anonymized. Bookings, payments and loyalty aggregates are retained for legal/audit reasons.',
+      message: result.pendingFileDeletions
+        ? 'Your account and linked database records have been permanently deleted. Uploaded files are queued for removal.'
+        : 'Your account and linked records have been permanently deleted.',
       data: result,
     };
   }
@@ -168,7 +168,7 @@ export class UsersController {
 
   @Delete(':id')
   @Roles('admin', 'super_admin')
-  @ApiOperation({ summary: 'Soft delete a user (admin)' })
+  @ApiOperation({ summary: 'Permanently delete a user and linked records (admin)' })
   async removeUser(@Param('id') id: string, @CurrentTenantId() tenantId: string) {
     return this.usersService.removeUser(id, tenantId);
   }

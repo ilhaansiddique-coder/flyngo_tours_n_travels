@@ -12,6 +12,7 @@ import { ReferralModule } from '../referral/referral.module';
 import { TrackingModule } from '../tracking/tracking.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import type { SignOptions } from 'jsonwebtoken';
+import { AccountDeletionModule } from '../users/account-deletion.module';
 
 class UnconfiguredFacebookStrategy {
   readonly name = 'facebook';
@@ -48,6 +49,7 @@ class UnconfiguredFacebookStrategy {
     ReferralModule,
     TrackingModule,
     NotificationsModule,
+    AccountDeletionModule,
   ],
   controllers: [AuthController],
   providers: [

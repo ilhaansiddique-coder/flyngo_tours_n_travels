@@ -296,4 +296,39 @@ export class MediaService {
     });
     return result.count;
   }
+
+  isStoredObjectUrl(url: string): boolean {
+    const bases = [this.config.getOrNull('R2_PUBLIC_URL'), this.publicBaseUrl, '/api/v1/uploads'];
+    return bases.some((base) => !!base && url.startsWith(base.replace(/\/+$/, '') + '/'));
+  }
+
+  /** Strict deletion for the durable account-cleanup queue (errors must reach its retry logic). */
+  async deleteAccountObject(url: string): Promise<void> {
+    const r2Base = (this.config.getOrNull('R2_PUBLIC_URL') || '').replace(/\/+$/, '');
+    if (r2Base && url.startsWith(r2Base + '/')) {
+      if (this.mode !== 'r2') throw new Error('R2 deletion is not configured');
+      const key = url.slice(r2Base.length + 1);
+      if (!key || key.includes('?') || key.includes('#')) throw new Error('Invalid stored object URL');
+      await this.r2Client().send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+      // An earlier R2 upload may have fallen back to local storage with this key.
+      await this.deleteLocalAccountObject(key);
+      return;
+    }
+    const localBase = [this.publicBaseUrl.replace(/\/+$/, ''), '/api/v1/uploads']
+      .find((base) => url.startsWith(base + '/'));
+    if (!localBase) throw new Error('Unrecognized stored object URL');
+    await this.deleteLocalAccountObject(url.slice(localBase.length + 1));
+  }
+
+  private async deleteLocalAccountObject(rawKey: string) {
+    const key = decodeURIComponent(rawKey);
+    const target = path.resolve(this.uploadDir, key);
+    const relative = path.relative(this.uploadDir, target);
+    if (!relative || relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)) {
+      throw new Error('Stored object path escapes the upload directory');
+    }
+    try { await fs.unlink(target); } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+  }
 }

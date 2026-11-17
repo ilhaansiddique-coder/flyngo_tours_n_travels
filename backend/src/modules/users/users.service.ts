@@ -4,7 +4,7 @@ import { MediaService } from '../media/media.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { phoneKey } from '../../common/utils/phone.util';
 import * as bcrypt from 'bcryptjs';
-import * as crypto from 'crypto';
+import { AccountDeletionService } from './account-deletion.service';
 
 /** Well-known guest password used when the admin does not supply one — same
  *  constant the booking auto-provisioning uses, so the created account is
@@ -19,6 +19,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly media: MediaService,
     private readonly loyalty: LoyaltyService,
+    private readonly accountDeletion: AccountDeletionService,
   ) {}
 
   async createUser(tenantId: string, data: any, actorId: string) {
@@ -329,13 +330,7 @@ export class UsersService {
   }
 
   async removeUser(id: string, tenantId: string) {
-    const existing = await this.prisma.user.findFirst({ where: { id, tenantId } });
-    if (!existing) throw new NotFoundException('User not found');
-    return this.prisma.user.update({
-      where: { id },
-      // Preserve historical contact details while releasing the unique login key.
-      data: { deletedAt: new Date(), phoneKey: null, refreshToken: null },
-    });
+    return this.accountDeletion.remove(id, tenantId);
   }
 
   // ===========================================================================
@@ -425,75 +420,10 @@ export class UsersService {
     };
   }
 
-  /**
-   * Anonymize the user's PII. We don't hard-delete because:
-   *  - we have accounting/legal obligations to retain transactional history
-   *  - other users' bookings reference this user as referrer
-   *  - aggregated counts/earnings in loyalty + affiliate systems must stay intact
-   *
-   * Replaces: fullName, email, phone, avatarUrl, provider/providerId, refreshToken
-   * Clears: passwordHash, FCM device tokens
-   * Soft-deletes: the user record (deletedAt = now)
-   * Keeps: bookings, payments, reviews (with their userId pointing to an anonymous
-   * record so the rest of the system keeps working).
-   */
-  async anonymizeAndSoftDelete(id: string, tenantId: string, confirmation: string) {
+  async permanentlyDeleteOwnAccount(id: string, tenantId: string, confirmation: string) {
     if (confirmation !== 'DELETE MY ACCOUNT') {
-      throw new BadRequestException(
-        'Confirmation string mismatch — pass confirmation="DELETE MY ACCOUNT" to confirm deletion.',
-      );
+      throw new BadRequestException('Type DELETE MY ACCOUNT exactly to confirm permanent deletion.');
     }
-    const user = await this.prisma.user.findFirst({ where: { id, tenantId } });
-    if (!user || user.deletedAt) throw new NotFoundException('User not found');
-
-    const anon = `deleted-${crypto.randomBytes(6).toString('hex')}`;
-    const tombstoneEmail = `${anon}@anonymized.invalid`;
-
-    return this.prisma.$transaction(async (tx) => {
-      // Drop FCM tokens so push stops working.
-      await tx.deviceToken.updateMany({
-        where: { userId: id },
-        data: { deletedAt: new Date() },
-      });
-
-      // Anonymize pre-registrations (these have a PII shape).
-      await tx.hajjPreRegistration.updateMany({
-        where: { tenantId, phone: user.phone ?? '__none__' },
-        data: {
-          fullName: '[deleted]',
-          email: null,
-          phone: anon,
-          passportNo: null,
-          district: null,
-        },
-      });
-
-      const updated = await tx.user.update({
-        where: { id },
-        data: {
-          fullName: '[deleted user]',
-          email: tombstoneEmail,
-          phone: null,
-          phoneKey: null,
-          avatarUrl: null,
-          passwordHash: null,
-          provider: null,
-          providerId: null,
-          refreshToken: null,
-          referralCode: null,
-          emailVerifiedAt: null,
-          phoneVerifiedAt: null,
-          lastLoginAt: null,
-          isActive: false,
-          deletedAt: new Date(),
-        },
-        select: { id: true, tenantId: true, deletedAt: true },
-      });
-
-      this.logger.log(
-        `User ${id} (tenant ${tenantId}) anonymized and soft-deleted. Tombstone email: ${tombstoneEmail}`,
-      );
-      return updated;
-    });
+    return this.accountDeletion.remove(id, tenantId);
   }
 }

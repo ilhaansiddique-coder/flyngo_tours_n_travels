@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { phoneKey } from '../../common/utils/phone.util';
+import { AccountDeletionService } from '../users/account-deletion.service';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly accountDeletion: AccountDeletionService) {}
 
   /**
    * Registry of content entities that are soft-deleted (deletedAt) and can be
@@ -139,6 +140,9 @@ export class AdminService {
     const model = (this.prisma as any)[def.model];
     const row = await model.findFirst({ where: { id, tenantId, deletedAt: { not: null } } });
     if (!row) throw new NotFoundException(`${def.label} not found in trash`);
+    if (entity === 'user') {
+      return { ...await this.accountDeletion.remove(id, tenantId), purged: true, entity };
+    }
     await model.delete({ where: { id } });
     return { purged: true, entity, id };
   }

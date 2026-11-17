@@ -2,6 +2,7 @@ import { UsersService } from './users.service';
 import { PrismaService } from '../../database/prisma.service';
 import { MediaService } from '../media/media.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
+import { AccountDeletionService } from './account-deletion.service';
 
 describe('customer creation attribution', () => {
   const prisma = {
@@ -9,6 +10,7 @@ describe('customer creation attribution', () => {
     role: { findFirst: jest.fn() },
   };
   const loyalty = { awardSignupBonus: jest.fn().mockResolvedValue(undefined) };
+  const deletion = { remove: jest.fn().mockResolvedValue({ deleted: true, permanent: true, pendingFileDeletions: 0 }) };
   let service: UsersService;
 
   beforeEach(() => {
@@ -16,7 +18,7 @@ describe('customer creation attribution', () => {
     prisma.user.findFirst.mockResolvedValue({ id: 'staff-1' });
     prisma.role.findFirst.mockResolvedValue({ id: 'customer-role' });
     prisma.user.create.mockResolvedValue({ id: 'customer-1', passwordHash: 'secret' });
-    service = new UsersService(prisma as unknown as PrismaService, {} as MediaService, loyalty as unknown as LoyaltyService);
+    service = new UsersService(prisma as unknown as PrismaService, {} as MediaService, loyalty as unknown as LoyaltyService, deletion as unknown as AccountDeletionService);
   });
 
   it('records the authenticated creator and ignores forged attribution in the body', async () => {
@@ -71,12 +73,16 @@ describe('customer creation attribution', () => {
     expect(prisma.user.create).toHaveBeenCalled();
   });
 
-  it('releases the phone key on deletion without removing historical contact details', async () => {
-    await service.removeUser('customer-1', 'tenant-1');
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: 'customer-1' },
-      data: { deletedAt: expect.any(Date), phoneKey: null, refreshToken: null },
-    });
+  it('uses complete permanent deletion for admin account removal', async () => {
+    await expect(service.removeUser('customer-1', 'tenant-1')).resolves.toMatchObject({ permanent: true });
+    expect(deletion.remove).toHaveBeenCalledWith('customer-1', 'tenant-1');
+  });
+
+  it('requires the exact confirmation before self-service permanent deletion', async () => {
+    await expect(service.permanentlyDeleteOwnAccount('customer-1', 'tenant-1', 'yes')).rejects.toThrow('Type DELETE MY ACCOUNT');
+    expect(deletion.remove).not.toHaveBeenCalled();
+    await service.permanentlyDeleteOwnAccount('customer-1', 'tenant-1', 'DELETE MY ACCOUNT');
+    expect(deletion.remove).toHaveBeenCalledWith('customer-1', 'tenant-1');
   });
 
   it('does not reserve a phone key while editing a deleted customer', async () => {

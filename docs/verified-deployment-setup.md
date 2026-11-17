@@ -28,8 +28,11 @@ Before deployment can succeed:
    instance has no HTTPS endpoint, configure its domain/TLS before sending a new
    token. Simply changing `http` to `https` does not install TLS on an HTTP port.
 4. In the GitHub **Variables** tab, update `COOLIFY_DEPLOY_WEBHOOK` to that URL.
-   It is a repository variable, separate from the Secrets tab. Preserve the
-   intended Flyngo resource selector. No token belongs in this URL.
+   Alternatively, save it as a repository secret with the same name. The workflow
+   prefers `secrets.COOLIFY_DEPLOY_WEBHOOK` over the legacy variable, so a newly
+   supplied secret replaces an older variable value. Preserve the intended
+   Flyngo resource selector. No token belongs in this URL. A main-branch release
+   fails explicitly if neither setting supplies a valid webhook.
 5. Run the workflow from the commit containing the hardened deployment script.
    Once the release gate and image jobs pass, inspect the deployment job and
    verify the actual rollout in Coolify and the website. Rerunning an older

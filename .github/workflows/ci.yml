@@ -162,7 +162,7 @@ jobs:
   deploy:
     name: Deploy verified images
     needs: [publish-backend, publish-frontend]
-    if: github.ref == 'refs/heads/main' && vars.COOLIFY_DEPLOY_WEBHOOK != ''
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -171,6 +171,6 @@ jobs:
           node-version: 22
       - name: Trigger Coolify only after both images are published
         env:
-          WEBHOOK_URL: ${{ vars.COOLIFY_DEPLOY_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK || vars.COOLIFY_DEPLOY_WEBHOOK }}
           API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
         run: node scripts/trigger-verified-deploy.cjs

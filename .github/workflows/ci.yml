@@ -47,6 +47,8 @@ jobs:
       - run: npm audit --audit-level=high
       - name: Verify glob dependency security and compatibility
         run: node ../scripts/verify-glob-security.cjs
+      - name: Verify deployment request contract
+        run: node --test ../scripts/trigger-verified-deploy.test.cjs
       - name: Migrate disposable PostgreSQL databases
         run: node scripts/prepare-release-tests.cjs
       - name: Lint (read-only)
@@ -163,11 +165,12 @@ jobs:
     if: github.ref == 'refs/heads/main' && vars.COOLIFY_DEPLOY_WEBHOOK != ''
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - name: Trigger Coolify only after both images are published
         env:
           WEBHOOK_URL: ${{ vars.COOLIFY_DEPLOY_WEBHOOK }}
           API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
-        run: |
-          curl --fail-with-body --silent --show-error --max-time 30 \
-            --request POST --header "Authorization: Bearer $API_TOKEN" \
-            "$WEBHOOK_URL" --output /tmp/coolify-response.txt
+        run: node scripts/trigger-verified-deploy.cjs

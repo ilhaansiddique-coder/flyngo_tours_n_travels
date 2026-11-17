@@ -45,6 +45,8 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci --no-audit --prefer-offline
       - run: npm audit --audit-level=high
+      - name: Verify glob dependency security and compatibility
+        run: node ../scripts/verify-glob-security.cjs
       - name: Migrate disposable PostgreSQL databases
         run: node scripts/prepare-release-tests.cjs
       - name: Lint (read-only)
@@ -94,6 +96,9 @@ jobs:
       - run: npm ci --no-audit --prefer-offline
         working-directory: frontend
       - run: npm audit --audit-level=high
+        working-directory: frontend
+      - name: Verify glob dependency security and compatibility
+        run: node ../scripts/verify-glob-security.cjs
         working-directory: frontend
       - run: npm run lint -- --quiet
         working-directory: frontend

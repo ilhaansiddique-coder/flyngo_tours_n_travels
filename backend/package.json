@@ -123,7 +123,8 @@
     },
     "@prisma/config": {
       "deepmerge-ts": "^8.0.0"
-    }
+    },
+    "picomatch": "npm:@ryotsu/picomatch@4.0.7-a"
   },
   "engines": {
     "node": ">=22"

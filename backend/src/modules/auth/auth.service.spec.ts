@@ -55,6 +55,7 @@ describe('AuthService', () => {
   };
 
   const mockReferralService = {
+    onUserVerified: jest.fn().mockResolvedValue(undefined),
     prepareRegistration: jest.fn().mockResolvedValue({ referralCode: 'TESTCODE' }),
     finalizeRegistration: jest.fn().mockResolvedValue(undefined),
     awardSignupBonus: jest.fn().mockResolvedValue(undefined),
@@ -217,7 +218,7 @@ describe('AuthService', () => {
         fullName: 'New User', phone: '+8801712345678', password: 'Password123!', email: '',
       }, 'tenant-1')).resolves.toHaveProperty('accessToken');
       expect(mockPrisma.user.create).toHaveBeenCalledWith({ data: expect.objectContaining({
-        email: null, address: null, phoneKey: '1712345678', roleId: 'role-customer',
+        email: null, address: null, phoneKey: '1712345678', roleId: 'role-customer', creationSource: 'self_registration',
       }) });
     });
 
@@ -290,6 +291,32 @@ describe('AuthService', () => {
     });
   });
 
+  describe('OAuth creation attribution', () => {
+    it('marks a new social-login account as self-created', async () => {
+      mockPrisma.user.findFirst.mockResolvedValueOnce(null);
+      mockPrisma.role.findFirst.mockResolvedValueOnce({ id: 'role-customer' });
+      mockPrisma.user.create.mockResolvedValueOnce({ id: 'oauth-user', fullName: 'Social User' });
+      await service.validateOAuthUser({
+        email: 'social@example.com', fullName: 'Social User', provider: 'google', providerId: 'google-1',
+      }, 'tenant-1');
+      expect(mockPrisma.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ creationSource: 'oauth' }),
+      });
+    });
+
+    it('preserves the original creator when an existing user links social login', async () => {
+      mockPrisma.user.findFirst.mockResolvedValueOnce({ id: 'existing-user' });
+      mockPrisma.user.update.mockResolvedValueOnce({ id: 'existing-user' });
+      await service.validateOAuthUser({
+        email: 'staff-created@example.com', fullName: 'Existing User', provider: 'google', providerId: 'google-2',
+      }, 'tenant-1');
+      expect(mockPrisma.user.create).not.toHaveBeenCalled();
+      const update = mockPrisma.user.update.mock.calls[0][0].data;
+      expect(update).not.toHaveProperty('creationSource');
+      expect(update).not.toHaveProperty('createdByUserId');
+    });
+  });
+
   describe('refreshToken', () => {
     it('should return new tokens for valid refresh token', async () => {
       mockJwtService.verifyAsync.mockResolvedValue({
@@ -358,6 +385,7 @@ describe('AuthService', () => {
       expect(data.tempPasswordExpiresAt).toBeNull();
       // Canonicalised, so the same number in another format won't duplicate.
       expect(data.phoneKey).toBe('1711223344');
+      expect(data.creationSource).toBe('guest_booking');
     });
 
     it('reuses an existing ACTIVE account without disclosing that it exists', async () => {

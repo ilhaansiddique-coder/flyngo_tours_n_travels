@@ -215,6 +215,7 @@ async function main() {
         id: '00000000-0000-0000-0000-00000000admin',
         email: adminEmail,
         fullName: 'Super Admin',
+        creationSource: 'system',
         passwordHash: adminPassword,
         tenantId: TENANT_ID,
         roleId: roleRecords['super_admin'],

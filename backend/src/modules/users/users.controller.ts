@@ -115,8 +115,8 @@ export class UsersController {
   @Post()
   @Roles('admin', 'super_admin')
   @ApiOperation({ summary: 'Create a user (admin)' })
-  async createUser(@CurrentTenantId() tenantId: string, @Body() body: any) {
-    return this.usersService.createUser(tenantId, body);
+  async createUser(@CurrentTenantId() tenantId: string, @Body() body: any, @CurrentUser() actor: { id: string }) {
+    return this.usersService.createUser(tenantId, body, actor.id);
   }
 
   @Get(':id')

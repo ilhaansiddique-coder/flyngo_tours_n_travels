@@ -21,7 +21,13 @@ export class UsersService {
     private readonly loyalty: LoyaltyService,
   ) {}
 
-  async createUser(tenantId: string, data: any) {
+  async createUser(tenantId: string, data: any, actorId: string) {
+    // Verify the actor against the tenant; never accept attribution from body.
+    const actor = await this.prisma.user.findFirst({
+      where: { id: actorId, tenantId, deletedAt: null, isActive: true },
+      select: { id: true },
+    });
+    if (!actor) throw new BadRequestException('Invalid account creator');
     // Email is optional site-wide (phone is the primary identifier). Only run
     // the duplicate check when one was actually supplied — otherwise the query
     // matches any existing null-email user and wrongly reports a conflict.
@@ -71,6 +77,8 @@ export class UsersService {
     const user = await this.prisma.user.create({
       data: {
         tenantId,
+        creationSource: 'admin',
+        createdByUserId: actor.id,
         email: email || null,
         fullName,
         phone,
@@ -204,7 +212,11 @@ export class UsersService {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        include: { role: true, _count: { select: { bookings: true } } },
+        include: {
+          role: true,
+          createdBy: { select: { id: true, fullName: true } },
+          _count: { select: { bookings: true } },
+        },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.user.count({ where }),

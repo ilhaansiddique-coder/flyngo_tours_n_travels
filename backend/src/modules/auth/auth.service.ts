@@ -139,6 +139,7 @@ export class AuthService {
         phoneKey: core,
         accountStatus: 'active',
         claimedAt: new Date(),
+        creationSource: 'self_registration',
         address: dto.address ?? null,
         tenantId,
         roleId: customerRole.id,
@@ -251,6 +252,7 @@ export class AuthService {
         data: {
           email: profile.email,
           fullName: profile.fullName,
+          creationSource: 'oauth',
           tenantId,
           roleId: customerRole!.id,
           provider: profile.provider,
@@ -559,6 +561,7 @@ export class AuthService {
           tenantId,
           roleId: customerRole.id,
           fullName: contact.fullName?.trim() || 'Guest',
+          creationSource: 'guest_booking',
           phone: contact.phone?.trim() || null,
           phoneKey: key,
           email: contact.email?.trim() || null,

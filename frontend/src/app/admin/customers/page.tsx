@@ -1,6 +1,7 @@
 'use client';
 
 import { useApi } from '@/hooks/use-api';
+import { useAuthStore } from '@/stores/auth.store';
 import { formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -31,6 +32,8 @@ interface User {
   role?: Role;
   isActive: boolean;
   createdAt: string;
+  creationSource?: string;
+  createdBy?: { id: string; fullName: string } | null;
   accountStatus?: string;
   credentialsSentAt?: string | null;
   nationalId?: string;
@@ -65,6 +68,8 @@ const initialForm: FormData = {
 };
 
 export default function CustomersPage() {
+  const role = useAuthStore((state) => state.user?.role);
+  const canViewCreation = role === 'admin' || role === 'super_admin';
   const {
     getUsers, getUserById, createUser, updateUser, deleteUser, getRoles, issueCustomerCredentials,
     uploadCustomerNationalIdFront, uploadCustomerNationalIdBack, uploadCustomerPassport,
@@ -504,14 +509,15 @@ export default function CustomersPage() {
                     <th className="p-4 font-medium">Passport No.</th>
                     <th className="p-4 font-medium">Passport Copy</th>
                     <th className="p-4 font-medium">Status</th>
-                    <th className="p-4 font-medium">Created at</th>
+                    {canViewCreation && <th className="p-4 font-medium">Created at</th>}
+                    {canViewCreation && <th className="p-4 font-medium">Created By</th>}
                     <th className="p-4 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="p-12 text-center text-gray-500">
+                      <td colSpan={canViewCreation ? 10 : 8} className="p-12 text-center text-gray-500">
                         <Users className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                         <p>No customers found</p>
                       </td>
@@ -588,9 +594,21 @@ export default function CustomersPage() {
                             )}
                           </div>
                         </td>
-                        <td className="p-4 text-gray-500 whitespace-nowrap">
+                        {canViewCreation && <td className="p-4 text-gray-500 whitespace-nowrap">
                           <time dateTime={u.createdAt}>{formatDate(u.createdAt)}</time>
-                        </td>
+                        </td>}
+                        {canViewCreation && <td className="p-4 text-gray-500 whitespace-nowrap">
+                          {u.creationSource === 'admin' ? (
+                            <span title={u.createdBy?.id}>
+                              {u.createdBy?.fullName || 'Former staff member'}
+                              <span className="block text-xs text-gray-400">Staff-created</span>
+                            </span>
+                          ) : u.creationSource === 'self_registration' ? 'Self-registered'
+                            : u.creationSource === 'oauth' ? 'Self-registered (social login)'
+                            : u.creationSource === 'guest_booking' ? 'System (guest booking)'
+                            : u.creationSource === 'system' ? 'System'
+                            : 'Unknown (older account)'}
+                        </td>}
                         <td className="p-4">
                           <div className="flex gap-1">
                             {(u.accountStatus === 'provisional' || u.accountStatus === 'invited') && u.phone && (

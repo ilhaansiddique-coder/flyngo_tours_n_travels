@@ -130,6 +130,13 @@ model User {
   credentialsSentAt     DateTime? @map("credentials_sent_at")
   claimedAt             DateTime? @map("claimed_at")
 
+  // Set only at creation, from the server-side creation path and actor.
+  // Unknown preserves honest attribution for accounts predating this feature.
+  creationSource String @default("unknown") @map("creation_source")
+  createdByUserId String? @map("created_by_user_id")
+  createdBy User? @relation("UserCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdUsers User[] @relation("UserCreator")
+
   // Refer & Earn attribution (set when the user signs up via ?ref=CODE)
   referredByCode String? @map("referred_by_code")
   referralCode   String? @unique @map("referral_code")
@@ -162,6 +169,7 @@ deviceTokens       DeviceToken[]
 
   @@unique([tenantId, phoneKey], map: "users_tenant_phone_key_key")
   @@index([tenantId, email])
+  @@index([createdByUserId])
   @@index([tenantId, phone])
   @@map("users")
 }

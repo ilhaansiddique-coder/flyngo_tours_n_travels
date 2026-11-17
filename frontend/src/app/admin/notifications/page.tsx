@@ -166,7 +166,7 @@ export default function NotificationsPage() {
           />
         </div>
         <Button size="md" className="gap-2" onClick={openCreateModal}>
-          <Plus className="w-4 h-4" /> Send Notification
+          <Plus className="w-4 h-4" /> Create In-app Notification
         </Button>
       </div>
 
@@ -259,7 +259,7 @@ export default function NotificationsPage() {
         </>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Send Notification">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Create In-app Notification">
         <form onSubmit={handleSubmit}>
           <FormField label="Type" required>
             <FormSelect
@@ -267,9 +267,6 @@ export default function NotificationsPage() {
               onChange={(v) => setForm({ ...form, type: v })}
               options={[
                 { label: 'In-App', value: 'in_app' },
-                { label: 'Email', value: 'email' },
-                { label: 'SMS', value: 'sms' },
-                { label: 'Push', value: 'push' },
               ]}
             />
           </FormField>
@@ -342,7 +339,7 @@ export default function NotificationsPage() {
           <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant">
             <Button variant="outline" type="button" onClick={() => setModalOpen(false)}>Cancel</Button>
             <Button type="submit" loading={submitting} className="gap-2">
-              <Send className="w-4 h-4" /> Send
+              <Send className="w-4 h-4" /> Create
             </Button>
           </div>
         </form>

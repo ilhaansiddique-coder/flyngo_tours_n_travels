@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
@@ -53,10 +53,13 @@ export class NotificationsService {
         port,
         secure,
         auth: { user, pass },
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 30000,
       });
       this.logger.log(`SMTP mailer configured (host=${host}, port=${port}, secure=${secure})`);
     } else {
-      this.logger.warn('SMTP not configured — email sends will be logged but not delivered');
+      this.logger.warn('SMTP not configured — email delivery is disabled');
     }
   }
 
@@ -78,7 +81,7 @@ export class NotificationsService {
         this.logger.error(`Firebase init failed: ${(err as Error).message}`);
       }
     } else {
-      this.logger.warn('Firebase not configured — push sends will be logged but not delivered');
+      this.logger.warn('Firebase not configured — push delivery is disabled');
     }
   }
 
@@ -87,7 +90,7 @@ export class NotificationsService {
     subject: string,
     template: EmailTemplate,
     data: Record<string, any> = {},
-  ): Promise<{ sent: boolean; provider: 'resend' | 'smtp' | 'log'; id?: string }> {
+  ): Promise<{ sent: boolean; provider: 'resend' | 'smtp'; id?: string }> {
     const { html, text } = this.renderEmailTemplate(template, subject, data);
     const from =
       this.configService.getOrNull('EMAIL_FROM') ||
@@ -103,14 +106,16 @@ export class NotificationsService {
           method: 'POST',
           headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ from, to, subject, html, text }),
+          signal: AbortSignal.timeout(15000),
         });
         if (!res.ok) throw new Error(`Resend HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
-        const json: any = await res.json().catch(() => ({}));
+        const json: any = await res.json();
+        if (typeof json?.id !== 'string' || !json.id) throw new Error('Resend did not acknowledge the message');
         this.logger.log(`Email sent via Resend to ${to} (id=${json?.id ?? '?'})`);
         return { sent: true, provider: 'resend', id: json?.id };
       } catch (err) {
         this.logger.error(`Resend send to ${to} failed: ${(err as Error).message}`);
-        // fall through to SMTP / log so a transient Resend error still delivers.
+        // Try the independently configured SMTP transport before failing.
       }
     }
 
@@ -118,6 +123,7 @@ export class NotificationsService {
     if (this.mailer) {
       try {
         const info = await this.mailer.sendMail({ from, to, subject, html, text });
+        this.assertSmtpAccepted(info);
         this.logger.log(`Email sent to ${to} (messageId=${info.messageId})`);
         return { sent: true, provider: 'smtp', id: info.messageId };
       } catch (err) {
@@ -126,9 +132,7 @@ export class NotificationsService {
       }
     }
 
-    // 3) Nothing configured — log so nothing crashes.
-    this.logger.log(`[email:log] to=${to} subject="${subject}" template=${template}`);
-    return { sent: true, provider: 'log' };
+    throw new ServiceUnavailableException('Email delivery is unavailable');
   }
 
   /**
@@ -140,7 +144,7 @@ export class NotificationsService {
     subject: string,
     html: string,
     attachment?: { filename: string; content: Buffer; contentType: string },
-  ): Promise<{ sent: boolean; provider: 'resend' | 'smtp' | 'log'; id?: string }> {
+  ): Promise<{ sent: boolean; provider: 'resend' | 'smtp'; id?: string }> {
     const from =
       this.configService.getOrNull('EMAIL_FROM') ||
       this.configService.getOrNull('SMTP_FROM') ||
@@ -165,9 +169,11 @@ export class NotificationsService {
           method: 'POST',
           headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(15000),
         });
         if (!res.ok) throw new Error(`Resend HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
-        const json: any = await res.json().catch(() => ({}));
+        const json: any = await res.json();
+        if (typeof json?.id !== 'string' || !json.id) throw new Error('Resend did not acknowledge the message');
         this.logger.log(`Raw HTML email sent via Resend to ${to} (id=${json?.id ?? '?'})`);
         return { sent: true, provider: 'resend', id: json?.id };
       } catch (err) {
@@ -187,6 +193,7 @@ export class NotificationsService {
           ];
         }
         const info = await this.mailer.sendMail(mailOpts);
+        this.assertSmtpAccepted(info);
         this.logger.log(`Raw HTML email sent to ${to} (messageId=${info.messageId})`);
         return { sent: true, provider: 'smtp', id: info.messageId };
       } catch (err) {
@@ -195,8 +202,24 @@ export class NotificationsService {
       }
     }
 
-    this.logger.log(`[email:log] to=${to} subject="${subject}" (raw HTML)`);
-    return { sent: true, provider: 'log' };
+    throw new ServiceUnavailableException('Email delivery is unavailable');
+  }
+
+  private assertSmtpAccepted(info: nodemailer.SentMessageInfo) {
+    if (!Array.isArray(info.accepted) || info.accepted.length === 0 || info.rejected?.length) {
+      throw new ServiceUnavailableException('SMTP did not accept all recipients');
+    }
+  }
+
+  // Configuration is not proof of delivery. This admin-only status never exposes
+  // credentials or claims that an inbox, handset or device received a message.
+  getDeliveryStatus() {
+    return {
+      email: { configured: !!this.mailer || !!this.configService.getOrNull('RESEND_API_KEY') },
+      sms: { configured: !!this.configService.getOrNull('SMS_API_KEY') && !!this.configService.getOrNull('SMS_SENDER_ID') },
+      push: { configured: this.firebaseInitialized },
+      verification: 'Provider acceptance and recipient delivery must be checked separately',
+    };
   }
 
   private renderEmailTemplate(template: EmailTemplate, subject: string, data: Record<string, any>) {
@@ -236,7 +259,7 @@ export class NotificationsService {
         if (data.message) lines.push(String(data.message));
     }
     const text = `${greeting}\n\n${lines.join('\n')}\n\n— The ${brand} team`;
-    const html = `<p>${greeting}</p>${lines.map((l) => `<p>${this.escape(l)}</p>`).join('')}<p>— The ${brand} team</p>`;
+    const html = `<p>${this.escape(greeting)}</p>${lines.map((l) => `<p>${this.escape(l)}</p>`).join('')}<p>— The ${brand} team</p>`;
     return { html, text };
   }
 
@@ -244,12 +267,11 @@ export class NotificationsService {
     return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
   }
 
-  async sendSms(to: string, message: string): Promise<{ sent: boolean; provider: 'bulksmsbd' | 'log'; id?: string }> {
+  async sendSms(to: string, message: string): Promise<{ sent: boolean; provider: 'bulksmsbd'; id?: string }> {
     const apiKey = this.configService.getOrNull('SMS_API_KEY');
-    const senderId = this.configService.getOrNull('SMS_SENDER_ID') || '8809648906698';
-    if (!apiKey) {
-      this.logger.log(`[sms:log] to=${to} body="${message}"`);
-      return { sent: true, provider: 'log' };
+    const senderId = this.configService.getOrNull('SMS_SENDER_ID');
+    if (!apiKey || !senderId) {
+      throw new ServiceUnavailableException('SMS delivery is unavailable');
     }
     try {
       const url = new URL('https://bulksmsbd.net/api/smsapi');
@@ -258,11 +280,12 @@ export class NotificationsService {
       url.searchParams.set('number', to);
       url.searchParams.set('senderid', senderId);
       url.searchParams.set('message', message);
-      const res = await fetch(url.toString(), { method: 'GET' });
+      const res = await fetch(url.toString(), { method: 'GET', signal: AbortSignal.timeout(15000) });
       const text = await res.text();
       let code: string | null = null;
       try {
-        code = JSON.parse(text)?.code ?? null;
+        const value = JSON.parse(text)?.code;
+        code = value == null ? null : String(value);
       } catch {
         // Non-JSON body (e.g. provider outage) — fall through to failure path.
       }
@@ -271,7 +294,7 @@ export class NotificationsService {
         return { sent: true, provider: 'bulksmsbd', id: code };
       }
       this.logger.error(`SMS send to ${to} failed: HTTP ${res.status} code=${code} body="${text.slice(0, 200)}"`);
-      return { sent: false, provider: 'bulksmsbd', id: code ?? undefined };
+      throw new ServiceUnavailableException('SMS provider did not accept the message');
     } catch (err) {
       this.logger.error(`SMS send to ${to} failed: ${(err as Error).message}`);
       throw err;
@@ -283,20 +306,18 @@ export class NotificationsService {
     title: string,
     body: string,
     data: Record<string, any> = {},
-  ): Promise<{ sent: boolean; provider: 'fcm' | 'log'; ids?: string[] }> {
+  ): Promise<{ sent: boolean; provider: 'fcm' | 'disabled'; ids?: string[] }> {
     const tokens = await this.prisma.deviceToken.findMany({
       where: { userId, deletedAt: null },
       select: { token: true },
     });
 
     if (tokens.length === 0) {
-      this.logger.log(`[push:log] no device tokens for user ${userId}; title="${title}" body="${body}"`);
-      return { sent: true, provider: 'log' };
+      return { sent: false, provider: 'disabled' };
     }
 
     if (!this.firebaseInitialized) {
-      this.logger.log(`[push:log] Firebase not configured; user ${userId} has ${tokens.length} device(s); title="${title}"`);
-      return { sent: true, provider: 'log' };
+      return { sent: false, provider: 'disabled' };
     }
 
     try {

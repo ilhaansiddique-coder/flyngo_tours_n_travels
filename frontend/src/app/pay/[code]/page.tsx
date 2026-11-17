@@ -126,7 +126,7 @@ export default function PayPage() {
         setSelectedWalletId((prev) => prev || nextWallets[0].id);
         setMethod((prev) => prev || nextWallets[0].provider);
       } else {
-        setMethod((prev) => prev || 'bank_transfer');
+        setMethod((prev) => prev || (methods?.bankAccounts?.length ? 'bank_transfer' : 'cash'));
       }
       setInstructions(methods?.instructions || null);
       setAccounts(methods?.bankAccounts || []);
@@ -239,7 +239,7 @@ export default function PayPage() {
           <div className="mb-6 p-4 rounded-xl border text-sm" style={{ backgroundColor: 'color-mix(in oklab, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in oklab, var(--color-primary) 30%, transparent)' }}>
             <div className="flex items-center gap-2 font-semibold">
               <Check className="w-4 h-4" />
-              {isBn ? 'পেমেন্ট রেকর্ড হয়েছে এবং ইনভয়েস তৈরি হয়েছে।' : 'Payment recorded and your invoice has been generated.'}
+              {isBn ? 'পেমেন্টের তথ্য জমা হয়েছে। টাকা পাওয়ার বিষয়টি যাচাইয়ের অপেক্ষায় রয়েছে।' : 'Payment details submitted. Awaiting verification of the money received.'}
             </div>
           </div>
         )}
@@ -260,7 +260,7 @@ export default function PayPage() {
                   icon: Smartphone,
                   label: WALLET_LABELS[provider] || provider,
                 })),
-                { id: 'bank_transfer', icon: Building, label: isBn ? 'ব্যাংক' : 'Bank' },
+                ...(accounts.length ? [{ id: 'bank_transfer', icon: Building, label: isBn ? 'ব্যাংক' : 'Bank' }] : []),
                 { id: 'cash', icon: Banknote, label: isBn ? 'নগদ' : 'Cash' },
               ]).map((m) => (
                 <button

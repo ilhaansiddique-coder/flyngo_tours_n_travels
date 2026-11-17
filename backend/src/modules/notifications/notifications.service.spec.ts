@@ -3,7 +3,7 @@ import { NotificationsService } from './notifications.service';
 import { PrismaService } from '../../database/prisma.service';
 import { ConfigService } from '../../config/config.service';
 
-const mockSendMail = jest.fn().mockResolvedValue({ messageId: 'test-id' });
+const mockSendMail = jest.fn().mockResolvedValue({ messageId: 'test-id', accepted: ['test@example.com'], rejected: [] });
 jest.mock('nodemailer', () => ({
   createTransport: jest.fn(() => ({
     sendMail: mockSendMail,

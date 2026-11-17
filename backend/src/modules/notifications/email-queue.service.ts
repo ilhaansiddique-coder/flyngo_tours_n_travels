@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '../../config/config.service';
 import { Queue, Worker } from 'bullmq';
 import { NotificationsService, EmailTemplate } from './notifications.service';
@@ -39,7 +39,8 @@ export class EmailQueueService implements OnModuleDestroy {
         'flyngo-emails',
         async (job) => {
           const { to, subject, template, data } = job.data;
-          await this.notificationsService.sendEmail(to, subject, template, data);
+          const result = await this.notificationsService.sendEmail(to, subject, template, data);
+          if (!result.sent) throw new ServiceUnavailableException('Email was not accepted by a provider');
         },
         { connection },
       );
@@ -54,13 +55,14 @@ export class EmailQueueService implements OnModuleDestroy {
     }
   }
 
-  async addEmail(to: string, subject: string, template: EmailTemplate, data: Record<string, any>): Promise<boolean> {
+  async addEmail(to: string, subject: string, template: EmailTemplate, data: Record<string, any>) {
     if (!this.enabled || !this.queue) {
-      await this.notificationsService.sendEmail(to, subject, template, data);
-      return false;
+      const result = await this.notificationsService.sendEmail(to, subject, template, data);
+      if (!result.sent) throw new ServiceUnavailableException('Email was not accepted by a provider');
+      return { status: 'accepted' as const, provider: result.provider, id: result.id };
     }
-    await this.queue.add('send', { to, subject, template, data });
-    return true;
+    const job = await this.queue.add('send', { to, subject, template, data });
+    return { status: 'queued' as const, jobId: job.id };
   }
 
   async onModuleDestroy() {

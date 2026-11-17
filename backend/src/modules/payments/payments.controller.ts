@@ -60,7 +60,7 @@ export class PaymentsController {
   }
 
   @Post('intent')
-  @ApiOperation({ summary: 'Create payment intent' })
+  @ApiOperation({ summary: 'Online checkout unavailable (returns 503; use manual confirmation)' })
   async createIntent(
     @CurrentTenantId() tenantId: string,
     @CurrentUser('id') userId: string,
@@ -101,7 +101,7 @@ export class PaymentsController {
 
   @Post('webhook/bkash')
   @Public()
-  @ApiOperation({ summary: 'bKash webhook' })
+  @ApiOperation({ summary: 'Automatic bKash callbacks unavailable (returns 503)' })
   async bkashWebhook(
     @Headers('x-bkash-signature') signature: string,
     @Req() req: any,

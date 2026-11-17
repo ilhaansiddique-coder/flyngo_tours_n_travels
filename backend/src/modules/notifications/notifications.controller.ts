@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -56,13 +56,23 @@ export class NotificationsController {
     return this.notificationsService.listAllNotifications(tenantId, pagination.page, pagination.limit);
   }
 
+  @Get('admin/delivery-status')
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: 'Notification configuration status; does not certify delivery' })
+  deliveryStatus() {
+    return this.notificationsService.getDeliveryStatus();
+  }
+
   @Post('admin/send')
   @Roles('admin', 'super_admin')
-  @ApiOperation({ summary: 'Send a notification to one or all users (admin)' })
+  @ApiOperation({ summary: 'Create an in-app notification; does not send email, SMS or push (admin)' })
   async send(
     @CurrentTenantId() tenantId: string,
     @Body() body: { userId?: string; userIds?: string[]; type: string; title: string; body: string; data?: any },
   ) {
+    if (body.type !== 'in_app') {
+      throw new BadRequestException('This endpoint only creates in-app notifications; external broadcasts are unavailable');
+    }
     return this.notificationsService.createNotification(tenantId, body);
   }
 

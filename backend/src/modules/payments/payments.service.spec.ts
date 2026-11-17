@@ -98,41 +98,28 @@ describe('PaymentsService', () => {
     jest.clearAllMocks();
   });
 
-  describe('createPaymentIntent', () => {
-    it('should create a payment with pending status', async () => {
-      mockPrisma.booking.findFirst.mockResolvedValue({
-        id: 'booking-1', tenantId: 'tenant-1', userId: 'user-1',
-        totalAmount: 100, referralDiscount: 0, pointsRedemptionBdt: 0, currency: 'BDT',
-      });
-      mockPrisma.payment.create.mockResolvedValue({
-        id: 'payment-1',
-        tenantId: 'tenant-1',
-        userId: 'user-1',
-        bookingId: 'booking-1',
-        amount: 100,
-        currency: 'BDT',
-        method: 'bkash',
-        status: 'pending',
-        transactionId: 'PAY-123',
-      });
-
-      const result = await service.createPaymentIntent('tenant-1', 'user-1', 'booking-1', 'bkash', 100);
-
-      expect(result.status).toBe('pending');
-      expect(result.transactionId).toContain('PAY-');
-      expect(mockPrisma.payment.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ status: 'pending', currency: 'BDT', method: 'bkash', amount: 100 }),
-        }),
-      );
+  describe('incomplete gateway paths', () => {
+    it.each(['stripe', 'bkash', 'sslcommerz', 'cash', 'unknown'])('rejects %s intents without creating a payment', async (method) => {
+      await expect(service.createPaymentIntent('tenant-1', 'user-1', 'booking-1', method, 100)).rejects.toThrow('Online checkout is unavailable');
+      expect(mockPrisma.payment.create).not.toHaveBeenCalled();
     });
-
-    it('should throw BadRequestException when booking not found', async () => {
-      mockPrisma.booking.findFirst.mockResolvedValue(null);
-
-      await expect(
-        service.createPaymentIntent('tenant-1', 'user-1', 'booking-1', 'bkash', 100),
-      ).rejects.toThrow(BadRequestException);
+    it('rejects unimplemented bKash callbacks before touching payments', async () => {
+      await expect(service.handleBKashWebhook('signature', Buffer.from('{}'))).rejects.toThrow('callbacks are unavailable');
+      expect(mockPrisma.payment.update).not.toHaveBeenCalled();
+    });
+    it('does not claim a manual bKash refund was processed', async () => {
+      mockPrisma.payment.findFirst.mockResolvedValue({ id: 'pay-1', status: 'completed', transactionId: 'trx', method: 'bkash' });
+      await expect(service.refundPayment('tenant-1', 'pay-1')).rejects.toThrow('Automatic bKash refunds are unavailable');
+      expect(mockPrisma.payment.update).not.toHaveBeenCalled();
+    });
+    it.each(['pending', 'failed', 'succeeded'])('only acknowledges a Stripe refund with status %s when settled', async (status) => {
+      mockPrisma.payment.findFirst.mockResolvedValue({ id: 'pay-1', status: 'completed', transactionId: 'pi_1', method: 'stripe' });
+      const create = jest.fn().mockResolvedValue({ id: 're_1', status, amount: 100, currency: 'bdt' });
+      (service as any).stripe = { refunds: { create } };
+      const result = service.refundPayment('tenant-1', 'pay-1');
+      if (status === 'succeeded') await expect(result).resolves.toMatchObject({ ok: true, refundId: 're_1' });
+      else await expect(result).rejects.toThrow('not confirmed the refund');
+      expect(create).toHaveBeenCalledWith({ payment_intent: 'pi_1' }, { idempotencyKey: 'flyngo-refund-pay-1' });
     });
   });
 
@@ -219,7 +206,7 @@ describe('PaymentsService', () => {
         'user@example.com',
         expect.stringContaining('FLY-ABC123'),
         'payment-receipt',
-        expect.objectContaining({ customerName: 'John Doe' }),
+        expect.objectContaining({ fullName: 'John Doe', amount: 100, currency: 'BDT' }),
       );
     });
 
@@ -279,64 +266,33 @@ describe('PaymentsService', () => {
   });
 
   describe('submitConfirmation', () => {
-    it('auto-completes a bKash payment submitted by the customer', async () => {
-      mockPrisma.booking.findFirst.mockResolvedValue({
-        id: 'booking-1', userId: 'user-1', bookingCode: 'FLY-ABC123', bookingType: 'tour',
-        status: 'pending', totalAmount: 5000, paidAmount: 0, referralDiscount: 0,
-        pointsRedemptionBdt: 0, currency: 'BDT', customerName: 'Ada',
-      });
-      // First findFirst is the duplicate trx check → null. The second is the
-      // completion lookup inside updatePaymentStatus → the full payment row.
-      mockPrisma.payment.findFirst
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({
-          id: 'pay-1', tenantId: 'tenant-1', amount: 5000, currency: 'BDT',
-          userId: 'user-1', bookingId: 'booking-1',
-          booking: {
-            id: 'booking-1', userId: 'user-1', status: 'pending', totalAmount: 5000,
-            paidAmount: 0, referralDiscount: 0, pointsRedemptionBdt: 0, currency: 'BDT',
-          },
-          hajjUmrahBooking: null,
-          user: { email: 'ada@example.com', fullName: 'Ada', phone: '123' },
-        });
-      mockPrisma.payment.create.mockResolvedValue({
-        id: 'pay-1', method: 'bkash', status: 'pending', bkashTrxId: '9J3ABCDE',
-      });
-      mockPrisma.payment.update.mockResolvedValue({
-        id: 'pay-1', method: 'bkash', status: 'completed', bkashTrxId: '9J3ABCDE',
-      });
-      mockPrisma.booking.update.mockResolvedValue({ id: 'booking-1', paidAmount: 5000, status: 'paid' });
-      mockPrisma.payment.findUnique.mockResolvedValue({
-        id: 'pay-1', method: 'bkash', status: 'completed', bkashTrxId: '9J3ABCDE',
-      });
-
+    it.each(['bkash', 'nagad', 'rocket', 'upay', 'tap', 'surecash', 'mcash', 'bank_transfer', 'cash'])('keeps customer %s evidence pending without crediting the booking', async (method) => {
+      mockPrisma.booking.findFirst.mockResolvedValue({ id: 'booking-1', userId: 'user-1', bookingCode: 'FLY-ABC123', status: 'pending', totalAmount: 5000, paidAmount: 0, currency: 'BDT' });
+      mockWallets.listPublic.mockResolvedValue([{ id: 'wallet-1', provider: method, walletNumber: '01712345678' }] as any);
+      mockPrisma.mobileWallet.findFirst.mockResolvedValue({ id: 'wallet-1', provider: method });
+      mockPrisma.bankAccount.findFirst.mockResolvedValue({ id: 'ba-1' });
+      mockPrisma.payment.findFirst.mockResolvedValue(null);
+      mockPrisma.payment.create.mockResolvedValue({ id: 'pay-1', method, status: 'pending' });
+      mockPrisma.payment.findUnique.mockResolvedValue({ id: 'pay-1', method, status: 'pending' });
       const result = await service.submitConfirmation('tenant-1', 'user-1', {
-        bookingCode: 'FLY-ABC123',
-        method: 'bkash',
-        bkashTrxId: '9J3ABCDE',
+        bookingCode: 'FLY-ABC123', method, bkashTrxId: '9J3ABCDE',
+        mobileWalletId: method === 'cash' || method === 'bank_transfer' ? undefined : 'wallet-1',
+        bankAccountId: 'ba-1', senderName: 'Ada', receiptUrls: ['/api/v1/media/private/receipt'],
       });
+      expect(result?.status).toBe('pending');
+      expect(mockPrisma.payment.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ amount: 5000, status: 'pending', method }) }));
+      expect(mockPrisma.payment.update).not.toHaveBeenCalled();
+      expect(mockPrisma.booking.update).not.toHaveBeenCalled();
+      expect(mockInvoices.generateForPayment).not.toHaveBeenCalled();
+      expect(mockNotifications.sendSms).not.toHaveBeenCalled();
+    });
 
-      // No longer left pending for manual admin verification — paid immediately.
-      expect(result?.status).toBe('completed');
-      expect(mockPrisma.payment.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ status: 'completed' }) }),
-      );
-      expect(mockPrisma.booking.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ paidAmount: 5000, status: 'paid' }) }),
-      );
-      expect(mockInvoices.generateForPayment).toHaveBeenCalledWith('pay-1', 'tenant-1');
-      expect(mockPrisma.payment.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            method: 'bkash',
-            status: 'pending',
-            bkashTrxId: '9J3ABCDE',
-            userId: 'user-1',
-            bookingId: 'booking-1',
-            amount: 5000,
-          }),
-        }),
-      );
+    it('rejects an unconfigured wallet even if a transaction ID was provided', async () => {
+      mockPrisma.booking.findFirst.mockResolvedValue({ id: 'booking-1', userId: 'user-1', status: 'pending', totalAmount: 5000, paidAmount: 0 });
+      mockWallets.listPublic.mockResolvedValue([]);
+      mockPrisma.tenantSettings.findUnique.mockResolvedValue(null);
+      await expect(service.submitConfirmation('tenant-1', 'user-1', { bookingCode: 'FLY-ABC123', method: 'nagad', bkashTrxId: '9J3ABCDE' })).rejects.toThrow('unavailable');
+      expect(mockPrisma.payment.create).not.toHaveBeenCalled();
     });
 
     it('rejects bank transfer without a receipt', async () => {

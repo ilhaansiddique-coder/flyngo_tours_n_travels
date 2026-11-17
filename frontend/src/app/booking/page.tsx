@@ -1035,11 +1035,12 @@ export default function BookingPage() {
               receiptUrls,
               senderName: paymentMethod === 'bank_transfer' ? senderName : undefined,
             });
+            setPaymentConfirmed(true);
           } catch {
-            // payment confirmation failed; booking is still created and can be paid later
+            // Preserve the booking; show its payment link for retry.
+            setPaymentConfirmed(false);
           }
         }
-        setPaymentConfirmed(true);
       }
       setBookingSuccess(true);
       setStep(bookingType === 'custom' ? 6 : 5);
@@ -1096,8 +1097,8 @@ export default function BookingPage() {
             {paymentConfirmed && (
               <p className="text-xs text-muted rounded-xl p-3 bg-surface-container/60">
                 {isBn
-                  ? 'পেমেন্ট রেকর্ড হয়েছে এবং ইনভয়েস তৈরি হয়েছে। আপনার ইনভয়েস ড্যাশবোর্ড/ইনভয়েস পেজ থেকে দেখতে ও ডাউনলোড করতে পারবেন।'
-                  : 'Payment recorded and your invoice has been generated. You can view and download it from the invoice/payment page.'}
+                  ? 'আপনার পেমেন্টের তথ্য জমা হয়েছে। আমাদের দল টাকা পাওয়ার বিষয়টি যাচাই করার পর পেমেন্ট নিশ্চিত হবে।'
+                  : 'Payment details submitted for review. Your payment will be confirmed after our team verifies receipt of the money.'}
               </p>
             )}
             {isPresetBooking && bookingCode && !paymentConfirmed && (
@@ -1844,7 +1845,7 @@ export default function BookingPage() {
                           label: WALLET_LABELS[provider] || provider,
                           desc: isBn ? `${WALLET_LABELS[provider] || provider} পাঠিয়ে ট্রানজেকশন আইডি দিন` : `Send ${WALLET_LABELS[provider] || provider} and submit your transaction ID`,
                         })),
-                        { id: 'bank_transfer', icon: Building, label: isBn ? 'ব্যাংক ট্রান্সফার' : 'Bank Transfer', desc: isBn ? 'আমাদের হিসাবে পাঠিয়ে রসিদ আপলোড করুন' : 'Transfer to our account and upload the receipt' },
+                        ...(bankAccounts.length ? [{ id: 'bank_transfer', icon: Building, label: isBn ? 'ব্যাংক ট্রান্সফার' : 'Bank Transfer', desc: isBn ? 'আমাদের হিসাবে পাঠিয়ে রসিদ আপলোড করুন' : 'Transfer to our account and upload the receipt' }] : []),
                         { id: 'cash', icon: Banknote, label: isBn ? 'নগদ' : 'Cash', desc: isBn ? 'অফিসে বা কালেকশনের মাধ্যমে পরিশোধ' : 'Pay at our office or via collection' },
                       ].map((m) => (
                         <button
@@ -1947,7 +1948,7 @@ export default function BookingPage() {
                           label: WALLET_LABELS[provider] || provider,
                           desc: isBn ? `${WALLET_LABELS[provider] || provider} পাঠিয়ে ট্রানজেকশন আইডি দিন` : `Send ${WALLET_LABELS[provider] || provider} and submit your transaction ID`,
                         })),
-                        { id: 'bank_transfer', icon: Building, label: isBn ? 'ব্যাংক ট্রান্সফার' : 'Bank Transfer', desc: isBn ? 'আমাদের হিসাবে পাঠিয়ে রসিদ আপলোড করুন' : 'Transfer to our account and upload the receipt' },
+                        ...(bankAccounts.length ? [{ id: 'bank_transfer', icon: Building, label: isBn ? 'ব্যাংক ট্রান্সফার' : 'Bank Transfer', desc: isBn ? 'আমাদের হিসাবে পাঠিয়ে রসিদ আপলোড করুন' : 'Transfer to our account and upload the receipt' }] : []),
                         { id: 'cash', icon: Banknote, label: isBn ? 'নগদ' : 'Cash', desc: isBn ? 'অফিসে বা কালেকশনের মাধ্যমে পরিশোধ' : 'Pay at our office or via collection' },
                       ].map((m) => (
                         <button

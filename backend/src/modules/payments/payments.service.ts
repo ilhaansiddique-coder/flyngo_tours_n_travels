@@ -1,6 +1,5 @@
-import { Injectable, BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import Stripe from 'stripe';
-import * as crypto from 'crypto';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
 import { ConfigService } from '../../config/config.service';
@@ -67,37 +66,9 @@ export class PaymentsService {
   }
 
   async createPaymentIntent(tenantId: string, userId: string, bookingId: string, method: string, _requestedAmount: number) {
-    const booking = await this.prisma.booking.findFirst({
-      where: { id: bookingId, tenantId, userId },
-    });
-
-    if (!booking) {
-      throw new BadRequestException('Booking not found');
-    }
-
-    // Never trust the amount sent by the browser. Referral and loyalty
-    // discounts are stored on the booking and must be reflected server-side.
-    const amount = Math.max(
-      0,
-      Number(booking.totalAmount) -
-        Number(booking.referralDiscount || 0) -
-        Number(booking.pointsRedemptionBdt || 0),
-    );
-
-    const payment = await this.prisma.payment.create({
-      data: {
-        tenantId,
-        userId,
-        bookingId,
-        amount,
-        currency: booking.currency,
-        method,
-        status: 'pending',
-        transactionId: `PAY-${randomBytes(4).toString('hex').toUpperCase()}`,
-      },
-    });
-
-    return payment;
+    // No provider checkout is implemented. Never present a local pending row as
+    // a usable gateway intent, even if provider credentials are configured.
+    throw new ServiceUnavailableException('Online checkout is unavailable. Use a configured manual payment method.');
   }
 
   async getPaymentStatus(id: string, tenantId: string, userId: string) {
@@ -258,9 +229,10 @@ export class PaymentsService {
           const code = full.booking?.bookingCode ?? full.hajjUmrahBooking?.bookingCode ?? full.id;
           if (email && full.user) {
             await this.emailQueueService.addEmail(email, `Payment Received — ${code}`, 'payment-receipt', {
-              customerName: full.user.fullName || 'Customer',
+              fullName: full.user.fullName || 'Customer',
               bookingCode: code,
-              amount: `${full.currency || 'BDT'} ${full.amount}`,
+              amount: Number(full.amount),
+              currency: full.currency || 'BDT',
               invoiceNumber: invoice?.invoiceNumber,
               invoiceUrl: invoice
                 ? `${process.env.FRONTEND_URL || process.env.SITE_URL || 'https://flyngo.world'}/pay/${code}`
@@ -292,9 +264,8 @@ export class PaymentsService {
   }
 
   /**
-   * Refund a captured payment. Currently Stripe-only (bKash refunds are
-   * performed out-of-band via the bKash dashboard since the tokenized API
-   * does not support programmatic refunds).
+   * Refund a captured Stripe payment. Other methods require reconciliation
+   * outside this application and must never report a fabricated gateway refund.
    */
   async refundPayment(tenantId: string, paymentId: string) {
     const payment = await this.prisma.payment.findFirst({
@@ -314,7 +285,10 @@ export class PaymentsService {
       }
       const refund = await this.stripe.refunds.create({
         payment_intent: payment.transactionId,
-      });
+      }, { idempotencyKey: `flyngo-refund-${payment.id}` });
+      if (refund.status !== 'succeeded') {
+        throw new ServiceUnavailableException('The provider has not confirmed the refund. Check its status before recording it as refunded.');
+      }
       this.logger.log(
         `Stripe refund issued: payment=${payment.id} refund=${refund.id} amount=${refund.amount}`,
       );
@@ -327,77 +301,16 @@ export class PaymentsService {
     }
 
     if (payment.method === 'bkash') {
-      // bKash tokenized API does not support programmatic refunds. Mark
-      // the payment as refunded on our side (so the booking cancel flow
-      // can proceed) and require the operator to reconcile the actual
-      // money movement in the bKash dashboard.
-      this.logger.warn(
-        `bKash refund requested for payment ${payment.id} — must be reconciled manually in the bKash dashboard.`,
-      );
-      return {
-        ok: true as const,
-        refundId: `manual-bkash-${payment.id}`,
-        manual: true,
-      };
+      throw new ServiceUnavailableException('Automatic bKash refunds are unavailable. Reconcile the refund manually before marking it refunded.');
     }
 
     throw new BadRequestException(`Refunds for method '${payment.method}' are not supported yet`);
   }
 
-  /**
-   * Verify and process a bKash payment webhook.
-   *
-   * bKash signs the payload with an HMAC-SHA256 over the raw body using
-   * BKASH_SECRET_KEY. The header is `x-bkash-signature`.
-   */
-  async handleBKashWebhook(signature: string | undefined, payload: Buffer) {
-    const secret = this.configService.getOrNull('BKASH_SECRET_KEY');
-    if (!secret) {
-      throw new BadRequestException('BKASH_SECRET_KEY is not set');
-    }
-    if (!signature) {
-      throw new BadRequestException('Missing x-bkash-signature header');
-    }
-
-    const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
-    const provided = signature.trim();
-    const ok =
-      provided.length === expected.length &&
-      crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(provided, 'hex'));
-    if (!ok) {
-      this.logger.warn('bKash signature verification failed');
-      throw new BadRequestException('Invalid bKash signature');
-    }
-
-    let body: any;
-    try {
-      body = JSON.parse(payload.toString('utf8'));
-    } catch {
-      throw new BadRequestException('Invalid bKash payload (not JSON)');
-    }
-
-    const trxId: string | undefined = body?.trxID ?? body?.paymentID ?? body?.transactionId;
-    if (!trxId) {
-      throw new BadRequestException('bKash payload missing transaction id');
-    }
-
-    // Idempotency key from the payload — bKash retries on non-2xx, so the
-    // same transaction may arrive more than once.
-    const eventId = body?.eventId ?? `${body?.merchantInvoiceNumber ?? 'bkash'}:${trxId}`;
-    if (!(await this.claimWebhookEvent('bkash', eventId, body?.status, body))) {
-      return { received: true, trxId, duplicate: true };
-    }
-
-    const status: string | undefined = body?.transactionStatus ?? body?.status;
-    if (status === 'Completed' || status === 'completed') {
-      await this.markPaymentByTransaction(trxId, 'completed');
-    } else if (status === 'Failed' || status === 'failed' || status === 'Cancelled') {
-      await this.markPaymentByTransaction(trxId, 'failed');
-    } else {
-      this.logger.log(`Unhandled bKash status: ${status}`);
-    }
-
-    return { received: true, trxId, status };
+  // No verified bKash gateway callback contract is implemented. Manual wallet
+  // receipts must be reconciled by staff, not credited through this endpoint.
+  async handleBKashWebhook(_signature: string | undefined, _payload: Buffer) {
+    throw new ServiceUnavailableException('Automatic bKash callbacks are unavailable');
   }
 
   async listAllPayments(tenantId: string, page = 1, limit = 20, filters?: { status?: string; method?: string }) {
@@ -474,9 +387,10 @@ export class PaymentsService {
         const code = existing.booking?.bookingCode ?? existing.hajjUmrahBooking?.bookingCode ?? id;
         if (email && existing.user) {
           await this.emailQueueService.addEmail(email, `Payment Received — ${code}`, 'payment-receipt', {
-            customerName: existing.user.fullName || 'Customer',
+            fullName: existing.user.fullName || 'Customer',
             bookingCode: code,
-            amount: `${existing.currency || 'BDT'} ${existing.amount}`,
+            amount: Number(existing.amount),
+            currency: existing.currency || 'BDT',
             invoiceNumber: invoice?.invoiceNumber,
             invoiceUrl: invoice
               ? `${process.env.FRONTEND_URL || process.env.SITE_URL || 'https://flyngo.world'}/pay/${code}`
@@ -542,6 +456,8 @@ export class PaymentsService {
     ]);
     const bkashWallet = wallets.find((w) => w.provider === 'bkash');
     return {
+      mode: 'manual_verification',
+      onlineCheckoutEnabled: false,
       wallets,
       bkash: {
         walletNumber: bkashWallet?.walletNumber || settings?.bkashWalletNumber || null,
@@ -592,6 +508,10 @@ export class PaymentsService {
     if (receiptUrls.length) await this.mediaService.validatePrivateAttachments(tenantId, receiptUrls, userId, input.receiptUploadTokens);
 
     if (WALLET_METHOD_SET.has(method)) {
+      const available = await this.getOfflineMethods(tenantId);
+      const configured = available.wallets.some((w) => w.provider === method && (!input.mobileWalletId || w.id === input.mobileWalletId));
+      const legacyBkash = method === 'bkash' && !input.mobileWalletId && !!available.bkash.walletNumber;
+      if (!configured && !legacyBkash) throw new BadRequestException('This payment method is unavailable');
       bkashTrxId = this.normalizeBkashTrx(input.bkashTrxId);
       if (!bkashTrxId) throw new BadRequestException('Transaction ID is required');
       const dup = await this.prisma.payment.findFirst({
@@ -665,15 +585,8 @@ export class PaymentsService {
       throw err;
     }
 
-    // Customer-initiated payments count as paid immediately: credit the
-    // booking's paid amount, flip it to 'paid' when fully settled, generate the
-    // invoice and fire the receipt notifications — no manual admin verification
-    // step required.
-    try {
-      await this.updatePaymentStatus(created.id, tenantId, 'completed');
-    } catch (err: any) {
-      this.logger.error(`Auto-complete of payment ${created.id} failed: ${err.message}`);
-    }
+    // Receipt submission is evidence for review, not proof of settlement.
+    // Only the authorized admin path may credit a manual payment.
 
     return this.prisma.payment.findUnique({
       where: { id: created.id },

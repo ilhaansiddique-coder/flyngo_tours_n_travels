@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { isPrivateImageSource } from './lib/private-file-policy';
 
 const adminRoutes = ['/admin'];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (pathname === '/_next/image' && isPrivateImageSource(request.nextUrl.searchParams.get('url') || '')) {
+    return new NextResponse(null, { status: 404, headers: { 'Cache-Control': 'private, no-store' } });
+  }
   const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
 
   if (!isAdminRoute) return NextResponse.next();
@@ -45,5 +49,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/_next/image'],
 };

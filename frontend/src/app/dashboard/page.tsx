@@ -1,4 +1,5 @@
 'use client';
+import { PrivateFile } from '@/components/ui/private-file';
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -706,9 +707,7 @@ export default function DashboardPage() {
                     <p className="truncate text-sm font-medium">{d.filename}</p>
                     <p className="text-[11px] text-muted">{formatDate(d.createdAt)}</p>
                   </div>
-                  <a href={d.url} target="_blank" rel="noopener noreferrer" download className="p-2 rounded-lg hover:bg-surface-container-high text-muted hover:text-on-surface" title="Download">
-                    <Download className="w-4 h-4" />
-                  </a>
+                  <PrivateFile url={d.url} filename={d.filename} className="block w-9 h-9 rounded-lg overflow-hidden border" />
                   <button onClick={() => handleDocDelete(d.id)} className="p-2 rounded-lg hover:bg-red-500/10 text-muted hover:text-red-500" title="Delete">
                     <Trash2 className="w-4 h-4" />
                   </button>

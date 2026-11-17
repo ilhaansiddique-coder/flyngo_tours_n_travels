@@ -24,7 +24,7 @@ export class BookingController {
     // `meta` carries the flow-specific answers (visa application, custom-quote
     // brief). It was missing here, so the visa wizard's entire payload was
     // dropped before it ever reached the service.
-    @Body() body: { type: 'tour' | 'hotel' | 'flight' | 'visa' | 'package' | 'transport' | 'hajj' | 'umrah'; itemId: string; startDate: Date; endDate?: Date; guests?: number; notes?: string; couponCode?: string; firstName?: string; lastName?: string; email?: string; phone?: string; meta?: Record<string, unknown> },
+    @Body() body: { type: 'tour' | 'hotel' | 'flight' | 'visa' | 'package' | 'transport' | 'hajj' | 'umrah'; itemId: string; startDate: Date; endDate?: Date; guests?: number; notes?: string; couponCode?: string; firstName?: string; lastName?: string; email?: string; phone?: string; meta?: Record<string, unknown>; documentUploadTokens?: Record<string, string> },
   ) {
     return this.bookingService.createBooking(tenantId, userId ?? null, body);
   }

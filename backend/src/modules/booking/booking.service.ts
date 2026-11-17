@@ -10,6 +10,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { MarketingService } from '../marketing/marketing.service';
 import { AuthService } from '../auth/auth.service';
 import { randomBytes } from 'crypto';
+import { MediaService } from '../media/media.service';
 
 @Injectable()
 export class BookingService {
@@ -25,6 +26,7 @@ export class BookingService {
     private readonly notificationsService: NotificationsService,
     private readonly marketingService: MarketingService,
     private readonly authService: AuthService,
+    private readonly mediaService: MediaService,
   ) {}
 
   async createBooking(tenantId: string, userId: string | null, data: {
@@ -33,8 +35,12 @@ export class BookingService {
     couponCode?: string;
     firstName?: string; lastName?: string; email?: string; phone?: string;
     meta?: Record<string, unknown>;
+    documentUploadTokens?: Record<string, string>;
     utm?: { utmSource?: string; utmMedium?: string; utmCampaign?: string; utmContent?: string; utmTerm?: string; gclid?: string; fbclid?: string; msclkid?: string; landingPath?: string };
   }) {
+    const documentUrls = Object.entries(data.meta || {}).filter(([key]) => key.startsWith('doc_'))
+      .flatMap(([, value]) => typeof value === 'string' ? value.split(',').map((part) => part.trim()).filter((part) => /^(https?:\/\/|\/api\/)/.test(part)) : []);
+    if (documentUrls.length) await this.mediaService.validatePrivateAttachments(tenantId, documentUrls, userId, data.documentUploadTokens, 'visa-documents');
     // This endpoint is public and takes an inline body with no DTO, so dates
     // arrive however the caller typed them. Prisma rejects a date-only
     // "2026-11-10" with "premature end of input", which surfaced as a bare 500.

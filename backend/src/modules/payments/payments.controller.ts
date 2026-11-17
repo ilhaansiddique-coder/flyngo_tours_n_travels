@@ -37,13 +37,14 @@ export class PaymentsController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } }, required: ['file'] } })
   @ApiOperation({ summary: 'Upload a money-receipt image' })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024, files: 1 } }))
   async uploadReceipt(
     @CurrentTenantId() tenantId: string,
     @UploadedFile() file: Express.Multer.File,
+    @CurrentUser('id') ownerId: string | undefined,
   ) {
     if (!file) throw new BadRequestException('No file provided in form-data field "file"');
-    return this.paymentsService.uploadReceipt(tenantId, file);
+    return this.paymentsService.uploadReceipt(tenantId, file, ownerId);
   }
 
   @Post('confirm')

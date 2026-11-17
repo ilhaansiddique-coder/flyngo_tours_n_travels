@@ -87,7 +87,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      # The first private-document migration completes before HTTP listening.
+      start_period: 600s
     networks:
       - coolify
       - default

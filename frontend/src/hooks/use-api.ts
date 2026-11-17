@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { api } from '@/lib/api';
+import { rememberPrivateUpload, privateUploadTokens, bookingUploadTokens } from '@/lib/private-files';
 import { useAuthStore } from '@/stores/auth.store';
 
 function getTokenFromCookie(): string | null {
@@ -246,7 +247,7 @@ export function useApi() {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return api.get('/bookings/admin/all' + qs, auth());
   }, [auth]);
-  const createBooking = useCallback(async (body: Record<string, unknown>) => api.post('/bookings', body, auth()), [auth]);
+  const createBooking = useCallback(async (body: Record<string, unknown>) => api.post('/bookings', { ...body, documentUploadTokens: bookingUploadTokens(body.meta) }, auth()), [auth]);
   // Proper hotel booking (room inventory, nights, per-night pricing) vs the
   // generic /bookings path that prices a hotel at 0.
   const createHotelBooking = useCallback(async (body: Record<string, unknown>) => api.post('/bookings/hotel', body, auth()), [auth]);
@@ -277,17 +278,17 @@ export function useApi() {
   const updatePaymentStatus = useCallback(async (id: string, status: string) =>
     api.patch(`/payments/admin/${id}/status`, { status }, auth()), [auth]);
   const recordAdminPayment = useCallback(async (body: Record<string, unknown>) =>
-    api.post('/payments/admin/record', body, auth()), [auth]);
+    api.post('/payments/admin/record', { ...body, receiptUploadTokens: privateUploadTokens((body.receiptUrls || []) as string[]) }, auth()), [auth]);
   const getPaymentMethods = useCallback(async () => api.get('/payments/methods'), []);
   const getBookingPayment = useCallback(async (code: string) =>
     api.get(`/payments/booking/${encodeURIComponent(code.trim())}`), []);
   const uploadPaymentReceipt = useCallback(async (file: File) => {
     const fd = new FormData();
     fd.append('file', file);
-    return api.upload('/payments/receipt', fd, auth());
+    return rememberPrivateUpload(await api.upload('/payments/receipt', fd, auth()));
   }, [auth]);
   const submitPaymentConfirmation = useCallback(async (body: Record<string, unknown>) =>
-    api.post('/payments/confirm', body, auth()), [auth]);
+    api.post('/payments/confirm', { ...body, receiptUploadTokens: privateUploadTokens((body.receiptUrls || []) as string[]) }, auth()), [auth]);
   const getBankAccounts = useCallback(async () => api.get('/payments/admin/bank-accounts', auth()), [auth]);
   const createBankAccount = useCallback(async (body: Record<string, unknown>) =>
     api.post('/payments/admin/bank-accounts', body, auth()), [auth]);
@@ -469,7 +470,8 @@ export function useApi() {
     if (opts?.folder) qs.set('folder', opts.folder);
     if (opts?.alt) qs.set('alt', opts.alt);
     const search = qs.toString();
-    return api.upload(`/media/upload${search ? `?${search}` : ''}`, formData, auth());
+    const endpoint = opts?.folder === 'visa-documents' ? '/media/documents' : '/media/upload';
+    return rememberPrivateUpload(await api.upload(`${endpoint}${search ? `?${search}` : ''}`, formData, auth()));
   }, [auth]);
   const deleteMedia = useCallback(async (id: string) => api.delete(`/media/${id}`, auth()), [auth]);
 

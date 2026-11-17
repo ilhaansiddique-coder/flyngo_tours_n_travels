@@ -9,9 +9,10 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthModule } from '../auth/auth.module';
 import { MarketingModule } from '../marketing/marketing.module';
 import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
+import { MediaModule } from '../media/media.module';
 
 @Module({
-  imports: [ReferralModule, TrackingModule, LoyaltyModule, PaymentsModule, NotificationsModule, AuthModule, MarketingModule],
+  imports: [ReferralModule, TrackingModule, LoyaltyModule, PaymentsModule, NotificationsModule, AuthModule, MarketingModule, MediaModule],
   controllers: [BookingController],
   providers: [BookingService, OptionalJwtAuthGuard],
   exports: [BookingService],

@@ -9,6 +9,7 @@ import { EmailQueueService } from '../notifications/email-queue.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MarketingService } from '../marketing/marketing.service';
 import { AuthService } from '../auth/auth.service';
+import { MediaService } from '../media/media.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
@@ -114,6 +115,7 @@ describe('BookingService', () => {
         { provide: NotificationsService, useValue: mockNotifications },
         { provide: MarketingService, useValue: mockMarketing },
         { provide: AuthService, useValue: mockAuth },
+        { provide: MediaService, useValue: { validatePrivateAttachments: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 

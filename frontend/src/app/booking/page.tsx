@@ -1,4 +1,5 @@
 'use client';
+import { PrivateFile } from '@/components/ui/private-file';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -703,14 +704,7 @@ export default function BookingPage() {
               <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {receiptUrls.map((url, i) => (
                   <div key={url} className="relative rounded-xl overflow-hidden border border-soft bg-surface-container">
-                    {url.match(/\.(jpe?g|png|gif|webp)(\?|$)/i) ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={url} alt="receipt" className="w-full h-20 object-cover" />
-                    ) : (
-                      <div className="w-full h-20 flex items-center justify-center">
-                        <FileText className="w-8 h-8 text-muted" />
-                      </div>
-                    )}
+                    <PrivateFile url={url} filename="receipt" className="block w-full h-20" />
                     <button
                       type="button"
                       onClick={() => setReceiptUrls((prev) => prev.filter((_, idx) => idx !== i))}
@@ -1588,11 +1582,7 @@ export default function BookingPage() {
                                   {uploaded.map((url) => (
                                     <div key={url} className="flex items-center gap-2 rounded-lg bg-surface-container px-2.5 py-1.5 border border-outline-variant">
                                       <FileText className="w-3.5 h-3.5 shrink-0 text-on-surface-variant" />
-                                      <a href={url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
-                                        <span className="block text-xs font-medium text-primary hover:underline truncate">
-                                          {url.split('/').pop()?.split('?')[0] || 'File'}
-                                        </span>
-                                      </a>
+                                      <PrivateFile url={url} filename="visa-document" className="block w-10 h-10 border rounded overflow-hidden" />
                                       <button
                                         type="button"
                                         onClick={() => removeVisaDoc(d.key, url)}

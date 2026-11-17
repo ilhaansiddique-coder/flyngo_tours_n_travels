@@ -1,4 +1,5 @@
 'use client';
+import { PrivateFile } from '@/components/ui/private-file';
 
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -344,10 +345,7 @@ export default function PaymentsPage() {
                         {p.receiptUrls && p.receiptUrls.length > 0 ? (
                           <div className="flex gap-1">
                             {p.receiptUrls.slice(0, 3).map((url) => (
-                              <a key={url} href={url} target="_blank" rel="noreferrer" className="block w-10 h-10 rounded overflow-hidden border border-gray-200">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={url} alt="receipt" className="w-full h-full object-cover" />
-                              </a>
+                              <PrivateFile key={url} url={url} filename="receipt" className="block w-10 h-10 rounded overflow-hidden border border-gray-200" />
                             ))}
                           </div>
                         ) : '—'}

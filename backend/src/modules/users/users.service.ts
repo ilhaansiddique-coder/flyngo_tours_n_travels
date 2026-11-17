@@ -180,7 +180,7 @@ export class UsersService {
   async addMyDocument(userId: string, tenantId: string, file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file provided');
     const isImage = (file.mimetype || '').startsWith('image/');
-    const res = await this.media.upload(file, { tenantId, folder: 'user-documents', allowDocuments: true });
+    const res = await this.media.uploadPrivate(file, { tenantId, folder: 'user-documents', ownerId: userId });
     return this.prisma.userDocument.create({
       data: {
         tenantId,
@@ -306,7 +306,7 @@ export class UsersService {
   async uploadNationalIdFront(id: string, tenantId: string, file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file provided in form-data field "file"');
     await this.ensureUser(id, tenantId);
-    const res = await this.media.upload(file, { tenantId, folder: 'user-documents', allowDocuments: true });
+    const res = await this.media.uploadPrivate(file, { tenantId, folder: 'user-documents', ownerId: id });
     await this.prisma.user.update({ where: { id }, data: { nationalIdFrontUrl: res.url } });
     return this.findById(id, tenantId);
   }
@@ -315,7 +315,7 @@ export class UsersService {
   async uploadNationalIdBack(id: string, tenantId: string, file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file provided in form-data field "file"');
     await this.ensureUser(id, tenantId);
-    const res = await this.media.upload(file, { tenantId, folder: 'user-documents', allowDocuments: true });
+    const res = await this.media.uploadPrivate(file, { tenantId, folder: 'user-documents', ownerId: id });
     await this.prisma.user.update({ where: { id }, data: { nationalIdBackUrl: res.url } });
     return this.findById(id, tenantId);
   }
@@ -324,7 +324,7 @@ export class UsersService {
   async uploadPassport(id: string, tenantId: string, file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file provided in form-data field "file"');
     await this.ensureUser(id, tenantId);
-    const res = await this.media.upload(file, { tenantId, folder: 'user-documents', allowDocuments: true });
+    const res = await this.media.uploadPrivate(file, { tenantId, folder: 'user-documents', ownerId: id });
     await this.prisma.user.update({ where: { id }, data: { passportUrl: res.url } });
     return this.findById(id, tenantId);
   }

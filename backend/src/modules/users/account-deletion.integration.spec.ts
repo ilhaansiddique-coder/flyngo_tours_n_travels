@@ -9,6 +9,7 @@ import { MediaDeletionService } from '../media/media-deletion.service';
 import { AccountDeletionService } from './account-deletion.service';
 import { PRIMARY_ADMIN_EMAIL, PRIMARY_ADMIN_ID } from '../../common/constants/primary-admin';
 import { purgeNonAdminAccounts } from '../../scripts/purge-non-admin-accounts';
+import { PRIVATE_MEDIA_PREFIX, privateFilePath } from '../media/private-storage';
 
 // Explicit opt-in; this suite must never run against a production database.
 const databaseUrl = process.env.ACCOUNT_DELETION_TEST_DATABASE_URL;
@@ -57,7 +58,7 @@ describeDatabase('permanent account deletion against PostgreSQL', () => {
     return file.url;
   }
 
-  function diskPath(url: string) { return path.join(process.cwd(), 'uploads', url.split('/api/v1/uploads/')[1]); }
+  function diskPath(url: string) { return url.startsWith(PRIVATE_MEDIA_PREFIX) ? privateFilePath(url.slice(PRIVATE_MEDIA_PREFIX.length)) : path.join(process.cwd(), 'uploads', url.split('/api/v1/uploads/')[1]); }
 
   it('deletes owned data, anonymous contact records and physical files while preserving other accounts and shared assets', async () => {
     const { tenantId, roleId, target, survivor } = await fixture();
@@ -211,6 +212,9 @@ describeDatabase('permanent account deletion against PostgreSQL', () => {
     const sharedFile = await upload(tenantId);
     await db.user.update({ where: { id: target.id }, data: { passportUrl: privateFile, avatarUrl: sharedFile } });
     await db.user.update({ where: { id: keeper.id }, data: { avatarUrl: sharedFile } });
+    const unattachedPrivate = await media.uploadPrivate({ originalname: 'unattached.pdf', mimetype: 'application/pdf', size: 8, buffer: Buffer.from('%PDF-1.4') } as Express.Multer.File,
+      { tenantId, folder: 'user-documents', ownerId: target.id });
+    files.push(unattachedPrivate.url);
     await db.userDocument.create({ data: { tenantId, userId: target.id, url: privateFile, filename: 'private.pdf' } });
     await db.deviceToken.create({ data: { tenantId, userId: target.id, token: randomUUID() } });
     await db.passwordReset.create({ data: { tenantId, userId: target.id, tokenHash: randomUUID(), channel: 'email', expiresAt: new Date() } });
@@ -248,7 +252,9 @@ describeDatabase('permanent account deletion against PostgreSQL', () => {
     }
     expect(await db.hajjUmrahBooking.findUnique({ where: { id: pilgrimage.id } })).toBeNull();
     expect(await db.mediaDeletionJob.count({ where: { tenantId, url: privateFile } })).toBe(1);
+    expect(await db.mediaDeletionJob.count({ where: { tenantId, url: unattachedPrivate.url } })).toBe(1);
     await worker.flush(tenantId);
+    await expect(fs.access(diskPath(unattachedPrivate.url))).rejects.toMatchObject({ code: 'ENOENT' });
     await expect(fs.access(diskPath(privateFile))).rejects.toMatchObject({ code: 'ENOENT' });
     await expect(fs.access(diskPath(sharedFile))).resolves.toBeUndefined();
     await expect(db.$executeRawUnsafe(sql)).rejects.toThrow('expected 23');

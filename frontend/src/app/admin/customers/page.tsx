@@ -1,4 +1,5 @@
 'use client';
+import { PrivateDocumentPreview } from '@/components/ui/private-file';
 
 import { useApi } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -934,13 +935,7 @@ export default function CustomersPage() {
       {/* Document preview modal */}
       <Modal open={!!previewUrl} onClose={() => setPreviewUrl(null)} title="Document Preview">
         {previewUrl && (
-          <div className="flex justify-center">
-            {previewUrl.endsWith('.pdf') ? (
-              <iframe src={previewUrl} className="w-full h-[60vh] border rounded-lg" title="Document preview" />
-            ) : (
-              <img src={previewUrl} alt="Document preview" className="max-w-full max-h-[60vh] object-contain rounded-lg" />
-            )}
-          </div>
+          <PrivateDocumentPreview url={previewUrl} />
         )}
       </Modal>
     </div>

@@ -69,7 +69,7 @@ describe('PaymentsService', () => {
     awardHajjUmrahConfirmation: jest.fn().mockResolvedValue(undefined),
   };
 
-  const mockMedia = { upload: jest.fn() };
+  const mockMedia = { upload: jest.fn(), uploadPrivate: jest.fn(), validatePrivateAttachments: jest.fn().mockResolvedValue(undefined) };
   const mockBanks = { listPublic: jest.fn().mockResolvedValue([]) };
   const mockWallets = { listPublic: jest.fn().mockResolvedValue([]) };
   const mockInvoices = { generateForPayment: jest.fn().mockResolvedValue({ id: 'inv-1', invoiceNumber: 'INV-1' }) };

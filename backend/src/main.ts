@@ -8,6 +8,7 @@ import { AppModule } from './app.module';
 import { ConfigService } from './config/config.service';
 import { existsSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
+import { blockPrivateStaticFiles } from './modules/media/private-storage';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -53,8 +54,10 @@ async function bootstrap() {
   if (!existsSync(uploadsDir)) {
     mkdirSync(uploadsDir, { recursive: true });
   }
+  app.use('/api/v1/uploads', blockPrivateStaticFiles);
   app.useStaticAssets(uploadsDir, {
     prefix: '/api/v1/uploads/',
+    dotfiles: 'deny',
     setHeaders: (res) => {
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
       res.setHeader('Access-Control-Allow-Origin', '*');
@@ -83,7 +86,7 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id', 'X-Upload-Token'],
   });
 
   app.useGlobalPipes(

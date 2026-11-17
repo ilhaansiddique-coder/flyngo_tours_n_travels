@@ -1,10 +1,11 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { ConfigService } from '../../config/config.service';
 import { PrismaService } from '../../database/prisma.service';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes } from 'crypto';
+import { PRIVATE_MEDIA_PREFIX, PRIVATE_FOLDERS, privateDirectory, privateFilePath, privateMime, hashUploadToken, validUploadToken } from './private-storage';
 
 export interface UploadResult {
   url: string;
@@ -151,6 +152,9 @@ export class MediaService {
     file: Express.Multer.File,
     options: { tenantId: string; folder?: string; alt?: string; allowDocuments?: boolean },
   ): Promise<UploadResult> {
+    if (PRIVATE_FOLDERS.includes((options.folder || '').replace(/[^a-z0-9_-]/gi, '').toLowerCase())) {
+      throw new BadRequestException('Use the private document upload endpoint');
+    }
     this.validateFile(file, options.allowDocuments);
 
     const ext = path.extname(file.originalname) || this.extFromMime(file.mimetype);
@@ -225,7 +229,7 @@ export class MediaService {
   }
 
   async list(tenantId: string, page = 1, limit = 50, q?: string) {
-    const where: any = { tenantId };
+    const where: any = { tenantId, isPrivate: false, AND: [{ OR: [{ folder: null }, { folder: { notIn: PRIVATE_FOLDERS } }] }] };
     if (q && q.trim()) {
       const term = q.trim();
       where.OR = [
@@ -247,7 +251,7 @@ export class MediaService {
   }
 
   async remove(id: string, tenantId: string) {
-    const existing = await this.prisma.media.findFirst({ where: { id, tenantId } });
+    const existing = await this.prisma.media.findFirst({ where: { id, tenantId, isPrivate: false } });
     if (!existing) return null;
     await this.prisma.media.delete({ where: { id } });
     await this.deleteStoredObject(existing.url);
@@ -294,16 +298,23 @@ export class MediaService {
     const result = await this.prisma.media.deleteMany({
       where: { tenantId, url: { in: urls } },
     });
+    for (const url of urls.filter((value) => value.startsWith(PRIVATE_MEDIA_PREFIX))) await this.deleteAccountObject(url);
     return result.count;
   }
 
   isStoredObjectUrl(url: string): boolean {
+    if (url.startsWith(PRIVATE_MEDIA_PREFIX)) return true;
     const bases = [this.config.getOrNull('R2_PUBLIC_URL'), this.publicBaseUrl, '/api/v1/uploads'];
     return bases.some((base) => !!base && url.startsWith(base.replace(/\/+$/, '') + '/'));
   }
 
   /** Strict deletion for the durable account-cleanup queue (errors must reach its retry logic). */
   async deleteAccountObject(url: string): Promise<void> {
+    if (url.startsWith(PRIVATE_MEDIA_PREFIX)) {
+      try { await fs.unlink(privateFilePath(url.slice(PRIVATE_MEDIA_PREFIX.length))); }
+      catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+      return;
+    }
     const r2Base = (this.config.getOrNull('R2_PUBLIC_URL') || '').replace(/\/+$/, '');
     if (r2Base && url.startsWith(r2Base + '/')) {
       if (this.mode !== 'r2') throw new Error('R2 deletion is not configured');
@@ -330,5 +341,122 @@ export class MediaService {
     try { await fs.unlink(target); } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }
+  }
+
+  async uploadPrivate(file: Express.Multer.File, options: {
+    tenantId: string; folder: string; ownerId?: string; guestUpload?: boolean;
+  }) {
+    this.validateFile(file, true);
+    if (!PRIVATE_FOLDERS.includes(options.folder)) throw new BadRequestException('Invalid document folder');
+    const id = randomUUID();
+    const uploadToken = options.guestUpload ? randomBytes(32).toString('hex') : undefined;
+    await fs.mkdir(privateDirectory(), { recursive: true, mode: 0o700 });
+    await fs.writeFile(privateFilePath(id), file.buffer, { mode: 0o600, flag: 'wx' });
+    try {
+      const record = await this.prisma.media.create({ data: {
+        id, tenantId: options.tenantId, url: PRIVATE_MEDIA_PREFIX + id, isPrivate: true,
+        uploadedById: options.ownerId || null, folder: options.folder,
+        filename: path.basename(file.originalname), mimeType: privateMime(file.buffer), size: file.buffer.length,
+        uploadTokenHash: uploadToken ? hashUploadToken(uploadToken) : null,
+        uploadTokenExpiresAt: uploadToken ? new Date(Date.now() + 3600_000) : null,
+      } });
+      return { url: record.url, filename: record.filename || 'document', mimeType: record.mimeType, size: record.size, uploadToken };
+    } catch (error) {
+      await fs.unlink(privateFilePath(id)).catch(() => undefined);
+      throw error;
+    }
+  }
+
+  async validatePrivateAttachments(tenantId: string, urls: string[], actorId: string | null,
+    tokens: Record<string, string> = {}, folder = 'receipts') {
+    if (!Array.isArray(urls) || urls.length > 20) throw new BadRequestException('Too many attachments');
+    for (const url of urls) {
+      const file = await this.prisma.media.findFirst({ where: { tenantId, url, isPrivate: true, folder } });
+      if (!file || !(actorId && file.uploadedById === actorId) && !validUploadToken(file, tokens?.[url])) {
+        throw new BadRequestException('Attachment is unavailable or was not uploaded by you. Upload it again.');
+      }
+    }
+  }
+
+  async readPrivate(id: string, tenantId: string, actor?: { id: string; roleCode: string; tenantId: string }, uploadToken?: string) {
+    if (actor && actor.tenantId !== tenantId) throw new NotFoundException('File not found');
+    const file = await this.prisma.media.findFirst({ where: { id, tenantId, isPrivate: true } });
+    if (!file) throw new NotFoundException('File not found');
+    let permitted = false;
+    if (actor) {
+      permitted = ['admin', 'super_admin'].includes(actor.roleCode) || file.uploadedById === actor.id;
+      if (!permitted && ['receipts', 'visa-documents'].includes(file.folder || '')) {
+        permitted = ['manager', 'moderator'].includes(actor.roleCode);
+      }
+      if (!permitted) {
+        permitted = !!await this.prisma.userDocument.findFirst({ where: { tenantId, userId: actor.id, url: file.url, deletedAt: null }, select: { id: true } });
+      }
+      if (!permitted) {
+        permitted = !!await this.prisma.user.findFirst({ where: { tenantId, id: actor.id, deletedAt: null,
+          OR: [{ nationalIdFrontUrl: file.url }, { nationalIdBackUrl: file.url }, { passportUrl: file.url }],
+        }, select: { id: true } });
+      }
+      if (!permitted && file.folder === 'receipts') {
+        permitted = !!await this.prisma.payment.findFirst({ where: { tenantId, userId: actor.id, receiptUrls: { has: file.url } }, select: { id: true } });
+      }
+      if (!permitted && file.folder === 'visa-documents') {
+        const bookings = await this.prisma.booking.findMany({ where: { tenantId, userId: actor.id }, select: { meta: true } });
+        permitted = bookings.some((booking) => booking.meta && typeof booking.meta === 'object' &&
+          Object.entries(booking.meta).some(([key, value]) => key.startsWith('doc_') && typeof value === 'string' && value.split(',').map((part) => part.trim()).includes(file.url)));
+      }
+    }
+    // A guest's one-hour capability is limited to their own receipt/visa upload.
+    if (!permitted && ['receipts', 'visa-documents'].includes(file.folder || '')) permitted = validUploadToken(file, uploadToken);
+    if (!permitted) throw new NotFoundException('File not found');
+    try {
+      const buffer = await fs.readFile(privateFilePath(file.id));
+      return { buffer, filename: file.filename || 'document', mimeType: privateMime(buffer) };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new NotFoundException('File not found');
+      throw error;
+    }
+  }
+
+  /** Only read configured managed storage; never fetch a caller-supplied HTTP URL. */
+  async copyLegacyToPrivate(id: string, url: string) {
+    const destination = privateFilePath(id);
+    try { await fs.access(destination); return; } catch { /* not copied yet */ }
+    let buffer: Buffer;
+    const r2Base = (this.config.getOrNull('R2_PUBLIC_URL') || '').replace(/\/+$/, '');
+    try {
+      if (r2Base && url.startsWith(r2Base + '/')) {
+        if (this.mode !== 'r2') throw new Error('R2 credentials required to migrate private documents');
+        const key = url.slice(r2Base.length + 1);
+        try {
+          const object = await this.r2Client().send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+          if (!object.Body) throw new Error('Empty R2 document response');
+          buffer = Buffer.from(await object.Body.transformToByteArray());
+        } catch (error) {
+          if ((error as { name?: string }).name !== 'NoSuchKey') throw error;
+          // Earlier public R2 failures wrote to disk while returning an R2 URL.
+          const target = path.resolve(this.uploadDir, decodeURIComponent(key));
+          const relative = path.relative(this.uploadDir, target);
+          if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('Unsafe legacy document path');
+          buffer = await fs.readFile(target);
+        }
+      } else {
+        const base = [this.publicBaseUrl.replace(/\/+$/, ''), '/api/v1/uploads'].find((value) => url.startsWith(value + '/'));
+        if (!base) throw new Error('Unmanaged legacy document URL; manual migration required');
+        const target = path.resolve(this.uploadDir, decodeURIComponent(url.slice(base.length + 1)));
+        const relative = path.relative(this.uploadDir, target);
+        if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('Unsafe legacy document path');
+        buffer = await fs.readFile(target);
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT' || (error as { name?: string }).name === 'NoSuchKey') {
+        this.logger.warn(`Legacy document ${id} is missing from storage; its old public reference will be retired`);
+        return;
+      }
+      throw error;
+    }
+    await fs.mkdir(privateDirectory(), { recursive: true, mode: 0o700 });
+    const temporary = destination + '.' + randomUUID() + '.tmp';
+    await fs.writeFile(temporary, buffer, { mode: 0o600 });
+    await fs.rename(temporary, destination);
   }
 }

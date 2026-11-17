@@ -98,6 +98,8 @@ BEGIN
   CREATE TEMP TABLE _purge_file_urls ON COMMIT DROP AS
     SELECT DISTINCT m.url FROM public.media m WHERE m.tenant_id = scope_id AND m.tour_id IS NULL AND m.hotel_id IS NULL AND
       NOT EXISTS (SELECT 1 FROM public.media foreign_media WHERE foreign_media.url = m.url AND foreign_media.tenant_id <> scope_id) AND EXISTS (
+        SELECT 1 FROM _purge_users r WHERE m.is_private AND m.uploaded_by_id = r.id
+        UNION ALL
         SELECT 1 FROM _purge_users r WHERE position(m.url IN row_to_json(r.*)::text) > 0
         UNION ALL SELECT 1 FROM _purge_bookings r WHERE position(m.url IN row_to_json(r.*)::text) > 0
         UNION ALL SELECT 1 FROM _purge_pilgrimages r WHERE position(m.url IN row_to_json(r.*)::text) > 0

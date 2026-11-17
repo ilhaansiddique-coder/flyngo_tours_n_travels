@@ -1,4 +1,5 @@
 'use client';
+import { PrivateFile } from '@/components/ui/private-file';
 
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -58,31 +59,12 @@ function metaFileUrls(value: string | number | boolean): string[] {
   return value
     .split(',')
     .map((s) => s.trim())
-    .filter((s) => /^https?:\/\//i.test(s));
+    .filter((s) => s.startsWith('/api/v1/media/private/'));
 }
 
 // Clickable thumbnail for an uploaded image/PDF (visa docs, payment receipts).
 function FileThumb({ url }: { url: string }) {
-  const isImage = /\.(jpe?g|png|gif|webp)(\?|$)/i.test(url);
-  return (
-    <a
-      key={url}
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      className="block w-14 h-14 rounded-lg overflow-hidden border border-outline-variant bg-surface-container"
-      title={decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'File')}
-    >
-      {isImage ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt="upload" className="w-full h-full object-cover" />
-      ) : (
-        <span className="w-full h-full flex items-center justify-center text-on-surface-variant">
-          <FileText className="w-5 h-5" />
-        </span>
-      )}
-    </a>
-  );
+  return <PrivateFile url={url} />;
 }
 
 // Total uploaded files attached to a booking (visa docs in meta + payment
@@ -1229,14 +1211,7 @@ export default function BookingsPage() {
                 <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {payReceiptUrls.map((url, i) => (
                     <div key={url} className="relative rounded-lg overflow-hidden border border-outline-variant bg-surface-container">
-                      {url.match(/\.(jpe?g|png|gif|webp)(\?|$)/i) ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={url} alt="receipt" className="w-full h-16 object-cover" />
-                      ) : (
-                        <div className="w-full h-16 flex items-center justify-center">
-                          <FileText className="w-6 h-6 text-on-surface-variant" />
-                        </div>
-                      )}
+                      <PrivateFile url={url} filename="receipt" className="block w-full h-16" />
                       <button
                         type="button"
                         onClick={() => setPayReceiptUrls((prev) => prev.filter((_, idx) => idx !== i))}

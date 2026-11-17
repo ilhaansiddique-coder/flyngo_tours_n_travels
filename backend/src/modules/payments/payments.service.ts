@@ -24,6 +24,7 @@ export interface SubmitConfirmationInput {
   bankAccountId?: string;
   mobileWalletId?: string;
   receiptUrls?: string[];
+  receiptUploadTokens?: Record<string, string>;
   senderName?: string;
   senderAccount?: string;
   payerPhone?: string;
@@ -38,6 +39,7 @@ export interface RecordAdminPaymentInput {
   bankAccountId?: string;
   mobileWalletId?: string;
   receiptUrls?: string[];
+  receiptUploadTokens?: Record<string, string>;
   senderName?: string;
   senderAccount?: string;
   payerPhone?: string;
@@ -551,11 +553,11 @@ export class PaymentsService {
     };
   }
 
-  async uploadReceipt(tenantId: string, file: Express.Multer.File) {
-    return this.mediaService.upload(file, {
+  async uploadReceipt(tenantId: string, file: Express.Multer.File, ownerId?: string) {
+    return this.mediaService.uploadPrivate(file, {
       tenantId,
       folder: 'receipts',
-      allowDocuments: true,
+      ownerId, guestUpload: true,
     });
   }
 
@@ -587,6 +589,7 @@ export class PaymentsService {
     let bankAccountId: string | null = null;
     let mobileWalletId: string | null = null;
     const receiptUrls = (input.receiptUrls || []).filter((u) => typeof u === 'string' && u.trim()).map((u) => u.trim());
+    if (receiptUrls.length) await this.mediaService.validatePrivateAttachments(tenantId, receiptUrls, userId, input.receiptUploadTokens);
 
     if (WALLET_METHOD_SET.has(method)) {
       bkashTrxId = this.normalizeBkashTrx(input.bkashTrxId);
@@ -705,6 +708,7 @@ export class PaymentsService {
     let bankAccountId: string | null = null;
     let mobileWalletId: string | null = null;
     const receiptUrls = (input.receiptUrls || []).filter((u) => typeof u === 'string' && u.trim()).map((u) => u.trim());
+    if (receiptUrls.length) await this.mediaService.validatePrivateAttachments(tenantId, receiptUrls, adminUserId, input.receiptUploadTokens);
 
     if (WALLET_METHOD_SET.has(method)) {
       bkashTrxId = this.normalizeBkashTrx(input.bkashTrxId);

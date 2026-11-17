@@ -84,6 +84,8 @@ export class AccountDeletionService {
         else if (value && typeof value === 'object' && !(value instanceof Date)) Object.values(value).forEach(collect);
       };
       [user, bookings, pilgrimages, payments, invoices, documents, posts].forEach(collect);
+      const privateUploads = await tx.media.findMany({ where: { tenantId, isPrivate: true, uploadedById: id }, select: { url: true } });
+      privateUploads.forEach(collect);
 
       // Remove dependent records before their parents (the transaction rolls back on failure).
       await tx.invoice.deleteMany({ where: { tenantId, id: { in: invoices.map((row) => row.id) } } });

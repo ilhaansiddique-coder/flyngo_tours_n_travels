@@ -1199,6 +1199,11 @@ model Media {
   mimeType String? @map("mime_type")
   filename String? @map("filename")
   folder   String? @map("folder")
+  isPrivate Boolean @default(false) @map("is_private")
+  uploadedById String? @map("uploaded_by_id")
+  uploadTokenHash String? @map("upload_token_hash")
+  uploadTokenExpiresAt DateTime? @map("upload_token_expires_at")
+  legacyUrl String? @map("legacy_url")
 
   tourId  String? @map("tour_id")
   tour    Tour?   @relation(fields: [tourId], references: [id], onDelete: Cascade)
@@ -1208,6 +1213,7 @@ model Media {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([tenantId])
+  @@index([tenantId, isPrivate])
   @@index([tourId])
   @@index([hotelId])
   @@map("media")

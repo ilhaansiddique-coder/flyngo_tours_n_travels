@@ -35,7 +35,7 @@ export class UsersController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } }, required: ['file'] } })
   @ApiOperation({ summary: 'Upload / change my profile picture' })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024, files: 1 } }))
   async uploadAvatar(@CurrentUser() user: any, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file provided in form-data field "file"');
     return this.usersService.setMyAvatar(user.id, user.tenantId, file);
@@ -51,7 +51,7 @@ export class UsersController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } }, required: ['file'] } })
   @ApiOperation({ summary: 'Upload a document/image to my profile' })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024, files: 1 } }))
   async uploadDocument(@CurrentUser() user: any, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file provided in form-data field "file"');
     return this.usersService.addMyDocument(user.id, user.tenantId, file);
@@ -138,7 +138,7 @@ export class UsersController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } }, required: ['file'] } })
   @ApiOperation({ summary: 'Upload the customer NID (front side)' })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024, files: 1 } }))
   async uploadNationalIdFront(@Param('id') id: string, @CurrentTenantId() tenantId: string, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file provided in form-data field "file"');
     return this.usersService.uploadNationalIdFront(id, tenantId, file);
@@ -149,7 +149,7 @@ export class UsersController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } }, required: ['file'] } })
   @ApiOperation({ summary: 'Upload the customer NID (back side)' })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024, files: 1 } }))
   async uploadNationalIdBack(@Param('id') id: string, @CurrentTenantId() tenantId: string, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file provided in form-data field "file"');
     return this.usersService.uploadNationalIdBack(id, tenantId, file);
@@ -160,7 +160,7 @@ export class UsersController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } }, required: ['file'] } })
   @ApiOperation({ summary: 'Upload the customer passport copy' })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024, files: 1 } }))
   async uploadPassport(@Param('id') id: string, @CurrentTenantId() tenantId: string, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file provided in form-data field "file"');
     return this.usersService.uploadPassport(id, tenantId, file);

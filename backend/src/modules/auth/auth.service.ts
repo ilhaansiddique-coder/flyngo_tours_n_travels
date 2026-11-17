@@ -5,6 +5,7 @@ import {
   BadRequestException,
   NotFoundException,
   Logger,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcryptjs from 'bcryptjs';
@@ -100,7 +101,15 @@ export class AuthService {
     else if (dto.phone) orFilters.push({ phone: dto.phone });
 
     const existing = await this.prisma.user.findFirst({
-      where: { tenantId, OR: orFilters, deletedAt: null },
+      // The unique phone key also covers formatted and soft-deleted rows.
+      // Keep these reserved: registration must never claim an existing account.
+      where: {
+        tenantId,
+        OR: [
+          { AND: [{ deletedAt: null }, { OR: orFilters }] },
+          ...(core ? [{ phoneKey: core }] : []),
+        ],
+      },
     });
     if (existing) {
       throw new ConflictException('An account with this email or phone already exists');
@@ -111,6 +120,10 @@ export class AuthService {
     const customerRole = await this.prisma.role.findFirst({
       where: { code: 'customer', tenantId },
     });
+    if (!customerRole) {
+      this.logger.error(`Registration unavailable: missing customer role for tenant ${tenantId}`);
+      throw new ServiceUnavailableException('Registration is temporarily unavailable. Please contact support.');
+    }
 
     // Pre-compute a referral code so we can store it on the user in one shot
     const prep = await this.referralService.prepareRegistration(tenantId, refCode || null);
@@ -128,10 +141,19 @@ export class AuthService {
         claimedAt: new Date(),
         address: dto.address ?? null,
         tenantId,
-        roleId: customerRole!.id,
+        roleId: customerRole.id,
         referralCode: prep.referralCode,
         referredByCode: refCode ? refCode.trim().toUpperCase() : null,
       },
+    }).catch((err: unknown) => {
+      // A booking or another signup can reserve the number after our pre-check.
+      const error = err as { code?: string; meta?: { target?: string[] | string } };
+      const target = error?.meta?.target;
+      const fields = Array.isArray(target) ? target : [target ?? ''];
+      if (error?.code === 'P2002' && fields.some((field) => /phone_?key|email/i.test(field))) {
+        throw new ConflictException('An account with this email or phone already exists');
+      }
+      throw err;
     });
 
     // Fire-and-forget: bootstrap affiliate row + create pending referral entry

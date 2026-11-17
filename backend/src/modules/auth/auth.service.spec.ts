@@ -206,6 +206,57 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
+    beforeEach(() => {
+      mockPrisma.user.findFirst.mockResolvedValue(null);
+      mockPrisma.role.findFirst.mockResolvedValue({ id: 'role-customer' });
+      mockPrisma.user.create.mockResolvedValue({ id: 'new-user', fullName: 'New User' });
+    });
+
+    it('supports anonymous phone-only signup without email or address', async () => {
+      await expect(service.register({
+        fullName: 'New User', phone: '+8801712345678', password: 'Password123!', email: '',
+      }, 'tenant-1')).resolves.toHaveProperty('accessToken');
+      expect(mockPrisma.user.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+        email: null, address: null, phoneKey: '1712345678', roleId: 'role-customer',
+      }) });
+    });
+
+    it('checks the canonical phone key even for formatted or soft-deleted accounts', async () => {
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'reserved-user', deletedAt: new Date() });
+      await expect(service.register({
+        fullName: 'New User', phone: '+880 1712345678', password: 'Password123!',
+      }, 'tenant-1')).rejects.toThrow(ConflictException);
+      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({ where: {
+        tenantId: 'tenant-1', OR: expect.arrayContaining([{ phoneKey: '1712345678' }]),
+      } });
+      expect(mockPrisma.user.create).not.toHaveBeenCalled();
+      expect(mockJwtService.signAsync).not.toHaveBeenCalled();
+    });
+
+    it('returns a conflict if a concurrent booking reserves the phone', async () => {
+      mockPrisma.user.create.mockRejectedValueOnce({ code: 'P2002', meta: { target: ['tenant_id', 'phone_key'] } });
+      await expect(service.register({
+        fullName: 'New User', phone: '+8801712345678', password: 'Password123!',
+      }, 'tenant-1')).rejects.toThrow(ConflictException);
+      expect(mockJwtService.signAsync).not.toHaveBeenCalled();
+    });
+
+    it('does not disguise unrelated database failures as duplicate accounts', async () => {
+      const failure = new Error('Database unavailable');
+      mockPrisma.user.create.mockRejectedValueOnce(failure);
+      await expect(service.register({
+        fullName: 'New User', phone: '+8801712345678', password: 'Password123!',
+      }, 'tenant-1')).rejects.toBe(failure);
+    });
+
+    it('reports missing customer-role configuration without creating a user', async () => {
+      mockPrisma.role.findFirst.mockResolvedValueOnce(null);
+      await expect(service.register({
+        fullName: 'New User', phone: '+8801712345678', password: 'Password123!',
+      }, 'tenant-1')).rejects.toThrow('Registration is temporarily unavailable');
+      expect(mockPrisma.user.create).not.toHaveBeenCalled();
+    });
+
     it('should create user and return tokens', async () => {
       mockPrisma.user.findFirst.mockResolvedValue(null);
       mockPrisma.role.findFirst.mockResolvedValue({ id: 'role-customer' });

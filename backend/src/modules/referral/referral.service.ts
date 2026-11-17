@@ -104,11 +104,12 @@ export class ReferralService {
   // ---------------------------------------------------------------------------
 
   async getSettings(tenantId: string) {
-    let settings = await this.prisma.referralSetting.findUnique({ where: { tenantId } });
-    if (!settings) {
-      settings = await this.prisma.referralSetting.create({ data: { tenantId } });
-    }
-    return settings;
+    // Signup and public settings requests may initialize a tenant concurrently.
+    return this.prisma.referralSetting.upsert({
+      where: { tenantId },
+      create: { tenantId },
+      update: { tenantId },
+    });
   }
 
   async updateSettings(tenantId: string, body: any) {

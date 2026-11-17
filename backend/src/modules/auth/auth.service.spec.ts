@@ -101,6 +101,7 @@ describe('AuthService', () => {
         id: 'user-1',
         email: 'test@example.com',
         passwordHash,
+        isActive: true,
         deletedAt: null,
       });
 
@@ -131,6 +132,7 @@ describe('AuthService', () => {
         id: 'user-1',
         email: 'admin@flyngo.com',
         passwordHash,
+        isActive: true,
         deletedAt: null,
       });
 
@@ -151,6 +153,7 @@ describe('AuthService', () => {
         id: 'user-1',
         email: 'admin@flyngo.com',
         passwordHash,
+        isActive: true,
         deletedAt: null,
       });
 
@@ -167,6 +170,7 @@ describe('AuthService', () => {
         id: 'user-2',
         phone: '+8801712345678',
         passwordHash,
+        isActive: true,
         deletedAt: null,
       });
 
@@ -197,6 +201,7 @@ describe('AuthService', () => {
         id: 'user-1',
         email: 'test@example.com',
         passwordHash,
+        isActive: true,
         deletedAt: null,
       });
 
@@ -307,7 +312,7 @@ describe('AuthService', () => {
     });
 
     it('preserves the original creator when an existing user links social login', async () => {
-      mockPrisma.user.findFirst.mockResolvedValueOnce({ id: 'existing-user' });
+      mockPrisma.user.findFirst.mockResolvedValueOnce({ id: 'existing-user', isActive: true });
       mockPrisma.user.update.mockResolvedValueOnce({ id: 'existing-user' });
       await service.validateOAuthUser({
         email: 'staff-created@example.com', fullName: 'Existing User', provider: 'google', providerId: 'google-2',
@@ -330,6 +335,7 @@ describe('AuthService', () => {
         email: 'test@example.com',
         deletedAt: null,
         passwordHash: 'hashed',
+        isActive: true,
       });
 
       const result = await service.refreshToken('valid-refresh-token', 'tenant-1');

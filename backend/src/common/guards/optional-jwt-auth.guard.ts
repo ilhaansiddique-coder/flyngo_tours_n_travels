@@ -50,7 +50,7 @@ export class OptionalJwtAuthGuard implements CanActivate {
           },
         },
       });
-      if (!user || user.deletedAt) return true;
+      if (!user || user.deletedAt || !user.isActive) return true;
       request['user'] = {
         id: user.id,
         email: user.email,

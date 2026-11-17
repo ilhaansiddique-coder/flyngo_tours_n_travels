@@ -59,7 +59,7 @@ export class AuthService {
     // A provisional account (created by a booking) has no hash and is therefore
     // unreachable here — same generic error, so this cannot be used to probe
     // which numbers have booked.
-    if (!user || !user.passwordHash) {
+    if (!user || user.deletedAt || !user.isActive || !user.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -199,7 +199,7 @@ export class AuthService {
         where: { id: payload.sub, tenantId },
       });
 
-    if (!user || user.deletedAt || !user.passwordHash) {
+      if (!user || user.deletedAt || !user.isActive || !user.passwordHash) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
@@ -219,6 +219,7 @@ export class AuthService {
     });
 
     if (user) {
+      if (!user.isActive) throw new UnauthorizedException('User account has been deactivated');
       // Link the OAuth identity to the existing account so future logins can
       // find it directly. Do not clobber a different provider on the same row.
       if (!user.provider || !user.providerId || !user.emailVerifiedAt) {
@@ -296,6 +297,7 @@ export class AuthService {
       where: {
         tenantId,
         deletedAt: null,
+        isActive: true,
         OR: [
           { email: { equals: id, mode: 'insensitive' } },
           ...(core ? [{ phone: { endsWith: core } }] : [{ phone: id }]),
@@ -406,7 +408,7 @@ export class AuthService {
    */
   async createResetLinkForUser(tenantId: string, userId: string, actorId: string) {
     const user = await this.prisma.user.findFirst({
-      where: { id: userId, tenantId, deletedAt: null },
+      where: { id: userId, tenantId, deletedAt: null, isActive: true },
       select: { id: true, email: true, phone: true, fullName: true },
     });
     if (!user) throw new NotFoundException('User not found');
@@ -455,11 +457,16 @@ export class AuthService {
     if (!record || record.usedAt || record.expiresAt.getTime() < Date.now()) {
       throw new BadRequestException('This reset link is invalid or has expired. Request a new one.');
     }
+    const user = await this.prisma.user.findFirst({
+      where: { id: record.userId, tenantId: record.tenantId, deletedAt: null, isActive: true },
+      select: { id: true },
+    });
+    if (!user) throw new BadRequestException('This reset link is invalid or has expired. Request a new one.');
     const passwordHash = await bcryptjs.hash(password, 12);
     await this.prisma.$transaction([
       // New password + drop any active refresh token (log out other sessions).
       this.prisma.user.update({
-        where: { id: record.userId },
+        where: { id: record.userId, tenantId: record.tenantId, deletedAt: null, isActive: true },
         // Choosing your own password settles the account: clear any outstanding
         // forced-change state so a stale temp password can't linger alongside it.
         data: {
@@ -677,9 +684,9 @@ export class AuthService {
   async completePasswordChange(tenantId: string, userId: string, currentPassword: string, newPassword: string) {
     const user = await this.prisma.user.findFirst({
       where: { id: userId, tenantId, deletedAt: null },
-      select: { id: true, passwordHash: true, tempPasswordExpiresAt: true },
+      select: { id: true, isActive: true, passwordHash: true, tempPasswordExpiresAt: true },
     });
-    if (!user?.passwordHash) throw new UnauthorizedException('Account cannot be updated');
+    if (!user?.isActive || !user.passwordHash) throw new UnauthorizedException('Account cannot be updated');
 
     const ok = await bcryptjs.compare(currentPassword, user.passwordHash);
     if (!ok) throw new UnauthorizedException('The temporary password is incorrect');
@@ -723,6 +730,11 @@ export class AuthService {
       if (payload.scope !== expectedScope) {
         throw new UnauthorizedException('This token cannot be used for this request');
       }
+      const user = await this.prisma.user.findFirst({
+        where: { id: payload.sub, tenantId: payload.tenantId, deletedAt: null, isActive: true },
+        select: { id: true },
+      });
+      if (!user) throw new UnauthorizedException('User account is unavailable');
       return { sub: payload.sub, tenantId: payload.tenantId };
     } catch (err: any) {
       if (err instanceof UnauthorizedException) throw err;

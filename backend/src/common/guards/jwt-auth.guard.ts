@@ -70,7 +70,7 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('User account not found');
     }
 
-    if (user.deletedAt) {
+    if (user.deletedAt || !user.isActive) {
       throw new UnauthorizedException('User account has been deactivated');
     }
 

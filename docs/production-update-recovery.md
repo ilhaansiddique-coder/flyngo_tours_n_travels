@@ -26,6 +26,16 @@
 
 ## Release without client DNS access
 
+Repository push webhook `658382886` was confirmed to call Coolify's source
+webhook on every push, independently of Actions. It received the recovery pushes
+before CI finished. It is now inactive (configuration retained), preventing new
+pushes from requesting unverified production rollouts. This does not cancel any
+deployment already queued in Coolify; inspect that queue in the dashboard.
+
+The browser CI job uses Ubuntu 24.04 explicitly. The floating runner moved to
+Ubuntu 26 and spent several minutes fetching browser OS packages; the installation
+step is now bounded to ten minutes. Verification requirements are unchanged.
+
 Set the GitHub Actions repository variable `COOLIFY_DEPLOY_MODE` to `manual`.
 CI still requires all tests/builds and publishes both images. Its final job records
 a manual handoff rather than sending an unreachable webhook. A green workflow

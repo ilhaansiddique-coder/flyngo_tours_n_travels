@@ -21,14 +21,22 @@ test.afterEach(() => {
 // authentication, production URLs, demo inventory or browser-storage tokens.
 test('an available update preserves form work and can be dismissed without refreshing', async ({ page }) => {
   let version = process.env.NEXT_PUBLIC_BUILD_SHA || 'loaded-build';
-  await page.route('**/api/version', (route) => route.fulfill({ json: { version } }));
+  let versionResponses = 0;
+  await page.route('**/api/version', async (route) => {
+    await route.fulfill({ json: { version } });
+    versionResponses++;
+  });
   await page.clock.install();
   await page.goto('/auth/login');
   await page.getByRole('button', { name: 'Essential only', exact: true }).click();
   const email = page.locator('input[type="text"], input[type="email"]').first();
   await email.fill('unfinished@example.invalid');
-  // Let the first response finish before changing the mocked server release.
-  await page.clock.runFor(4_000);
+  // Hydration installs the timer asynchronously; wait for an actual baseline
+  // response before publishing the simulated update (including in Firefox).
+  await expect.poll(async () => {
+    await page.clock.fastForward(4_000);
+    return versionResponses;
+  }).toBeGreaterThan(0);
   version = 'next-release-build';
   const notice = page.getByRole('complementary', { name: 'Website update' });
   await expect.poll(async () => {

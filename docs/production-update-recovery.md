@@ -18,6 +18,11 @@
   page refresh, server outage, or tab closure.
 - `coolify.flyngo.world` has no A record. The HTTPS webhook is therefore unreachable.
   Client-owned Namecheap DNS is unavailable; no DNS or nameservers were changed.
+- Startup previously seeded on every release, including admin password and
+  bootstrap-setting updates. Production now skips seeding unless explicitly
+  enabled with `SEED_ON_STARTUP=true`. Existing administrators are preserved even
+  during an intentional seed, and passwords are no longer printed by the seed.
+  A fresh database requires a one-time explicit seed; disable the flag afterward.
 
 ## Release without client DNS access
 
@@ -35,7 +40,7 @@ the deployment logs, then verify login through the final www hostname, reload
 session restoration, public pages and database health. No schema changes are
 required by this recovery patch.
 
-The public images are `ghcr.io/ilhaansiddique-coder/flyngo-backend:main` and
+The published images are `ghcr.io/ilhaansiddique-coder/flyngo-backend:main` and
 `ghcr.io/ilhaansiddique-coder/flyngo-frontend:main`; SHA tags are also published.
 Confirm Coolify pulls the newly verified pair rather than reusing cached images.
 If Coolify builds from source instead, ensure it checks out the verified commit.

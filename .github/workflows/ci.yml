@@ -49,6 +49,8 @@ jobs:
         run: node ../scripts/verify-glob-security.cjs
       - name: Verify deployment request contract
         run: node --test ../scripts/trigger-verified-deploy.test.cjs
+      - name: Verify routine startup preserves bootstrap data
+        run: node --test ../scripts/backend-startup.test.cjs
       - name: Migrate disposable PostgreSQL databases
         run: node scripts/prepare-release-tests.cjs
       - name: Lint (read-only)

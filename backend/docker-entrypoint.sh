@@ -9,9 +9,8 @@
 #      The two migrations in MIGRATE_TARGETS are pure DropIndex statements
 #      that are already idempotent (DROP INDEX IF EXISTS) — marking them
 #      applied lets the rest of the chain run.
-#   3. Seed the database on every boot (idempotent upserts) so role/permission
-#      scaffolding, the admin account and demo content stay in sync — never
-#      fatal to startup.
+#   3. Seed only when explicitly requested in production (default on in dev).
+#      Routine image updates must not reapply bootstrap data to client records.
 #   4. Start the API.
 #
 # Migration failures are FATAL by default: silently running the API on a
@@ -57,11 +56,13 @@ if ! run_migrations; then
   fi
 fi
 
-# Seed on every boot. The seed is fully idempotent (upsert / find-or-create),
-# so this keeps content + loyalty points in sync without a manual step. It only
-# ever creates/updates its own known rows — services you add in the admin panel
-# are untouched. Non-fatal: a seed failure (e.g. a transient network blip during
-# the country fetch) must never stop the API from starting.
+# A fresh installation can opt in once with SEED_ON_STARTUP=true. Leave it off
+# afterward: the seed contains bootstrap/catalogue updates, not just inserts.
+seed_on_startup="${SEED_ON_STARTUP:-false}"
+if [ "${NODE_ENV:-production}" != "production" ]; then
+  seed_on_startup="${SEED_ON_STARTUP:-true}"
+fi
+if [ "$seed_on_startup" = "true" ]; then
 echo "==> Seeding database (idempotent)..."
 if node prisma/seed.js; then
   echo "==> Seed complete"
@@ -71,6 +72,9 @@ else
     echo "==> WARNING: SUPER_ADMIN_PASSWORD is not set. The seed will not create an" >&2
     echo "    admin account in production. Set this env var to bootstrap the admin." >&2
   fi
+fi
+else
+  echo "==> Skipping bootstrap seed (set SEED_ON_STARTUP=true for initial setup)"
 fi
 
 echo "==> Starting Flyngo backend..."

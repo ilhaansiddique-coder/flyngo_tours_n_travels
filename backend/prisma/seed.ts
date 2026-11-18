@@ -206,11 +206,13 @@ async function main() {
   const adminEmail = (process.env.SUPER_ADMIN_EMAIL || 'admin@flyngo.com').toLowerCase();
   let adminUser;
 
-  if (adminPlainPassword) {
+  if (existingAdmin) {
+    console.log('ℹ️ Existing administrator preserved. Use account settings to change its password.');
+  } else if (adminPlainPassword) {
     const adminPassword = await bcryptjs.hash(adminPlainPassword, 12);
     adminUser = await prisma.user.upsert({
       where: { id: '00000000-0000-0000-0000-00000000admin' },
-      update: { passwordHash: adminPassword },
+      update: {},
       create: {
         id: '00000000-0000-0000-0000-00000000admin',
         email: adminEmail,
@@ -223,8 +225,6 @@ async function main() {
       },
     });
     console.log(`✅ Admin user: ${adminUser.email}`);
-  } else if (existingAdmin) {
-    console.log(`ℹ️ Admin user already exists: ${existingAdmin.email} (set SUPER_ADMIN_PASSWORD to rotate password).`);
   }
 
   // ===========================================================================
@@ -721,7 +721,7 @@ async function main() {
 
   console.log('\n🎉 Seed complete!');
   console.log(`   Tenant: ${tenant.name}`);
-  console.log(`   Admin: admin@flyngo.com / ${adminPlainPassword}`);
+  console.log('   Administrator credentials are never printed.');
 }
 
 main()

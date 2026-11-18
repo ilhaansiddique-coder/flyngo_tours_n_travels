@@ -74,6 +74,7 @@ services:
       R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
       ALLOW_START_WITHOUT_MIGRATIONS: ${ALLOW_START_WITHOUT_MIGRATIONS:-false}
+      SEED_ON_STARTUP: ${SEED_ON_STARTUP:-false}
     ports:
       - '4000:4000'
     volumes:

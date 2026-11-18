@@ -34,9 +34,9 @@ describe('memory-only browser sessions', () => {
     await client.initializeSession();
     expect(useAuthStore.getState()).toMatchObject({ accessToken: null, user: null, hasHydrated: true });
   });
-  it('does not clear an existing session for a transient refresh failure', async () => {
+  it.each([403, 502, 503])('does not clear an existing session for a configuration/transient refresh failure (%s)', async (status) => {
     useAuthStore.setState({ accessToken: 'existing', user: { ...profile, email: profile.email, role: 'customer', permissions: [] }, hasHydrated: true });
-    fetchMock.mockResolvedValueOnce(json({}, 503));
+    fetchMock.mockResolvedValueOnce(json({}, status));
     await client.initializeSession(true);
     expect(useAuthStore.getState().accessToken).toBe('existing');
   });

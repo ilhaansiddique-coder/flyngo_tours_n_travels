@@ -9,6 +9,7 @@ import { ConfigService } from './config/config.service';
 import { existsSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
 import { blockPrivateStaticFiles } from './modules/media/private-storage';
+import { sessionOrigins } from './modules/auth/session-http';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -73,7 +74,7 @@ async function bootstrap() {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
-  const allowedOrigins = [...corsOrigins, ...extraOrigins];
+  const allowedOrigins = [...corsOrigins, ...extraOrigins, ...sessionOrigins(configService)];
 
   app.enableCors({
     origin: (origin, callback) => {

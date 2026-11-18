@@ -5,6 +5,16 @@ tests, Chromium/Firefox checks and production builds before either image is
 published. The final job then requests a deployment through Coolify's API.
 An accepted API request does not prove that the application's rollout is healthy.
 
+## Manual deployment without client DNS access
+
+Set repository variable `COOLIFY_DEPLOY_MODE=manual` to publish verified images
+and record a manual handoff instead of calling the unreachable webhook. Use the
+existing authorized Coolify dashboard and existing Flyngo resource to deploy.
+A green run in manual mode does not certify a live rollout. See
+`production-update-recovery.md` for the confirmed login-origin failure, acceptance
+checks, and the current Compose availability limitation. Set the variable back
+to `webhook` only after a working HTTPS Coolify endpoint has been verified.
+
 ## Current unresolved configuration (18 November 2026)
 
 Commit `6a0a236` passed all five verification/image-publishing jobs. The final

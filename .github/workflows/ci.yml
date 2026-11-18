@@ -160,7 +160,7 @@ jobs:
     secrets: inherit
 
   deploy:
-    name: Deploy verified images
+    name: Deployment handoff
     needs: [publish-backend, publish-frontend]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -170,7 +170,20 @@ jobs:
         with:
           node-version: 22
       - name: Trigger Coolify only after both images are published
+        if: vars.COOLIFY_DEPLOY_MODE != 'manual'
         env:
           WEBHOOK_URL: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK || vars.COOLIFY_DEPLOY_WEBHOOK }}
           API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
         run: node scripts/trigger-verified-deploy.cjs
+      - name: Record manual deployment handoff
+        if: vars.COOLIFY_DEPLOY_MODE == 'manual'
+        env:
+          VERIFIED_SHA: ${{ github.sha }}
+        run: |
+          {
+            echo '### Images verified and published — manual deployment required'
+            echo "Commit: $VERIFIED_SHA"
+            echo 'Automatic Coolify requests are disabled by COOLIFY_DEPLOY_MODE=manual.'
+            echo 'Open the existing Flyngo resource in Coolify and deploy the published images.'
+            echo 'This workflow has not deployed or verified the live rollout.'
+          } >> "$GITHUB_STEP_SUMMARY"

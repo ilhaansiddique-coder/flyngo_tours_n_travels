@@ -93,7 +93,10 @@ export class ApiClient {
             credentials: 'same-origin', cache: 'no-store',
             headers: { 'X-Requested-With': 'Flyngo' },
           });
-          if (!response.ok) return { ok: false, reason: [401, 403].includes(response.status) ? 'invalid' : 'error' };
+          // An origin/proxy rejection does not revoke the server session.
+          // Keep in-memory credentials on 403 so a deployment/configuration
+          // fault cannot silently sign out someone with unfinished work.
+          if (!response.ok) return { ok: false, reason: response.status === 401 ? 'invalid' : 'error' };
           let json: any = {};
           try {
             json = await response.json();

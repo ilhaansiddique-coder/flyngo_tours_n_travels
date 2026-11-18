@@ -40,8 +40,12 @@
 ## Cookie request protections and OAuth
 
 Session-changing POST requests require `X-Requested-With: Flyngo` and an Origin
-exactly matching configured `FRONTEND_URL` or `ADMIN_URL`. Broad CORS settings do
-not expand this trusted list. SameSite cookies add another layer. Refresh tokens
+exactly matching configured `FRONTEND_URL`, `ADMIN_URL` or an explicit
+`SESSION_ALLOWED_ORIGINS` entry. For this application's production domain, both
+`https://flyngo.world` and `https://www.flyngo.world` are accepted when either is
+configured, because the public edge redirects the apex to www. This does not
+trust arbitrary sibling hosts, forwarded headers or wildcard CORS settings.
+SameSite cookies add another layer. Refresh tokens
 sent in JSON are ignored; the refresh endpoint reads only the HttpOnly cookie.
 Session responses use no-store cache headers.
 

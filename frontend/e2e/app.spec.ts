@@ -19,6 +19,31 @@ test.afterEach(() => {
 
 // Real local API + PostgreSQL fixtures from prepare-release-tests.cjs. No mocked
 // authentication, production URLs, demo inventory or browser-storage tokens.
+test('an available update preserves form work and can be dismissed without refreshing', async ({ page }) => {
+  let version = process.env.NEXT_PUBLIC_BUILD_SHA || 'loaded-build';
+  await page.route('**/api/version', (route) => route.fulfill({ json: { version } }));
+  await page.clock.install();
+  await page.goto('/auth/login');
+  await page.getByRole('button', { name: 'Essential only', exact: true }).click();
+  const email = page.locator('input[type="text"], input[type="email"]').first();
+  await email.fill('unfinished@example.invalid');
+  // Let the first response finish before changing the mocked server release.
+  await page.clock.runFor(4_000);
+  version = 'next-release-build';
+  const notice = page.getByRole('complementary', { name: 'Website update' });
+  await expect.poll(async () => {
+    await page.clock.fastForward(26_000);
+    return notice.isVisible();
+  }).toBe(true);
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  await email.fill('still-working@example.invalid');
+  await notice.getByRole('button', { name: 'Later', exact: true }).click();
+  await page.clock.fastForward(26_000);
+  await expect(notice).toHaveCount(0);
+  await expect(email).toHaveValue('still-working@example.invalid');
+  await expect(page).toHaveURL(/\/auth\/login$/);
+});
+
 test('homepage navigation reaches the seeded tour catalogue', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();

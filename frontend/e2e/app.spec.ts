@@ -161,6 +161,15 @@ test('login accepts email or phone and rejects incorrect credentials', async ({ 
   await expect(page).toHaveURL(/\/auth\/forgot-password$/);
 });
 
+test('missing Google credentials do not stop the API or password sign-in', async ({ request }) => {
+  const health = await request.get('/api/v1/health');
+  expect(health.status()).toBe(200);
+  expect((await health.json()).database).toBe('connected');
+  const google = await request.get('/api/v1/auth/google', { maxRedirects: 0 });
+  expect(google.status()).toBe(302);
+  expect(google.headers().location).toBe('http://127.0.0.1:3108/auth/callback?error=oauth_failed');
+});
+
 test('phone signup restores an HttpOnly session and cannot enter admin', async ({ page, context }, testInfo) => {
   await page.goto('/auth/register');
   await page.getByPlaceholder('Full name', { exact: true }).fill(`Browser Customer ${testInfo.project.name}`);

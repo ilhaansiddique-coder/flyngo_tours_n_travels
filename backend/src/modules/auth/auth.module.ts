@@ -6,7 +6,7 @@ import { ConfigService } from '../../config/config.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { GoogleStrategy } from './strategies/google.strategy';
+import { googleStrategyProvider } from './strategies/google-provider';
 import { FacebookStrategy } from './strategies/facebook.strategy';
 import { ReferralModule } from '../referral/referral.module';
 import { TrackingModule } from '../tracking/tracking.module';
@@ -57,7 +57,7 @@ class UnconfiguredFacebookStrategy {
     AuthService,
     SessionService,
     JwtStrategy,
-    GoogleStrategy,
+    googleStrategyProvider,
     {
       provide: FacebookStrategy,
       inject: [ConfigService],

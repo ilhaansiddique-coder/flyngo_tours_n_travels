@@ -16,6 +16,14 @@ function createOAuthGuard(strategyName: 'google' | 'facebook'): Type<IAuthGuard>
   class OAuthPassportGuard extends AuthGuard(strategyName) {
     constructor(private readonly config: ConfigService) { super(); }
 
+    canActivate(context: ExecutionContext) {
+      // An optional provider must fail at its own route, never during API boot.
+      if (strategyName === 'google' && (!this.config.getOrNull('GOOGLE_CLIENT_ID')?.trim() || !this.config.getOrNull('GOOGLE_CLIENT_SECRET')?.trim())) {
+        throw new OAuthRedirectException('oauth_failed');
+      }
+      return super.canActivate(context);
+    }
+
     getAuthenticateOptions(context: ExecutionContext) {
       const req = context.switchToHttp().getRequest();
       const res = context.switchToHttp().getResponse();

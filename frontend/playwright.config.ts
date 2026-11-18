@@ -40,7 +40,7 @@ export default defineConfig({
         FRONTEND_URL: 'http://127.0.0.1:3108', ADMIN_URL: 'http://127.0.0.1:3108',
         JWT_ACCESS_SECRET: 'release-test-access-secret-do-not-use-in-production',
         JWT_REFRESH_SECRET: 'release-test-refresh-secret-do-not-use-in-production',
-        GOOGLE_CLIENT_ID: 'release-tests.invalid', GOOGLE_CLIENT_SECRET: 'unused-test-secret',
+        GOOGLE_CLIENT_ID: '', GOOGLE_CLIENT_SECRET: '',
         FACEBOOK_APP_ID: 'release-tests', FACEBOOK_APP_SECRET: 'unused-test-secret',
         EMAIL_QUEUE_ENABLED: 'false', RESEND_API_KEY: '', SMTP_HOST: '', SMTP_USER: '',
         SMTP_PASSWORD: '', SMTP_PASS: '', SMS_API_KEY: '', STRIPE_SECRET_KEY: '',

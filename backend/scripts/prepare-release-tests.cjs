@@ -50,6 +50,15 @@ async function seedBrowser(url) {
     const adminUser = await db.user.findFirst({ where: { tenantId, email: 'admin@release.invalid' } });
     if (!adminUser) await db.user.create({ data: { tenantId, roleId: adminRole.id,
       email: 'admin@release.invalid', fullName: 'Release Test Admin', passwordHash } });
+    const layoutRole = await db.role.upsert({ where: { tenantId_code: { tenantId, code: 'layout_test' } }, update: {},
+      create: { tenantId, code: 'layout_test', name: 'Regional Corporate Travel Operations Supervisor' } });
+    const layoutEmail = 'responsive.layout.long.customer.account@example.invalid';
+    if (!await db.user.findFirst({ where: { tenantId, email: layoutEmail } })) {
+      await db.user.create({ data: { tenantId, roleId: layoutRole.id, email: layoutEmail,
+        fullName: 'Customer with a very long name for corporate travel account management',
+        phone: '+880 1700000456', phoneKey: '1700000456', passwordHash, creationSource: 'system',
+        nationalId: 'TEST-NID-12345678901234567890', passportNumber: 'TEST-PASSPORT-123456789012345' } });
+    }
     const destination = await db.destination.upsert({ where: { tenantId_slug: { tenantId, slug: 'release-destination' } }, update: {},
       create: { tenantId, name: 'Release Test Destination', slug: 'release-destination', country: 'Bangladesh', isFeatured: true } });
     await db.tour.upsert({ where: { tenantId_slug: { tenantId, slug: 'release-test-tour' } }, update: {},

@@ -211,6 +211,7 @@ test('admin login, customer creation, audit columns and logout work', async ({ p
   await page.getByPlaceholder('Password', { exact: true }).fill('Release-test-only-123!');
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/customers$/);
+  await expect(page.getByRole('columnheader', { name: 'Role', exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Created at', exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Created By', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Add Customer', exact: true }).click();
@@ -220,6 +221,7 @@ test('admin login, customer creation, audit columns and logout work', async ({ p
   await page.getByRole('button', { name: 'Create Customer', exact: true }).click();
   expect((await created).status()).toBe(201);
   await expect(page.getByRole('row').filter({ hasText: name })).toContainText('Release Test Admin');
+  await expect(page.getByRole('row').filter({ hasText: name }).locator('td[data-label="Role"]')).toHaveText('Customer');
   await page.locator('aside').getByRole('link', { name: 'CMS Pages', exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/cms\/pages$/);
   await expect(page.getByRole('button', { name: 'New Page', exact: true })).toBeVisible();

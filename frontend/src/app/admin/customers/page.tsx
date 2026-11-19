@@ -220,7 +220,7 @@ export default function CustomersPage() {
         const data = res as any;
         const items = Array.isArray(data) ? data : data?.data ?? [];
         setSuggestions(items);
-        setShowSuggestions(items.length > 0);
+        setShowSuggestions(items.length > 0 && !!searchRef.current?.contains(document.activeElement));
       } catch {
         setSuggestions([]);
       }
@@ -420,53 +420,59 @@ export default function CustomersPage() {
 
   const initials = (name: string) =>
     name
-      .split(' ')
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
       .map((n) => n[0])
       .join('')
       .toUpperCase();
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative" ref={searchRef}>
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            placeholder="Search by name, phone, NID, passport..."
-            className="pl-9 w-full sm:w-72"
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
-          />
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-80 overflow-y-auto">
-              {suggestions.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-800 last:border-0 transition-colors"
-                  onClick={() => selectSuggestion(s)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center font-bold text-brand-600 dark:text-brand-400 text-xs shrink-0">
-                      {initials(s.fullName)}
+    <div className="customers-page min-w-0 space-y-6">
+      <div className="flex flex-col sm:flex-row gap-3 justify-between">
+        <div className="flex min-w-0 flex-1 items-start gap-2 sm:max-w-lg">
+          <div className="relative min-w-0 flex-1" ref={searchRef}>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Search by name, phone, NID, passport..."
+              aria-label="Search customers"
+              className="pl-9"
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+            />
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                {suggestions.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-800 last:border-0 transition-colors"
+                    onClick={() => selectSuggestion(s)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center font-bold text-brand-600 dark:text-brand-400 text-xs shrink-0">
+                        {initials(s.fullName)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate">{s.fullName}</p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {[s.phone, (s as any).nationalId ? `NID: ${(s as any).nationalId}` : '', (s as any).passportNumber ? `Passport: ${(s as any).passportNumber}` : ''].filter(Boolean).join(' · ')}
+                        </p>
+                      </div>
+                      <Badge variant={s.isActive ? 'success' : 'warning'} className="shrink-0">
+                        {s.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm truncate">{s.fullName}</p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {[s.phone, (s as any).nationalId ? `NID: ${(s as any).nationalId}` : '', (s as any).passportNumber ? `Passport: ${(s as any).passportNumber}` : ''].filter(Boolean).join(' · ')}
-                      </p>
-                    </div>
-                    <Badge variant={s.isActive ? 'success' : 'warning'} className="shrink-0">
-                      {s.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <Button variant="outline" type="button" className="min-h-11 shrink-0" onClick={handleSearch}>Search</Button>
         </div>
-        <Button size="md" className="gap-2" onClick={openCreateModal}>
+        <Button size="md" className="min-h-11 shrink-0 gap-2" onClick={openCreateModal}>
           <Plus className="w-4 h-4" /> Add Customer
         </Button>
       </div>
@@ -500,11 +506,13 @@ export default function CustomersPage() {
       {!loading && !error && (
         <>
           <Card hover={false} padding="none">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" role="region" aria-label="Customer accounts" tabIndex={0}>
+              <table className="customers-table w-full text-sm lg:min-w-[1200px]" aria-label="Customers">
+                <caption className="sr-only">Customer accounts, assigned roles, documents and account status</caption>
                 <thead>
                   <tr className="text-left text-gray-500 bg-gray-50 dark:bg-surface-container/50">
                     <th className="p-4 font-medium">Name</th>
+                    <th className="p-4 font-medium" scope="col">Role</th>
                     <th className="p-4 font-medium">Phone</th>
                     <th className="p-4 font-medium">NID Number</th>
                     <th className="p-4 font-medium">NID Copy</th>
@@ -519,7 +527,7 @@ export default function CustomersPage() {
                 <tbody>
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={canViewCreation ? 10 : 8} className="p-12 text-center text-gray-500">
+                      <td colSpan={canViewCreation ? 11 : 9} className="p-12 text-center text-gray-500">
                         <Users className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                         <p>No customers found</p>
                       </td>
@@ -530,16 +538,21 @@ export default function CustomersPage() {
                         key={u.id}
                         className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30"
                       >
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center font-bold text-brand-600 dark:text-brand-400">
+                        <td className="p-4" data-label="Name">
+                          <div className="customer-identity flex min-w-0 items-center gap-3">
+                            <div className="w-10 h-10 shrink-0 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center font-bold text-brand-600 dark:text-brand-400" aria-hidden="true">
                               {initials(u.fullName)}
                             </div>
-                            <div>
+                            <div className="min-w-0 [overflow-wrap:anywhere] lg:max-w-64">
                               <span className="font-medium block">{u.fullName}</span>
                               <span className="text-xs text-gray-400 block">{u.email || '\u2014'}</span>
                             </div>
                           </div>
+                        </td>
+                        <td className="p-4" data-label="Role">
+                          <Badge variant="info" className="max-w-full whitespace-normal [overflow-wrap:anywhere]">
+                            {u.role?.name?.trim() || u.role?.code?.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) || 'Not assigned'}
+                          </Badge>
                         </td>
                         <td className="p-4 text-gray-500 tabular-nums">{u.phone || '\u2014'}</td>
                         <td className="p-4 text-gray-500 tabular-nums font-mono text-xs">{(u as any).nationalId || '\u2014'}</td>
@@ -599,7 +612,7 @@ export default function CustomersPage() {
                         {canViewCreation && <td className="p-4 text-gray-500 whitespace-nowrap">
                           <time dateTime={u.createdAt}>{formatDate(u.createdAt)}</time>
                         </td>}
-                        {canViewCreation && <td className="p-4 text-gray-500 whitespace-nowrap">
+                        {canViewCreation && <td className="p-4 text-gray-500 [overflow-wrap:anywhere] lg:max-w-56">
                           {u.creationSource === 'admin' ? (
                             <span title={u.createdBy?.id}>
                               {u.createdBy?.fullName || 'Former staff member'}
@@ -612,7 +625,7 @@ export default function CustomersPage() {
                             : 'Unknown (older account)'}
                         </td>}
                         <td className="p-4">
-                          <div className="flex gap-1">
+                          <div className="flex flex-wrap justify-end gap-1 lg:justify-start">
                             {(u.accountStatus === 'provisional' || u.accountStatus === 'invited') && u.phone && (
                               <button
                                 className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900 text-gray-500 hover:text-emerald-600 disabled:opacity-50"
@@ -622,6 +635,7 @@ export default function CustomersPage() {
                                     : 'Send login credentials via WhatsApp'
                                 }
                                 disabled={issuing === u.id}
+                                aria-label={`Issue login credentials for ${u.fullName}`}
                                 onClick={() => handleIssueCredentials(u)}
                               >
                                 <KeyRound className="w-4 h-4" />
@@ -630,6 +644,7 @@ export default function CustomersPage() {
                             <button
                               className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-surface-container-high text-gray-500 hover:text-brand-600"
                               title="Edit"
+                              aria-label={`Edit ${u.fullName}`}
                               onClick={() => openEditModal(u)}
                             >
                               <Pencil className="w-4 h-4" />
@@ -637,6 +652,7 @@ export default function CustomersPage() {
                             <button
                               className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 text-gray-500 hover:text-red-600"
                               title={u.id === '00000000-0000-0000-0000-00000000admin' ? 'Primary Super Admin cannot be deleted' : 'Delete'}
+                              aria-label={`Delete ${u.fullName}`}
                               disabled={u.id === '00000000-0000-0000-0000-00000000admin'}
                               onClick={() => setConfirmDelete({ open: true, id: u.id })}
                             >
@@ -653,29 +669,32 @@ export default function CustomersPage() {
           </Card>
 
           {meta.totalPages > 1 && (
-            <div className="flex items-center justify-between text-sm text-gray-500">
+            <nav aria-label="Customer pagination" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-500">
               <span>
                 Showing {users.length} of {meta.total} customers
               </span>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
+                  className="min-h-11"
                   disabled={meta.page <= 1}
                   onClick={() => goToPage(meta.page - 1)}
                 >
                   Previous
                 </Button>
+                <span className="text-xs" aria-live="polite">Page {meta.page} of {meta.totalPages}</span>
                 <Button
                   variant="outline"
                   size="sm"
+                  className="min-h-11"
                   disabled={meta.page >= meta.totalPages}
                   onClick={() => goToPage(meta.page + 1)}
                 >
                   Next
                 </Button>
               </div>
-            </div>
+            </nav>
           )}
         </>
       )}

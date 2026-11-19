@@ -1136,6 +1136,33 @@ body {
   display: none;
 }
 
+.customers-table td button {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.customers-table td button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (min-width: 1024px) {
+  .customers-table td[data-label="Name"] {
+    min-width: 18rem;
+  }
+  .customers-table td[data-label="Role"] {
+    min-width: 12rem;
+  }
+  .customers-table td[data-label="Phone"] {
+    min-width: 10rem;
+  }
+  .customers-table td[data-actions="true"] {
+    min-width: 9rem;
+  }
+}
+
 @media (max-width: 1023.98px) {
   .admin-table-cards :has(> table),
   .admin-table-cards :has(> .overflow-x-auto > table) {
@@ -1221,6 +1248,30 @@ body {
   .admin-table-cards td img {
     flex-shrink: 0;
     margin-left: auto;
+  }
+  .admin-table-cards .customers-table tbody {
+    padding: 0.25rem 0;
+  }
+  .admin-table-cards .customers-table td > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .admin-table-cards .customers-table td[data-label="Name"] {
+    display: block;
+    text-align: left;
+  }
+  .admin-table-cards .customers-table td[data-label="Name"]::before {
+    display: none;
+  }
+  .admin-table-cards .customers-table .customer-identity {
+    text-align: left;
+  }
+  .admin-table-cards .customers-table td[data-label="Created By"] {
+    white-space: normal;
+  }
+  .admin-table-cards .customers-table td[data-label="Created at"],
+  .admin-table-cards .customers-table td[data-label="Created at"] time {
+    white-space: normal;
   }
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { trackEvent } from '@/lib/tracking-client';
@@ -18,6 +19,8 @@ interface UnreadCountResponse {
 }
 
 export function FloatingWhatsApp() {
+  const pathname = usePathname();
+  const isAdminPage = pathname === '/admin' || pathname.startsWith('/admin/');
   const [settings, setSettings] = useState<TrackingPublicSettings | null>(null);
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState<{ token: string; count: number } | null>(null);
@@ -29,6 +32,7 @@ export function FloatingWhatsApp() {
     ? unread.count : null;
 
   useEffect(() => {
+    if (isAdminPage) return;
     let mounted = true;
     (async () => {
       try {
@@ -37,11 +41,11 @@ export function FloatingWhatsApp() {
       } catch { /* silent */ }
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [isAdminPage]);
 
   // The widget is public; only authenticated admins can read lead counts.
   useEffect(() => {
-    if (!hasHydrated || !accessToken || !isAdmin) return;
+    if (isAdminPage || !hasHydrated || !accessToken || !isAdmin) return;
     let mounted = true;
     (async () => {
       try {
@@ -50,7 +54,10 @@ export function FloatingWhatsApp() {
       } catch { /* not admin or not logged in — ignore */ }
     })();
     return () => { mounted = false; };
-  }, [hasHydrated, accessToken, isAdmin]);
+  }, [hasHydrated, accessToken, isAdmin, isAdminPage]);
+
+  // Public support must not cover customer actions or dialogs in the admin panel.
+  if (isAdminPage) return null;
 
   const phone = (settings?.whatsappNumber || '8801322913530').replace(/[^\d]/g, '');
   const greeting = settings?.whatsappGreeting || 'Hi! I am interested in your Hajj/Umrah/travel packages. Could you share more details?';

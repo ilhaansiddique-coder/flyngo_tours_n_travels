@@ -242,7 +242,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Content */}
-      <main className={cn('flex-1 transition-all duration-300', collapsed ? 'lg:ml-20' : 'lg:ml-64')}>
+      <main className={cn('min-w-0 flex-1 transition-all duration-300', collapsed ? 'lg:ml-20' : 'lg:ml-64')}>
         <AdminTopbar navigation={navigation} onMenuClick={() => setMobileOpen(true)} />
         {/* Page Content */}
         <div ref={contentRef} className="admin-table-cards px-4 sm:px-6 py-4">{children}</div>

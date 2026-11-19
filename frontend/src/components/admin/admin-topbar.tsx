@@ -33,14 +33,14 @@ export function AdminTopbar({
   const initial = (user?.fullName || user?.email || 'A').charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-outline-variant bg-surface/80 px-4 sm:px-6 py-3 backdrop-blur-md">
+    <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-outline-variant bg-surface/80 px-3 sm:px-6 py-3 backdrop-blur-md">
       <div className="flex min-w-0 items-center gap-2">
         {onMenuClick && (
           <button
             type="button"
             onClick={onMenuClick}
             title="Open menu"
-            className="rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary lg:hidden"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary lg:hidden"
           >
             <MenuIcon className="h-5 w-5" />
           </button>
@@ -55,18 +55,18 @@ export function AdminTopbar({
       </div>
 
       {/* Global customer search */}
-      <div className="hidden min-w-0 shrink md:block">
+      <div className="hidden min-w-0 shrink xl:block">
         <GlobalCustomerSearch />
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         <LanguageToggle />
-        <ThemeToggle />
+        <ThemeToggle className="flex h-11 w-11 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high" />
 
         <Link
           href="/"
           title="Go to site home"
-          className="rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary"
+          className="hidden h-11 w-11 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary sm:flex"
         >
           <Home className="h-4 w-4" />
         </Link>
@@ -88,7 +88,7 @@ export function AdminTopbar({
           type="button"
           onClick={logout}
           title="Sign out"
-          className="rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-danger-soft hover:text-error"
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-danger-soft hover:text-error"
         >
           <LogOut className="h-4 w-4" />
         </button>

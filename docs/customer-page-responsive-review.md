@@ -15,6 +15,8 @@ The customer list now displays each account's saved role, provided by the existi
 
 Browser regression coverage uses an isolated localhost PostgreSQL database and production frontend build, with a deliberately long account name, email, document identifiers and role. It checks widths 320, 375, 390, 640, 768, 1024, 1280, 1440 and 1920px, light/dark presentation, phone/tablet edit dialogs, touch target dimensions, empty-state column alignment and absence of page overflow. The existing customer-creation scenario also verifies the saved Customer role appears.
 
+Responsive assertions run within the existing authenticated customer-management scenario. This keeps the complete Chromium/Firefox suite to four password-login requests rather than six, so it respects the unchanged API limit of five login attempts per minute. Run the full browser suite to check interactions between scenarios; running only the customer scenarios would miss this shared limit.
+
 The production URL requires sign-in. This review does not claim authenticated production verification, physical-device testing or a complete audit of every public/admin page. Shared shell changes benefit other admin pages; their individual page layouts still require separate review.
 
 GitHub pushes follow the repository's existing release controls. Manual deployment mode remains in place.

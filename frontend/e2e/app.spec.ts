@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { assertCustomerResponsiveLayouts } from './customer-layout';
 
 let serverErrors: string[] = [];
 let runtimeErrors: string[] = [];
@@ -206,6 +207,7 @@ test('phone signup restores an HttpOnly session and cannot enter admin', async (
 });
 
 test('admin login, customer creation, audit columns and logout work', async ({ page }, testInfo) => {
+  test.setTimeout(120_000);
   await page.goto('/auth/login?callbackUrl=%2Fadmin%2Fcustomers');
   await page.getByPlaceholder('Email or phone number').fill('admin@release.invalid');
   await page.getByPlaceholder('Password', { exact: true }).fill('Release-test-only-123!');
@@ -222,6 +224,9 @@ test('admin login, customer creation, audit columns and logout work', async ({ p
   expect((await created).status()).toBe(201);
   await expect(page.getByRole('row').filter({ hasText: name })).toContainText('Release Test Admin');
   await expect(page.getByRole('row').filter({ hasText: name }).locator('td[data-label="Role"]')).toHaveText('Customer');
+  await test.step('Customer roles and controls fit phone, tablet and desktop layouts', async () => {
+    await assertCustomerResponsiveLayouts(page, testInfo);
+  });
   await page.locator('aside').getByRole('link', { name: 'CMS Pages', exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/cms\/pages$/);
   await expect(page.getByRole('button', { name: 'New Page', exact: true })).toBeVisible();

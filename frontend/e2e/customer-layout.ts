@@ -1,18 +1,13 @@
-import { test, expect } from '@playwright/test';
+import { expect, type Page, type TestInfo } from '@playwright/test';
 
-test('customer roles, long account data and controls fit phone, tablet and desktop layouts', async ({ page }, testInfo) => {
-  test.setTimeout(120_000);
-  const errors: string[] = [];
-  page.on('pageerror', (error) => errors.push(error.message));
+// Reuse the real customer-management session: duplicate logins across browser
+// projects would exceed the API's five-attempt per-minute login limit.
+export async function assertCustomerResponsiveLayouts(page: Page, testInfo: TestInfo) {
+  const viewport = page.viewportSize();
   const email = 'responsive.layout.long.customer.account@example.invalid';
   const name = 'Customer with a very long name for corporate travel account management';
   const assignedRole = 'Regional Corporate Travel Operations Supervisor';
 
-  await page.goto('/auth/login?callbackUrl=%2Fadmin%2Fcustomers');
-  await page.getByPlaceholder('Email or phone number').fill('admin@release.invalid');
-  await page.getByPlaceholder('Password', { exact: true }).fill('Release-test-only-123!');
-  await page.getByRole('button', { name: 'Sign In', exact: true }).click();
-  await expect(page).toHaveURL(/\/admin\/customers$/);
   const consent = page.getByRole('button', { name: 'Essential only', exact: true });
   if (await consent.isVisible()) await consent.click();
   const search = page.getByRole('textbox', { name: 'Search customers', exact: true });
@@ -72,5 +67,5 @@ test('customer roles, long account data and controls fit phone, tablet and deskt
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   const empty = page.getByRole('cell', { name: 'No customers found', exact: true });
   await expect(empty).toHaveAttribute('colspan', '11');
-  expect(errors).toEqual([]);
-});
+  if (viewport) await page.setViewportSize(viewport);
+}

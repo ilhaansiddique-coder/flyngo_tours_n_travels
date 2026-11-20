@@ -38,6 +38,16 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
+      - name: Validate production and development Compose routing
+        env:
+          POSTGRES_PASSWORD: compose-validation-only
+          JWT_ACCESS_SECRET: compose-validation-access-only
+          JWT_REFRESH_SECRET: compose-validation-refresh-only
+        run: |
+          docker compose -f docker-compose.yml config --format json > "$RUNNER_TEMP/flyngo-production-compose.json"
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml config --format json > "$RUNNER_TEMP/flyngo-development-compose.json"
+          node scripts/verify-compose-routing.cjs "$RUNNER_TEMP/flyngo-production-compose.json" "$RUNNER_TEMP/flyngo-development-compose.json"
+        working-directory: .
       - uses: actions/setup-node@v4
         with:
           node-version: 22

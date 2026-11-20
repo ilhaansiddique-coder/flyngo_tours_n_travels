@@ -7,9 +7,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     image: flyngo-backend:dev
+    ports:
+      - '4000:4000'
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     image: flyngo-frontend:dev
+    ports:
+      - '3000:3000'

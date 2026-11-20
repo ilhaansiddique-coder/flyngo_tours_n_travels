@@ -9,7 +9,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     image: ghcr.io/ilhaansiddique-coder/flyngo-backend:main
-    # NOTE: container_name is intentionally omitted to enable rolling updates
+    # Let Compose/Coolify manage application container names.
     restart: always
     stop_grace_period: 30s
     environment:
@@ -75,8 +75,10 @@ services:
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
       ALLOW_START_WITHOUT_MIGRATIONS: ${ALLOW_START_WITHOUT_MIGRATIONS:-false}
       SEED_ON_STARTUP: ${SEED_ON_STARTUP:-false}
-    ports:
-      - '4000:4000'
+    # Traefik and the frontend reach this container over Docker networking.
+    # Do not reserve host port 4000: another deployment may already use it.
+    expose:
+      - '4000'
     volumes:
       - backend_uploads:/app/uploads
     depends_on:
@@ -108,15 +110,16 @@ services:
         NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-https://flyngo.world}
         BACKEND_URL: ${BACKEND_URL:-http://backend:4000}
     image: ghcr.io/ilhaansiddique-coder/flyngo-frontend:main
-    # NOTE: container_name is intentionally omitted to enable rolling updates
+    # Let Compose/Coolify manage application container names.
     restart: always
     stop_grace_period: 30s
     environment:
       BACKEND_URL: ${BACKEND_URL:-http://backend:4000}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.flyngo.world}
       NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL:-https://flyngo.world}
-    ports:
-      - '3000:3000'
+    # Coolify's proxy reaches container port 3000 without a host binding.
+    expose:
+      - '3000'
     depends_on:
       backend:
         condition: service_started

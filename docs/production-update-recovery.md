@@ -72,6 +72,35 @@ backward-compatible schema/API changes and a tested rollback. Do this in staging
 before changing the production topology. Existing form drafts need their own
 save/resume behavior; the update banner does not implement persistent drafts.
 
+## Host-port collision recovery — 19 November 2026
+
+Deployment of `bced300` built successfully, but Docker could not start its backend:
+`Bind for 0.0.0.0:4000 failed: port is already allocated`. The deployment log also
+shows that Coolify removed its previous containers before the new backend failed.
+This is a container-networking failure, not a failed frontend build or database
+health check. The existing owner of port 4000 must be identified before stopping
+anything; a separately managed Flyngo stack was observed earlier.
+
+Production Compose now exposes container ports 4000/3000 internally without
+publishing them on the host. Existing proxy network membership, service port
+labels, backend URL, database settings and all persistent volumes are unchanged.
+The development override retains localhost-accessible host ports for local work.
+Docker documents `expose` as internal ports rather than host-published ports:
+https://docs.docker.com/reference/compose-file/services/#expose
+
+Before another rollout, confirm the existing Coolify frontend/backend domain
+routes target container ports 3000/4000 and the proxy can reach their network.
+Also confirm Coolify's generated Compose has no host mappings for those two
+services; remove any resource-level port mapping override if one is present.
+Use the existing resource and storage, not a new stack or database. Do not run
+`docker compose down -v`, delete volumes, or stop the port-owning containers as a
+shortcut. A redeploy can still interrupt traffic; internal ports resolve the bind
+collision, not the single-instance Compose availability limitation above.
+
+After deployment, inspect backend and frontend runtime health and check the
+public site, API health and authenticated customer Role column. A successful
+image build or container creation alone does not establish a working rollout.
+
 ## Future automatic deployment
 
 When a valid HTTPS Coolify endpoint is available, set `COOLIFY_DEPLOY_WEBHOOK` to

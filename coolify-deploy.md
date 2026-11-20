@@ -14,7 +14,7 @@ GitHub Actions (ci.yml)
         └─ frontend.yml → publish verified flyngo-frontend:main
         │
         ▼
-CI triggers Coolify once, only after both images publish successfully
+CI records a manual handoff (or triggers Coolify when webhook mode is enabled)
         │
         ▼
 Coolify (on the server)
@@ -25,8 +25,17 @@ Coolify (on the server)
    └─ Service: flyngo-meili (Meilisearch 1.12)
 ```
 
-**Build ≠ Run.** GitHub Actions builds and pushes images on every push. Coolify
-just pulls and runs them. No builds happen on the server.
+GitHub Actions verifies and publishes images. The current repository variable
+`COOLIFY_DEPLOY_MODE=manual` leaves the live rollout to the existing Coolify
+resource. The Compose file includes both image and build definitions; Coolify
+may build from the checked-out source, as the deployment log shows. Confirm
+the source commit and actual image/build settings before deployment.
+
+Production frontend/backend ports are internal (3000/4000), reached by Coolify's
+proxy over Docker networking. Host bindings are reserved for the development
+override; production must not reserve host ports 3000 or 4000. Preserve the
+existing domains, database configuration and persistent storage. See
+`docs/production-update-recovery.md` for recovery of an existing installation.
 
 ## One-time setup
 
@@ -78,7 +87,11 @@ Coolify → `+ Add` → **Service** (one each):
 - **Docker Compose Location:** `docker-compose.yml`
 - **Build Pack:** Docker Compose
 
-⚠️ Make sure Coolify uses `docker-compose.yml` (the default). This file pulls pre-built images from ghcr.io — it does NOT build. If Coolify is set to a different file, change it.
+Use `docker-compose.yml` for production. Do not include
+`docker-compose.dev.yml`, which publishes fixed host ports for development.
+If Coolify has resource-level port mapping overrides, remove the frontend/backend
+host mappings there as well. Keep proxy target ports 3000/4000 and the existing
+Docker network connections.
 
 ### 5. Coolify — set FQDNs on each service
 
@@ -105,9 +118,12 @@ These override the defaults in `docker-compose.yml`.
 
 1. Push code to `main`
 2. GitHub Actions runs mandatory database integration, browser tests and production builds
-3. After every check passes, both images publish; one CI webhook triggers Coolify
+3. After every check passes, both images publish; manual mode records a handoff.
+   Open the existing Coolify resource and deploy the verified source/images.
+   Webhook mode can trigger this only when a working HTTPS endpoint is configured.
 4. Backend auto-runs `prisma migrate deploy` on startup — no manual steps
-5. Total downtime: ~5 seconds
+5. Verify backend/frontend runtime health, public routes and sign-in after rollout.
+   Compose replacement can interrupt traffic; there is no fixed downtime guarantee.
 
 ## Rollback
 
@@ -126,6 +142,7 @@ These override the defaults in `docker-compose.yml`.
 | Backend can't reach DB | Service name must be exactly `flyngo-db` — that's the internal DNS name. |
 | Auto-deploy not firing | Get webhook URL from Coolify → Resource → Deploy Webhooks → paste as `COOLIFY_DEPLOY_WEBHOOK` in GitHub Variables. |
 | Migration fails on startup | Check `docker logs flyngo-backend`. Verify `DATABASE_URL` in Coolify env vars. |
+| `port is already allocated` for 4000 or 3000 | Use internal production ports, remove resource-level host port overrides, and identify existing port owners before stopping anything. |
 
 ## Local development
 

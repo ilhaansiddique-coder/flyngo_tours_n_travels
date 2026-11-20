@@ -81,7 +81,7 @@ jobs:
     needs: backend
     # Keep browser system dependencies stable across ubuntu-latest migrations.
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 35
     services:
       postgres:
         image: postgres:16
@@ -128,7 +128,27 @@ jobs:
           path: backend/dist
       - run: npm run build
         working-directory: frontend
-      - run: npx playwright install --with-deps chromium firefox
+      - name: Install Playwright Linux dependencies
+        run: |
+          # The hosted runner's Azure Ubuntu mirror can stall on large media
+          # packages. Use the upstream HTTPS archive for Ubuntu packages only.
+          for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if [ -f "$source" ]; then
+              sudo sed -i 's|https\?://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$source"
+            fi
+          done
+          sudo tee /etc/apt/apt.conf.d/80-playwright-network >/dev/null <<'APT'
+          Acquire::Retries "3";
+          Acquire::http::Timeout "30";
+          Acquire::https::Timeout "30";
+          APT
+          npx playwright install-deps chromium firefox
+        working-directory: frontend
+        timeout-minutes: 15
+      - name: Install Playwright Chromium and Firefox
+        run: npx playwright install chromium firefox
+        env:
+          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '120000'
         working-directory: frontend
         timeout-minutes: 10
       - name: Browser tests against production builds and real PostgreSQL API

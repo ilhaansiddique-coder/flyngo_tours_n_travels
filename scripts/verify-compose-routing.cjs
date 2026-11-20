@@ -7,6 +7,7 @@ const production = JSON.parse(readFileSync(productionPath, 'utf8'));
 const development = JSON.parse(readFileSync(developmentPath, 'utf8'));
 
 assert.equal(production.networks.coolify.external, true, 'Production must use the existing proxy network');
+assert.ok(production.services.postgres.networks.default.aliases.includes('flyngo-postgres'), 'Saved database hostnames must survive Coolify container renaming');
 for (const [name, port] of [['backend', 4000], ['frontend', 3000]]) {
   const service = production.services[name];
   assert.equal((service.ports || []).length, 0, `${name} must not reserve a host port`);

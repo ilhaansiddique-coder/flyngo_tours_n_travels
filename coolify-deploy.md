@@ -20,9 +20,9 @@ CI records a manual handoff (or triggers Coolify when webhook mode is enabled)
 Coolify (on the server)
    ├─ Resource: flyngo (Docker Compose)   ← docker-compose.yml (pulls images)
    │   └─ pulls ghcr.io images, runs containers
-   ├─ Service: flyngo-db    (PostgreSQL 16)
-   ├─ Service: flyngo-redis (Redis 7)
-   └─ Service: flyngo-meili (Meilisearch 1.12)
+   ├─ Compose service: postgres (PostgreSQL 16, private alias flyngo-postgres)
+   ├─ Compose service: redis (Redis 7)
+   └─ Compose service: meilisearch (Meilisearch 1.12)
 ```
 
 GitHub Actions verifies and publishes images. The current repository variable
@@ -71,12 +71,17 @@ After the first workflow run pushes an image, visit:
 
 This lets Coolify pull without a registry token.
 
-### 3. Coolify — provision stateful services
+### 3. Coolify — preserve stateful services
 
-Coolify → `+ Add` → **Service** (one each):
-- **PostgreSQL 16** — name `flyngo-db`, env `POSTGRES_USER=flyngo`, `POSTGRES_PASSWORD=...`, `POSTGRES_DB=flyngo`, persistent volume on `/var/lib/postgresql/data`
-- **Redis 7** — name `flyngo-redis`, persistent volume on `/data`, set `REDIS_PASSWORD`
-- **Meilisearch v1.12** — name `flyngo-meili`, env `MEILI_MASTER_KEY=...`, persistent volume on `/meili_data`
+The production Compose file already includes PostgreSQL, Redis and Meilisearch
+with persistent volumes. For the existing installation, keep the same resource,
+database credentials and volume attachments. Do not provision a replacement
+database or change the Compose project to recover application startup.
+
+The PostgreSQL service has the private network alias `flyngo-postgres`, so a saved
+DATABASE_URL using that hostname remains valid when Coolify renames containers.
+Use the existing PostgreSQL password for POSTGRES_PASSWORD. Redis and Meilisearch
+use their Compose service hostnames `redis` and `meilisearch`.
 
 ### 4. Coolify — add the app resource
 
@@ -104,9 +109,10 @@ Coolify adds Traefik labels and TLS automatically.
 ### 6. Coolify — environment variables
 
 Resource → **Environment Variables** → add these:
-- `DATABASE_URL` — `postgresql://flyngo:<password>@flyngo-db:5432/flyngo?schema=public`
-- `REDIS_HOST=flyngo-redis`, `REDIS_PASSWORD=...`
-- `MEILISEARCH_HOST=http://flyngo-meili:7700`, `MEILISEARCH_API_KEY=...`
+- `DATABASE_URL` — `postgresql://flyngo:<existing-password>@flyngo-postgres:5432/flyngo?schema=public`
+- `POSTGRES_PASSWORD` — preserve the password of the existing database
+- `REDIS_HOST=redis` (set a password only if the Redis service is configured to require it)
+- `MEILISEARCH_HOST=http://meilisearch:7700`, `MEILISEARCH_API_KEY=...`
 - `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` — `openssl rand -hex 32` each
 - `FRONTEND_URL=https://flyngo.world`
 - `ADMIN_URL=https://flyngo.world`
@@ -139,7 +145,7 @@ These override the defaults in `docker-compose.yml`.
 | Workflow login fails | Repo → Settings → Actions → General → Workflow permissions → "Read and write". |
 | Coolify can't pull image | Make ghcr.io packages public (step 2) or add a GitHub PAT to Coolify. |
 | 404 on pages | FQDN not set on service in Coolify, or container crashed. Check logs. |
-| Backend can't reach DB | Service name must be exactly `flyngo-db` — that's the internal DNS name. |
+| Backend can't reach DB | Verify DATABASE_URL targets the intended existing database. The bundled PostgreSQL service advertises `flyngo-postgres` on the stack's private network. |
 | Auto-deploy not firing | Get webhook URL from Coolify → Resource → Deploy Webhooks → paste as `COOLIFY_DEPLOY_WEBHOOK` in GitHub Variables. |
 | Migration fails on startup | Check `docker logs flyngo-backend`. Verify `DATABASE_URL` in Coolify env vars. |
 | `port is already allocated` for 4000 or 3000 | Use internal production ports, remove resource-level host port overrides, and identify existing port owners before stopping anything. |

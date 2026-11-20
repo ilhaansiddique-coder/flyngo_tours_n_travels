@@ -101,6 +101,29 @@ After deployment, inspect backend and frontend runtime health and check the
 public site, API health and authenticated customer Role column. A successful
 image build or container creation alone does not establish a working rollout.
 
+## Database hostname recovery — 20 November 2026
+
+The old manually managed application containers held host ports 3000/4000 while
+the Coolify replacements remained Created. Stopping only those two application
+containers and starting the already-built Coolify replacements restored the
+frontend, but backend startup still failed with Prisma P1001: the saved
+DATABASE_URL used `flyngo-postgres`, which did not reach the database from the new stack.
+
+Read-only checks confirmed the existing Coolify database contained 31 users and
+1 booking, and that the backend's database name, username and password matched
+that database's configuration. A dedicated recovery bridge attached the existing
+database with alias `flyngo-postgres` and the existing backend; only the backend
+was restarted. No database, volume or signing key was replaced, and production
+seeding was checked disabled before reconnecting. Both public API health paths
+then returned 200 with database connected, and the homepage/login page returned 200.
+
+Production Compose now declares `flyngo-postgres` explicitly as an alias on the
+PostgreSQL service's project-private default network. This persists the hostname
+across Coolify container renaming and future redeployments. CI validates the
+alias from Docker Compose's resolved configuration, alongside internal app ports.
+The manual recovery bridge can remain until the corrected deployment is verified;
+do not disconnect the currently running application from its working database.
+
 ## Future automatic deployment
 
 When a valid HTTPS Coolify endpoint is available, set `COOLIFY_DEPLOY_WEBHOOK` to

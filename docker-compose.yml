@@ -152,7 +152,11 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - default
+      default:
+        # Coolify renames containers; keep saved DATABASE_URL hostnames valid
+        # within this stack's private network across container replacements.
+        aliases:
+          - flyngo-postgres
 
   redis:
     image: redis:7-alpine

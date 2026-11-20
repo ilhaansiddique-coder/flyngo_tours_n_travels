@@ -4,6 +4,7 @@ import { InvoicesService } from './invoices.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import type { Response } from 'express';
@@ -20,6 +21,7 @@ export class InvoicesController {
     return this.invoices.listMine(tenantId, userId);
   }
 
+  @StaffPermissions('payments.read')
   @Get('admin/all')
   @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'List all invoices (admin)' })
@@ -34,6 +36,7 @@ export class InvoicesController {
     return this.invoices.generateMissingInvoices(tenantId);
   }
 
+  @StaffPermissions('payments.update')
   @Patch('admin/:id/void')
   @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Void an invoice (admin)' })

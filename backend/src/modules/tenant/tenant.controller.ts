@@ -4,6 +4,7 @@ import { TenantService } from './tenant.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 
 @ApiTags('Tenant')
 @Controller('tenant')
@@ -17,6 +18,7 @@ export class TenantController {
     return this.tenantService.getSettings(tenantId);
   }
 
+  @StaffPermissions('settings.read')
   @Get('admin/settings')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -25,6 +27,7 @@ export class TenantController {
     return this.tenantService.getAdminSettings(tenantId);
   }
 
+  @StaffPermissions('settings.update')
   @Patch('settings')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

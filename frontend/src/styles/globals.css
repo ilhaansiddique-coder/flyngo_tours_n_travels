@@ -1148,18 +1148,23 @@ body {
   outline-offset: 2px;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1536px) {
   .customers-table td[data-label="Name"] {
-    min-width: 18rem;
+    width: 14rem;
+    min-width: 14rem;
   }
   .customers-table td[data-label="Role"] {
-    min-width: 12rem;
+    width: 8rem;
+    min-width: 8rem;
   }
   .customers-table td[data-label="Phone"] {
-    min-width: 10rem;
+    min-width: 9rem;
+  }
+  .customers-table td[data-label="Created By"] {
+    min-width: 9rem;
   }
   .customers-table td[data-actions="true"] {
-    min-width: 9rem;
+    min-width: 7rem;
   }
 }
 
@@ -1271,6 +1276,119 @@ body {
   }
   .admin-table-cards .customers-table td[data-label="Created at"],
   .admin-table-cards .customers-table td[data-label="Created at"] time {
+    white-space: normal;
+  }
+}
+
+/* Extend customer cards to laptops without changing other admin tables. */
+@media (min-width: 1024px) and (max-width: 1535.98px) {
+  .admin-table-cards .customers-page :has(> table),
+  .admin-table-cards .customers-page :has(> .overflow-x-auto > table) {
+    overflow: visible;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+  .admin-table-cards .customers-page .overflow-x-auto:has(table) {
+    overflow: visible;
+  }
+  .admin-table-cards .customers-page table {
+    min-width: 0 !important;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .admin-table-cards .customers-page thead {
+    display: none;
+  }
+  .admin-table-cards .customers-page tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+  .admin-table-cards .customers-page tr {
+    display: block;
+    background: var(--color-surface-container);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: 1rem;
+    padding: 0.25rem 1rem;
+    box-shadow: 0 1px 2px rgb(var(--shadow-color, 12 22 40) / 0.06);
+  }
+  .admin-table-cards .customers-page td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid color-mix(in oklab, var(--color-outline-variant) 80%, transparent);
+    text-align: right;
+    font-size: 0.875rem;
+    word-break: break-word;
+  }
+  .admin-table-cards .customers-page td:last-child {
+    border-bottom: none;
+  }
+  .admin-table-cards .customers-page td::before {
+    content: attr(data-label);
+    flex: 0 0 36%;
+    max-width: 9.5rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-on-surface-variant);
+    text-align: left;
+  }
+  .admin-table-cards .customers-page td[data-label=""]::before,
+  .admin-table-cards .customers-page td[data-actions="true"]::before {
+    display: none;
+  }
+  .admin-table-cards .customers-page td[data-actions="true"] {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-top: 0.85rem;
+    margin-top: 0.15rem;
+    border-top: 1px solid var(--color-outline-variant);
+    border-bottom: none;
+  }
+  .admin-table-cards .customers-page td[data-empty-row="true"] {
+    display: block;
+    text-align: center;
+    border: none;
+    padding: 2.5rem 1rem;
+  }
+  .admin-table-cards .customers-page td[data-empty-row="true"]::before {
+    display: none;
+  }
+  .admin-table-cards .customers-page td img {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+  .admin-table-cards .customers-page .customers-table tbody {
+    padding: 0.25rem 0;
+  }
+  .admin-table-cards .customers-page .customers-table td > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .admin-table-cards .customers-page .customers-table td[data-label="Name"] {
+    display: block;
+    text-align: left;
+  }
+  .admin-table-cards .customers-page .customers-table td[data-label="Name"]::before {
+    display: none;
+  }
+  .admin-table-cards .customers-page .customers-table .customer-identity {
+    text-align: left;
+  }
+  .admin-table-cards .customers-page .customers-table td[data-label="Created By"] {
+    white-space: normal;
+  }
+  .admin-table-cards .customers-page .customers-table td[data-label="Created at"],
+  .admin-table-cards .customers-page .customers-table td[data-label="Created at"] time {
     white-space: normal;
   }
 }

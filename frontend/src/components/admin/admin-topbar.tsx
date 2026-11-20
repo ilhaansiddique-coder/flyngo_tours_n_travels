@@ -7,6 +7,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
 import { GlobalCustomerSearch } from '@/components/admin/global-customer-search';
 import { Home, LogOut, Menu as MenuIcon } from 'lucide-react';
+import { canViewAdminOverview } from '@/lib/admin-access';
 
 /**
  * Admin content-area top bar: shows which module the admin is currently in and
@@ -55,9 +56,11 @@ export function AdminTopbar({
       </div>
 
       {/* Global customer search */}
-      <div className="hidden min-w-0 shrink xl:block">
-        <GlobalCustomerSearch />
-      </div>
+      {canViewAdminOverview(user?.role) && (
+        <div className="hidden min-w-0 shrink xl:block">
+          <GlobalCustomerSearch />
+        </div>
+      )}
 
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         <LanguageToggle />

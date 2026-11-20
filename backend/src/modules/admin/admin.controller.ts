@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Admin')
@@ -13,6 +14,7 @@ export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get('dashboard')
+  @StaffPermissions('analytics.read')
   @ApiOperation({ summary: 'Get admin dashboard stats' })
   async getDashboard(@CurrentTenantId() tenantId: string) {
     return this.adminService.getDashboardStats(tenantId);

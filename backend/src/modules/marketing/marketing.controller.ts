@@ -4,6 +4,7 @@ import { MarketingService } from './marketing.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Marketing')
@@ -25,6 +26,7 @@ export class MarketingController {
     return this.marketingService.validateCoupon(code, tenantId);
   }
 
+  @StaffPermissions('marketing.read')
   @Get('admin/coupons')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -33,6 +35,7 @@ export class MarketingController {
     return this.marketingService.listAllCoupons(tenantId, pagination.page, pagination.limit);
   }
 
+  @StaffPermissions('marketing.create')
   @Post('admin/coupons')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -41,6 +44,7 @@ export class MarketingController {
     return this.marketingService.createCoupon(tenantId, body);
   }
 
+  @StaffPermissions('marketing.update')
   @Patch('admin/coupons/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -49,6 +53,7 @@ export class MarketingController {
     return this.marketingService.updateCoupon(id, tenantId, body);
   }
 
+  @StaffPermissions('marketing.delete')
   @Delete('admin/coupons/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

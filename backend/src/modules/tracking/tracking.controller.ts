@@ -6,6 +6,7 @@ import { TrackingService } from './tracking.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 
 @ApiTags('Tracking & Ads')
 @Controller('tracking')
@@ -45,6 +46,7 @@ export class TrackingController {
   // Admin
   // ---------------------------------------------------------------------------
 
+  @StaffPermissions('marketing.read')
   @Get('admin/settings')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -53,6 +55,7 @@ export class TrackingController {
     return this.trackingService.getSettings(tenantId);
   }
 
+  @StaffPermissions('marketing.update')
   @Patch('admin/settings')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -61,6 +64,7 @@ export class TrackingController {
     return this.trackingService.updateSettings(tenantId, body);
   }
 
+  @StaffPermissions('marketing.read')
   @Get('admin/stats')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -71,6 +75,7 @@ export class TrackingController {
 
   // Admin leads -----------------------------------------------------------
 
+  @StaffPermissions('marketing.read')
   @Get('admin/leads/unread-count')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -79,6 +84,7 @@ export class TrackingController {
     return { count: await this.trackingService.countUnreadLeads(tenantId) };
   }
 
+  @StaffPermissions('marketing.read')
   @Get('admin/leads')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -86,6 +92,7 @@ export class TrackingController {
     return this.trackingService.listLeads(tenantId, status);
   }
 
+  @StaffPermissions('marketing.update')
   @Patch('admin/leads/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -99,6 +106,7 @@ export class TrackingController {
 
   // Admin landing pages ---------------------------------------------------
 
+  @StaffPermissions('marketing.read')
   @Get('admin/landing-pages')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -106,6 +114,7 @@ export class TrackingController {
     return this.trackingService.listLandingPages(tenantId);
   }
 
+  @StaffPermissions('marketing.create')
   @Post('admin/landing-pages')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -113,6 +122,7 @@ export class TrackingController {
     return this.trackingService.createLandingPage(tenantId, body);
   }
 
+  @StaffPermissions('marketing.update')
   @Patch('admin/landing-pages/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -124,6 +134,7 @@ export class TrackingController {
     return this.trackingService.updateLandingPage(tenantId, id, body);
   }
 
+  @StaffPermissions('marketing.delete')
   @Delete('admin/landing-pages/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

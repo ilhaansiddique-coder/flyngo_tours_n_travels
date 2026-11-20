@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { Megaphone, Percent, Send, TrendingUp, Users, Calendar, BarChart3, Plus, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import { useAuthStore } from '@/stores/auth.store';
+import { canAccessAdminRoute, canReadCustomerContacts } from '@/lib/admin-access';
 
 interface Coupon {
   id: string;
@@ -25,6 +27,7 @@ interface Coupon {
 }
 
 export default function MarketingPage() {
+  const user = useAuthStore((state) => state.user);
   const { getCoupons, getUsers, getBookings } = useApi();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,8 +43,12 @@ export default function MarketingPage() {
       try {
         const [couponsRes, usersRes, bookingsRes] = await Promise.all([
           getCoupons({ limit: '100' }),
-          getUsers({ limit: '1' }).catch(() => ({ meta: { total: 0 } })),
-          getBookings({ per_page: '1' }).catch(() => ({ meta: { total: 0 } })),
+          canReadCustomerContacts(user?.role, user?.permissions)
+            ? getUsers({ limit: '1' }).catch(() => ({ meta: { total: 0 } }))
+            : Promise.resolve({ meta: { total: 0 } }),
+          canAccessAdminRoute('/admin/bookings', user?.role, user?.permissions)
+            ? getBookings({ per_page: '1' }).catch(() => ({ meta: { total: 0 } }))
+            : Promise.resolve({ meta: { total: 0 } }),
         ]);
         const data = couponsRes as any;
         setCoupons(Array.isArray(data) ? data : data?.items ?? data?.data ?? []);

@@ -4,6 +4,7 @@ import { CuratedExperiencesService, CuratedExperiencesConfigInput } from './cura
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 
 @ApiTags('Curated Experiences')
 @Controller('curated-experiences')
@@ -17,6 +18,7 @@ export class CuratedExperiencesController {
     return this.service.getForTenant(tenantId);
   }
 
+  @StaffPermissions('cms.read')
   @Get('admin')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -25,6 +27,7 @@ export class CuratedExperiencesController {
     return this.service.getAdminForTenant(tenantId);
   }
 
+  @StaffPermissions('cms.read')
   @Get('defaults')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -33,6 +36,7 @@ export class CuratedExperiencesController {
     return this.service.getDefaults();
   }
 
+  @StaffPermissions('cms.update')
   @Post('admin')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

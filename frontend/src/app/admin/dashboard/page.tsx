@@ -7,6 +7,8 @@ import { BookOpen, Users, DollarSign, TrendingUp, Calendar, Activity, PieChart }
 import { useApi } from '@/hooks/use-api';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useAuthStore } from '@/stores/auth.store';
+import { canViewAdminOverview } from '@/lib/admin-access';
 
 interface DashboardData {
   totalBookings: number;
@@ -38,11 +40,14 @@ const STAT_STYLES: Array<{ tint: string; icon: string }> = [
 
 export default function AdminDashboard() {
   const { getDashboard } = useApi();
+  const user = useAuthStore((state) => state.user);
+  const canViewOverview = canViewAdminOverview(user?.role, user?.permissions);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!canViewOverview) return;
     const fetch = async () => {
       try {
         const result = await getDashboard() as DashboardData;
@@ -54,7 +59,20 @@ export default function AdminDashboard() {
       }
     };
     fetch();
-  }, [getDashboard]);
+  }, [getDashboard, canViewOverview]);
+
+  if (!canViewOverview) {
+    return (
+      <Card hover={false}>
+        <h2 className="font-display text-xl font-bold text-on-surface">
+          Welcome, {user?.fullName || 'team member'}
+        </h2>
+        <p className="mt-2 text-on-surface-variant">
+          Use the sidebar to open your staff tools. Access to each operation depends on your role.
+        </p>
+      </Card>
+    );
+  }
 
   if (loading) {
     return (

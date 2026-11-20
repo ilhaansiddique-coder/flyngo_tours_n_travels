@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CustomSelect } from '@/components/ui/select';
 import { useEffect, useState } from 'react';
+import { useAuthStore } from '@/stores/auth.store';
+import { canAccessAdminRoute, canReadCustomerContacts } from '@/lib/admin-access';
 import { BarChart3, TrendingUp, DollarSign, Users, BookOpen, ArrowUpRight, Download } from 'lucide-react';
 
 interface DashboardData {
@@ -28,6 +30,7 @@ interface StatChange {
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function ReportsPage() {
+  const user = useAuthStore((state) => state.user);
   const { getDashboard, getBookings, getUsers } = useApi();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -195,7 +198,9 @@ export default function ReportsPage() {
                   { value: 'overview', label: 'Overview Report' },
                   { value: 'bookings', label: 'Bookings Report' },
                   { value: 'users', label: 'Users Report' },
-                ]}
+                ].filter((option) => option.value === 'overview' ||
+                  (option.value === 'bookings' && canAccessAdminRoute('/admin/bookings', user?.role, user?.permissions)) ||
+                  (option.value === 'users' && canReadCustomerContacts(user?.role, user?.permissions)))}
               />
             </div>
             <Input

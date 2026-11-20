@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete, Param, Body, Query, HttpCode,
-  UseInterceptors, UploadedFile, BadRequestException,
+  UseInterceptors, UploadedFile, BadRequestException, ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
@@ -106,10 +106,18 @@ export class UsersController {
   }
 
   @Get()
-  @Roles('admin', 'super_admin')
-  @ApiOperation({ summary: 'List all users (admin)' })
-  async listUsers(@CurrentTenantId() tenantId: string, @Query() pagination: PaginationDto) {
-    return this.usersService.listUsers(tenantId, pagination.page, pagination.limit, pagination.q);
+  @ApiOperation({ summary: 'List users for admins, or customer contacts for authorised staff' })
+  async listUsers(
+    @CurrentTenantId() tenantId: string,
+    @Query() pagination: PaginationDto,
+    @CurrentUser() actor: { roleCode?: string; permissions?: string[] },
+  ) {
+    const isAdmin = actor?.roleCode === 'admin' || actor?.roleCode === 'super_admin';
+    const canReadCustomers = actor?.roleCode && actor.roleCode !== 'customer' && (
+      isAdmin || ['manager', 'moderator'].includes(actor.roleCode) || actor.permissions?.includes('users.read')
+    );
+    if (!canReadCustomers) throw new ForbiddenException('Customer read access required');
+    return this.usersService.listUsers(tenantId, pagination.page, pagination.limit, pagination.q, !isAdmin);
   }
 
   @Post()

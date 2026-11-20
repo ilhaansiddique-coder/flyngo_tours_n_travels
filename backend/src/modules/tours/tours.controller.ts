@@ -4,6 +4,7 @@ import { ToursService } from './tours.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 import { ListQueryDto } from '../../common/dto/list-query.dto';
 
 @ApiTags('Tours')
@@ -27,6 +28,7 @@ export class ToursController {
     return this.toursService.findById(id, tenantId);
   }
 
+  @StaffPermissions('tours.create')
   @Post()
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -35,6 +37,7 @@ export class ToursController {
     return this.toursService.create(tenantId, body);
   }
 
+  @StaffPermissions('tours.update')
   @Patch(':id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -43,6 +46,7 @@ export class ToursController {
     return this.toursService.update(id, tenantId, body);
   }
 
+  @StaffPermissions('tours.delete')
   @Delete(':id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

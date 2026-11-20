@@ -12,6 +12,7 @@ import { AboutService } from './about.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 
 @ApiTags('About')
 @Controller('about')
@@ -36,6 +37,7 @@ export class AboutController {
     return this.aboutService.getMeta(tenantId);
   }
 
+  @StaffPermissions('cms.update')
   @Post('meta')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -54,6 +56,7 @@ export class AboutController {
     return this.aboutService.listSections(tenantId);
   }
 
+  @StaffPermissions('cms.read')
   @Get('admin/sections')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -63,6 +66,7 @@ export class AboutController {
     return this.aboutService.listSections(tenantId);
   }
 
+  @StaffPermissions('cms.create')
   @Post('admin/sections')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -71,6 +75,7 @@ export class AboutController {
     return this.aboutService.createSection(tenantId, body);
   }
 
+  @StaffPermissions('cms.update')
   @Patch('admin/sections/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -83,6 +88,7 @@ export class AboutController {
     return this.aboutService.updateSection(id, tenantId, body);
   }
 
+  @StaffPermissions('cms.delete')
   @Delete('admin/sections/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -91,6 +97,7 @@ export class AboutController {
     return this.aboutService.removeSection(id, tenantId);
   }
 
+  @StaffPermissions('cms.update')
   @Post('admin/sections/reorder')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -111,6 +118,7 @@ export class AboutController {
     return this.aboutService.getActiveCeoMessage(tenantId);
   }
 
+  @StaffPermissions('cms.read')
   @Get('admin/ceo')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -120,6 +128,7 @@ export class AboutController {
     return this.aboutService.listCeoMessages(tenantId);
   }
 
+  @StaffPermissions('cms.update')
   @Post('admin/ceo')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -128,6 +137,7 @@ export class AboutController {
     return this.aboutService.upsertCeoMessage(tenantId, body);
   }
 
+  @StaffPermissions('cms.delete')
   @Delete('admin/ceo/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -138,6 +148,7 @@ export class AboutController {
 
   // -------- DEFAULTS --------
 
+  @StaffPermissions('cms.read')
   @Get('admin/defaults')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

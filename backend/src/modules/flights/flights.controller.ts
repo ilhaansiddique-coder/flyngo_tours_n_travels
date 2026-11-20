@@ -4,6 +4,7 @@ import { FlightsService } from './flights.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 import { ListQueryDto } from '../../common/dto/list-query.dto';
 
 @ApiTags('Flights')
@@ -28,6 +29,7 @@ export class FlightsController {
     return this.flightsService.findById(id, tenantId);
   }
 
+  @StaffPermissions('flights.create')
   @Post()
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -36,6 +38,7 @@ export class FlightsController {
     return this.flightsService.create(tenantId, body);
   }
 
+  @StaffPermissions('flights.update')
   @Patch(':id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -44,6 +47,7 @@ export class FlightsController {
     return this.flightsService.update(id, tenantId, body);
   }
 
+  @StaffPermissions('flights.delete')
   @Delete(':id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

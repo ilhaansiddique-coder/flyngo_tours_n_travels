@@ -4,6 +4,7 @@ import { HeroService } from './hero.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 
 @ApiTags('Hero')
 @Controller('hero')
@@ -17,6 +18,7 @@ export class HeroController {
     return this.heroService.getForTenant(tenantId);
   }
 
+  @StaffPermissions('cms.read')
   @Get('defaults')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -25,6 +27,7 @@ export class HeroController {
     return this.heroService.getDefaults();
   }
 
+  @StaffPermissions('cms.update')
   @Post()
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

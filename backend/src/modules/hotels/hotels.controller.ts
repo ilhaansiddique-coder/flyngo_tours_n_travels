@@ -4,6 +4,7 @@ import { HotelsService } from './hotels.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 import { ListQueryDto } from '../../common/dto/list-query.dto';
 
 @ApiTags('Hotels')
@@ -25,6 +26,7 @@ export class HotelsController {
     return this.hotelsService.findById(id, tenantId);
   }
 
+  @StaffPermissions('hotels.create')
   @Post()
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -33,6 +35,7 @@ export class HotelsController {
     return this.hotelsService.create(tenantId, body);
   }
 
+  @StaffPermissions('hotels.update')
   @Patch(':id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -41,6 +44,7 @@ export class HotelsController {
     return this.hotelsService.update(id, tenantId, body);
   }
 
+  @StaffPermissions('hotels.delete')
   @Delete(':id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -59,6 +63,7 @@ export class HotelsController {
     return this.hotelsService.listRooms(hotelId, tenantId);
   }
 
+  @StaffPermissions('hotels.create')
   @Post(':hotelId/rooms')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -67,6 +72,7 @@ export class HotelsController {
     return this.hotelsService.createRoom(hotelId, tenantId, body);
   }
 
+  @StaffPermissions('hotels.update')
   @Patch(':hotelId/rooms/:roomId')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -80,6 +86,7 @@ export class HotelsController {
     return this.hotelsService.updateRoom(hotelId, roomId, tenantId, body);
   }
 
+  @StaffPermissions('hotels.delete')
   @Delete(':hotelId/rooms/:roomId')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

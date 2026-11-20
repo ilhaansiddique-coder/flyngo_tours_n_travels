@@ -3,6 +3,7 @@ import { PrivateDocumentPreview } from '@/components/ui/private-file';
 
 import { useApi } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
+import { canReadCustomerContacts } from '@/lib/admin-access';
 import { formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -70,7 +71,10 @@ const initialForm: FormData = {
 
 export default function CustomersPage() {
   const role = useAuthStore((state) => state.user?.role);
+  const permissions = useAuthStore((state) => state.user?.permissions);
+  const canReadCustomers = canReadCustomerContacts(role, permissions);
   const canViewCreation = role === 'admin' || role === 'super_admin';
+  const canManageUsers = canViewCreation;
   const {
     getUsers, getUserById, createUser, updateUser, deleteUser, getRoles, issueCustomerCredentials,
     uploadCustomerNationalIdFront, uploadCustomerNationalIdBack, uploadCustomerPassport,
@@ -151,8 +155,9 @@ export default function CustomersPage() {
   };
 
   useEffect(() => {
+    if (!canReadCustomers) return;
     fetchUsers();
-    fetchRoles();
+    if (canManageUsers) fetchRoles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -160,7 +165,7 @@ export default function CustomersPage() {
   // (/admin/customers?edit=<id>).
   useEffect(() => {
     const id = searchParams.get('edit');
-    if (!id) return;
+    if (!id || !canManageUsers) return;
     let cancelled = false;
     (async () => {
       try {
@@ -194,7 +199,7 @@ export default function CustomersPage() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams, getUserById]);
+  }, [searchParams, getUserById, canManageUsers]);
 
   // Close autocomplete dropdown on outside click
   useEffect(() => {
@@ -229,7 +234,7 @@ export default function CustomersPage() {
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
-    debouncedSearch(value);
+    if (canManageUsers) debouncedSearch(value);
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
@@ -427,6 +432,10 @@ export default function CustomersPage() {
       .join('')
       .toUpperCase();
 
+  if (!canReadCustomers) {
+    return <Card hover={false}>Your role does not have access to customer contacts.</Card>;
+  }
+
   return (
     <div className="customers-page min-w-0 space-y-6">
       <div className="flex flex-col sm:flex-row gap-3 justify-between">
@@ -434,7 +443,7 @@ export default function CustomersPage() {
           <div className="relative min-w-0 flex-1" ref={searchRef}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
-              placeholder="Search by name, phone, NID, passport..."
+              placeholder={canManageUsers ? 'Search by name, phone, NID, passport...' : 'Search by name, phone, email...'}
               aria-label="Search customers"
               className="pl-9"
               value={search}
@@ -472,9 +481,9 @@ export default function CustomersPage() {
           </div>
           <Button variant="outline" type="button" className="min-h-11 shrink-0" onClick={handleSearch}>Search</Button>
         </div>
-        <Button size="md" className="min-h-11 shrink-0 gap-2" onClick={openCreateModal}>
+        {canManageUsers && <Button size="md" className="min-h-11 shrink-0 gap-2" onClick={openCreateModal}>
           <Plus className="w-4 h-4" /> Add Customer
-        </Button>
+        </Button>}
       </div>
 
       {actionError && (
@@ -507,27 +516,27 @@ export default function CustomersPage() {
         <>
           <Card hover={false} padding="none">
             <div className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" role="region" aria-label="Customer accounts" tabIndex={0}>
-              <table className="customers-table w-full text-sm lg:min-w-[1200px]" aria-label="Customers">
+              <table className="customers-table w-full text-sm md:min-w-[800px] xl:min-w-[1200px]" aria-label="Customers">
                 <caption className="sr-only">Customer accounts, assigned roles, documents and account status</caption>
                 <thead>
                   <tr className="text-left text-gray-500 bg-gray-50 dark:bg-surface-container/50">
                     <th className="p-4 font-medium">Name</th>
                     <th className="p-4 font-medium" scope="col">Role</th>
                     <th className="p-4 font-medium">Phone</th>
-                    <th className="p-4 font-medium">NID Number</th>
+                    {canManageUsers && <><th className="p-4 font-medium">NID Number</th>
                     <th className="p-4 font-medium">NID Copy</th>
                     <th className="p-4 font-medium">Passport No.</th>
-                    <th className="p-4 font-medium">Passport Copy</th>
+                    <th className="p-4 font-medium">Passport Copy</th></>}
                     <th className="p-4 font-medium">Status</th>
                     {canViewCreation && <th className="p-4 font-medium">Created at</th>}
                     {canViewCreation && <th className="p-4 font-medium">Created By</th>}
-                    <th className="p-4 font-medium">Actions</th>
+                    {canManageUsers && <th className="p-4 font-medium">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={canViewCreation ? 11 : 9} className="p-12 text-center text-gray-500">
+                      <td colSpan={canManageUsers ? 11 : 4} className="p-12 text-center text-gray-500">
                         <Users className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                         <p>No customers found</p>
                       </td>
@@ -555,7 +564,7 @@ export default function CustomersPage() {
                           </Badge>
                         </td>
                         <td className="p-4 text-gray-500 tabular-nums">{u.phone || '\u2014'}</td>
-                        <td className="p-4 text-gray-500 tabular-nums font-mono text-xs">{(u as any).nationalId || '\u2014'}</td>
+                        {canManageUsers && <><td className="p-4 text-gray-500 tabular-nums font-mono text-xs">{(u as any).nationalId || '\u2014'}</td>
                         <td className="p-4">
                           {(u as any).nationalIdFrontUrl || (u as any).nationalIdBackUrl ? (
                             <div className="flex gap-1">
@@ -596,6 +605,7 @@ export default function CustomersPage() {
                             <span className="text-gray-300">{'\u2014'}</span>
                           )}
                         </td>
+                        </>}
                         <td className="p-4">
                           <div className="flex flex-wrap items-center gap-1.5">
                             <Badge variant={u.isActive ? 'success' : 'warning'}>
@@ -624,7 +634,7 @@ export default function CustomersPage() {
                             : u.creationSource === 'system' ? 'System'
                             : 'Unknown (older account)'}
                         </td>}
-                        <td className="p-4">
+                        {canManageUsers && <td className="p-4">
                           <div className="flex flex-wrap justify-end gap-1 lg:justify-start">
                             {(u.accountStatus === 'provisional' || u.accountStatus === 'invited') && u.phone && (
                               <button
@@ -659,7 +669,7 @@ export default function CustomersPage() {
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
-                        </td>
+                        </td>}
                       </tr>
                     ))
                   )}

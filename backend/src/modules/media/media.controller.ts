@@ -15,6 +15,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nes
 import { MediaService } from './media.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -51,6 +52,7 @@ export class MediaController {
     return this.mediaService.uploadPrivate(file, { tenantId, folder, ownerId, guestUpload: true });
   }
 
+  @StaffPermissions('cms.read')
   @Get()
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -63,6 +65,7 @@ export class MediaController {
     return this.mediaService.list(tenantId, pagination.page, pagination.limit, q);
   }
 
+  @StaffPermissions('cms.create')
   @Post('upload')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -90,6 +93,7 @@ export class MediaController {
     return this.mediaService.upload(file, { tenantId, folder, alt });
   }
 
+  @StaffPermissions('cms.delete')
   @Delete(':id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

@@ -9,6 +9,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 
@@ -109,6 +110,7 @@ export class PaymentsController {
     return this.paymentsService.handleBKashWebhook(signature, req.rawBody);
   }
 
+  @StaffPermissions('payments.create')
   @Post('admin/record')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin', 'manager', 'moderator')
@@ -121,6 +123,7 @@ export class PaymentsController {
     return this.paymentsService.recordAdminPayment(tenantId, adminUserId, body);
   }
 
+  @StaffPermissions('payments.read')
   @Get('admin/all')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin', 'manager', 'moderator')
@@ -134,6 +137,7 @@ export class PaymentsController {
     return this.paymentsService.listAllPayments(tenantId, pagination.page, pagination.limit, { status, method });
   }
 
+  @StaffPermissions('payments.read')
   @Get('admin/stats')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin', 'manager', 'moderator')
@@ -142,6 +146,7 @@ export class PaymentsController {
     return this.paymentsService.getPaymentStats(tenantId);
   }
 
+  @StaffPermissions('payments.update')
   @Patch('admin/:id/status')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin', 'manager', 'moderator')

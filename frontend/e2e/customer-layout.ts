@@ -18,7 +18,7 @@ export async function assertCustomerResponsiveLayouts(page: Page, testInfo: Test
   await expect(roleCell).toHaveText(assignedRole);
   await expect(page.getByRole('button', { name: 'Chat on WhatsApp', exact: true })).toHaveCount(0);
 
-  for (const width of [320, 375, 390, 640, 768, 1024, 1280, 1440, 1920]) {
+  for (const width of [320, 375, 390, 640, 768, 1024, 1280, 1440, 1536, 1920]) {
     await page.setViewportSize({ width, height: 900 });
     await expect(roleCell).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth), { message: `page overflow at ${width}px after responsive transitions` }).toBeLessThanOrEqual(width);
@@ -38,7 +38,7 @@ export async function assertCustomerResponsiveLayouts(page: Page, testInfo: Test
     const box = await edit.boundingBox();
     expect(box?.width).toBeGreaterThanOrEqual(44);
     expect(box?.height).toBeGreaterThanOrEqual(44);
-    if (width < 1024) {
+    if (width < 1536) {
       await expect(page.getByRole('columnheader', { name: 'Role', exact: true })).toBeHidden();
       await edit.click();
       const dialog = page.getByRole('dialog', { name: 'Edit Customer', exact: true });
@@ -50,9 +50,9 @@ export async function assertCustomerResponsiveLayouts(page: Page, testInfo: Test
     } else {
       await expect(page.getByRole('columnheader', { name: 'Role', exact: true })).toBeVisible();
       expect((await row.boundingBox())!.height, `desktop row height at ${width}px`).toBeLessThan(240);
-      expect((await roleCell.boundingBox())!.width).toBeGreaterThanOrEqual(192);
+      expect((await roleCell.boundingBox())!.width).toBeGreaterThanOrEqual(128);
     }
-    if ([320, 390, 768, 1440].includes(width)) {
+    if ([320, 390, 768, 1024, 1440].includes(width)) {
       await page.screenshot({ path: testInfo.outputPath(`customers-${width}.png`), fullPage: true });
     }
   }

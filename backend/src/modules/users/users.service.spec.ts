@@ -57,6 +57,23 @@ describe('customer creation attribution', () => {
     }));
   });
 
+  it('scopes staff reads and counts to customer contacts without selecting private data', async () => {
+    prisma.user.findMany.mockResolvedValueOnce([]);
+    prisma.user.count.mockResolvedValueOnce(0);
+    await service.listUsers('tenant-1', 2, 10, 'name', true);
+    const query = prisma.user.findMany.mock.calls[0][0];
+    expect(query.where).toMatchObject({ tenantId: 'tenant-1', deletedAt: null, role: { code: 'customer' } });
+    expect(query.skip).toBe(10);
+    expect(query.select).toEqual({
+      id: true, fullName: true, email: true, phone: true,
+      isActive: true, accountStatus: true, createdAt: true,
+      role: { select: { id: true, name: true, code: true } },
+    });
+    expect(query).not.toHaveProperty('include');
+    expect(query.where.OR).toHaveLength(3);
+    expect(prisma.user.count).toHaveBeenCalledWith({ where: query.where });
+  });
+
   it('allows a new account to reuse a deleted account’s phone and email', async () => {
     prisma.user.findFirst.mockResolvedValueOnce({ id: 'staff-1' })
       .mockResolvedValueOnce(null).mockResolvedValueOnce(null);

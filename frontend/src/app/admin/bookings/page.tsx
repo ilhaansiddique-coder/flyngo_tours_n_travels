@@ -12,6 +12,7 @@ import { formatCurrency, formatDate, shortPaymentRef } from '@/lib/utils';
 import { BOOKING_STATUSES, STATUS_BADGE_VARIANT } from '@/lib/booking-statuses';
 import { Search, Plus, Eye, Trash2, RotateCcw, Copy, Check, Banknote, Smartphone, Building, Upload, X, FileText, Paperclip, UserRound } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAuthStore } from '@/stores/auth.store';
 
 interface BookingUser {
   fullName: string;
@@ -193,6 +194,8 @@ async function copyGuestCredentials(b: Booking, setCopiedId: (id: string | null)
 }
 
 export default function BookingsPage() {
+  const role = useAuthStore((state) => state.user?.role);
+  const canRepairCustomers = role === 'admin' || role === 'super_admin';
   const { getBookings, updateBookingStatus, adminCreateBooking, getUsers, getTours, getHotels, getFlights, getVisaServices, getTransport,
     deleteBooking, getTrashedBookings, restoreBooking, purgeBooking, recordAdminPayment, getPaymentMethods, uploadPaymentReceipt, openInvoicePdf, repairMissingBookingCustomers } = useApi();
 
@@ -629,8 +632,8 @@ export default function BookingsPage() {
               <Plus className="w-4 h-4" /> New Booking
             </Button>
           )}
-          {!viewTrash && (
-            <Button size="md" variant="outline" className="gap-2" onClick={runRepairCustomers} disabled={repairing}>
+            {!viewTrash && canRepairCustomers && (
+              <Button size="md" variant="outline" className="gap-2" onClick={runRepairCustomers} disabled={repairing}>
               <UserRound className="w-4 h-4" /> {repairing ? 'Repairing…' : 'Repair missing customers'}
             </Button>
           )}

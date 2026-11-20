@@ -4,6 +4,7 @@ import { VisaService } from './visa.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 
 @ApiTags('Visa')
 @Controller('visa')
@@ -31,6 +32,7 @@ export class VisaController {
     return this.visaService.getVisaServiceById(id, tenantId);
   }
 
+  @StaffPermissions('visa.create')
   @Post()
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -39,6 +41,7 @@ export class VisaController {
     return this.visaService.create(tenantId, body);
   }
 
+  @StaffPermissions('visa.update')
   @Patch(':id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -47,6 +50,7 @@ export class VisaController {
     return this.visaService.update(id, tenantId, body);
   }
 
+  @StaffPermissions('visa.delete')
   @Delete(':id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

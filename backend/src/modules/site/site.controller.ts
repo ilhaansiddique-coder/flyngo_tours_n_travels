@@ -12,6 +12,7 @@ import { SiteService } from './site.service';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 
 @ApiTags('Site')
 @Controller('site')
@@ -28,6 +29,7 @@ export class SiteController {
     return this.siteService.listNavMenuTree(tenantId);
   }
 
+  @StaffPermissions('cms.read')
   @Get('admin/nav')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -37,6 +39,7 @@ export class SiteController {
     return this.siteService.listNavMenuTree(tenantId);
   }
 
+  @StaffPermissions('cms.create')
   @Post('admin/nav')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -45,6 +48,7 @@ export class SiteController {
     return this.siteService.createNavMenu(tenantId, body);
   }
 
+  @StaffPermissions('cms.update')
   @Patch('admin/nav/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -57,6 +61,7 @@ export class SiteController {
     return this.siteService.updateNavMenu(id, tenantId, body);
   }
 
+  @StaffPermissions('cms.delete')
   @Delete('admin/nav/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -65,6 +70,7 @@ export class SiteController {
     return this.siteService.removeNavMenu(id, tenantId);
   }
 
+  @StaffPermissions('cms.update')
   @Post('admin/nav/reorder')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -85,6 +91,7 @@ export class SiteController {
     return this.siteService.getFooter(tenantId);
   }
 
+  @StaffPermissions('cms.read')
   @Get('admin/footer')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -93,6 +100,7 @@ export class SiteController {
     return this.siteService.getFooter(tenantId);
   }
 
+  @StaffPermissions('cms.update')
   @Patch('admin/footer')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

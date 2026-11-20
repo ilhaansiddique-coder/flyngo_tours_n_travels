@@ -21,6 +21,7 @@ backend/test/**/*.js
 .env.development.local
 .env.test.local
 .env.production.local
+.env.coolify.example
 
 # IDE
 .idea/

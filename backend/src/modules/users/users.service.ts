@@ -211,17 +211,35 @@ export class UsersService {
     return { success: true };
   }
 
-  async listUsers(tenantId: string, page = 1, limit = 20, q?: string) {
+  async listUsers(tenantId: string, page = 1, limit = 20, q?: string, customersOnly = false) {
     const where: any = { tenantId, deletedAt: null };
+    if (customersOnly) where.role = { code: 'customer' };
     if (q && q.trim()) {
       const term = q.trim();
       where.OR = [
         { fullName: { contains: term, mode: 'insensitive' } },
         { phone: { contains: term } },
         { email: { contains: term, mode: 'insensitive' } },
-        { nationalId: { contains: term } },
-        { passportNumber: { contains: term, mode: 'insensitive' } },
+        ...(!customersOnly ? [
+          { nationalId: { contains: term } },
+          { passportNumber: { contains: term, mode: 'insensitive' } },
+        ] : []),
       ];
+    }
+    if (customersOnly) {
+      const [items, total] = await Promise.all([
+        this.prisma.user.findMany({
+          where, skip: (page - 1) * limit, take: limit,
+          select: {
+            id: true, fullName: true, email: true, phone: true,
+            isActive: true, accountStatus: true, createdAt: true,
+            role: { select: { id: true, name: true, code: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.user.count({ where }),
+      ]);
+      return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
     }
     const [items, total] = await Promise.all([
       this.prisma.user.findMany({

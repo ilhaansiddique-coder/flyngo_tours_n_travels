@@ -5,6 +5,7 @@ import { CurrentTenantId } from '../../common/decorators/current-tenant.decorato
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('CMS')
@@ -19,6 +20,7 @@ export class CmsController {
     return this.cmsService.getPageBySlug(slug, tenantId);
   }
 
+  @StaffPermissions('cms.read')
   @Get('pages')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -27,6 +29,7 @@ export class CmsController {
     return this.cmsService.listPages(tenantId, pagination.page, pagination.limit);
   }
 
+  @StaffPermissions('cms.create')
   @Post('pages')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -35,6 +38,7 @@ export class CmsController {
     return this.cmsService.createPage(tenantId, body);
   }
 
+  @StaffPermissions('cms.update')
   @Patch('pages/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -43,6 +47,7 @@ export class CmsController {
     return this.cmsService.updatePage(id, tenantId, body);
   }
 
+  @StaffPermissions('cms.delete')
   @Delete('pages/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -65,6 +70,7 @@ export class CmsController {
     return this.cmsService.getBlogPostBySlug(slug, tenantId);
   }
 
+  @StaffPermissions('cms.read')
   @Get('admin/blogs')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -73,6 +79,7 @@ export class CmsController {
     return this.cmsService.listAllBlogs(tenantId, pagination.page, pagination.limit);
   }
 
+  @StaffPermissions('cms.create')
   @Post('admin/blogs')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -81,6 +88,7 @@ export class CmsController {
     return this.cmsService.createBlog(tenantId, userId, body);
   }
 
+  @StaffPermissions('cms.update')
   @Patch('admin/blogs/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -89,6 +97,7 @@ export class CmsController {
     return this.cmsService.updateBlog(id, tenantId, body);
   }
 
+  @StaffPermissions('cms.delete')
   @Delete('admin/blogs/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -104,6 +113,7 @@ export class CmsController {
     return this.cmsService.getTestimonials(tenantId);
   }
 
+  @StaffPermissions('cms.read')
   @Get('admin/testimonials')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -112,6 +122,7 @@ export class CmsController {
     return this.cmsService.listAllTestimonials(tenantId);
   }
 
+  @StaffPermissions('cms.create')
   @Post('admin/testimonials')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -120,6 +131,7 @@ export class CmsController {
     return this.cmsService.createTestimonial(tenantId, body);
   }
 
+  @StaffPermissions('cms.update')
   @Patch('admin/testimonials/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -128,6 +140,7 @@ export class CmsController {
     return this.cmsService.updateTestimonial(id, tenantId, body);
   }
 
+  @StaffPermissions('cms.delete')
   @Delete('admin/testimonials/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -143,6 +156,7 @@ export class CmsController {
     return this.cmsService.getFaqs(tenantId);
   }
 
+  @StaffPermissions('cms.read')
   @Get('admin/faqs')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -151,6 +165,7 @@ export class CmsController {
     return this.cmsService.listAllFaqs(tenantId);
   }
 
+  @StaffPermissions('cms.create')
   @Post('admin/faqs')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -159,6 +174,7 @@ export class CmsController {
     return this.cmsService.createFaq(tenantId, body);
   }
 
+  @StaffPermissions('cms.update')
   @Patch('admin/faqs/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')
@@ -167,6 +183,7 @@ export class CmsController {
     return this.cmsService.updateFaq(id, tenantId, body);
   }
 
+  @StaffPermissions('cms.delete')
   @Delete('admin/faqs/:id')
   @ApiBearerAuth()
   @Roles('admin', 'super_admin')

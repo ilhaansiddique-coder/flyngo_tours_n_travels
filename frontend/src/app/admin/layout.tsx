@@ -16,13 +16,12 @@ import { useEffect, useRef, useState } from 'react';
 import { AdminTopbar } from '@/components/admin/admin-topbar';
 import { useAuthStore } from '@/stores/auth.store';
 import { api } from '@/lib/api';
-
-const ADMIN_ROLES = ['admin', 'super_admin'];
+import { canAccessAdminPanel, canAccessAdminRoute } from '@/lib/admin-access';
 
 const navigation = [
   { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Bookings', href: '/admin/bookings', icon: BookOpen },
-  { label: 'Customers', href: '/admin/customers', icon: Users },
+  { label: 'Users', href: '/admin/customers', icon: Users },
   { label: 'Vendor', href: '/admin/vendor', icon: Briefcase },
   { label: 'Tours', href: '/admin/tours', icon: Map },
   { label: 'Hotels', href: '/admin/hotels', icon: Building2 },
@@ -73,6 +72,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mobileOpen, setMobileOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const { accessToken, user, hasHydrated, setUser } = useAuthStore();
+  const visibleNavigation = navigation.filter((item) =>
+    canAccessAdminRoute(item.href, user?.role, user?.permissions),
+  );
   // 'checking' covers the case where a token is present but the cached profile
   // isn't — resolve the role from the server rather than guessing.
   const [status, setStatus] = useState<'checking' | 'allowed' | 'denied'>('checking');
@@ -87,7 +89,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       return;
     }
     if (user?.role) {
-      setStatus(ADMIN_ROLES.includes(user.role) ? 'allowed' : 'denied');
+      setStatus(canAccessAdminPanel(user.role) ? 'allowed' : 'denied');
       return;
     }
 
@@ -109,7 +111,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           role: me.role.code,
           permissions: me.role.permissions.map((p) => p.permission.code),
         });
-        setStatus(ADMIN_ROLES.includes(me.role.code) ? 'allowed' : 'denied');
+        setStatus(canAccessAdminPanel(me.role.code) ? 'allowed' : 'denied');
       } catch {
         if (!cancelled) setStatus('denied');
       }
@@ -121,8 +123,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (status !== 'denied') return;
+    if (accessToken && user?.role === 'customer') {
+      router.replace('/dashboard');
+      return;
+    }
     router.replace(`/auth/login?callbackUrl=${encodeURIComponent(pathname)}`);
-  }, [status, router, pathname]);
+  }, [status, router, pathname, accessToken, user?.role]);
 
   useEffect(() => {
     const root = contentRef.current;
@@ -195,7 +201,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {navigation.map((item) => {
+          {visibleNavigation.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
@@ -243,9 +249,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main Content */}
       <main className={cn('min-w-0 flex-1 transition-all duration-300', collapsed ? 'lg:ml-20' : 'lg:ml-64')}>
-        <AdminTopbar navigation={navigation} onMenuClick={() => setMobileOpen(true)} />
+        <AdminTopbar navigation={visibleNavigation} onMenuClick={() => setMobileOpen(true)} />
         {/* Page Content */}
-        <div ref={contentRef} className="admin-table-cards px-4 sm:px-6 py-4">{children}</div>
+        <div ref={contentRef} className="admin-table-cards px-4 sm:px-6 py-4">
+          {canAccessAdminRoute(pathname, user?.role, user?.permissions) ? children : (
+            <div className="rounded-2xl border border-outline-variant bg-surface-container p-6">
+              <h2 className="text-lg font-semibold">Access unavailable</h2>
+              <p className="mt-2 text-on-surface-variant">Your role does not have access to this section.</p>
+              <Link href="/admin/dashboard" className="mt-4 inline-block text-primary underline">Go to dashboard</Link>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

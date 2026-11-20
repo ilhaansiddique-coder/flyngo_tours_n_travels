@@ -5,6 +5,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CurrentTenantId } from '../../common/decorators/current-tenant.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StaffPermissions } from '../../common/decorators/staff-permissions.decorator';
 import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 import { CreateHotelBookingDto } from './dto/create-hotel-booking.dto';
 
@@ -45,6 +46,7 @@ export class BookingController {
     return this.bookingService.getUserBookings(tenantId, userId);
   }
 
+  @StaffPermissions('bookings.read')
   @Get('admin/all')
   @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'List all bookings (admin)' })
@@ -63,6 +65,7 @@ export class BookingController {
   }
 
   // Trash — declared before @Get(':id') so 'admin/trash' isn't captured as an id.
+  @StaffPermissions('bookings.read')
   @Get('admin/trash')
   @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'List trashed (soft-deleted) bookings (admin)' })
@@ -93,6 +96,7 @@ export class BookingController {
     return this.bookingService.getBookingById(id, tenantId, userId);
   }
 
+  @StaffPermissions('bookings.update')
   @Patch('admin/:id/status')
   @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Update booking status (admin)' })
@@ -100,6 +104,7 @@ export class BookingController {
     return this.bookingService.updateStatus(id, tenantId, status);
   }
 
+  @StaffPermissions('bookings.delete')
   @Delete('admin/:id')
   @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Move a booking to the trash (admin, reversible)' })
@@ -107,6 +112,7 @@ export class BookingController {
     return this.bookingService.softDeleteBooking(id, tenantId);
   }
 
+  @StaffPermissions('bookings.update')
   @Post('admin/:id/restore')
   @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Restore a trashed booking (admin)' })
@@ -114,6 +120,7 @@ export class BookingController {
     return this.bookingService.restoreBooking(id, tenantId);
   }
 
+  @StaffPermissions('bookings.delete')
   @Delete('admin/:id/purge')
   @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Permanently delete a trashed booking (admin, irreversible)' })
@@ -121,6 +128,7 @@ export class BookingController {
     return this.bookingService.purgeBooking(id, tenantId);
   }
 
+  @StaffPermissions('bookings.create')
   @Post('admin')
   @Roles('admin', 'super_admin', 'manager', 'moderator')
   @ApiOperation({ summary: 'Create a booking on behalf of a user (admin)' })

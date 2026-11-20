@@ -199,7 +199,12 @@ test('phone signup restores an HttpOnly session and cannot enter admin', async (
   const intent = await context.request.post('/api/v1/payments/intent', { headers: { Authorization: `Bearer ${restoredTokens.accessToken}` }, data: { bookingId: 'test', method: 'stripe', amount: 1 } });
   expect(intent.status()).toBe(503);
   await page.goto('/admin/customers');
-  await expect(page).toHaveURL(/\/auth\/login\?callbackUrl=/);
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByText('FlynGo Admin', { exact: true })).toHaveCount(0);
+  const adminList = await context.request.get('/api/v1/users', {
+    headers: { Authorization: `Bearer ${restoredTokens.accessToken}` },
+  });
+  expect(adminList.status()).toBe(403);
   expect((await context.request.post('/api/v1/auth/logout', { headers: { 'X-Requested-With': 'Flyngo', Origin: 'http://127.0.0.1:3108' } })).ok()).toBe(true);
   const signedOut = await context.request.post('/api/v1/auth/session', { headers: { 'X-Requested-With': 'Flyngo', Origin: 'http://127.0.0.1:3108' } });
   const signedOutBody = await signedOut.json();
@@ -208,6 +213,9 @@ test('phone signup restores an HttpOnly session and cannot enter admin', async (
 
 test('admin login, customer creation, audit columns and logout work', async ({ page }, testInfo) => {
   test.setTimeout(120_000);
+  // Audit column headers are visible in the desktop table. Laptop widths use
+  // cards and are checked separately by assertCustomerResponsiveLayouts.
+  await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto('/auth/login?callbackUrl=%2Fadmin%2Fcustomers');
   await page.getByPlaceholder('Email or phone number').fill('admin@release.invalid');
   await page.getByPlaceholder('Password', { exact: true }).fill('Release-test-only-123!');
